@@ -13,10 +13,23 @@ export interface RouterParams {
   history?: Parameters<typeof createBrowserHistory>[0];
 }
 
-const defineRoutes = () => ({
-  home: createRoute("/", { exact: true }),
-  notFound: createVirtualRoute(),
-});
+const defineRoutes = () => {
+  const repositoryRoot = createRoute("/repository/:projectId");
+  const repository = repositoryRoot.extend("/", { index: true });
+  const mergeRequests = repositoryRoot.extend("/merge-requests", {
+    exact: true,
+  });
+  const mergeRequest = mergeRequests.extend("/:mergeRequestIid");
+
+  return {
+    home: createRoute("/", { exact: true }),
+    repositoryRoot,
+    repository,
+    mergeRequests,
+    mergeRequest,
+    notFound: createVirtualRoute(),
+  };
+};
 
 type RoutesMap = ReturnType<typeof defineRoutes>;
 
@@ -41,5 +54,12 @@ export class Router extends RouterLib<RoutesMap> {
 
     this.history = history;
     this.query = query;
+  }
+
+  get isRepositorySectionOpen() {
+    return (
+      this.routes.repositoryRoot.isOpened ||
+      this.routes.repositoryRoot.hasOpenedChildren
+    );
   }
 }

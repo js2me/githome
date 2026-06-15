@@ -1,4 +1,5 @@
 import path from "node:path";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { mobxVmVitePlugin } from "mobx-view-model-vite-plugin";
 import { defineConfig } from "vite";
@@ -10,6 +11,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      tailwindcss(),
       mobxVmVitePlugin({
         autoDisplayName: isDev,
         devtools: isDev,
@@ -29,10 +31,10 @@ export default defineConfig(({ mode }) => {
       host: host || false,
       hmr: host
         ? {
-            protocol: "ws",
-            host,
-            port: 1421,
-          }
+          protocol: "ws",
+          host,
+          port: 1421,
+        }
         : undefined,
       watch: {
         ignored: ["**/src-tauri/**"],
