@@ -1,5 +1,6 @@
 import { withViewModel } from "mobx-view-model-react";
 import { StatusMessage } from "@/shared/ui/status-message";
+import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { RepositoryVM } from "../model";
 
 export const RepositoryPage = withViewModel(RepositoryVM, ({ model }) => {
@@ -37,9 +38,10 @@ export const RepositoryPage = withViewModel(RepositoryVM, ({ model }) => {
           {model.readme && (
             <article className="mt-2 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900">
               <h3 className="mb-3 text-sm text-slate-500">{model.readme.fileName}</h3>
-              <pre className="m-0 whitespace-pre-wrap break-words font-mono text-[13px] leading-normal text-slate-900 dark:text-slate-200">
-                {model.readme.content}
-              </pre>
+              <GitLabMarkdown
+                text={model.readme.content}
+                className="text-sm leading-normal text-slate-800 dark:text-slate-300"
+              />
             </article>
           )}
         </>

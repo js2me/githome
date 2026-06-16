@@ -1,6 +1,12 @@
 import type { GitLabDiscussion, GitLabNote } from "@/shared/api/gitlab";
 import { cn } from "@/shared/lib/cn";
+import {
+  isDiscussionResolvable,
+  isDiscussionResolved,
+} from "@/shared/lib/diff-discussions";
+import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { StatusMessage } from "@/shared/ui/status-message";
+import { DiscussionResolveActions } from "./discussion-resolve-actions";
 
 const formatDateTime = (value: string) => {
   const date = new Date(value);
@@ -31,13 +37,7 @@ const formatPosition = (note: GitLabNote) => {
   return line ? `${path}:${line}` : path;
 };
 
-const isDiscussionResolved = (discussion: GitLabDiscussion) => {
-  const resolvableNotes = discussion.notes.filter((note) => note.resolvable);
-  return (
-    resolvableNotes.length > 0 &&
-    resolvableNotes.every((note) => note.resolved)
-  );
-};
+const isDiscussionResolvedState = isDiscussionResolved;
 
 const AuthorAvatar = ({ note }: { note: GitLabNote }) => {
   if (note.authorAvatarUrl) {
@@ -101,22 +101,28 @@ const DiscussionNote = ({
           </div>
         )}
 
-        <div
-          className={cn(
-            "whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-800 dark:text-slate-300",
-            note.system && "italic text-slate-500 dark:text-slate-400",
-          )}
-        >
-          {note.body}
-        </div>
+        <GitLabMarkdown
+          text={note.body}
+          className="min-w-0 max-w-full text-slate-800 dark:text-slate-300"
+          italic={note.system}
+        />
       </div>
     </article>
   );
 };
 
-const DiscussionThread = ({ discussion }: { discussion: GitLabDiscussion }) => {
+const DiscussionThread = ({
+  discussion,
+  onResolveDiscussion,
+  resolvingDiscussionId,
+}: {
+  discussion: GitLabDiscussion;
+  onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
+  resolvingDiscussionId: string | null;
+}) => {
   const [firstNote, ...replies] = discussion.notes;
-  const resolved = isDiscussionResolved(discussion);
+  const resolved = isDiscussionResolvedState(discussion);
+  const resolvable = isDiscussionResolvable(discussion);
 
   if (!firstNote) {
     return null;
@@ -144,14 +150,27 @@ const DiscussionThread = ({ discussion }: { discussion: GitLabDiscussion }) => {
           ))}
         </div>
       )}
+
+      <DiscussionResolveActions
+        discussionId={discussion.id}
+        resolved={resolved}
+        resolvable={resolvable}
+        isResolving={resolvingDiscussionId === discussion.id}
+        onResolve={onResolveDiscussion}
+        className="border-t border-slate-200 px-4 py-3 dark:border-slate-800"
+      />
     </section>
   );
 };
 
 export const MergeRequestDiscussions = ({
   discussions,
+  onResolveDiscussion,
+  resolvingDiscussionId,
 }: {
   discussions: GitLabDiscussion[];
+  onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
+  resolvingDiscussionId: string | null;
 }) => {
   if (discussions.length === 0) {
     return <StatusMessage>Комментариев пока нет.</StatusMessage>;
@@ -160,7 +179,12 @@ export const MergeRequestDiscussions = ({
   return (
     <div className="flex flex-col gap-3">
       {discussions.map((discussion) => (
-        <DiscussionThread key={discussion.id} discussion={discussion} />
+        <DiscussionThread
+          key={discussion.id}
+          discussion={discussion}
+          onResolveDiscussion={onResolveDiscussion}
+          resolvingDiscussionId={resolvingDiscussionId}
+        />
       ))}
     </div>
   );

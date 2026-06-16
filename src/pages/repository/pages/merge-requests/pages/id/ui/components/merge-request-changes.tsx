@@ -19,6 +19,8 @@ export const MergeRequestChanges = ({
   headRef,
   baseRef,
   loadFileContent,
+  onResolveThread,
+  resolvingDiscussionId,
 }: {
   changes: GitLabMergeRequestChange[];
   discussions: GitLabDiscussion[];
@@ -30,6 +32,8 @@ export const MergeRequestChanges = ({
   headRef?: string | null;
   baseRef?: string | null;
   loadFileContent?: DiffFileContentLoader;
+  onResolveThread?: (discussionId: string, resolved: boolean) => void;
+  resolvingDiscussionId?: string | null;
 }) => {
   return (
     <GitDiffView
@@ -43,6 +47,8 @@ export const MergeRequestChanges = ({
       headRef={headRef}
       baseRef={baseRef}
       loadFileContent={loadFileContent}
+      onResolveThread={onResolveThread}
+      resolvingDiscussionId={resolvingDiscussionId}
     />
   );
 };

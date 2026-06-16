@@ -3,6 +3,7 @@ import { createQuery } from "mobx-tanstack-query/preset";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type {
   CreateDiffCommentInput,
+  GitLabMergeRequestApprovalView,
   GitLabMergeRequestChanges,
   GitLabMergeRequestDetail,
   GitLabMergeRequestDiscussions,
@@ -14,16 +15,23 @@ type MergeRequestViewQuery = {
     detail: GitLabMergeRequestDetail;
     changes: GitLabMergeRequestChanges;
     discussions: GitLabMergeRequestDiscussions;
+    approvals: GitLabMergeRequestApprovalView;
   };
   isLoading: boolean;
   isFetching: boolean;
   error: unknown;
 };
 
+export type MrReviewAction = "approve" | "unapprove" | "requestChanges" | "cancelRequestChanges";
+
 export class MrInfoModel {
   mergeRequestViewQuery!: MergeRequestViewQuery;
   isSubmittingDiffComment = false;
   submitDiffCommentError: string | null = null;
+  resolvingDiscussionId: string | null = null;
+  resolveDiscussionError: string | null = null;
+  reviewActionInProgress: MrReviewAction | null = null;
+  reviewActionError: string | null = null;
 
   constructor(private ctx: RepositoryModelContext) {
     this.mergeRequestViewQuery = createQuery({
@@ -64,13 +72,25 @@ export class MrInfoModel {
       mergeRequestViewQuery: observable,
       isSubmittingDiffComment: observable,
       submitDiffCommentError: observable,
+      resolvingDiscussionId: observable,
+      resolveDiscussionError: observable,
+      reviewActionInProgress: observable,
+      reviewActionError: observable,
       mergeRequestDetail: computed,
       mergeRequestChanges: computed,
       mergeRequestDiscussions: computed,
+      mergeRequestApprovals: computed,
       isLoading: computed,
       errorMessage: computed,
       submitDiffComment: action,
       clearSubmitDiffCommentError: action,
+      resolveDiscussion: action,
+      clearResolveDiscussionError: action,
+      approve: action,
+      unapprove: action,
+      requestChanges: action,
+      cancelRequestChanges: action,
+      clearReviewActionError: action,
       loadDiffFileContent: action,
     });
   }
@@ -85,6 +105,10 @@ export class MrInfoModel {
 
   get mergeRequestDiscussions(): GitLabMergeRequestDiscussions | null {
     return this.mergeRequestViewQuery.data?.discussions ?? null;
+  }
+
+  get mergeRequestApprovals(): GitLabMergeRequestApprovalView | null {
+    return this.mergeRequestViewQuery.data?.approvals ?? null;
   }
 
   get isLoading() {
@@ -141,15 +165,7 @@ export class MrInfoModel {
         },
       );
 
-      await this.ctx.globals.stores.queryClient.invalidateQueries({
-        queryKey: [
-          "gitlab",
-          "merge-request-view",
-          connection.id,
-          project.id,
-          mergeRequestIid,
-        ],
-      });
+      await this.invalidateMergeRequestView();
 
       return true;
     } catch (error) {
@@ -169,6 +185,180 @@ export class MrInfoModel {
 
   clearSubmitDiffCommentError() {
     this.submitDiffCommentError = null;
+  }
+
+  clearResolveDiscussionError() {
+    this.resolveDiscussionError = null;
+  }
+
+  clearReviewActionError() {
+    this.reviewActionError = null;
+  }
+
+  private async invalidateMergeRequestView() {
+    const connection = this.ctx.globals.stores.settings.activeConnection;
+    const project = this.ctx.selectedProject;
+    const mergeRequestIid = this.ctx.mergeRequestIid;
+
+    if (!connection || !project || mergeRequestIid === null) {
+      return;
+    }
+
+    await this.ctx.globals.stores.queryClient.invalidateQueries({
+      queryKey: [
+        "gitlab",
+        "merge-request-view",
+        connection.id,
+        project.id,
+        mergeRequestIid,
+      ],
+    });
+  }
+
+  private async runReviewAction(
+    action: MrReviewAction,
+    runner: () => Promise<void>,
+  ) {
+    const connection = this.ctx.globals.stores.settings.activeConnection;
+    const project = this.ctx.selectedProject;
+    const mergeRequestIid = this.ctx.mergeRequestIid;
+
+    if (!connection || !project || mergeRequestIid === null) {
+      this.reviewActionError = "Merge request не выбран";
+      return false;
+    }
+
+    this.reviewActionInProgress = action;
+    this.reviewActionError = null;
+
+    try {
+      await runner();
+      await this.invalidateMergeRequestView();
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.reviewActionError =
+          error instanceof Error
+            ? error.message
+            : "Не удалось выполнить действие";
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.reviewActionInProgress = null;
+      });
+    }
+  }
+
+  async approve() {
+    const connection = this.ctx.globals.stores.settings.activeConnection;
+    const project = this.ctx.selectedProject;
+    const mergeRequestIid = this.ctx.mergeRequestIid;
+    const headSha = this.mergeRequestDetail?.diffRefs?.headSha ?? null;
+
+    if (!connection || !project || mergeRequestIid === null) {
+      this.reviewActionError = "Merge request не выбран";
+      return false;
+    }
+
+    return this.runReviewAction("approve", () =>
+      gitlabApi.approveMergeRequest(connection, project, mergeRequestIid, {
+        sha: headSha,
+      }),
+    );
+  }
+
+  async unapprove() {
+    const connection = this.ctx.globals.stores.settings.activeConnection;
+    const project = this.ctx.selectedProject;
+    const mergeRequestIid = this.ctx.mergeRequestIid;
+
+    if (!connection || !project || mergeRequestIid === null) {
+      this.reviewActionError = "Merge request не выбран";
+      return false;
+    }
+
+    return this.runReviewAction("unapprove", () =>
+      gitlabApi.unapproveMergeRequest(connection, project, mergeRequestIid),
+    );
+  }
+
+  async requestChanges() {
+    const connection = this.ctx.globals.stores.settings.activeConnection;
+    const project = this.ctx.selectedProject;
+    const mergeRequestIid = this.ctx.mergeRequestIid;
+
+    if (!connection || !project || mergeRequestIid === null) {
+      this.reviewActionError = "Merge request не выбран";
+      return false;
+    }
+
+    return this.runReviewAction("requestChanges", () =>
+      gitlabApi.requestMergeRequestChanges(
+        connection,
+        project,
+        mergeRequestIid,
+      ),
+    );
+  }
+
+  async cancelRequestChanges() {
+    const connection = this.ctx.globals.stores.settings.activeConnection;
+    const project = this.ctx.selectedProject;
+    const mergeRequestIid = this.ctx.mergeRequestIid;
+
+    if (!connection || !project || mergeRequestIid === null) {
+      this.reviewActionError = "Merge request не выбран";
+      return false;
+    }
+
+    return this.runReviewAction("cancelRequestChanges", () =>
+      gitlabApi.cancelMergeRequestRequestedChanges(
+        connection,
+        project,
+        mergeRequestIid,
+      ),
+    );
+  }
+
+  async resolveDiscussion(discussionId: string, resolved: boolean) {
+    const connection = this.ctx.globals.stores.settings.activeConnection;
+    const project = this.ctx.selectedProject;
+    const mergeRequestIid = this.ctx.mergeRequestIid;
+
+    if (!connection || !project || mergeRequestIid === null) {
+      this.resolveDiscussionError = "Merge request не выбран";
+      return false;
+    }
+
+    this.resolvingDiscussionId = discussionId;
+    this.resolveDiscussionError = null;
+
+    try {
+      await gitlabApi.resolveMergeRequestDiscussion(
+        connection,
+        project,
+        mergeRequestIid,
+        discussionId,
+        resolved,
+      );
+
+      await this.invalidateMergeRequestView();
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.resolveDiscussionError =
+          error instanceof Error
+            ? error.message
+            : "Не удалось обновить статус треда";
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.resolvingDiscussionId = null;
+      });
+    }
   }
 
   async loadDiffFileContent(filePath: string, ref: string) {

@@ -1,7 +1,7 @@
 import type { GitLabMergeRequestChange } from "@/shared/api/gitlab";
 import type { DiffExpandGap, DiffExpandState } from "@/shared/lib/expand-diff-context";
 import {
-  getExpandGapLabel,
+  getEndExpandStateKey,
   isGapFullyExpanded,
 } from "@/shared/lib/expand-diff-context";
 import {
@@ -17,7 +17,7 @@ import {
 
 export const DIFF_LINE_HEIGHT = 20;
 export const DIFF_HUNK_HEIGHT = 34;
-export const DIFF_EXPAND_ROW_HEIGHT = 36;
+export const DIFF_EXPAND_ROW_HEIGHT = 28;
 export const DIFF_THREAD_BASE_HEIGHT = 56;
 export const DIFF_THREAD_NOTE_HEIGHT = 48;
 export const DIFF_COMMENT_FORM_HEIGHT = 200;
@@ -28,7 +28,7 @@ export type VirtualDiffRow =
       type: "expand";
       id: string;
       gap: DiffExpandGap;
-      label: string;
+      expandState: DiffExpandState;
       isLoading: boolean;
       estimatedHeight: number;
     }
@@ -195,16 +195,11 @@ const pushExpandGap = ({
     return;
   }
 
-  const label = getExpandGapLabel(gap, expand.expandState);
-  if (!label) {
-    return;
-  }
-
   rows.push({
     type: "expand",
     id: `expand:${gap.id}`,
     gap,
-    label,
+    expandState: expand.expandState,
     isLoading: expand.loadingGapId === gap.id,
     estimatedHeight: DIFF_EXPAND_ROW_HEIGHT,
   });
@@ -244,6 +239,21 @@ const pushDownExpandSection = ({
   }
 
   pushExpandGap({ rows, gap, expand });
+
+  const expandedEndLines =
+    expand.contextLinesByGapId[getEndExpandStateKey(gap.id)] ?? [];
+
+  if (expandedEndLines.length > 0) {
+    pushContextLines({
+      rows,
+      change,
+      hunkIndex,
+      lines: expandedEndLines,
+      threadIndex,
+      commentFormLineKey,
+      idPrefix: `${idPrefix}:end`,
+    });
+  }
 };
 
 const pushHunkLines = ({
@@ -366,6 +376,23 @@ export const buildDiffVirtualRows = ({
               idPrefix: `expanded:${betweenGap.id}:${change.newPath}`,
             });
           }
+
+          pushExpandGap({ rows, gap: betweenGap, expand });
+
+          const betweenEndLines =
+            expand.contextLinesByGapId[getEndExpandStateKey(betweenGap.id)] ??
+            [];
+          if (betweenEndLines.length > 0) {
+            pushContextLines({
+              rows,
+              change,
+              hunkIndex: -1,
+              lines: betweenEndLines,
+              threadIndex,
+              commentFormLineKey,
+              idPrefix: `expanded:${getEndExpandStateKey(betweenGap.id)}:${change.newPath}`,
+            });
+          }
         }
       }
     }
@@ -378,13 +405,6 @@ export const buildDiffVirtualRows = ({
       threadIndex,
       commentFormLineKey,
     });
-
-    if (expand && hunkIndex > 0) {
-      const betweenGap = getGapById(gaps, `between:${hunkIndex - 1}`);
-      if (betweenGap) {
-        pushExpandGap({ rows, gap: betweenGap, expand });
-      }
-    }
   }
 
   if (expand) {

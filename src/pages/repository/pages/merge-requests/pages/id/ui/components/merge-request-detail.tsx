@@ -1,15 +1,23 @@
 import type {
   CreateDiffCommentInput,
+  GitLabMergeRequestApprovalView,
   GitLabMergeRequestChange,
   GitLabMergeRequestDetail,
   GitLabDiscussion,
 } from "@/shared/api/gitlab";
+import type { MrReviewAction } from "../../model/mr-info";
 import {
   getMrStateBadgeState,
   mrStateBadgeVariants,
 } from "@/shared/ui/mr-state-badge";
+import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
+import { StatusMessage } from "@/shared/ui/status-message";
+import { useMemo } from "react";
+import { ChangesFileTree } from "./changes-file-tree";
+import { useActiveDiffFile } from "../hooks/use-active-diff-file";
 import { MergeRequestChanges } from "./merge-request-changes";
 import { MergeRequestDiscussions } from "./merge-request-discussions";
+import { MrReviewActions } from "./mr-review-actions";
 
 const formatDateTime = (value: string) => {
   const date = new Date(value);
@@ -56,6 +64,16 @@ export const MergeRequestDetail = ({
   onAddComment,
   onClearSubmitError,
   loadFileContent,
+  onResolveDiscussion,
+  resolvingDiscussionId,
+  resolveDiscussionError,
+  approvals,
+  reviewActionInProgress,
+  reviewActionError,
+  onApprove,
+  onUnapprove,
+  onRequestChanges,
+  onCancelRequestChanges,
 }: {
   mergeRequest: GitLabMergeRequestDetail;
   changes: GitLabMergeRequestChange[];
@@ -66,11 +84,41 @@ export const MergeRequestDetail = ({
   onAddComment: (input: CreateDiffCommentInput) => Promise<boolean>;
   onClearSubmitError: () => void;
   loadFileContent?: (filePath: string, ref: string) => Promise<string>;
+  onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
+  resolvingDiscussionId: string | null;
+  resolveDiscussionError?: string | null;
+  approvals: GitLabMergeRequestApprovalView;
+  reviewActionInProgress: MrReviewAction | null;
+  reviewActionError: string | null;
+  onApprove: () => void;
+  onUnapprove: () => void;
+  onRequestChanges: () => void;
+  onCancelRequestChanges: () => void;
 }) => {
   const stateKey = mergeRequest.draft ? "draft" : mergeRequest.state;
+  const activeFileKey = useActiveDiffFile(changes);
+  const showChangesTree = changes.length > 0;
+  const activityDiscussions = useMemo(
+    () => discussions.filter((discussion) => discussion.notes.every((note) => !note.position)),
+    [discussions],
+  );
 
   return (
-    <div className="flex flex-col gap-5">
+    <div
+      className={
+        showChangesTree
+          ? "grid grid-cols-[minmax(220px,260px)_minmax(0,1fr)] items-start gap-4"
+          : "flex flex-col gap-5"
+      }
+    >
+      {showChangesTree && (
+        <ChangesFileTree changes={changes} activeFileKey={activeFileKey} />
+      )}
+
+      <div className="flex min-w-0 flex-col gap-5">
+      {resolveDiscussionError && (
+        <StatusMessage error>{resolveDiscussionError}</StatusMessage>
+      )}
       <header className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-gray-900">
         <div className="flex flex-wrap items-start gap-2.5">
           <span className="shrink-0 text-[22px] font-bold text-slate-500">
@@ -177,11 +225,22 @@ export const MergeRequestDetail = ({
         )}
       </header>
 
+      <MrReviewActions
+        mergeRequest={mergeRequest}
+        approvals={approvals}
+        reviewActionInProgress={reviewActionInProgress}
+        reviewActionError={reviewActionError}
+        onApprove={onApprove}
+        onUnapprove={onUnapprove}
+        onRequestChanges={onRequestChanges}
+        onCancelRequestChanges={onCancelRequestChanges}
+      />
+
       {mergeRequest.description.trim() && (
         <section className="flex flex-col gap-3">
           <h3 className="m-0 text-lg font-semibold">Описание</h3>
-          <div className="whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 text-sm leading-relaxed dark:border-slate-800 dark:bg-gray-900 dark:text-slate-200">
-            {mergeRequest.description}
+          <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900">
+            <GitLabMarkdown text={mergeRequest.description} />
           </div>
         </section>
       )}
@@ -189,13 +248,17 @@ export const MergeRequestDetail = ({
       <section className="flex flex-col gap-3">
         <h3 className="m-0 flex items-center gap-2 text-lg font-semibold">
           Activity
-          {discussions.length > 0 && (
+          {activityDiscussions.length > 0 && (
             <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-              {discussions.length}
+              {activityDiscussions.length}
             </span>
           )}
         </h3>
-        <MergeRequestDiscussions discussions={discussions} />
+        <MergeRequestDiscussions
+          discussions={activityDiscussions}
+          onResolveDiscussion={onResolveDiscussion}
+          resolvingDiscussionId={resolvingDiscussionId}
+        />
       </section>
 
       <section className="flex flex-col gap-3">
@@ -218,8 +281,11 @@ export const MergeRequestDetail = ({
           headRef={mergeRequest.diffRefs?.headSha ?? null}
           baseRef={mergeRequest.diffRefs?.baseSha ?? null}
           loadFileContent={loadFileContent}
+          onResolveThread={onResolveDiscussion}
+          resolvingDiscussionId={resolvingDiscussionId}
         />
       </section>
+      </div>
     </div>
   );
 };

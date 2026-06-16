@@ -12,8 +12,9 @@ export const RepositoryShell = observer(({ children }: { children?: ReactNode })
   const model = useViewModel(LayoutVM);
   const { router } = model.globals;
   const projectId = RepositoryVM.resolveProjectId(model.globals);
+  const isMergeRequestDetailOpen = router.routes.mergeRequest.isOpened;
   const isMergeRequestsOpen =
-    router.routes.mergeRequests.isOpened || router.routes.mergeRequest.isOpened;
+    router.routes.mergeRequests.isOpened || isMergeRequestDetailOpen;
   const isOverviewOpen = router.routes.repository.isOpened;
 
   if (!projectId) {
@@ -21,6 +22,10 @@ export const RepositoryShell = observer(({ children }: { children?: ReactNode })
   }
 
   const projectIdParam = String(projectId);
+
+  if (isMergeRequestDetailOpen) {
+    return <div className="min-w-0">{children}</div>;
+  }
 
   return (
     <div className="grid grid-cols-[220px_minmax(0,1fr)] items-start gap-6">

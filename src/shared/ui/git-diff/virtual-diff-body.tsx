@@ -1,6 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { VirtualDiffRow } from "@/shared/lib/build-diff-virtual-rows";
+import type { DiffExpandMode } from "@/shared/lib/expand-diff-context";
 import type { DiffLineSelection } from "@/shared/lib/diff-line-selection";
 import {
   isLineKeyInSelection,
@@ -16,10 +17,11 @@ import {
 
 const getLineSelectionFlags = (
   lineKey: string | null,
-  lineSelection: DiffLineSelection | null,
-  orderedLineKeys: string[],
+  selectedLineKeys: Set<string>,
+  selectionStartKey: string | null,
+  selectionEndKey: string | null,
 ) => {
-  if (!lineKey || !lineSelection) {
+  if (!lineKey || selectedLineKeys.size === 0) {
     return {
       isSelected: false,
       isSelectionStart: false,
@@ -27,25 +29,31 @@ const getLineSelectionFlags = (
     };
   }
 
-  const normalized = normalizeDiffLineSelection(
-    lineSelection.startKey,
-    lineSelection.endKey,
-    orderedLineKeys,
-  );
-
   return {
-    isSelected: isLineKeyInSelection(lineKey, lineSelection, orderedLineKeys),
-    isSelectionStart: lineKey === normalized.startKey,
-    isSelectionEnd: lineKey === normalized.endKey,
+    isSelected: selectedLineKeys.has(lineKey),
+    isSelectionStart: lineKey === selectionStartKey,
+    isSelectionEnd: lineKey === selectionEndKey,
   };
+};
+
+const isDiffCodeRow = (row: VirtualDiffRow) =>
+  row.type === "line" || row.type === "hunk" || row.type === "expand";
+
+const getDiffRowLayoutClassName = (row: VirtualDiffRow) =>
+  isDiffCodeRow(row) ? "w-full min-w-max" : "w-full min-w-0 max-w-full";
+
+type DiffThreadResolveProps = {
+  onResolveThread?: (discussionId: string, resolved: boolean) => void;
+  resolvingDiscussionId?: string | null;
 };
 
 const VirtualDiffRowView = memo(
   ({
     row,
     canComment,
-    lineSelection,
-    orderedLineKeys,
+    selectedLineKeys,
+    selectionStartKey,
+    selectionEndKey,
     commentBody,
     submitError,
     isSubmitting,
@@ -57,11 +65,14 @@ const VirtualDiffRowView = memo(
     onCancelComment,
     onSubmitComment,
     onExpandGap,
+    onResolveThread,
+    resolvingDiscussionId,
   }: {
     row: VirtualDiffRow;
     canComment: boolean;
-    lineSelection: DiffLineSelection | null;
-    orderedLineKeys: string[];
+    selectedLineKeys: Set<string>;
+    selectionStartKey: string | null;
+    selectionEndKey: string | null;
     commentBody: string;
     submitError: string | null;
     isSubmitting: boolean;
@@ -72,15 +83,15 @@ const VirtualDiffRowView = memo(
     onCommentBodyChange: (value: string) => void;
     onCancelComment: () => void;
     onSubmitComment: () => void;
-    onExpandGap?: (gapId: string) => void;
-  }) => {
+    onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
+  } & DiffThreadResolveProps) => {
     if (row.type === "expand") {
       return (
         <DiffExpandRow
           gap={row.gap}
-          label={row.label}
+          expandState={row.expandState}
           isLoading={row.isLoading}
-          onExpand={() => onExpandGap?.(row.gap.id)}
+          onExpand={(gap, mode) => onExpandGap?.(gap.id, mode)}
         />
       );
     }
@@ -92,8 +103,9 @@ const VirtualDiffRowView = memo(
     if (row.type === "line") {
       const selectionFlags = getLineSelectionFlags(
         row.lineKey,
-        lineSelection,
-        orderedLineKeys,
+        selectedLineKeys,
+        selectionStartKey,
+        selectionEndKey,
       );
 
       return (
@@ -101,6 +113,7 @@ const VirtualDiffRowView = memo(
           line={row.line}
           prefix={row.prefix}
           lineKey={row.lineKey}
+          rowId={row.id}
           canComment={canComment}
           hasThreads={row.threadsCount > 0}
           isSelected={selectionFlags.isSelected}
@@ -127,7 +140,13 @@ const VirtualDiffRowView = memo(
     }
 
     if (row.type === "thread") {
-      return <DiffThreadRow thread={row.thread} />;
+      return (
+        <DiffThreadRow
+          thread={row.thread}
+          onResolveThread={onResolveThread}
+          resolvingDiscussionId={resolvingDiscussionId}
+        />
+      );
     }
 
     return (
@@ -161,6 +180,9 @@ const StaticDiffBody = memo(
     onCancelComment,
     onSubmitComment,
     onExpandGap,
+    onRegisterScrollToRow,
+    onResolveThread,
+    resolvingDiscussionId,
   }: {
     rows: VirtualDiffRow[];
     canComment: boolean;
@@ -176,16 +198,62 @@ const StaticDiffBody = memo(
     onCommentBodyChange: (value: string) => void;
     onCancelComment: () => void;
     onSubmitComment: () => void;
-    onExpandGap?: (gapId: string) => void;
-  }) => (
-    <div className="w-full min-w-max">
+    onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
+    onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
+  } & DiffThreadResolveProps) => {
+    const normalizedSelection = useMemo(() => {
+      if (!lineSelection) {
+        return null;
+      }
+
+      return normalizeDiffLineSelection(
+        lineSelection.startKey,
+        lineSelection.endKey,
+        orderedLineKeys,
+      );
+    }, [lineSelection, orderedLineKeys]);
+
+    const selectedLineKeys = useMemo(() => {
+      if (!lineSelection || !normalizedSelection) {
+        return new Set<string>();
+      }
+
+      return new Set(
+        orderedLineKeys.filter((lineKey) =>
+          isLineKeyInSelection(lineKey, lineSelection, orderedLineKeys),
+        ),
+      );
+    }, [lineSelection, normalizedSelection, orderedLineKeys]);
+
+    const selectionStartKey = normalizedSelection?.startKey ?? null;
+    const selectionEndKey = normalizedSelection?.endKey ?? null;
+
+    useEffect(() => {
+      if (!onRegisterScrollToRow) {
+        return;
+      }
+
+      onRegisterScrollToRow((rowId: string) => {
+        document
+          .querySelector(`[data-diff-row-id="${CSS.escape(rowId)}"]`)
+          ?.scrollIntoView({ block: "center" });
+      });
+    }, [onRegisterScrollToRow]);
+
+    return (
+    <div className="w-full">
       {rows.map((row) => (
-        <VirtualDiffRowView
+        <div
           key={row.id}
+          className={getDiffRowLayoutClassName(row)}
+          data-diff-row-id={row.id}
+        >
+          <VirtualDiffRowView
           row={row}
           canComment={canComment}
-          lineSelection={lineSelection}
-          orderedLineKeys={orderedLineKeys}
+          selectedLineKeys={selectedLineKeys}
+          selectionStartKey={selectionStartKey}
+          selectionEndKey={selectionEndKey}
           commentBody={commentBody}
           submitError={submitError}
           isSubmitting={isSubmitting}
@@ -197,10 +265,14 @@ const StaticDiffBody = memo(
           onCancelComment={onCancelComment}
           onSubmitComment={onSubmitComment}
           onExpandGap={onExpandGap}
+          onResolveThread={onResolveThread}
+          resolvingDiscussionId={resolvingDiscussionId}
         />
+        </div>
       ))}
     </div>
-  ),
+    );
+  },
 );
 
 const VirtualizedDiffBody = memo(
@@ -221,6 +293,9 @@ const VirtualizedDiffBody = memo(
     onCancelComment,
     onSubmitComment,
     onExpandGap,
+    onRegisterScrollToRow,
+    onResolveThread,
+    resolvingDiscussionId,
   }: {
     rows: VirtualDiffRow[];
     canComment: boolean;
@@ -237,17 +312,63 @@ const VirtualizedDiffBody = memo(
     onCommentBodyChange: (value: string) => void;
     onCancelComment: () => void;
     onSubmitComment: () => void;
-    onExpandGap?: (gapId: string) => void;
-  }) => {
+    onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
+    onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
+  } & DiffThreadResolveProps) => {
     const parentRef = useRef<HTMLDivElement>(null);
+    const rowIds = useMemo(() => rows.map((row) => row.id).join("\0"), [rows]);
+    const normalizedSelection = useMemo(() => {
+      if (!lineSelection) {
+        return null;
+      }
+
+      return normalizeDiffLineSelection(
+        lineSelection.startKey,
+        lineSelection.endKey,
+        orderedLineKeys,
+      );
+    }, [lineSelection, orderedLineKeys]);
+
+    const selectedLineKeys = useMemo(() => {
+      if (!lineSelection || !normalizedSelection) {
+        return new Set<string>();
+      }
+
+      return new Set(
+        orderedLineKeys.filter((lineKey) =>
+          isLineKeyInSelection(lineKey, lineSelection, orderedLineKeys),
+        ),
+      );
+    }, [lineSelection, normalizedSelection, orderedLineKeys]);
+
+    const selectionStartKey = normalizedSelection?.startKey ?? null;
+    const selectionEndKey = normalizedSelection?.endKey ?? null;
 
     const virtualizer = useVirtualizer({
       count: rows.length,
       getScrollElement: () => parentRef.current,
       estimateSize: (index) => rows[index]?.estimatedHeight ?? 20,
+      getItemKey: (index) => rows[index]?.id ?? index,
       overscan: 24,
-      measureElement: (element) => element.getBoundingClientRect().height,
+      measureElement: (element) => {
+        const index = Number(element.getAttribute("data-index"));
+        const row = rows[index];
+
+        if (
+          row?.type === "line" ||
+          row?.type === "hunk" ||
+          row?.type === "expand"
+        ) {
+          return row.estimatedHeight;
+        }
+
+        return element.getBoundingClientRect().height;
+      },
     });
+
+    useLayoutEffect(() => {
+      virtualizer.measure();
+    }, [rowIds, virtualizer]);
 
     useEffect(() => {
       if (!commentFormLineKey) {
@@ -265,10 +386,23 @@ const VirtualizedDiffBody = memo(
       }
     }, [commentFormLineKey, rows, virtualizer]);
 
+    useEffect(() => {
+      if (!onRegisterScrollToRow) {
+        return;
+      }
+
+      onRegisterScrollToRow((rowId: string) => {
+        const index = rows.findIndex((row) => row.id === rowId);
+        if (index >= 0) {
+          virtualizer.scrollToIndex(index, { align: "center" });
+        }
+      });
+    }, [onRegisterScrollToRow, rows, virtualizer]);
+
     return (
       <div ref={parentRef} className="diff-viewport max-h-[min(70vh,900px)] overflow-auto overscroll-contain">
         <div
-          className="relative w-full min-w-max"
+          className="relative w-full"
           style={{
             height: `${virtualizer.getTotalSize()}px`,
             width: "100%",
@@ -282,8 +416,9 @@ const VirtualizedDiffBody = memo(
               <div
                 key={row.id}
                 data-index={virtualRow.index}
+                data-diff-row-id={row.id}
                 ref={virtualizer.measureElement}
-                className="[contain:layout_style_paint]"
+                className={getDiffRowLayoutClassName(row)}
                 style={{
                   position: "absolute",
                   top: 0,
@@ -295,8 +430,9 @@ const VirtualizedDiffBody = memo(
                 <VirtualDiffRowView
                   row={row}
                   canComment={canComment}
-                  lineSelection={lineSelection}
-                  orderedLineKeys={orderedLineKeys}
+                  selectedLineKeys={selectedLineKeys}
+                  selectionStartKey={selectionStartKey}
+                  selectionEndKey={selectionEndKey}
                   commentBody={commentBody}
                   submitError={submitError}
                   isSubmitting={isSubmitting}
@@ -308,6 +444,8 @@ const VirtualizedDiffBody = memo(
                   onCancelComment={onCancelComment}
                   onSubmitComment={onSubmitComment}
                   onExpandGap={onExpandGap}
+                  onResolveThread={onResolveThread}
+                  resolvingDiscussionId={resolvingDiscussionId}
                 />
               </div>
             );
@@ -337,6 +475,9 @@ export const DiffBody = memo(
     onCancelComment,
     onSubmitComment,
     onExpandGap,
+    onRegisterScrollToRow,
+    onResolveThread,
+    resolvingDiscussionId,
   }: {
     rows: VirtualDiffRow[];
     virtualized: boolean;
@@ -354,8 +495,9 @@ export const DiffBody = memo(
     onCommentBodyChange: (value: string) => void;
     onCancelComment: () => void;
     onSubmitComment: () => void;
-    onExpandGap?: (gapId: string) => void;
-  }) => {
+    onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
+    onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
+  } & DiffThreadResolveProps) => {
     if (virtualized) {
       return (
         <VirtualizedDiffBody
@@ -375,6 +517,9 @@ export const DiffBody = memo(
           onCancelComment={onCancelComment}
           onSubmitComment={onSubmitComment}
           onExpandGap={onExpandGap}
+          onRegisterScrollToRow={onRegisterScrollToRow}
+          onResolveThread={onResolveThread}
+          resolvingDiscussionId={resolvingDiscussionId}
         />
       );
     }
@@ -396,6 +541,9 @@ export const DiffBody = memo(
         onCancelComment={onCancelComment}
         onSubmitComment={onSubmitComment}
         onExpandGap={onExpandGap}
+        onRegisterScrollToRow={onRegisterScrollToRow}
+        onResolveThread={onResolveThread}
+        resolvingDiscussionId={resolvingDiscussionId}
       />
     );
   },

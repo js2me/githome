@@ -65,7 +65,10 @@ export class RepositoryVM extends VM implements RepositoryModelContext {
           throw new Error("GitLab connection is not configured");
         }
 
-        return gitlabApi.getProjectReadme(connection, this.projectId, signal);
+        return gitlabApi.getProjectReadme(connection, this.projectId, {
+          ref: this.projectQuery.data?.defaultBranch ?? null,
+          signal,
+        });
       },
       options: () => ({
         enabled:

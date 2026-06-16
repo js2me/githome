@@ -19,6 +19,13 @@ export interface DiffExpandGap {
 
 export type DiffExpandState = Record<string, number | "all">;
 
+export type DiffExpandMode = "chunk-down" | "chunk-up" | "all";
+
+export const getEndExpandStateKey = (gapId: string) => `${gapId}:end`;
+
+export const supportsExpandFromEnd = (gap: DiffExpandGap) =>
+  gap.id.startsWith("between:") || gap.id === "bottom";
+
 export const getHunkLineRanges = (hunks: DiffHunk[]): DiffHunkLineRange[] =>
   hunks.map((hunk) => {
     const newEnd = hunk.endingNewLine - 1;
@@ -94,23 +101,26 @@ export const getDiffExpandGaps = (
   const lastHunk = hunks[hunks.length - 1];
   const bottomStart = lastHunk.endingNewLine;
 
-  gaps.push({
-    id: "bottom",
-    direction: "down",
-    hiddenCount:
-      fileLineCount === null
-        ? null
-        : Math.max(0, fileLineCount - bottomStart + 1),
-    newLineStart: bottomStart,
-    newLineEnd: fileLineCount,
-  });
+  if (fileLineCount !== null) {
+    const hiddenBelow = fileLineCount - bottomStart + 1;
+
+    if (hiddenBelow > 0) {
+      gaps.push({
+        id: "bottom",
+        direction: "down",
+        hiddenCount: hiddenBelow,
+        newLineStart: bottomStart,
+        newLineEnd: fileLineCount,
+      });
+    }
+  }
 
   return gaps.filter(
     (gap) => gap.hiddenCount === null || gap.hiddenCount > 0,
   );
 };
 
-export const getRevealedLineCount = (
+export const getRevealedFromStart = (
   gap: DiffExpandGap,
   expandState: DiffExpandState,
 ): number => {
@@ -120,19 +130,63 @@ export const getRevealedLineCount = (
     return gap.hiddenCount ?? Number.MAX_SAFE_INTEGER;
   }
 
-  return value ?? 0;
+  return typeof value === "number" ? value : 0;
+};
+
+export const getRevealedFromEnd = (
+  gap: DiffExpandGap,
+  expandState: DiffExpandState,
+): number => {
+  if (expandState[gap.id] === "all") {
+    return 0;
+  }
+
+  const value = expandState[getEndExpandStateKey(gap.id)];
+  return typeof value === "number" ? value : 0;
+};
+
+/** @deprecated use getRevealedFromStart */
+export const getRevealedLineCount = (
+  gap: DiffExpandGap,
+  expandState: DiffExpandState,
+): number => getRevealedFromStart(gap, expandState);
+
+export const getRemainingHiddenCount = (
+  gap: DiffExpandGap,
+  expandState: DiffExpandState,
+): number => {
+  if (gap.hiddenCount === null) {
+    return 0;
+  }
+
+  if (expandState[gap.id] === "all") {
+    return 0;
+  }
+
+  const fromStart = getRevealedFromStart(gap, expandState);
+  const fromEnd = supportsExpandFromEnd(gap)
+    ? getRevealedFromEnd(gap, expandState)
+    : 0;
+  const overlap = Math.max(0, fromStart + fromEnd - gap.hiddenCount);
+
+  return Math.max(0, gap.hiddenCount - fromStart - fromEnd + overlap);
 };
 
 export const isGapFullyExpanded = (
   gap: DiffExpandGap,
   expandState: DiffExpandState,
-): boolean => {
-  if (gap.hiddenCount === null) {
-    return false;
+): boolean => getRemainingHiddenCount(gap, expandState) <= 0;
+
+const getNextChunkReveal = (revealed: number, remaining: number) => {
+  if (remaining <= 0) {
+    return "all" as const;
   }
 
-  const revealed = getRevealedLineCount(gap, expandState);
-  return revealed >= gap.hiddenCount;
+  if (remaining <= DIFF_EXPAND_CHUNK) {
+    return "all" as const;
+  }
+
+  return revealed + DIFF_EXPAND_CHUNK;
 };
 
 export const getNextExpandReveal = (
@@ -148,23 +202,41 @@ export const getNextExpandReveal = (
     return DIFF_EXPAND_CHUNK;
   }
 
-  const revealed = getRevealedLineCount(gap, expandState);
-  const remaining = gap.hiddenCount - revealed;
+  const revealed = getRevealedFromStart(gap, expandState);
+  const fromEnd = supportsExpandFromEnd(gap)
+    ? getRevealedFromEnd(gap, expandState)
+    : 0;
+  const overlap = Math.max(0, revealed + fromEnd - gap.hiddenCount);
+  const remaining = gap.hiddenCount - revealed - fromEnd + overlap;
 
-  if (remaining <= 0) {
-    return "all";
+  return getNextChunkReveal(revealed, remaining);
+};
+
+export const getNextExpandRevealFromEnd = (
+  gap: DiffExpandGap,
+  expandState: DiffExpandState,
+): number | "all" => {
+  if (gap.hiddenCount === null) {
+    const current = expandState[getEndExpandStateKey(gap.id)];
+    if (typeof current === "number") {
+      return current + DIFF_EXPAND_CHUNK;
+    }
+
+    return DIFF_EXPAND_CHUNK;
   }
 
-  if (remaining <= DIFF_EXPAND_CHUNK) {
-    return "all";
-  }
+  const revealed = getRevealedFromEnd(gap, expandState);
+  const fromStart = getRevealedFromStart(gap, expandState);
+  const overlap = Math.max(0, fromStart + revealed - gap.hiddenCount);
+  const remaining = gap.hiddenCount - fromStart - revealed + overlap;
 
-  return revealed + DIFF_EXPAND_CHUNK;
+  return getNextChunkReveal(revealed, remaining);
 };
 
 export const getVisibleLineRange = (
   gap: DiffExpandGap,
   revealCount: number,
+  expandState: DiffExpandState = {},
 ): { startLine: number; endLine: number } | null => {
   if (gap.newLineEnd === null && gap.direction === "down") {
     return {
@@ -187,7 +259,30 @@ export const getVisibleLineRange = (
     return null;
   }
 
-  return { startLine, endLine: visibleEnd };
+  const fromEnd = supportsExpandFromEnd(gap)
+    ? getRevealedFromEnd(gap, expandState)
+    : 0;
+  const maxEndLine =
+    gap.newLineEnd !== null ? gap.newLineEnd - fromEnd : visibleEnd;
+
+  return { startLine, endLine: Math.min(visibleEnd, maxEndLine) };
+};
+
+export const getVisibleLineRangeFromEnd = (
+  gap: DiffExpandGap,
+  revealCount: number,
+  expandState: DiffExpandState,
+): { startLine: number; endLine: number } | null => {
+  const endLine = gap.newLineEnd ?? gap.newLineStart;
+  const fromStart = getRevealedFromStart(gap, expandState);
+  const minStartLine = gap.newLineStart + fromStart;
+  const startLine = Math.max(minStartLine, endLine - revealCount + 1);
+
+  if (startLine > endLine) {
+    return null;
+  }
+
+  return { startLine, endLine };
 };
 
 export const buildContextLines = (
@@ -210,32 +305,22 @@ export const buildContextLines = (
   return lines;
 };
 
-export const getExpandGapLabel = (
-  gap: DiffExpandGap,
+export const getChunkExpandTooltip = (
+  direction: "up" | "down",
   expandState: DiffExpandState,
+  gap: DiffExpandGap,
 ): string => {
-  const hiddenCount = gap.hiddenCount;
+  const remaining = getRemainingHiddenCount(gap, expandState);
+  const count = Math.min(DIFF_EXPAND_CHUNK, remaining);
 
-  if (hiddenCount === null) {
-    return "Показать строки ниже";
+  if (count <= 0) {
+    return direction === "up" ? "Показать строки выше" : "Показать строки ниже";
   }
 
-  const revealed = getRevealedLineCount(gap, expandState);
-  const remaining = hiddenCount - revealed;
-
-  if (remaining <= 0) {
-    return "";
-  }
-
-  if (remaining <= DIFF_EXPAND_CHUNK) {
-    return gap.direction === "up"
-      ? `Показать ${remaining} ${pluralLines(remaining)} выше`
-      : `Показать ${remaining} ${pluralLines(remaining)} ниже`;
-  }
-
-  return gap.direction === "up"
-    ? `Показать ${DIFF_EXPAND_CHUNK} ${pluralLines(DIFF_EXPAND_CHUNK)} выше`
-    : `Показать ${DIFF_EXPAND_CHUNK} ${pluralLines(DIFF_EXPAND_CHUNK)} ниже`;
+  const lines = pluralLines(count);
+  return direction === "up"
+    ? `Показать ${count} ${lines} выше`
+    : `Показать ${count} ${lines} ниже`;
 };
 
 const pluralLines = (count: number) => {
