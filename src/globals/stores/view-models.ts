@@ -14,10 +14,10 @@ export class ViewModelsStore extends ViewModelStoreBase {
         useReactIds: true,
         observable: {
           viewModels: {
-            useDecorators: false,
+            useDecorators: true,
           },
           viewModelStores: {
-            useDecorators: false,
+            useDecorators: true,
           },
         },
       },

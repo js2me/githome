@@ -14,21 +14,19 @@ export const MergeRequestsPage = withViewModel(MergeRequestsVM, ({ model }) => {
         <StatusMessage>Загружаем merge requests...</StatusMessage>
       )}
 
-      {mrList.errorMessage && !mrList.isLoading && (
+      {mrList.showLoadError && (
         <StatusMessage error>{mrList.errorMessage}</StatusMessage>
       )}
 
-      {!mrList.isLoading &&
-        !mrList.errorMessage &&
-        mrList.mergeRequests.length === 0 && (
+      {mrList.showEmptyListMessage && (
           <StatusMessage>Открытых merge requests не найдено.</StatusMessage>
         )}
 
-      {mrList.mergeRequests.length > 0 && (
+      {mrList.showList && (
         <MergeRequestList
           mergeRequests={mrList.mergeRequests}
           selectedMergeRequestIid={mrList.selectedMergeRequestIid}
-          onSelect={(mergeRequest) => mrList.openMergeRequest(mergeRequest)}
+          onSelect={mrList.openMergeRequest}
         />
       )}
     </section>

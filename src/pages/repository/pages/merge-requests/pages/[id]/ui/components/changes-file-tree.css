@@ -1,0 +1,208 @@
+.changes-file-tree {
+  width: 100%;
+  --file-row-height: 32px;
+  --file-row-level-padding: 16px;
+}
+
+.changes-file-tree__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--file-tree-border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--file-tree-text);
+}
+
+.changes-file-tree__count {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--color-canvas-emphasis);
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--file-tree-muted);
+}
+
+.changes-file-tree__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--file-tree-border);
+  padding: 8px 12px;
+  color: var(--file-tree-muted);
+}
+
+.changes-file-tree__search-input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  color: var(--file-tree-text);
+  outline: none;
+}
+
+.changes-file-tree__search-input::placeholder {
+  color: var(--file-tree-muted);
+}
+
+.changes-file-tree__nav {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 0;
+}
+
+.changes-file-tree__row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: var(--file-row-height);
+  cursor: pointer;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  padding-right: 8px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--file-tree-text);
+  transition: background-color 0s linear;
+}
+
+.changes-file-tree__row:hover {
+  background: var(--file-tree-hover);
+}
+
+.changes-file-tree__row--active {
+  background: var(--file-tree-active);
+}
+
+.changes-file-tree__row--branch::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: calc((var(--tree-depth) - 1) * var(--file-row-level-padding) + 14px);
+  width: calc(var(--file-row-level-padding) - 6px);
+  height: 1px;
+  background: var(--file-tree-border);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.changes-file-tree__row-icon {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-self: stretch;
+  width: 16px;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  background: var(--file-tree-bg);
+  color: var(--file-tree-muted);
+}
+
+.changes-file-tree__row:hover .changes-file-tree__row-icon {
+  background: var(--file-tree-hover);
+}
+
+.changes-file-tree__row--active .changes-file-tree__row-icon {
+  background: var(--file-tree-active);
+}
+
+.changes-file-tree__row-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.changes-file-tree__row-icon--tsx {
+  color: var(--color-file-tsx);
+}
+
+.changes-file-tree__row-icon--ts {
+  color: var(--color-file-ts);
+}
+
+.changes-file-tree__row-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.changes-file-tree__row-stats {
+  display: inline-flex;
+  shrink: 0;
+  align-items: center;
+  gap: 6px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.changes-file-tree__stat-added {
+  color: var(--file-tree-stats-added);
+}
+
+.changes-file-tree__stat-removed {
+  color: var(--file-tree-stats-removed);
+}
+
+.changes-file-tree__status-icon {
+  display: inline-flex;
+  height: 14px;
+  width: 14px;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.changes-file-tree__status-icon--added {
+  color: var(--file-tree-stats-added);
+}
+
+.changes-file-tree__status-icon--deleted {
+  color: var(--file-tree-stats-removed);
+}
+
+.changes-file-tree__status-icon--renamed {
+  color: var(--color-file-renamed);
+}
+
+.changes-file-tree__status-icon--modified {
+  color: var(--color-file-modified);
+}
+
+.changes-file-tree__children {
+  position: relative;
+}
+
+.changes-file-tree__children::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--tree-level) * var(--file-row-level-padding) - 2px);
+  width: calc(var(--file-row-level-padding));
+  pointer-events: none;
+  background: linear-gradient(
+      to right,
+      var(--file-tree-border) 1px,
+      transparent 1px
+    )
+    repeat-x 0 / var(--file-row-level-padding) 100%;
+}

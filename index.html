@@ -9,6 +9,43 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      (function () {
+        var handler = null;
+
+        window.__githomeFindShortcut = {
+          setHandler: function (nextHandler) {
+            handler = nextHandler;
+          },
+        };
+
+        document.addEventListener(
+          "keydown",
+          function (event) {
+            if (!(event.ctrlKey || event.metaKey)) {
+              return;
+            }
+
+            if (
+              event.key !== "f" &&
+              event.key !== "F" &&
+              event.code !== "KeyF"
+            ) {
+              return;
+            }
+
+            if (!handler) {
+              return;
+            }
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            handler();
+          },
+          true,
+        );
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

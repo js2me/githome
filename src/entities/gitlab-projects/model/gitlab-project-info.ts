@@ -1,69 +1,44 @@
-import { action, computed, makeObservable, observable } from "mobx";
-import { createQuery } from "mobx-tanstack-query/preset";
+import { action, computed } from "mobx";
 import type { Globals } from "@/globals";
-import { gitlabApi } from "@/shared/api/gitlab";
-import type { GitLabProject } from "@/shared/api/gitlab";
+import type { GitLabProjectDC } from "@/shared/api/gitlab";
+import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 
 export interface GitlabProjectInfoParams {
   globals: Globals;
+  abortSignal: AbortSignal;
 }
 
-type ProjectsQuery = {
-  data?: GitLabProject[];
-  isLoading: boolean;
-  isFetching: boolean;
-  error: unknown;
-};
-
 export class GitlabProjectInfoModel {
-  projectsQuery!: ProjectsQuery;
+  projectsQuery;
 
   constructor(private params: GitlabProjectInfoParams) {
-    this.projectsQuery = createQuery({
-      lazy: true,
-      queryKey: () => {
-        const connection = params.globals.stores.settings.activeConnection;
-        return [
-          "gitlab",
-          "frequent-projects",
-          connection?.id ?? null,
-          connection?.gitlabUrl ?? null,
-          connection?.gitToken ?? null,
-        ] as const;
-      },
-      queryFn: ({ signal }) => {
-        const connection = params.globals.stores.settings.activeConnection;
-        if (!connection) {
-          throw new Error("GitLab connection is not configured");
-        }
-
-        return gitlabApi.getFrequentProjects(connection, {
-          limit: 10,
-          signal,
-        });
-      },
-      options: () => ({
-        enabled: !!params.globals.stores.settings.activeConnection,
+    this.projectsQuery = createGitlabQuery<GitLabProjectDC[]>({
+      globals: params.globals,
+      abortSignal: params.abortSignal,
+      params: () => ({
+        path: "/projects",
+        query: {
+          membership: true,
+          order_by: "last_activity_at",
+          sort: "desc",
+          per_page: 10,
+          simple: false,
+        },
       }),
-    });
-
-    makeObservable(this, {
-      projectsQuery: observable,
-      projects: computed,
-      isLoading: computed,
-      errorMessage: computed,
-      openProject: action,
     });
   }
 
-  get projects(): GitLabProject[] {
+  @computed
+  get projects(): GitLabProjectDC[] {
     return this.projectsQuery.data ?? [];
   }
 
+  @computed
   get isLoading() {
-    return this.projectsQuery.isLoading || this.projectsQuery.isFetching;
+    return this.projectsQuery.isLoading;
   }
 
+  @computed
   get errorMessage() {
     const error = this.projectsQuery.error;
     if (!error) {
@@ -73,7 +48,8 @@ export class GitlabProjectInfoModel {
     return error instanceof Error ? error.message : "Не удалось загрузить проекты";
   }
 
-  openProject(project: GitLabProject) {
+  @action.bound
+  openProject(project: GitLabProjectDC) {
     this.params.globals.stores.repository.setProject(project);
     void this.params.globals.router.routes.repository.open({
       projectId: String(project.id),

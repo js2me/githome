@@ -24,7 +24,7 @@ export type DiffExpandMode = "chunk-down" | "chunk-up" | "all";
 export const getEndExpandStateKey = (gapId: string) => `${gapId}:end`;
 
 export const supportsExpandFromEnd = (gap: DiffExpandGap) =>
-  gap.id.startsWith("between:") || gap.id === "bottom";
+  gap.id === "top" || gap.id.startsWith("between:") || gap.id === "bottom";
 
 export const getHunkLineRanges = (hunks: DiffHunk[]): DiffHunkLineRange[] =>
   hunks.map((hunk) => {
@@ -142,6 +142,16 @@ export const getRevealedFromEnd = (
   }
 
   const value = expandState[getEndExpandStateKey(gap.id)];
+
+  if (value === "all") {
+    if (gap.hiddenCount === null) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    const fromStart = getRevealedFromStart(gap, expandState);
+    return Math.max(0, gap.hiddenCount - fromStart);
+  }
+
   return typeof value === "number" ? value : 0;
 };
 
@@ -176,6 +186,80 @@ export const isGapFullyExpanded = (
   gap: DiffExpandGap,
   expandState: DiffExpandState,
 ): boolean => getRemainingHiddenCount(gap, expandState) <= 0;
+
+export const getGapRevealedLineNumbers = (
+  gap: DiffExpandGap,
+  contextLinesByGapId: Record<string, DiffDisplayLine[]>,
+): Set<number> => {
+  const lineNumbers = new Set<number>();
+
+  for (const key of [gap.id, getEndExpandStateKey(gap.id)]) {
+    for (const line of contextLinesByGapId[key] ?? []) {
+      if (line.newLine !== null) {
+        lineNumbers.add(line.newLine);
+      }
+    }
+  }
+
+  return lineNumbers;
+};
+
+export const isGapClosedByContext = (
+  gap: DiffExpandGap,
+  contextLinesByGapId: Record<string, DiffDisplayLine[]>,
+): boolean => {
+  if (gap.hiddenCount === null || gap.hiddenCount <= 0) {
+    return false;
+  }
+
+  const revealed = getGapRevealedLineNumbers(gap, contextLinesByGapId);
+  if (revealed.size === 0) {
+    return false;
+  }
+
+  if (revealed.size >= gap.hiddenCount) {
+    return true;
+  }
+
+  if (gap.newLineEnd === null) {
+    return false;
+  }
+
+  for (let lineNumber = gap.newLineStart; lineNumber <= gap.newLineEnd; lineNumber += 1) {
+    if (!revealed.has(lineNumber)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+export const hasRevealedGapContext = (
+  gapId: string,
+  contextLinesByGapId: Record<string, DiffDisplayLine[]>,
+): boolean =>
+  (contextLinesByGapId[gapId]?.length ?? 0) > 0 ||
+  (contextLinesByGapId[getEndExpandStateKey(gapId)]?.length ?? 0) > 0;
+
+export const shouldShowGapExpandBar = (
+  gap: DiffExpandGap,
+  expandState: DiffExpandState,
+  contextLinesByGapId: Record<string, DiffDisplayLine[]>,
+): boolean => {
+  if (isGapFullyExpanded(gap, expandState)) {
+    return false;
+  }
+
+  return !isGapClosedByContext(gap, contextLinesByGapId);
+};
+
+export const shouldEmbedHunkHeaderInExpandBar = (
+  gap: DiffExpandGap,
+  expandState: DiffExpandState,
+  contextLinesByGapId: Record<string, DiffDisplayLine[]>,
+): boolean =>
+  shouldShowGapExpandBar(gap, expandState, contextLinesByGapId) &&
+  !hasRevealedGapContext(gap.id, contextLinesByGapId);
 
 const getNextChunkReveal = (revealed: number, remaining: number) => {
   if (remaining <= 0) {
@@ -317,23 +401,62 @@ export const getChunkExpandTooltip = (
     return direction === "up" ? "Показать строки выше" : "Показать строки ниже";
   }
 
-  const lines = pluralLines(count);
+  const lines = pluralLinesAccusative(count);
   return direction === "up"
     ? `Показать ${count} ${lines} выше`
     : `Показать ${count} ${lines} ниже`;
 };
 
-const pluralLines = (count: number) => {
+export const getExpandBarLabel = (
+  gap: DiffExpandGap,
+  expandState: DiffExpandState,
+): string => {
+  const remaining = getRemainingHiddenCount(gap, expandState);
+  const count =
+    remaining > 0 ? remaining : gap.hiddenCount !== null ? gap.hiddenCount : 0;
+
+  if (count > 0) {
+    return formatHiddenLinesLabel(count);
+  }
+
+  return "Скрытые строки без изменений";
+};
+
+type LinePluralCategory = "one" | "few" | "many";
+
+const getLinePluralCategory = (count: number): LinePluralCategory => {
   const mod10 = count % 10;
   const mod100 = count % 100;
 
   if (mod10 === 1 && mod100 !== 11) {
-    return "строку";
+    return "one";
   }
 
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
-    return "строки";
+    return "few";
   }
 
-  return "строк";
+  return "many";
+};
+
+const pluralLinesAccusative = (count: number) => {
+  switch (getLinePluralCategory(count)) {
+    case "one":
+      return "строку";
+    case "few":
+      return "строки";
+    default:
+      return "строк";
+  }
+};
+
+const formatHiddenLinesLabel = (count: number): string => {
+  switch (getLinePluralCategory(count)) {
+    case "one":
+      return `Скрыта ${count} строка без изменений`;
+    case "few":
+      return `Скрыты ${count} строки без изменений`;
+    default:
+      return `Скрыто ${count} строк без изменений`;
+  }
 };

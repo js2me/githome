@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { GitLabMergeRequestChange } from "@/shared/api/gitlab";
+import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
 
 const GENERATED_DOCS_URL =
   "https://docs.gitlab.com/ee/user/project/merge_requests/changes.html#collapse-generated-files";
@@ -10,13 +10,13 @@ export const DiffFileCollapseBanner = memo(
     isLoading,
     onExpand,
   }: {
-    change: GitLabMergeRequestChange;
+    change: GitLabMergeRequestChangeDC;
     isLoading: boolean;
     onExpand: () => void;
   }) => {
-    if (change.tooLarge) {
+    if (change.too_large) {
       return (
-        <div className="border-b border-[#dbdbdb] bg-orange-50 px-4 py-4 text-sm text-[#303030] dark:border-[#30363d] dark:bg-[#2d2218] dark:text-[#e6edf3]">
+        <div className="border-b border-[var(--color-border-default)] bg-orange-50 px-4 py-4 text-sm text-[var(--color-fg-default)] dark:bg-[var(--color-collapse-bg)]">
           <p className="m-0">
             Diff слишком большой для отображения в этом интерфейсе.
           </p>
@@ -24,7 +24,7 @@ export const DiffFileCollapseBanner = memo(
       );
     }
 
-    const message = change.generatedFile ? (
+    const message = change.generated_file ? (
       <>
         Сгенерированные файлы по умолчанию свёрнуты. Чтобы изменить это
         поведение, отредактируйте файл{" "}
@@ -33,7 +33,7 @@ export const DiffFileCollapseBanner = memo(
         </code>
         .{" "}
         <a
-          className="text-[#1f75cb] hover:underline dark:text-[#61afef]"
+          className="text-[var(--color-fg-link)] hover:underline"
           href={GENERATED_DOCS_URL}
           rel="noopener noreferrer"
           target="_blank"
@@ -50,10 +50,10 @@ export const DiffFileCollapseBanner = memo(
     );
 
     return (
-      <div className="border-b border-[#dbdbdb] bg-orange-50 px-4 py-4 text-sm text-[#303030] dark:border-[#30363d] dark:bg-[#2d2218] dark:text-[#e6edf3]">
+      <div className="border-b border-[var(--color-border-default)] bg-orange-50 px-4 py-4 text-sm text-[var(--color-fg-default)] dark:bg-[var(--color-collapse-bg)]">
         <p className="m-0">{message}</p>
         <button
-          className="mt-3 cursor-pointer rounded-md border border-[#868686] bg-[#333238] px-3 py-1.5 text-[13px] font-semibold text-white transition enabled:hover:bg-[#44434a] disabled:cursor-wait disabled:opacity-60 dark:border-[#5c5c66] dark:bg-[#28272d] dark:enabled:hover:bg-[#35343c]"
+          className="mt-3 cursor-pointer rounded-md border border-[var(--color-collapse-btn-border)] bg-[var(--color-collapse-btn-bg)] px-3 py-1.5 text-[13px] font-semibold text-white transition enabled:hover:bg-[var(--color-collapse-btn-bg-hover)] disabled:cursor-wait disabled:opacity-60"
           type="button"
           disabled={isLoading}
           onClick={onExpand}

@@ -1,4 +1,4 @@
-import { resolveGitlabLanguage } from "./gitlab-lang";
+import { resolveGitlabLanguage } from "@/shared/lib/gitlab/syntax/lang";
 import { renderSyntaxTokensToHtml } from "./render-syntax-html";
 import {
   highlightCodeBlockTokens,
@@ -9,6 +9,60 @@ const stripInlineStyles = (root: ParentNode) => {
   for (const element of root.querySelectorAll("[style]")) {
     element.removeAttribute("style");
   }
+};
+
+const waitForVisibility = (element: HTMLElement) =>
+  new Promise<void>((resolve) => {
+    if (typeof IntersectionObserver === "undefined") {
+      resolve();
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          observer.disconnect();
+          resolve();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "240px 0px",
+        threshold: 0,
+      },
+    );
+
+    observer.observe(element);
+  });
+
+const enhanceCodeBlock = async (pre: HTMLElement, theme: SyntaxTheme) => {
+  const code = pre.querySelector("code");
+  if (!code || pre.dataset.shikiEnhanced === "true") {
+    return;
+  }
+
+  const source = code.textContent ?? "";
+  if (!source.trim()) {
+    return;
+  }
+
+  stripInlineStyles(pre);
+
+  const lang = resolveGitlabLanguage(pre.className);
+  if (!lang) {
+    pre.classList.add("gitlab-markdown-plain-code");
+    return;
+  }
+
+  const lines = await highlightCodeBlockTokens(source, lang, theme);
+  if (lines.length === 0) {
+    pre.classList.add("gitlab-markdown-plain-code");
+    return;
+  }
+
+  code.innerHTML = renderSyntaxTokensToHtml(lines);
+  pre.classList.add("gitlab-markdown-shiki-code");
+  pre.dataset.shikiEnhanced = "true";
 };
 
 export const enhanceMarkdownCodeBlocks = async (
@@ -32,33 +86,9 @@ export const enhanceMarkdownCodeBlocks = async (
     }
   }
 
+  await waitForVisibility(root);
+
   for (const pre of preElements) {
-    const code = pre.querySelector("code");
-    if (!code) {
-      continue;
-    }
-
-    const source = code.textContent ?? "";
-    if (!source.trim()) {
-      continue;
-    }
-
-    stripInlineStyles(pre);
-
-    const lang = resolveGitlabLanguage(pre.className);
-    if (!lang) {
-      pre.classList.add("gitlab-markdown-plain-code");
-      continue;
-    }
-
-    const lines = await highlightCodeBlockTokens(source, lang, theme);
-    if (lines.length === 0) {
-      pre.classList.add("gitlab-markdown-plain-code");
-      continue;
-    }
-
-    code.innerHTML = renderSyntaxTokensToHtml(lines);
-    pre.classList.add("gitlab-markdown-shiki-code");
-    pre.dataset.shikiEnhanced = "true";
+    await enhanceCodeBlock(pre, theme);
   }
 };

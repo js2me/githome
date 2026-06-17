@@ -1,8 +1,10 @@
 import { createHighlighter } from "shiki/bundle/web";
-import { bundledLanguages } from "shiki/bundle/web";
-import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import type { BundledLanguage, BundledTheme, Highlighter } from "shiki/bundle/web";
+import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import type { ParsedFileDiff } from "@/shared/lib/parse-unified-diff";
+import { getDiffLineTokenKey } from "./diff-line-token-key";
+import { loadSyntaxLanguage } from "./lazy-language-loaders";
+import type { SyntaxLanguage } from "./supported-languages";
 
 export type SyntaxTheme = Extract<BundledTheme, "github-light" | "github-dark">;
 
@@ -43,20 +45,18 @@ const getHighlighter = () => {
   return highlighterPromise;
 };
 
-const ensureLanguage = async (lang: BundledLanguage) => {
+const ensureLanguage = async (lang: SyntaxLanguage) => {
   const highlighter = await getHighlighter();
 
   if (highlighter.getLoadedLanguages().includes(lang)) {
     return true;
   }
 
-  const loader = bundledLanguages[lang];
-  if (!loader) {
-    return false;
-  }
-
-  await highlighter.loadLanguage(await loader());
-  return true;
+  return loadSyntaxLanguage(lang, (registration) => {
+    highlighter.loadLanguage(
+      registration as Parameters<Highlighter["loadLanguage"]>[0],
+    );
+  });
 };
 
 const splitFileLines = (content: string) => {
@@ -70,13 +70,13 @@ const splitFileLines = (content: string) => {
 
 const buildCacheKey = (
   content: string,
-  lang: BundledLanguage,
+  lang: SyntaxLanguage,
   theme: SyntaxTheme,
 ) => `${theme}:${lang}:${content.length}:${content.slice(0, 64)}:${content.slice(-64)}`;
 
 const buildParsedDiffCacheKey = (
   parsed: ParsedFileDiff,
-  lang: BundledLanguage,
+  lang: SyntaxLanguage,
   theme: SyntaxTheme,
 ) => {
   const parts: string[] = [theme, lang];
@@ -108,9 +108,29 @@ const trimCache = <K, V>(cache: Map<K, V>, maxSize: number) => {
   }
 };
 
+const tokenizeSource = async (
+  source: string,
+  lang: SyntaxLanguage,
+  theme: SyntaxTheme,
+) => {
+  const highlighter = await getHighlighter();
+  const { tokens } = highlighter.codeToTokens(source, {
+    lang: lang as BundledLanguage,
+    theme,
+  });
+
+  return tokens.map((line) =>
+    line.map((token) => ({
+      content: token.content,
+      color: token.color,
+      fontStyle: token.fontStyle,
+    })),
+  );
+};
+
 export const highlightContentToLineTokens = async (
   content: string,
-  lang: BundledLanguage,
+  lang: SyntaxLanguage,
   theme: SyntaxTheme,
 ): Promise<SyntaxLineTokens> =>
   scheduleHighlight(() =>
@@ -119,7 +139,7 @@ export const highlightContentToLineTokens = async (
 
 const highlightContentToLineTokensInternal = async (
   content: string,
-  lang: BundledLanguage,
+  lang: SyntaxLanguage,
   theme: SyntaxTheme,
 ): Promise<SyntaxLineTokens> => {
   const cacheKey = buildCacheKey(content, lang, theme);
@@ -133,22 +153,14 @@ const highlightContentToLineTokensInternal = async (
     return new Map();
   }
 
-  const highlighter = await getHighlighter();
   const fileLines = splitFileLines(content);
   const source = fileLines.join("\n");
-  const { tokens } = highlighter.codeToTokens(source, { lang, theme });
+  const tokenLines = await tokenizeSource(source, lang, theme);
 
   const lineTokens: SyntaxLineTokens = new Map();
 
-  for (const [index, line] of tokens.entries()) {
-    lineTokens.set(
-      index + 1,
-      line.map((token) => ({
-        content: token.content,
-        color: token.color,
-        fontStyle: token.fontStyle,
-      })),
-    );
+  for (const [index, line] of tokenLines.entries()) {
+    lineTokens.set(index + 1, line);
   }
 
   lineCache.set(cacheKey, lineTokens);
@@ -159,7 +171,7 @@ const highlightContentToLineTokensInternal = async (
 
 const highlightCodeBlockTokensInternal = async (
   content: string,
-  lang: BundledLanguage,
+  lang: SyntaxLanguage,
   theme: SyntaxTheme,
 ): Promise<SyntaxToken[][]> => {
   const isLoaded = await ensureLanguage(lang);
@@ -167,21 +179,12 @@ const highlightCodeBlockTokensInternal = async (
     return [];
   }
 
-  const highlighter = await getHighlighter();
-  const { tokens } = highlighter.codeToTokens(content, { lang, theme });
-
-  return tokens.map((line) =>
-    line.map((token) => ({
-      content: token.content,
-      color: token.color,
-      fontStyle: token.fontStyle,
-    })),
-  );
+  return tokenizeSource(content, lang, theme);
 };
 
 export const highlightCodeBlockTokens = async (
   content: string,
-  lang: BundledLanguage,
+  lang: SyntaxLanguage,
   theme: SyntaxTheme,
 ): Promise<SyntaxToken[][]> =>
   scheduleHighlight(() =>
@@ -190,7 +193,7 @@ export const highlightCodeBlockTokens = async (
 
 export const highlightLineText = async (
   text: string,
-  lang: BundledLanguage,
+  lang: SyntaxLanguage,
   theme: SyntaxTheme,
 ): Promise<SyntaxToken[]> => {
   const lines = await highlightCodeBlockTokens(text, lang, theme);
@@ -199,7 +202,7 @@ export const highlightLineText = async (
 
 export const highlightParsedDiffLines = async (
   parsed: ParsedFileDiff,
-  lang: BundledLanguage,
+  lang: SyntaxLanguage,
   theme: SyntaxTheme,
 ): Promise<Map<string, SyntaxToken[]>> =>
   scheduleHighlight(async () => {
@@ -221,10 +224,10 @@ export const highlightParsedDiffLines = async (
       const tokenLines = await highlightCodeBlockTokensInternal(text, lang, theme);
 
       for (const [index, line] of lines.entries()) {
-        const key =
-          line.type === "delete"
-            ? `old:${line.oldLine ?? index}`
-            : `new:${line.newLine ?? line.oldLine ?? index}`;
+        const key = getDiffLineTokenKey(line);
+        if (key.endsWith(":null")) {
+          continue;
+        }
 
         result.set(key, tokenLines[index] ?? [{ content: line.text || " " }]);
       }

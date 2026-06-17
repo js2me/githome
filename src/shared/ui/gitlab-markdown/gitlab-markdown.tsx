@@ -1,15 +1,15 @@
 import { memo, useEffect, useRef, useState } from "react";
-import type { GitLabConnection } from "@/shared/api/gitlab";
+import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
 import { gitlabApi } from "@/shared/api/gitlab";
 import {
   getCachedGitLabMarkdown,
   getGitLabMarkdownCacheKey,
   setCachedGitLabMarkdown,
-} from "@/shared/lib/gitlab-markdown-cache";
+} from "@/shared/lib/gitlab/markdown-cache";
 import {
   postProcessGitLabHtml,
   sanitizeGitlabCodeBlocks,
-} from "@/shared/lib/post-process-gitlab-html";
+} from "@/shared/lib/gitlab/post-process-html";
 import { enhanceMarkdownCodeBlocks } from "@/shared/lib/syntax-highlight/enhance-markdown-code-blocks";
 import { useSyntaxTheme } from "@/shared/lib/syntax-highlight/use-syntax-theme";
 import { cn } from "@/shared/lib/cn";

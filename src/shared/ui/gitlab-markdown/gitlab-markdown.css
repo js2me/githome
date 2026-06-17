@@ -56,13 +56,13 @@
 
 .gitlab-markdown h1 {
   font-size: 2em;
-  border-bottom: 1px solid #dcdcde;
+  border-bottom: 1px solid var(--markdown-border);
   padding-bottom: 0.3em;
 }
 
 .gitlab-markdown h2 {
   font-size: 1.5em;
-  border-bottom: 1px solid #dcdcde;
+  border-bottom: 1px solid var(--markdown-border);
   padding-bottom: 0.3em;
 }
 
@@ -80,11 +80,11 @@
 
 .gitlab-markdown h6 {
   font-size: 0.85em;
-  color: #737278;
+  color: var(--markdown-fg-muted);
 }
 
 .gitlab-markdown a {
-  color: #1f75cb;
+  color: var(--markdown-fg-link);
   text-decoration: none;
 }
 
@@ -103,7 +103,7 @@
 .gitlab-markdown code {
   padding: 0.2em 0.4em;
   border-radius: 4px;
-  background-color: rgba(175, 184, 193, 0.2);
+  background-color: var(--markdown-code-bg);
   font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
   font-size: 85%;
 }
@@ -113,8 +113,8 @@
   padding: 16px;
   overflow: auto;
   border-radius: 6px;
-  background-color: #f6f8fa;
-  color: #24292e;
+  background-color: var(--markdown-pre-bg);
+  color: var(--markdown-pre-fg);
   font-size: 85%;
   line-height: 1.45;
 }
@@ -135,8 +135,8 @@
 
 .gitlab-markdown blockquote {
   padding: 0 16px;
-  border-left: 4px solid #dcdcde;
-  color: #737278;
+  border-left: 4px solid var(--markdown-border);
+  color: var(--markdown-fg-muted);
 }
 
 .gitlab-markdown ul,
@@ -176,34 +176,34 @@
 .gitlab-markdown table th,
 .gitlab-markdown table td {
   padding: 6px 13px;
-  border: 1px solid #dcdcde;
+  border: 1px solid var(--markdown-border);
 }
 
 .gitlab-markdown table th {
   font-weight: 600;
-  background-color: #f6f8fa;
+  background-color: var(--markdown-table-stripe-bg);
 }
 
 .gitlab-markdown table tr:nth-child(2n) {
-  background-color: #f6f8fa;
+  background-color: var(--markdown-table-stripe-bg);
 }
 
 .gitlab-markdown hr {
   height: 1px;
   margin: 24px 0;
   border: 0;
-  background-color: #dcdcde;
+  background-color: var(--markdown-border);
 }
 
 .gitlab-markdown img {
   max-width: 100%;
   box-sizing: border-box;
-  background-color: #fff;
+  background-color: var(--markdown-img-bg);
 }
 
 .gitlab-markdown details {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #dcdcde;
+  border: 1px solid var(--markdown-border);
   border-radius: 6px;
 }
 
@@ -216,88 +216,4 @@
 .gitlab-markdown .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
-}
-
-@media (prefers-color-scheme: dark) {
-  .gitlab-markdown h1,
-  .gitlab-markdown h2 {
-    border-bottom-color: #30363d;
-  }
-
-  .gitlab-markdown h6,
-  .gitlab-markdown blockquote {
-    color: #8b949e;
-  }
-
-  .gitlab-markdown code {
-    background-color: rgba(110, 118, 129, 0.4);
-    color: #e6edf3;
-  }
-
-  .gitlab-markdown pre,
-  .gitlab-markdown .gitlab-markdown-code-pre {
-    background-color: #161b22;
-    color: #e6edf3;
-  }
-
-  .gitlab-markdown table th,
-  .gitlab-markdown table tr:nth-child(2n) {
-    background-color: #161b22;
-  }
-
-  .gitlab-markdown table th,
-  .gitlab-markdown table td,
-  .gitlab-markdown hr,
-  .gitlab-markdown details {
-    border-color: #30363d;
-  }
-
-  .gitlab-markdown a {
-    color: #61afef;
-  }
-
-  .gitlab-markdown img {
-    background-color: #0d1117;
-  }
-}
-
-.dark .gitlab-markdown h1,
-.dark .gitlab-markdown h2 {
-  border-bottom-color: #30363d;
-}
-
-.dark .gitlab-markdown h6,
-.dark .gitlab-markdown blockquote {
-  color: #8b949e;
-}
-
-.dark .gitlab-markdown code {
-  background-color: rgba(110, 118, 129, 0.4);
-  color: #e6edf3;
-}
-
-.dark .gitlab-markdown pre,
-.dark .gitlab-markdown .gitlab-markdown-code-pre {
-  background-color: #161b22;
-  color: #e6edf3;
-}
-
-.dark .gitlab-markdown table th,
-.dark .gitlab-markdown table tr:nth-child(2n) {
-  background-color: #161b22;
-}
-
-.dark .gitlab-markdown table th,
-.dark .gitlab-markdown table td,
-.dark .gitlab-markdown hr,
-.dark .gitlab-markdown details {
-  border-color: #30363d;
-}
-
-.dark .gitlab-markdown a {
-  color: #61afef;
-}
-
-.dark .gitlab-markdown img {
-  background-color: #0d1117;
 }

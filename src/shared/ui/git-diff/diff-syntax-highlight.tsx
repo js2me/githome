@@ -9,7 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { GitLabMergeRequestChange } from "@/shared/api/gitlab";
+import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
+import { getDiffLineTokenKey } from "@/shared/lib/syntax-highlight/diff-line-token-key";
 import { getLanguageFromPath } from "@/shared/lib/syntax-highlight/language-from-path";
 import {
   highlightParsedDiffLines,
@@ -30,13 +31,23 @@ interface DiffSyntaxHighlightContextValue {
 const DiffSyntaxHighlightContext =
   createContext<DiffSyntaxHighlightContextValue | null>(null);
 
+const VIEWPORT_MARGIN_PX = 240;
+
+const isInViewport = (element: Element) => {
+  const rect = element.getBoundingClientRect();
+  return (
+    rect.bottom >= -VIEWPORT_MARGIN_PX &&
+    rect.top <= window.innerHeight + VIEWPORT_MARGIN_PX
+  );
+};
+
 export const DiffSyntaxHighlightProvider = memo(
   ({
     change,
     parsed,
     children,
   }: {
-    change: GitLabMergeRequestChange;
+    change: GitLabMergeRequestChangeDC;
     parsed: ParsedFileDiff | null;
     children: ReactNode;
   }) => {
@@ -49,9 +60,9 @@ export const DiffSyntaxHighlightProvider = memo(
 
     const language = useMemo(
       () =>
-        getLanguageFromPath(change.newPath) ??
-        getLanguageFromPath(change.oldPath),
-      [change.newPath, change.oldPath],
+        getLanguageFromPath(change.new_path) ??
+        getLanguageFromPath(change.old_path),
+      [change.new_path, change.old_path],
     );
 
     useEffect(() => {
@@ -60,21 +71,38 @@ export const DiffSyntaxHighlightProvider = memo(
         return;
       }
 
+      // `display: contents` has no layout box, so observe the parent container.
+      const observeTarget = element.parentElement ?? element;
+
+      const markVisible = () => {
+        setIsVisible(true);
+      };
+
+      if (isInViewport(observeTarget)) {
+        markVisible();
+        return;
+      }
+
+      if (typeof IntersectionObserver === "undefined") {
+        markVisible();
+        return;
+      }
+
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry?.isIntersecting) {
-            setIsVisible(true);
+            markVisible();
             observer.disconnect();
           }
         },
         {
           root: null,
-          rootMargin: "240px 0px",
+          rootMargin: `${VIEWPORT_MARGIN_PX}px 0px`,
           threshold: 0,
         },
       );
 
-      observer.observe(element);
+      observer.observe(observeTarget);
 
       return () => observer.disconnect();
     }, []);
@@ -112,12 +140,12 @@ export const DiffSyntaxHighlightProvider = memo(
             return null;
           }
 
-          if (line.type === "delete") {
-            return lineTokens.get(`old:${line.oldLine ?? line.text}`) ?? null;
+          const key = getDiffLineTokenKey(line);
+          if (key.endsWith(":null")) {
+            return null;
           }
 
-          const lineNumber = line.newLine ?? line.oldLine;
-          return lineTokens.get(`new:${lineNumber ?? line.text}`) ?? null;
+          return lineTokens.get(key) ?? null;
         },
       }),
       [lineTokens],

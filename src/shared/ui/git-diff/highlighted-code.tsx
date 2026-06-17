@@ -1,4 +1,5 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { mapTokensToGitlabDiffSyntax } from "@/shared/lib/gitlab/syntax/diff-syntax";
 import type { SyntaxToken } from "@/shared/lib/syntax-highlight/shiki-highlighter";
 
 const renderToken = (token: SyntaxToken, index: number) => {
@@ -24,14 +25,24 @@ export const HighlightedCode = memo(
   ({
     tokens,
     fallback,
+    gitlabSyntax = false,
   }: {
     tokens: SyntaxToken[] | null | undefined;
     fallback: string;
+    gitlabSyntax?: boolean;
   }) => {
-    if (!tokens || tokens.length === 0) {
+    const renderedTokens = useMemo(
+      () =>
+        gitlabSyntax && tokens
+          ? mapTokensToGitlabDiffSyntax(tokens)
+          : tokens,
+      [gitlabSyntax, tokens],
+    );
+
+    if (!renderedTokens || renderedTokens.length === 0) {
       return <>{fallback || " "}</>;
     }
 
-    return <>{tokens.map(renderToken)}</>;
+    return <>{renderedTokens.map(renderToken)}</>;
   },
 );

@@ -1,6 +1,6 @@
-import { action, computed, makeObservable } from "mobx";
-import type { GitLabConnection } from "@/shared/api/gitlab";
-import { getConnectionLabel } from "@/shared/lib/gitlab-connection";
+import { action, computed } from "mobx";
+import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
+import { getConnectionLabel } from "@/shared/lib/gitlab/connection";
 import {
   connectionsKey,
   type ConnectionsStorage,
@@ -46,34 +46,22 @@ const createConnectionItem = (
 });
 
 export class SettingsStore {
-  constructor() {
-    makeObservable(this, {
-      snapshot: computed.struct,
-      connections: computed,
-      activeId: computed,
-      activeItem: computed,
-      activeConnection: computed,
-      connectionOptions: computed.struct,
-      isConfigured: computed,
-      setActiveConnection: action,
-      addConnection: action,
-      updateConnection: action,
-      removeConnection: action,
-    });
-  }
-
+  @computed.struct
   get snapshot(): ConnectionsStorage {
     return connectionsKey.value;
   }
 
+  @computed
   get connections(): GitLabConnectionItem[] {
     return this.snapshot.items;
   }
 
+  @computed
   get activeId(): string | null {
     return this.snapshot.activeId;
   }
 
+  @computed
   get activeItem(): GitLabConnectionItem | null {
     if (!this.activeId) {
       return null;
@@ -85,10 +73,12 @@ export class SettingsStore {
     );
   }
 
+  @computed
   get activeConnection(): GitLabConnection | null {
     return toActiveConnection(this.snapshot);
   }
 
+  @computed.struct
   get connectionOptions() {
     return this.connections.map((connection) => ({
       id: connection.id,
@@ -96,10 +86,12 @@ export class SettingsStore {
     }));
   }
 
+  @computed
   get isConfigured() {
     return Boolean(this.activeConnection);
   }
 
+  @action
   setActiveConnection(id: string | null) {
     connectionsKey.value = {
       ...this.snapshot,
@@ -107,6 +99,7 @@ export class SettingsStore {
     };
   }
 
+  @action
   addConnection(gitlabUrl: string, gitToken: string): string | null {
     const item = createConnectionItem(gitlabUrl, gitToken);
 
@@ -122,6 +115,7 @@ export class SettingsStore {
     return item.id;
   }
 
+  @action
   updateConnection(
     id: string,
     gitlabUrl: string,
@@ -148,6 +142,7 @@ export class SettingsStore {
     return true;
   }
 
+  @action
   removeConnection(id: string) {
     const items = this.connections.filter((connection) => connection.id !== id);
     const activeId =

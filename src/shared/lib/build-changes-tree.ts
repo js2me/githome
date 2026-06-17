@@ -1,5 +1,6 @@
-import type { GitLabMergeRequestChange } from "@/shared/api/gitlab";
+import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
 import { getDiffFileKey } from "@/shared/lib/diff-search";
+import { parseUnifiedDiff } from "@/shared/lib/parse-unified-diff";
 
 export type ChangeFileStatus = "added" | "deleted" | "renamed" | "modified";
 
@@ -9,7 +10,9 @@ export interface ChangesTreeFile {
   name: string;
   path: string;
   status: ChangeFileStatus;
-  change: GitLabMergeRequestChange;
+  additions: number;
+  deletions: number;
+  change: GitLabMergeRequestChangeDC;
 }
 
 export interface ChangesTreeFolder {
@@ -21,31 +24,75 @@ export interface ChangesTreeFolder {
 
 export type ChangesTreeNode = ChangesTreeFile | ChangesTreeFolder;
 
-export const getChangeDisplayPath = (change: GitLabMergeRequestChange) => {
-  if (change.deletedFile) {
-    return change.oldPath;
+export const getChangeDisplayPath = (change: GitLabMergeRequestChangeDC) => {
+  if (change.deleted_file) {
+    return change.old_path;
   }
 
-  return change.newPath;
+  return change.new_path;
 };
 
 export const getChangeFileStatus = (
-  change: GitLabMergeRequestChange,
+  change: GitLabMergeRequestChangeDC,
 ): ChangeFileStatus => {
-  if (change.newFile) {
+  if (change.new_file) {
     return "added";
   }
 
-  if (change.deletedFile) {
+  if (change.deleted_file) {
     return "deleted";
   }
 
-  if (change.renamedFile) {
+  if (change.renamed_file) {
     return "renamed";
   }
 
   return "modified";
 };
+
+const getChangeDiffStats = (change: GitLabMergeRequestChangeDC) => {
+  if (!change.diff?.trim()) {
+    return { additions: 0, deletions: 0 };
+  }
+
+  const parsed = parseUnifiedDiff(change.diff);
+  return {
+    additions: parsed.additions,
+    deletions: parsed.deletions,
+  };
+};
+
+const compressSingleChildFolders = (
+  nodes: ChangesTreeNode[],
+): ChangesTreeNode[] =>
+  nodes.map((node) => {
+    if (node.type === "file") {
+      return node;
+    }
+
+    const children = compressSingleChildFolders(node.children);
+
+    if (
+      children.length === 1 &&
+      children[0].type === "folder" &&
+      !node.name.includes("/") &&
+      !children[0].name.includes("/")
+    ) {
+      const child = children[0];
+
+      return {
+        type: "folder",
+        name: `${node.name}/${child.name}`,
+        path: child.path,
+        children: compressSingleChildFolders(child.children),
+      };
+    }
+
+    return {
+      ...node,
+      children,
+    };
+  });
 
 const sortTreeNodes = (nodes: ChangesTreeNode[]) => {
   nodes.sort((left, right) => {
@@ -64,7 +111,7 @@ const sortTreeNodes = (nodes: ChangesTreeNode[]) => {
 };
 
 export const buildChangesTree = (
-  changes: GitLabMergeRequestChange[],
+  changes: GitLabMergeRequestChangeDC[],
 ): ChangesTreeNode[] => {
   const root: ChangesTreeFolder = {
     type: "folder",
@@ -107,16 +154,20 @@ export const buildChangesTree = (
       current = folder;
     }
 
+    const stats = getChangeDiffStats(change);
+
     current.children.push({
       type: "file",
-      id: getDiffFileKey(change.oldPath, change.newPath),
+      id: getDiffFileKey(change.old_path, change.new_path),
       name: fileName,
       path: filePath,
       status: getChangeFileStatus(change),
+      additions: stats.additions,
+      deletions: stats.deletions,
       change,
     });
   }
 
   sortTreeNodes(root.children);
-  return root.children;
+  return compressSingleChildFolders(root.children);
 };

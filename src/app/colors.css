@@ -1,0 +1,287 @@
+:root {
+  /* Brand */
+  --color-brand: #fc6d26;
+  --color-brand-hover: #e95d1f;
+  --color-brand-gradient-to: #e24329;
+  --color-brand-focus-shadow: rgb(252 109 38 / 0.15);
+  --color-brand-selection-shadow: rgb(252 109 38 / 0.12);
+  --color-brand-border-accent: rgb(252 109 38 / 0.7);
+  --color-card-hover-shadow: rgb(15 23 42 / 0.06);
+
+  /* Canvas & surfaces */
+  --color-canvas-default: #ffffff;
+  --color-canvas-subtle: #fafafa;
+  --color-canvas-inset: #f5f5f5;
+  --color-canvas-muted: #f0f0f0;
+  --color-canvas-emphasis: #ececec;
+  --color-canvas-overlay: #ffffff;
+
+  /* Borders */
+  --color-border-default: #dbdbdb;
+  --color-border-muted: #dcdcde;
+  --color-border-subtle: #d0d7de;
+
+  /* Text */
+  --color-fg-default: #303030;
+  --color-fg-muted: #737278;
+  --color-fg-subtle: #595959;
+  --color-fg-on-emphasis: #ffffff;
+  --color-fg-link: #1f75cb;
+  --color-fg-code: #24292e;
+  --color-fg-line-num: #89888d;
+  --color-fg-comment-btn: #57606a;
+
+  /* Accent */
+  --color-accent-blue: #428fdc;
+  --color-accent-blue-emphasis: #2563eb;
+  --color-accent-blue-ring: rgb(66 143 220 / 0.3);
+  --color-accent-emphasis-hover: #ececec;
+
+  /* Success */
+  --color-success-emphasis: #1aaa55;
+  --color-success-emphasis-hover: #168f48;
+  --color-success-fg: #1f883d;
+  --color-stats-added: #108548;
+
+  /* Danger */
+  --color-danger-fg: #c9190b;
+  --color-stats-removed: #dd2b0e;
+
+  /* Comment button */
+  --color-comment-btn-hover-bg: #fff1e8;
+  --color-comment-btn-hover-fg: #c2410c;
+
+  /* Collapse banner */
+  --color-collapse-btn-border: #868686;
+  --color-collapse-btn-bg: #333238;
+  --color-collapse-btn-bg-hover: #44434a;
+
+  /* File type icons */
+  --color-file-tsx: #61dafb;
+  --color-file-ts: #3178c6;
+  --color-file-renamed: #2563eb;
+  --color-file-modified: #c17d00;
+
+  /* Diff */
+  --diff-border: var(--color-border-default);
+  --diff-code-font-size: 13px;
+  --diff-code-line-height: 1.6;
+  --diff-line-added: #ecfdf0;
+  --diff-line-removed: #fbe9eb;
+  --diff-line-num-new: #ddfbe6;
+  --diff-line-num-old: #f9d7dc;
+  --diff-inline-added: #c7f0d2;
+  --diff-inline-removed: #fac5cd;
+  --diff-prefix-added: #9bafa1;
+  --diff-prefix-removed: #ae969a;
+  --diff-line-num-text: var(--color-fg-line-num);
+  --diff-code-text: var(--color-fg-default);
+  --diff-hunk-bg: var(--color-canvas-subtle);
+  --diff-hunk-text: var(--color-fg-muted);
+  --diff-expand-bg: var(--color-canvas-inset);
+  --diff-header-bg: var(--color-canvas-subtle);
+  --diff-stats-added: var(--color-success-fg);
+  --diff-stats-removed: var(--color-danger-fg);
+  --diff-canvas: var(--color-canvas-default);
+  --diff-search-active-bg: #ff9632;
+  --diff-search-active-fg: #1f2328;
+  --diff-search-inactive-bg: #fff8c5;
+
+  /* File tree */
+  --file-tree-bg: var(--color-canvas-overlay);
+  --file-tree-border: var(--color-border-default);
+  --file-tree-text: var(--color-fg-default);
+  --file-tree-muted: var(--color-fg-muted);
+  --file-tree-hover: var(--color-canvas-muted);
+  --file-tree-active: var(--color-canvas-emphasis);
+  --file-tree-stats-added: var(--color-stats-added);
+  --file-tree-stats-removed: var(--color-stats-removed);
+
+  /* Markdown */
+  --markdown-border: var(--color-border-muted);
+  --markdown-fg-muted: var(--color-fg-muted);
+  --markdown-fg-link: var(--color-fg-link);
+  --markdown-code-bg: rgb(175 184 193 / 0.2);
+  --markdown-pre-bg: #f6f8fa;
+  --markdown-pre-fg: var(--color-fg-code);
+  --markdown-table-stripe-bg: #f6f8fa;
+  --markdown-img-bg: var(--color-canvas-default);
+
+  /* Syntax highlighting */
+  --syntax-default: #333333;
+  --syntax-comment: #998877;
+  --syntax-string: #d14;
+  --syntax-keyword: #333333;
+  --syntax-type: #445588;
+  --syntax-function: #990000;
+  --syntax-number: #009999;
+  --syntax-attr: #008080;
+  --syntax-literal: #0086b3;
+
+  /* Tailwind palette — slate */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+
+  /* Tailwind palette — gray */
+  --color-gray-900: #111827;
+
+  /* Tailwind palette — orange */
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-300: #fdba74;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-950: #431407;
+
+  /* Tailwind palette — green */
+  --color-green-50: #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-300: #86efac;
+  --color-green-600: #16a34a;
+  --color-green-700: #15803d;
+  --color-green-800: #166534;
+  --color-green-900: #14532d;
+  --color-green-950: #052e16;
+
+  /* Tailwind palette — red */
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-900: #7f1d1d;
+  --color-red-950: #450a0a;
+
+  /* Tailwind palette — blue */
+  --color-blue-100: #dbeafe;
+  --color-blue-300: #93c5fd;
+  --color-blue-700: #1d4ed8;
+  --color-blue-950: #172554;
+
+  /* Tailwind palette — white / black */
+  --color-white: #ffffff;
+  --color-black: #000000;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-canvas-default: #0d1117;
+    --color-canvas-subtle: #161b22;
+    --color-canvas-inset: #161b22;
+    --color-canvas-muted: #21262d;
+    --color-canvas-emphasis: #30363d;
+    --color-canvas-overlay: #111827;
+
+    --color-border-default: #30363d;
+    --color-border-muted: #30363d;
+    --color-border-subtle: #484f58;
+
+    --color-fg-default: #e6edf3;
+    --color-fg-muted: #8b949e;
+    --color-fg-subtle: #8b949e;
+    --color-fg-link: #61afef;
+    --color-fg-code: #e6edf3;
+    --color-fg-line-num: #6e7681;
+    --color-fg-comment-btn: #8b949e;
+
+    --color-accent-emphasis-hover: #21262d;
+
+    --color-stats-added: #3fb950;
+    --color-stats-removed: #ff7b72;
+
+    --color-comment-btn-hover-bg: #3d2b1f;
+    --color-comment-btn-hover-fg: #fdba74;
+
+    --color-collapse-bg: #2d2218;
+    --color-collapse-btn-border: #5c5c66;
+    --color-collapse-btn-bg: #28272d;
+    --color-collapse-btn-bg-hover: #35343c;
+
+    --diff-line-added: #12261e;
+    --diff-line-removed: #2d1114;
+    --diff-line-num-new: #1a3324;
+    --diff-line-num-old: #3d1f24;
+    --diff-inline-added: #1b4721;
+    --diff-inline-removed: #5c1f1a;
+    --diff-prefix-added: #3fb950;
+    --diff-prefix-removed: #ff7b72;
+    --diff-canvas: #0d1117;
+
+    --markdown-code-bg: rgb(110 118 129 / 0.4);
+    --markdown-pre-bg: #161b22;
+    --markdown-pre-fg: #e6edf3;
+    --markdown-table-stripe-bg: #161b22;
+    --markdown-img-bg: #0d1117;
+
+    --diff-search-active-bg: #9e6a03;
+    --diff-search-active-fg: #f0f6fc;
+    --diff-search-inactive-bg: #6e5a1f;
+  }
+}
+
+.dark {
+  --color-canvas-default: #0d1117;
+  --color-canvas-subtle: #161b22;
+  --color-canvas-inset: #161b22;
+  --color-canvas-muted: #21262d;
+  --color-canvas-emphasis: #30363d;
+  --color-canvas-overlay: #111827;
+
+  --color-border-default: #30363d;
+  --color-border-muted: #30363d;
+  --color-border-subtle: #484f58;
+
+  --color-fg-default: #e6edf3;
+  --color-fg-muted: #8b949e;
+  --color-fg-subtle: #8b949e;
+  --color-fg-link: #61afef;
+  --color-fg-code: #e6edf3;
+  --color-fg-line-num: #6e7681;
+  --color-fg-comment-btn: #8b949e;
+
+  --color-accent-emphasis-hover: #21262d;
+
+  --color-stats-added: #3fb950;
+  --color-stats-removed: #ff7b72;
+
+  --color-comment-btn-hover-bg: #3d2b1f;
+  --color-comment-btn-hover-fg: #fdba74;
+
+  --color-collapse-bg: #2d2218;
+  --color-collapse-btn-border: #5c5c66;
+  --color-collapse-btn-bg: #28272d;
+  --color-collapse-btn-bg-hover: #35343c;
+
+  --diff-line-added: #12261e;
+  --diff-line-removed: #2d1114;
+  --diff-line-num-new: #1a3324;
+  --diff-line-num-old: #3d1f24;
+  --diff-inline-added: #1b4721;
+  --diff-inline-removed: #5c1f1a;
+  --diff-prefix-added: #3fb950;
+  --diff-prefix-removed: #ff7b72;
+  --diff-canvas: #0d1117;
+
+  --markdown-code-bg: rgb(110 118 129 / 0.4);
+  --markdown-pre-bg: #161b22;
+  --markdown-pre-fg: #e6edf3;
+  --markdown-table-stripe-bg: #161b22;
+  --markdown-img-bg: #0d1117;
+
+  --diff-search-active-bg: #9e6a03;
+  --diff-search-active-fg: #f0f6fc;
+  --diff-search-inactive-bg: #6e5a1f;
+}

@@ -3,48 +3,198 @@ import {
   memo,
   useCallback,
   useContext,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
   type Ref,
 } from "react";
 import {
+  areTextRangesEqual,
   collectDiffSearchMatches,
+  type DiffSearchFileEntry,
   type DiffSearchLineEntry,
   type DiffSearchMatch,
   getDiffFileElementId,
-  getLineSearchRanges,
-  isActiveSearchRange,
+  indexMatchesByRowId,
+  isDiffFileHeaderRowId,
   type TextRange,
 } from "@/shared/lib/diff-search";
 import { cn } from "@/shared/lib/cn";
+import { registerFindShortcutHandler } from "@/shared/lib/find-shortcut";
 
-interface DiffSearchContextValue {
-  query: string;
-  isOpen: boolean;
-  matches: DiffSearchMatch[];
-  activeMatch: DiffSearchMatch | null;
-  activeIndex: number;
-  setQuery: (value: string) => void;
-  close: () => void;
-  goToNext: () => void;
-  goToPrevious: () => void;
+interface DiffSearchRegistrationContextValue {
   registerFile: (
     fileKey: string,
+    path: string,
     lines: DiffSearchLineEntry[],
     scrollToRow: (rowId: string) => void,
   ) => void;
   unregisterFile: (fileKey: string) => void;
-  getRowSearchRanges: (rowId: string) => TextRange[];
-  isRowRangeActive: (rowId: string, range: TextRange) => boolean;
 }
 
-const DiffSearchContext = createContext<DiffSearchContextValue | null>(null);
+interface DiffSearchUiContextValue {
+  query: string;
+  setQuery: (value: string) => void;
+  activeIndex: number;
+  matchCount: number;
+  miniBarActive: boolean;
+  isMainBarInView: boolean;
+  inputRef: Ref<HTMLInputElement>;
+  miniInputRef: Ref<HTMLInputElement>;
+  onClose: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
+}
 
-const DiffSearchFindBar = memo(
+const DiffSearchRegistrationContext =
+  createContext<DiffSearchRegistrationContextValue | null>(null);
+
+const DiffSearchUiContext = createContext<DiffSearchUiContextValue | null>(null);
+
+const DiffSearchHighlightStoreContext =
+  createContext<DiffSearchHighlightStore | null>(null);
+
+interface RowSearchHighlightState {
+  ranges: TextRange[];
+  activeRange: TextRange | null;
+}
+
+const EMPTY_ROW_HIGHLIGHT: RowSearchHighlightState = {
+  ranges: [],
+  activeRange: null,
+};
+
+class DiffSearchHighlightStore {
+  private rowStates = new Map<string, RowSearchHighlightState>();
+  private rowListeners = new Map<string, Set<() => void>>();
+  private hasActiveQuery = false;
+  private globalListeners = new Set<() => void>();
+
+  subscribeGlobal = (onStoreChange: () => void) => {
+    this.globalListeners.add(onStoreChange);
+    return () => {
+      this.globalListeners.delete(onStoreChange);
+    };
+  };
+
+  subscribeRow = (rowId: string, onStoreChange: () => void) => {
+    let listeners = this.rowListeners.get(rowId);
+    if (!listeners) {
+      listeners = new Set();
+      this.rowListeners.set(rowId, listeners);
+    }
+
+    listeners.add(onStoreChange);
+    return () => {
+      listeners?.delete(onStoreChange);
+      if (listeners?.size === 0) {
+        this.rowListeners.delete(rowId);
+      }
+    };
+  };
+
+  getHasActiveQuery = () => this.hasActiveQuery;
+
+  getRowState = (rowId: string): RowSearchHighlightState =>
+    this.rowStates.get(rowId) ?? EMPTY_ROW_HIGHLIGHT;
+
+  private notifyRow(rowId: string) {
+    const listeners = this.rowListeners.get(rowId);
+    if (!listeners) {
+      return;
+    }
+
+    for (const listener of listeners) {
+      listener();
+    }
+  }
+
+  private notifyGlobal() {
+    for (const listener of this.globalListeners) {
+      listener();
+    }
+  }
+
+  private setRowState(rowId: string, nextState: RowSearchHighlightState) {
+    const previousState = this.rowStates.get(rowId) ?? EMPTY_ROW_HIGHLIGHT;
+    const rangesChanged = !areTextRangesEqual(
+      previousState.ranges,
+      nextState.ranges,
+    );
+    const activeRangeChanged =
+      previousState.activeRange?.start !== nextState.activeRange?.start ||
+      previousState.activeRange?.end !== nextState.activeRange?.end;
+
+    if (!rangesChanged && !activeRangeChanged) {
+      return;
+    }
+
+    if (nextState.ranges.length === 0 && !nextState.activeRange) {
+      this.rowStates.delete(rowId);
+    } else {
+      this.rowStates.set(rowId, nextState);
+    }
+
+    this.notifyRow(rowId);
+  }
+
+  updateHighlights(
+    query: string,
+    matches: DiffSearchMatch[],
+    activeMatch: DiffSearchMatch | null,
+  ) {
+    const nextHasActiveQuery = Boolean(query.trim());
+    const hasActiveQueryChanged = this.hasActiveQuery !== nextHasActiveQuery;
+    this.hasActiveQuery = nextHasActiveQuery;
+
+    const matchesByRowId = indexMatchesByRowId(matches);
+    const affectedRowIds = new Set<string>([
+      ...this.rowStates.keys(),
+      ...matchesByRowId.keys(),
+    ]);
+
+    if (activeMatch) {
+      affectedRowIds.add(activeMatch.rowId);
+    }
+
+    for (const rowId of affectedRowIds) {
+      const ranges = matchesByRowId.get(rowId) ?? [];
+      const activeRange =
+        activeMatch && activeMatch.rowId === rowId
+          ? { start: activeMatch.start, end: activeMatch.end }
+          : null;
+
+      this.setRowState(rowId, { ranges, activeRange });
+    }
+
+    if (hasActiveQueryChanged) {
+      this.notifyGlobal();
+    }
+  }
+
+  clear() {
+    const affectedRowIds = [...this.rowStates.keys()];
+    this.rowStates.clear();
+    this.hasActiveQuery = false;
+
+    for (const rowId of affectedRowIds) {
+      this.notifyRow(rowId);
+    }
+
+    this.notifyGlobal();
+  }
+}
+
+const diffSearchControlButtonClassName =
+  "inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-[var(--color-border-default)] bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-[var(--color-canvas-muted)]";
+
+const DiffSearchControls = memo(
   ({
+    variant,
     query,
     activeIndex,
     matchCount,
@@ -54,6 +204,104 @@ const DiffSearchFindBar = memo(
     onNext,
     onPrevious,
   }: {
+    variant: "full" | "mini";
+    query: string;
+    activeIndex: number;
+    matchCount: number;
+    inputRef: Ref<HTMLInputElement>;
+    onQueryChange: (value: string) => void;
+    onClose: () => void;
+    onNext: () => void;
+    onPrevious: () => void;
+  }) => {
+    const isMini = variant === "mini";
+
+    return (
+      <>
+        <input
+          ref={inputRef}
+          className={cn(
+            "rounded-md border border-[var(--color-border-default)] bg-white font-mono text-[var(--color-fg-default)] outline-none focus:border-brand focus:shadow-[0_0_0_2px_var(--color-brand-focus-shadow)] dark:bg-canvas-default",
+            isMini
+              ? "w-[140px] px-2 py-1 text-xs"
+              : "min-w-[180px] flex-1 px-2.5 py-1.5 text-sm",
+          )}
+          placeholder={isMini ? undefined : "Поиск по файлам и коду..."}
+          type="search"
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              if (event.shiftKey) {
+                onPrevious();
+              } else {
+                onNext();
+              }
+            }
+
+            if (event.key === "Escape") {
+              event.preventDefault();
+              onClose();
+            }
+          }}
+        />
+        <span
+          className={cn(
+            "shrink-0 text-slate-500 dark:text-slate-400",
+            isMini ? "text-[11px]" : "text-xs",
+          )}
+        >
+          {query.trim()
+            ? matchCount > 0
+              ? `${activeIndex + 1} / ${matchCount}`
+              : "Нет совпадений"
+            : isMini
+              ? null
+              : "Введите текст"}
+        </span>
+        <button
+          className={cn(
+            diffSearchControlButtonClassName,
+            isMini && "h-6 w-6 text-xs",
+          )}
+          type="button"
+          title="Предыдущее (Shift+Enter)"
+          disabled={matchCount === 0}
+          onClick={onPrevious}
+        >
+          ↑
+        </button>
+        <button
+          className={cn(
+            diffSearchControlButtonClassName,
+            isMini && "h-6 w-6 text-xs",
+          )}
+          type="button"
+          title="Следующее (Enter)"
+          disabled={matchCount === 0}
+          onClick={onNext}
+        >
+          ↓
+        </button>
+      </>
+    );
+  },
+);
+
+const DiffSearchFindBar = memo(
+  ({
+    barRef,
+    query,
+    activeIndex,
+    matchCount,
+    inputRef,
+    onQueryChange,
+    onClose,
+    onNext,
+    onPrevious,
+  }: {
+    barRef?: Ref<HTMLDivElement>;
     query: string;
     activeIndex: number;
     matchCount: number;
@@ -63,80 +311,97 @@ const DiffSearchFindBar = memo(
     onNext: () => void;
     onPrevious: () => void;
   }) => (
-    <div className="sticky top-0 z-40 flex items-center gap-2 border-b border-[#dbdbdb] bg-[#fafafa] px-3 py-2 shadow-sm dark:border-[#30363d] dark:bg-[#161b22]">
-      <input
-        ref={inputRef}
-        className="min-w-[180px] flex-1 rounded-md border border-[#dbdbdb] bg-white px-2.5 py-1.5 font-mono text-sm text-[#303030] outline-none focus:border-[#fc6d26] focus:shadow-[0_0_0_2px_rgba(252,109,38,0.15)] dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
-        placeholder="Поиск в коде..."
-        type="search"
-        value={query}
-        onChange={(event) => onQueryChange(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            if (event.shiftKey) {
-              onPrevious();
-            } else {
-              onNext();
-            }
-          }
-
-          if (event.key === "Escape") {
-            event.preventDefault();
-            onClose();
-          }
-        }}
+    <div
+      ref={barRef}
+      className="mb-5 flex items-center gap-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-canvas-subtle)] px-3 py-2"
+    >
+      <DiffSearchControls
+        variant="full"
+        query={query}
+        activeIndex={activeIndex}
+        matchCount={matchCount}
+        inputRef={inputRef}
+        onQueryChange={onQueryChange}
+        onClose={onClose}
+        onNext={onNext}
+        onPrevious={onPrevious}
       />
-      <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
-        {query.trim()
-          ? matchCount > 0
-            ? `${activeIndex + 1} / ${matchCount}`
-            : "Нет совпадений"
-          : "Введите текст"}
-      </span>
-      <button
-        className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-[#dbdbdb] bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-slate-300 dark:hover:bg-[#21262d]"
-        type="button"
-        title="Предыдущее (Shift+Enter)"
-        disabled={matchCount === 0}
-        onClick={onPrevious}
-      >
-        ↑
-      </button>
-      <button
-        className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-[#dbdbdb] bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-slate-300 dark:hover:bg-[#21262d]"
-        type="button"
-        title="Следующее (Enter)"
-        disabled={matchCount === 0}
-        onClick={onNext}
-      >
-        ↓
-      </button>
-      <button
-        className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-[#dbdbdb] bg-white text-slate-600 transition hover:bg-slate-50 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-slate-300 dark:hover:bg-[#21262d]"
-        type="button"
-        title="Закрыть (Esc)"
-        onClick={onClose}
-      >
-        ×
-      </button>
     </div>
   ),
 );
 
-export const DiffSearchProvider = memo(({ children }: { children: ReactNode }) => {
+export const DiffSearchStickyMiniBar = memo(() => {
+  const ui = useContext(DiffSearchUiContext);
+  if (!ui) {
+    return null;
+  }
+
+  const shouldShow =
+    !ui.isMainBarInView && (ui.query.length > 0 || ui.miniBarActive);
+
+  if (!shouldShow) {
+    return null;
+  }
+
+  return (
+    <div className="pointer-events-none fixed right-8 top-[62px] z-40">
+      <div className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-canvas-subtle)] px-2 py-1.5">
+        <DiffSearchControls
+          variant="mini"
+          query={ui.query}
+          activeIndex={ui.activeIndex}
+          matchCount={ui.matchCount}
+          inputRef={ui.miniInputRef}
+          onQueryChange={ui.setQuery}
+          onClose={ui.onClose}
+          onNext={ui.onNext}
+          onPrevious={ui.onPrevious}
+        />
+      </div>
+    </div>
+  );
+});
+
+export type DiffSearchFindBarVisibility = "toggle" | "always";
+
+export const DiffSearchProvider = memo(
+  ({
+    children,
+    findBarVisibility = "toggle",
+  }: {
+    children: ReactNode;
+    findBarVisibility?: DiffSearchFindBarVisibility;
+  }) => {
   const [query, setQuery] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(findBarVisibility === "always");
+  const [miniBarActive, setMiniBarActive] = useState(false);
+  const [isMainBarInView, setIsMainBarInView] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [registryVersion, setRegistryVersion] = useState(0);
+  const deferredQuery = useDeferredValue(query);
   const inputRef = useRef<HTMLInputElement>(null);
-  const fileLinesRef = useRef<Map<string, DiffSearchLineEntry[]>>(new Map());
+  const miniInputRef = useRef<HTMLInputElement>(null);
+  const mainBarRef = useRef<HTMLDivElement>(null);
+  const fileEntriesRef = useRef<Map<string, DiffSearchFileEntry>>(new Map());
   const scrollHandlersRef = useRef<Map<string, (rowId: string) => void>>(new Map());
+  const highlightStoreRef = useRef<DiffSearchHighlightStore | null>(null);
+
+  if (!highlightStoreRef.current) {
+    highlightStoreRef.current = new DiffSearchHighlightStore();
+  }
+
+  const highlightStore = highlightStoreRef.current;
+  const matchesRef = useRef<DiffSearchMatch[]>([]);
 
   const matches = useMemo(() => {
     void registryVersion;
-    return collectDiffSearchMatches(fileLinesRef.current, query);
-  }, [query, registryVersion]);
+    const nextMatches = collectDiffSearchMatches(
+      fileEntriesRef.current,
+      deferredQuery,
+    );
+    matchesRef.current = nextMatches;
+    return nextMatches;
+  }, [deferredQuery, registryVersion]);
 
   const activeMatch = matches[activeIndex] ?? null;
 
@@ -150,6 +415,10 @@ export const DiffSearchProvider = memo(({ children }: { children: ReactNode }) =
         .getElementById(getDiffFileElementId(match.fileKey))
         ?.scrollIntoView({ block: "nearest" });
 
+      if (isDiffFileHeaderRowId(match.rowId)) {
+        return;
+      }
+
       requestAnimationFrame(() => {
         scrollHandlersRef.current.get(match.fileKey)?.(match.rowId);
       });
@@ -159,16 +428,18 @@ export const DiffSearchProvider = memo(({ children }: { children: ReactNode }) =
 
   const goToMatch = useCallback(
     (index: number) => {
-      if (matches.length === 0) {
+      const currentMatches = matchesRef.current;
+      if (currentMatches.length === 0) {
         return;
       }
 
       const normalizedIndex =
-        ((index % matches.length) + matches.length) % matches.length;
+        ((index % currentMatches.length) + currentMatches.length) %
+        currentMatches.length;
       setActiveIndex(normalizedIndex);
-      scrollToActiveMatch(matches[normalizedIndex] ?? null);
+      scrollToActiveMatch(currentMatches[normalizedIndex] ?? null);
     },
-    [matches, scrollToActiveMatch],
+    [scrollToActiveMatch],
   );
 
   const goToNext = useCallback(() => {
@@ -179,42 +450,119 @@ export const DiffSearchProvider = memo(({ children }: { children: ReactNode }) =
     goToMatch(activeIndex - 1);
   }, [activeIndex, goToMatch]);
 
+  const isMainFindBarVisible = useCallback(() => {
+    const mainBar = mainBarRef.current;
+    if (!mainBar) {
+      return false;
+    }
+
+    const rect = mainBar.getBoundingClientRect();
+    return rect.bottom > 0 && rect.top < window.innerHeight;
+  }, []);
+
   const close = useCallback(() => {
+    if (findBarVisibility === "always") {
+      setQuery("");
+      setActiveIndex(0);
+      setMiniBarActive(false);
+      highlightStore.clear();
+      inputRef.current?.blur();
+      miniInputRef.current?.blur();
+      return;
+    }
+
     setIsOpen(false);
     setQuery("");
     setActiveIndex(0);
-  }, []);
+    setMiniBarActive(false);
+    highlightStore.clear();
+  }, [findBarVisibility, highlightStore]);
 
   const open = useCallback(() => {
     setIsOpen(true);
+
     requestAnimationFrame(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      const useMiniBar = !isMainFindBarVisible();
+      setMiniBarActive(useMiniBar);
+
+      requestAnimationFrame(() => {
+        if (useMiniBar) {
+          miniInputRef.current?.focus();
+          miniInputRef.current?.select();
+          return;
+        }
+
+        setMiniBarActive(false);
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      });
     });
+  }, [isMainFindBarVisible]);
+
+  const openRef = useRef(open);
+  openRef.current = open;
+
+  useEffect(() => {
+    registerFindShortcutHandler(() => {
+      openRef.current();
+    });
+
+    return () => {
+      registerFindShortcutHandler(null);
+    };
   }, []);
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [query]);
+  }, [deferredQuery]);
 
   useEffect(() => {
-    if (matches.length > 0) {
-      scrollToActiveMatch(matches[activeIndex] ?? matches[0] ?? null);
+    const mainBar = mainBarRef.current;
+    if (!mainBar) {
+      return;
     }
-  }, [activeIndex, matches, scrollToActiveMatch]);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsMainBarInView(entry.isIntersecting);
+      },
+      { threshold: 0 },
+    );
+
+    observer.observe(mainBar);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [findBarVisibility, isOpen]);
+
+  useEffect(() => {
+    if (isMainBarInView) {
+      setMiniBarActive(false);
+    }
+  }, [isMainBarInView]);
+
+  useEffect(() => {
+    highlightStore.updateHighlights(deferredQuery, matches, activeMatch);
+  }, [activeMatch, deferredQuery, highlightStore, matches]);
+
+  useEffect(() => {
+    if (!deferredQuery.trim()) {
+      return;
+    }
+
+    const firstMatch = matchesRef.current[0];
+    if (firstMatch) {
+      scrollToActiveMatch(firstMatch);
+    }
+  }, [deferredQuery, scrollToActiveMatch]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const isFindShortcut =
-        (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f";
+      const findBarVisible =
+        findBarVisibility === "always" || isOpen;
 
-      if (isFindShortcut) {
-        event.preventDefault();
-        open();
-        return;
-      }
-
-      if (!isOpen) {
+      if (!findBarVisible) {
         return;
       }
 
@@ -234,17 +582,19 @@ export const DiffSearchProvider = memo(({ children }: { children: ReactNode }) =
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [close, goToNext, goToPrevious, isOpen, open]);
+    document.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () =>
+      document.removeEventListener("keydown", handleKeyDown, { capture: true });
+  }, [close, findBarVisibility, goToNext, goToPrevious, isOpen]);
 
   const registerFile = useCallback(
     (
       fileKey: string,
+      path: string,
       lines: DiffSearchLineEntry[],
       scrollToRow: (rowId: string) => void,
     ) => {
-      fileLinesRef.current.set(fileKey, lines);
+      fileEntriesRef.current.set(fileKey, { path, lines });
       scrollHandlersRef.current.set(fileKey, scrollToRow);
       setRegistryVersion((value) => value + 1);
     },
@@ -252,81 +602,120 @@ export const DiffSearchProvider = memo(({ children }: { children: ReactNode }) =
   );
 
   const unregisterFile = useCallback((fileKey: string) => {
-    fileLinesRef.current.delete(fileKey);
+    fileEntriesRef.current.delete(fileKey);
     scrollHandlersRef.current.delete(fileKey);
     setRegistryVersion((value) => value + 1);
   }, []);
 
-  const value = useMemo<DiffSearchContextValue>(
+  const registrationValue = useMemo<DiffSearchRegistrationContextValue>(
+    () => ({
+      registerFile,
+      unregisterFile,
+    }),
+    [registerFile, unregisterFile],
+  );
+
+  const uiValue = useMemo<DiffSearchUiContextValue>(
     () => ({
       query,
-      isOpen,
-      matches,
-      activeMatch,
-      activeIndex,
       setQuery,
-      close,
-      goToNext,
-      goToPrevious,
-      registerFile,
-      unregisterFile,
-      getRowSearchRanges: (rowId: string) => getLineSearchRanges(matches, rowId),
-      isRowRangeActive: (rowId: string, range: TextRange) =>
-        isActiveSearchRange(activeMatch, rowId, range),
+      activeIndex,
+      matchCount: matches.length,
+      miniBarActive,
+      isMainBarInView,
+      inputRef,
+      miniInputRef,
+      onClose: close,
+      onNext: goToNext,
+      onPrevious: goToPrevious,
     }),
     [
+      query,
       activeIndex,
-      activeMatch,
+      matches.length,
+      miniBarActive,
+      isMainBarInView,
       close,
       goToNext,
       goToPrevious,
-      isOpen,
-      matches,
-      query,
-      registerFile,
-      unregisterFile,
     ],
   );
 
   return (
-    <DiffSearchContext.Provider value={value}>
-      {isOpen && (
-        <DiffSearchFindBar
-          query={query}
-          activeIndex={activeIndex}
-          matchCount={matches.length}
-          inputRef={inputRef}
-          onQueryChange={setQuery}
-          onClose={close}
-          onNext={goToNext}
-          onPrevious={goToPrevious}
-        />
-      )}
-      {children}
-    </DiffSearchContext.Provider>
+    <DiffSearchHighlightStoreContext.Provider value={highlightStore}>
+      <DiffSearchRegistrationContext.Provider value={registrationValue}>
+        <DiffSearchUiContext.Provider value={uiValue}>
+          {(findBarVisibility === "always" || isOpen) && (
+            <DiffSearchFindBar
+              barRef={mainBarRef}
+              query={query}
+              activeIndex={activeIndex}
+              matchCount={matches.length}
+              inputRef={inputRef}
+              onQueryChange={setQuery}
+              onClose={close}
+              onNext={goToNext}
+              onPrevious={goToPrevious}
+            />
+          )}
+          <DiffSearchStickyMiniBar />
+          {children}
+        </DiffSearchUiContext.Provider>
+      </DiffSearchRegistrationContext.Provider>
+    </DiffSearchHighlightStoreContext.Provider>
   );
-});
+  },
+);
 
-export const useDiffSearch = () => {
-  const context = useContext(DiffSearchContext);
+export const useDiffSearchRegistration = () => {
+  const context = useContext(DiffSearchRegistrationContext);
   if (!context) {
-    throw new Error("useDiffSearch must be used within DiffSearchProvider");
+    throw new Error(
+      "useDiffSearchRegistration must be used within DiffSearchProvider",
+    );
   }
 
   return context;
 };
 
-export const useDiffSearchOptional = () => useContext(DiffSearchContext);
+export const useDiffSearchRegistrationOptional = () =>
+  useContext(DiffSearchRegistrationContext);
+
+export const useRowSearchHighlight = (rowId?: string) => {
+  const store = useContext(DiffSearchHighlightStoreContext);
+
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      if (!store || !rowId) {
+        return () => {};
+      }
+
+      return store.subscribeRow(rowId, onStoreChange);
+    },
+    () => {
+      if (!store || !rowId) {
+        return EMPTY_ROW_HIGHLIGHT;
+      }
+
+      return store.getRowState(rowId);
+    },
+    () => EMPTY_ROW_HIGHLIGHT,
+  );
+};
+
+/** @deprecated Use useDiffSearchRegistrationOptional */
+export const useDiffSearchOptional = () =>
+  useContext(DiffSearchRegistrationContext);
 
 export const SearchHighlightedText = memo(
   ({
     text,
     ranges,
-    isRangeActive,
+    activeRange,
   }: {
     text: string;
     ranges: TextRange[];
-    isRangeActive: (range: TextRange) => boolean;
+    activeRange: TextRange | null;
   }) => {
     if (ranges.length === 0) {
       return <>{text || " "}</>;
@@ -340,14 +729,19 @@ export const SearchHighlightedText = memo(
         nodes.push(text.slice(cursor, range.start));
       }
 
+      const isActive =
+        activeRange !== null &&
+        activeRange.start === range.start &&
+        activeRange.end === range.end;
+
       nodes.push(
         <mark
           key={`${range.start}:${range.end}:${index}`}
           className={cn(
             "rounded-sm px-0 text-inherit",
-            isRangeActive(range)
-              ? "bg-[#ff9632] text-[#1f2328] dark:bg-[#9e6a03] dark:text-[#f0f6fc]"
-              : "bg-[#fff8c5] text-inherit dark:bg-[#6e5a1f] dark:text-[#f0f6fc]",
+            isActive
+              ? "bg-[var(--diff-search-active-bg)] text-[var(--diff-search-active-fg)]"
+              : "bg-[var(--diff-search-inactive-bg)] text-inherit dark:text-[var(--diff-search-active-fg)]",
           )}
         >
           {text.slice(range.start, range.end)}

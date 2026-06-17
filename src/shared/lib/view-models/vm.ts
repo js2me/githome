@@ -12,6 +12,8 @@ export class VM<
   ParentViewModel extends AnyViewModel | AnyViewModelSimple | null = null,
   ComponentProps extends AnyObject = AnyObject,
 > extends ViewModelBase<Payload, ParentViewModel, ComponentProps> {
+  abortSignal = this.unmountSignal;
+
   protected override get viewModels(): ViewModelsStore {
     return this.globals.stores.viewModels;
   }

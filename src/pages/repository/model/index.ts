@@ -1,80 +1,35 @@
-import { computed, makeObservable, observable, reaction } from "mobx";
-import { createQuery } from "mobx-tanstack-query/preset";
+import { computed, reaction } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
-import { gitlabApi } from "@/shared/api/gitlab";
-import type { GitLabProject, GitLabProjectReadme } from "@/shared/api/gitlab";
+import type {
+  GitLabProjectDC,
+  GitLabProjectReadmeDC,
+} from "@/shared/api/gitlab";
+import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
+import { ProjectReadmeModel } from "./project-readme";
 import type { RepositoryModelContext } from "./repository-model-context";
 
-type ProjectQuery = {
-  data?: GitLabProject;
-  isLoading: boolean;
-  isFetching: boolean;
-  error: unknown;
-};
-
-type ReadmeQuery = {
-  data?: GitLabProjectReadme | null;
-  isLoading: boolean;
-  isFetching: boolean;
-  error: unknown;
-};
-
-export class RepositoryVM extends VM implements RepositoryModelContext {
-  projectQuery!: ProjectQuery;
-  readmeQuery!: ReadmeQuery;
+export class RepositoryPageVM extends VM implements RepositoryModelContext {
+  projectQuery;
+  readmeModel;
 
   constructor(globals: Globals, params: ViewModelParams) {
     super(globals, params);
 
-    this.projectQuery = createQuery({
+    this.projectQuery = createGitlabQuery<GitLabProjectDC>({
+      globals,
       abortSignal: this.unmountSignal,
-      queryKey: () =>
-        [
-          "gitlab",
-          "project",
-          globals.stores.settings.activeConnection?.id ?? null,
-          this.projectId,
-        ] as const,
-      queryFn: ({ signal }) => {
-        const connection = globals.stores.settings.activeConnection;
-        if (!connection) {
-          throw new Error("GitLab connection is not configured");
-        }
-
-        return gitlabApi.getProject(connection, this.projectId, signal);
-      },
-      options: () => ({
-        enabled: !!globals.stores.settings.activeConnection,
+      params: () => ({
+        path: `/projects/${this.projectId}`,
       }),
     });
 
-    this.readmeQuery = createQuery({
+    this.readmeModel = new ProjectReadmeModel({
+      globals,
       abortSignal: this.unmountSignal,
-      queryKey: () =>
-        [
-          "gitlab",
-          "project-readme",
-          globals.stores.settings.activeConnection?.id ?? null,
-          this.projectId,
-        ] as const,
-      queryFn: ({ signal }) => {
-        const connection = globals.stores.settings.activeConnection;
-        if (!connection) {
-          throw new Error("GitLab connection is not configured");
-        }
-
-        return gitlabApi.getProjectReadme(connection, this.projectId, {
-          ref: this.projectQuery.data?.defaultBranch ?? null,
-          signal,
-        });
-      },
-      options: () => ({
-        enabled:
-          !!globals.stores.settings.activeConnection &&
-          !!this.projectQuery.data,
-      }),
+      projectId: () => this.projectId,
+      defaultBranch: () => this.projectQuery.data?.default_branch,
     });
 
     reaction(
@@ -85,21 +40,6 @@ export class RepositoryVM extends VM implements RepositoryModelContext {
         }
       },
     );
-
-    makeObservable(this, {
-      projectQuery: observable,
-      readmeQuery: observable,
-      projectId: computed,
-      projectIdParam: computed,
-      mergeRequestIid: computed,
-      selectedProject: computed,
-      project: computed,
-      readme: computed,
-      isLoading: computed,
-      isReadmeLoading: computed,
-      readmeErrorMessage: computed,
-      errorMessage: computed,
-    });
   }
 
   static resolveProjectId(globals: Globals): number | null {
@@ -132,8 +72,9 @@ export class RepositoryVM extends VM implements RepositoryModelContext {
     return Number.isNaN(iid) ? null : iid;
   }
 
+  @computed
   get projectId(): number {
-    const projectId = RepositoryVM.resolveProjectId(this.globals);
+    const projectId = RepositoryPageVM.resolveProjectId(this.globals);
     if (projectId === null) {
       throw new Error("Project id is missing in route");
     }
@@ -141,15 +82,23 @@ export class RepositoryVM extends VM implements RepositoryModelContext {
     return projectId;
   }
 
+  @computed
   get projectIdParam(): string {
     return String(this.projectId);
   }
 
+  @computed
   get mergeRequestIid(): number | null {
-    return RepositoryVM.resolveMergeRequestIid(this.globals);
+    return RepositoryPageVM.resolveMergeRequestIid(this.globals);
   }
 
-  get selectedProject(): GitLabProject | null {
+  @computed
+  get selectedProject(): GitLabProjectDC | null {
+    const fromQuery = this.projectQuery.data;
+    if (fromQuery && fromQuery.id === this.projectId) {
+      return fromQuery;
+    }
+
     const cached = this.globals.stores.repository.project;
     if (!cached || cached.id !== this.projectId) {
       return null;
@@ -158,31 +107,32 @@ export class RepositoryVM extends VM implements RepositoryModelContext {
     return cached;
   }
 
+  @computed
   get isReadmeLoading() {
-    return this.readmeQuery.isLoading || this.readmeQuery.isFetching;
+    return this.readmeModel.isLoading;
   }
 
+  @computed
   get readmeErrorMessage() {
-    const error = this.readmeQuery.error;
-    if (!error) {
-      return null;
-    }
-
-    return error instanceof Error ? error.message : "Не удалось загрузить README";
+    return this.readmeModel.errorMessage;
   }
 
-  get project(): GitLabProject | null {
+  @computed
+  get project(): GitLabProjectDC | null {
     return this.projectQuery.data ?? this.selectedProject;
   }
 
-  get readme(): GitLabProjectReadme | null {
-    return this.readmeQuery.data ?? null;
+  @computed
+  get readme(): GitLabProjectReadmeDC | null {
+    return this.readmeModel.readme;
   }
 
+  @computed
   get isLoading() {
     return this.projectQuery.isLoading || this.projectQuery.isFetching;
   }
 
+  @computed
   get errorMessage() {
     const error = this.projectQuery.error;
     if (!error) {
@@ -190,5 +140,14 @@ export class RepositoryVM extends VM implements RepositoryModelContext {
     }
 
     return error instanceof Error ? error.message : "Не удалось загрузить репозиторий";
+  }
+
+  @computed
+  get showReadmeMissing() {
+    return (
+      !this.isReadmeLoading &&
+      !this.readmeErrorMessage &&
+      this.readme === null
+    );
   }
 }

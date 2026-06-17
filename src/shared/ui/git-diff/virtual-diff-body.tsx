@@ -1,5 +1,14 @@
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { memo, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import type { VirtualDiffRow } from "@/shared/lib/build-diff-virtual-rows";
 import type { DiffExpandMode } from "@/shared/lib/expand-diff-context";
 import type { DiffLineSelection } from "@/shared/lib/diff-line-selection";
@@ -91,6 +100,7 @@ const VirtualDiffRowView = memo(
           gap={row.gap}
           expandState={row.expandState}
           isLoading={row.isLoading}
+          hunkHeader={row.hunkHeader}
           onExpand={(gap, mode) => onExpandGap?.(gap.id, mode)}
         />
       );
@@ -275,6 +285,41 @@ const StaticDiffBody = memo(
   },
 );
 
+const useWindowScrollMargin = (
+  listRef: RefObject<HTMLDivElement | null>,
+  deps: unknown[],
+) => {
+  const [scrollMargin, setScrollMargin] = useState(0);
+
+  const measureScrollMargin = useCallback(() => {
+    const element = listRef.current;
+    if (!element) {
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    setScrollMargin(rect.top + window.scrollY);
+  }, [listRef]);
+
+  useLayoutEffect(() => {
+    measureScrollMargin();
+
+    const observer = new ResizeObserver(measureScrollMargin);
+    if (listRef.current) {
+      observer.observe(listRef.current);
+    }
+
+    window.addEventListener("resize", measureScrollMargin);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measureScrollMargin);
+    };
+  }, [listRef, measureScrollMargin, deps]);
+
+  return scrollMargin;
+};
+
 const VirtualizedDiffBody = memo(
   ({
     rows,
@@ -315,8 +360,9 @@ const VirtualizedDiffBody = memo(
     onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
     onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
   } & DiffThreadResolveProps) => {
-    const parentRef = useRef<HTMLDivElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
     const rowIds = useMemo(() => rows.map((row) => row.id).join("\0"), [rows]);
+    const scrollMargin = useWindowScrollMargin(listRef, [rowIds]);
     const normalizedSelection = useMemo(() => {
       if (!lineSelection) {
         return null;
@@ -344,12 +390,12 @@ const VirtualizedDiffBody = memo(
     const selectionStartKey = normalizedSelection?.startKey ?? null;
     const selectionEndKey = normalizedSelection?.endKey ?? null;
 
-    const virtualizer = useVirtualizer({
+    const virtualizer = useWindowVirtualizer({
       count: rows.length,
-      getScrollElement: () => parentRef.current,
       estimateSize: (index) => rows[index]?.estimatedHeight ?? 20,
       getItemKey: (index) => rows[index]?.id ?? index,
       overscan: 24,
+      scrollMargin,
       measureElement: (element) => {
         const index = Number(element.getAttribute("data-index"));
         const row = rows[index];
@@ -400,7 +446,7 @@ const VirtualizedDiffBody = memo(
     }, [onRegisterScrollToRow, rows, virtualizer]);
 
     return (
-      <div ref={parentRef} className="diff-viewport max-h-[min(70vh,900px)] overflow-auto overscroll-contain">
+      <div ref={listRef} className="diff-viewport w-full">
         <div
           className="relative w-full"
           style={{
@@ -424,7 +470,7 @@ const VirtualizedDiffBody = memo(
                   top: 0,
                   left: 0,
                   width: "100%",
-                  transform: `translateY(${virtualRow.start}px)`,
+                  transform: `translateY(${virtualRow.start - scrollMargin}px)`,
                 }}
               >
                 <VirtualDiffRowView

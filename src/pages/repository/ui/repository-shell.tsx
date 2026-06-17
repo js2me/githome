@@ -1,30 +1,22 @@
 import { observer } from "mobx-react-lite";
 import type { ReactNode } from "react";
-import { useViewModel } from "mobx-view-model-react";
-import { RepositoryVM } from "@/pages/repository/model";
+import { useViewModel, withViewModel } from "mobx-view-model-react";
+import { RepositoryPageVM } from "@/pages/repository/model";
 import { cn } from "@/shared/lib/cn";
 import { LayoutVM } from "@/widgets/layout/model/layout-vm";
 
 const sidebarLinkClassName =
   "w-full cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950";
 
-export const RepositoryShell = observer(({ children }: { children?: ReactNode }) => {
+const RepositoryShellLayout = observer(({ children }: { children?: ReactNode }) => {
   const model = useViewModel(LayoutVM);
-  const { router } = model.globals;
-  const projectId = RepositoryVM.resolveProjectId(model.globals);
-  const isMergeRequestDetailOpen = router.routes.mergeRequest.isOpened;
-  const isMergeRequestsOpen =
-    router.routes.mergeRequests.isOpened || isMergeRequestDetailOpen;
-  const isOverviewOpen = router.routes.repository.isOpened;
 
-  if (!projectId) {
+  if (!model.isRepositorySidebarVisible) {
+    if (model.isMergeRequestDetailOpen) {
+      return <div className="min-w-0">{children}</div>;
+    }
+
     return null;
-  }
-
-  const projectIdParam = String(projectId);
-
-  if (isMergeRequestDetailOpen) {
-    return <div className="min-w-0">{children}</div>;
   }
 
   return (
@@ -34,13 +26,11 @@ export const RepositoryShell = observer(({ children }: { children?: ReactNode })
           <button
             className={cn(
               sidebarLinkClassName,
-              isOverviewOpen &&
-                "border-[#fc6d26] bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+              model.isRepositoryOverviewOpen &&
+                "border-brand bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
             )}
             type="button"
-            onClick={() => {
-              void router.routes.repository.open({ projectId: projectIdParam });
-            }}
+            onClick={model.openRepository}
           >
             Обзор
           </button>
@@ -48,13 +38,11 @@ export const RepositoryShell = observer(({ children }: { children?: ReactNode })
           <button
             className={cn(
               sidebarLinkClassName,
-              isMergeRequestsOpen &&
-                "border-[#fc6d26] bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+              model.isMergeRequestsOpen &&
+                "border-brand bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
             )}
             type="button"
-            onClick={() => {
-              void router.routes.mergeRequests.open({ projectId: projectIdParam });
-            }}
+            onClick={model.openMergeRequests}
           >
             Merge requests
           </button>
@@ -65,3 +53,8 @@ export const RepositoryShell = observer(({ children }: { children?: ReactNode })
     </div>
   );
 });
+
+export const RepositoryShell = withViewModel(
+  RepositoryPageVM,
+  RepositoryShellLayout,
+);

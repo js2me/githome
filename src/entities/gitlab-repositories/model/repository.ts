@@ -1,28 +1,23 @@
-import { action, computed, makeObservable } from "mobx";
+import { action, computed } from "mobx";
 import type { SettingsStore } from "@/globals/stores/settings";
-import type { GitLabProject } from "@/shared/api/gitlab";
+import type { GitLabProjectDC } from "@/shared/api/gitlab";
 import { appStorage } from "@/shared/lib/storage";
 
-type ProjectsByConnection = Record<string, GitLabProject>;
+type ProjectsByConnection = Record<string, GitLabProjectDC>;
 
 export class Repository {
   private static readonly projectsByConnectionKey =
     appStorage.key<ProjectsByConnection>("selected-projects", {});
 
-  constructor(private settings: SettingsStore) {
-    makeObservable(this, {
-      project: computed,
-      setProject: action,
-      clear: action,
-    });
-  }
+  constructor(private settings: SettingsStore) {}
 
   private get connectionId(): string | null {
     return this.settings.activeId;
   }
 
   /** Cached GitLab project info for the active connection. */
-  get project(): GitLabProject | null {
+  @computed
+  get project(): GitLabProjectDC | null {
     const connectionId = this.connectionId;
     if (!connectionId) {
       return null;
@@ -31,7 +26,8 @@ export class Repository {
     return Repository.projectsByConnectionKey.value[connectionId] ?? null;
   }
 
-  setProject(project: GitLabProject) {
+  @action
+  setProject(project: GitLabProjectDC) {
     const connectionId = this.connectionId;
     if (!connectionId) {
       return;
@@ -43,6 +39,7 @@ export class Repository {
     };
   }
 
+  @action
   clear() {
     const connectionId = this.connectionId;
     if (!connectionId) {

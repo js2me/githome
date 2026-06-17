@@ -29,7 +29,7 @@ const MergeRequestsPage = lazy(() =>
 );
 
 const MergeRequestPage = lazy(() =>
-  import("@/pages/repository/pages/merge-requests/pages/id/ui/page").then(
+  import("@/pages/repository/pages/merge-requests/pages/[id]/ui/page").then(
     (module) => ({
       default: module.MergeRequestPage,
     }),

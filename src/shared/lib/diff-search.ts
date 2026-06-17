@@ -3,6 +3,11 @@ export interface DiffSearchLineEntry {
   text: string;
 }
 
+export interface DiffSearchFileEntry {
+  path: string;
+  lines: DiffSearchLineEntry[];
+}
+
 export interface DiffSearchMatch {
   fileKey: string;
   rowId: string;
@@ -20,6 +25,16 @@ export const getDiffFileKey = (oldPath: string, newPath: string) =>
 
 export const getDiffFileElementId = (fileKey: string) =>
   `diff-file-${encodeURIComponent(fileKey)}`;
+
+/** Safe `data-changes-file-id` value (file keys contain `\0`). */
+export const getChangesTreeFileDataId = (fileKey: string) =>
+  encodeURIComponent(fileKey);
+
+export const getDiffFileHeaderRowId = (fileKey: string) =>
+  `file-header:${fileKey}`;
+
+export const isDiffFileHeaderRowId = (rowId: string) =>
+  rowId.startsWith("file-header:");
 
 export const findTextRanges = (text: string, query: string): TextRange[] => {
   if (!query) {
@@ -45,7 +60,7 @@ export const findTextRanges = (text: string, query: string): TextRange[] => {
 };
 
 export const collectDiffSearchMatches = (
-  fileLines: Map<string, DiffSearchLineEntry[]>,
+  files: Map<string, DiffSearchFileEntry>,
   query: string,
 ): DiffSearchMatch[] => {
   if (!query.trim()) {
@@ -54,7 +69,18 @@ export const collectDiffSearchMatches = (
 
   const matches: DiffSearchMatch[] = [];
 
-  for (const [fileKey, lines] of fileLines.entries()) {
+  for (const [fileKey, { path, lines }] of files.entries()) {
+    const headerRowId = getDiffFileHeaderRowId(fileKey);
+
+    for (const range of findTextRanges(path, query)) {
+      matches.push({
+        fileKey,
+        rowId: headerRowId,
+        start: range.start,
+        end: range.end,
+      });
+    }
+
     for (const line of lines) {
       for (const range of findTextRanges(line.text, query)) {
         matches.push({
@@ -77,6 +103,45 @@ export const getLineSearchRanges = (
   matches
     .filter((match) => match.rowId === rowId)
     .map((match) => ({ start: match.start, end: match.end }));
+
+export const indexMatchesByRowId = (
+  matches: DiffSearchMatch[],
+): Map<string, TextRange[]> => {
+  const map = new Map<string, TextRange[]>();
+
+  for (const match of matches) {
+    const range = { start: match.start, end: match.end };
+    const ranges = map.get(match.rowId);
+
+    if (ranges) {
+      ranges.push(range);
+    } else {
+      map.set(match.rowId, [range]);
+    }
+  }
+
+  return map;
+};
+
+export const areTextRangesEqual = (left: TextRange[], right: TextRange[]) => {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.length; index += 1) {
+    const leftRange = left[index];
+    const rightRange = right[index];
+
+    if (
+      leftRange.start !== rightRange.start ||
+      leftRange.end !== rightRange.end
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 export const isActiveSearchRange = (
   match: DiffSearchMatch | null,

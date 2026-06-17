@@ -1,13 +1,8 @@
 import { QueryClient } from "mobx-tanstack-query";
 import { Repository } from "@/entities/gitlab-repositories/model/repository";
-import type { RouterParams } from "./router";
 import { Router } from "./router";
 import { SettingsStore } from "./stores/settings";
 import { ViewModelsStore } from "./stores/view-models";
-
-export interface GlobalsCreateParams {
-  router?: RouterParams;
-}
 
 export class Globals {
   readonly router: Router;
@@ -18,8 +13,8 @@ export class Globals {
     queryClient: QueryClient;
   };
 
-  constructor(params: GlobalsCreateParams = {}) {
-    this.router = new Router(params.router);
+  constructor() {
+    this.router = new Router();
     const settings = new SettingsStore();
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -40,5 +35,3 @@ export class Globals {
     };
   }
 }
-
-export const globals = new Globals();

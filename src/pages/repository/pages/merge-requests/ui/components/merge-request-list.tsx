@@ -1,4 +1,4 @@
-import type { GitLabMergeRequest } from "@/shared/api/gitlab";
+import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
 import { cx } from "yummies/css";
 import {
   getMrStateBadgeState,
@@ -19,8 +19,14 @@ const formatUpdatedAt = (value: string) => {
   });
 };
 
-const getStateLabel = (mergeRequest: GitLabMergeRequest) => {
-  if (mergeRequest.draft) {
+const isDraft = (mergeRequest: GitLabMergeRequestDC) =>
+  mergeRequest.draft ?? mergeRequest.work_in_progress ?? false;
+
+const getAuthorName = (mergeRequest: GitLabMergeRequestDC) =>
+  mergeRequest.author?.name ?? "Unknown";
+
+const getStateLabel = (mergeRequest: GitLabMergeRequestDC) => {
+  if (isDraft(mergeRequest)) {
     return "Draft";
   }
 
@@ -36,22 +42,24 @@ export const MergeRequestList = ({
   selectedMergeRequestIid,
   onSelect,
 }: {
-  mergeRequests: GitLabMergeRequest[];
+  mergeRequests: GitLabMergeRequestDC[];
   selectedMergeRequestIid: number | null;
-  onSelect: (mergeRequest: GitLabMergeRequest) => void;
+  onSelect: (mergeRequest: GitLabMergeRequestDC) => void;
 }) => {
   return (
     <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
       {mergeRequests.map((mergeRequest) => {
         const isSelected = selectedMergeRequestIid === mergeRequest.iid;
-        const stateKey = mergeRequest.draft ? "draft" : mergeRequest.state;
+        const stateKey = isDraft(mergeRequest) ? "draft" : mergeRequest.state;
+        const authorName = getAuthorName(mergeRequest);
+        const authorAvatarUrl = mergeRequest.author?.avatar_url ?? null;
 
         return (
           <li key={mergeRequest.id}>
             <button
               className={cx(
-                "flex w-full cursor-pointer flex-col gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left text-inherit transition hover:border-[#fc6d26] hover:shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-gray-900",
-                isSelected && "border-[#fc6d26] shadow-[0_0_0_3px_rgba(252,109,38,0.12)]",
+                "flex w-full cursor-pointer flex-col gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left text-inherit transition hover:border-brand hover:shadow-[0_4px_16px_var(--color-card-hover-shadow)] dark:border-slate-800 dark:bg-gray-900",
+                isSelected && "border-brand shadow-[0_0_0_3px_var(--color-brand-selection-shadow)]",
               )}
               type="button"
               onClick={() => onSelect(mergeRequest)}
@@ -75,24 +83,24 @@ export const MergeRequestList = ({
 
               <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">
                 <span className="font-mono">
-                  {mergeRequest.sourceBranch} → {mergeRequest.targetBranch}
+                  {mergeRequest.source_branch} → {mergeRequest.target_branch}
                 </span>
-                <span>{formatUpdatedAt(mergeRequest.updatedAt)}</span>
+                <span>{formatUpdatedAt(mergeRequest.updated_at)}</span>
               </div>
 
               <div className="flex items-center gap-2 text-[13px] text-slate-600 dark:text-slate-400">
-                {mergeRequest.authorAvatarUrl ? (
+                {authorAvatarUrl ? (
                   <img
                     className="h-6 w-6 rounded-full object-cover"
-                    src={mergeRequest.authorAvatarUrl}
+                    src={authorAvatarUrl}
                     alt=""
                   />
                 ) : (
                   <div className="grid h-6 w-6 place-items-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                    {mergeRequest.authorName.slice(0, 1).toUpperCase()}
+                    {authorName.slice(0, 1).toUpperCase()}
                   </div>
                 )}
-                <span>{mergeRequest.authorName}</span>
+                <span>{authorName}</span>
               </div>
             </button>
           </li>

@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { GitLabConnection } from "@/shared/api/gitlab";
+import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
 
 export interface GitLabMarkdownContextValue {
   connection: GitLabConnection;

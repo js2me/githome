@@ -1,4 +1,4 @@
-import type { GitLabMergeRequestChange } from "@/shared/api/gitlab";
+import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
 import {
   getDiffFileElementId,
   getDiffFileKey,
@@ -14,10 +14,10 @@ export const getDiffFileKeyFromElementId = (elementId: string) => {
   return decodeURIComponent(elementId.slice(prefix.length));
 };
 
-export const scrollToDiffFile = (change: GitLabMergeRequestChange) => {
-  const fileKey = getDiffFileKey(change.oldPath, change.newPath);
+export const scrollToDiffFile = (change: GitLabMergeRequestChangeDC) => {
+  const fileKey = getDiffFileKey(change.old_path, change.new_path);
   document.getElementById(getDiffFileElementId(fileKey))?.scrollIntoView({
-    behavior: "smooth",
+    behavior: "instant",
     block: "start",
   });
 };
