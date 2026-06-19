@@ -1,58 +1,18 @@
-import { action, computed } from "mobx";
-import type { Globals } from "@/globals";
+import { computed } from "mobx";
 import type { GitLabProjectDC } from "@/shared/api/gitlab";
-import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 
-export interface GitlabProjectInfoParams {
-  globals: Globals;
-  abortSignal: AbortSignal;
-}
+export class GitlabProjectInfo {
+  constructor(readonly data: GitLabProjectDC) {}
 
-export class GitlabProjectInfoModel {
-  projectsQuery;
-
-  constructor(private params: GitlabProjectInfoParams) {
-    this.projectsQuery = createGitlabQuery<GitLabProjectDC[]>({
-      globals: params.globals,
-      abortSignal: params.abortSignal,
-      params: () => ({
-        path: "/projects",
-        query: {
-          membership: true,
-          order_by: "last_activity_at",
-          sort: "desc",
-          per_page: 10,
-          simple: false,
-        },
-      }),
-    });
+  @computed
+  get name() {
+    return this.data.name;
   }
 
   @computed
-  get projects(): GitLabProjectDC[] {
-    return this.projectsQuery.data ?? [];
-  }
+  get displayName() {
+    const name = this.name.trim();
 
-  @computed
-  get isLoading() {
-    return this.projectsQuery.isLoading;
-  }
-
-  @computed
-  get errorMessage() {
-    const error = this.projectsQuery.error;
-    if (!error) {
-      return null;
-    }
-
-    return error instanceof Error ? error.message : "Не удалось загрузить проекты";
-  }
-
-  @action.bound
-  openProject(project: GitLabProjectDC) {
-    this.params.globals.stores.repository.setProject(project);
-    void this.params.globals.router.routes.repository.open({
-      projectId: String(project.id),
-    });
+    return name ? name.slice(0, 1).toUpperCase() : "?";
   }
 }

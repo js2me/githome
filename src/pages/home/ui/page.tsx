@@ -1,34 +1,10 @@
 import { withViewModel } from "mobx-view-model-react";
-import type { GitLabProjectDC } from "@/shared/api/gitlab";
-import { cn } from "@/shared/lib/cn";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { HomeVM } from "../model";
-
-const ProjectAvatar = ({
-  project,
-  className,
-}: {
-  project: GitLabProjectDC;
-  className: string;
-}) => {
-  if (project.avatar_url) {
-    return <img className={className} src={project.avatar_url} alt="" />;
-  }
-
-  return (
-    <div
-      className={cn(
-        className,
-        "grid place-items-center bg-gradient-to-br from-brand to-brand-gradient-to text-base font-bold text-white",
-      )}
-    >
-      {project.name.slice(0, 1).toUpperCase()}
-    </div>
-  );
-};
+import { ProjectAvatar } from "./components/project-avatar";
 
 export const HomePage = withViewModel(HomeVM, ({ model }) => {
-  const { gitlabProjectInfo } = model;
+  const { gitlabProjectsList } = model;
 
   return (
     <section className="max-w-[760px]">
@@ -50,7 +26,7 @@ export const HomePage = withViewModel(HomeVM, ({ model }) => {
       )}
 
       {model.showProjectsError && (
-        <StatusMessage error>{gitlabProjectInfo.errorMessage}</StatusMessage>
+        <StatusMessage error>{gitlabProjectsList.errorMessage}</StatusMessage>
       )}
 
       {model.showProjectsEmpty && (
@@ -61,12 +37,12 @@ export const HomePage = withViewModel(HomeVM, ({ model }) => {
 
       {model.showProjectsList && (
         <ul className="mt-5 flex list-none flex-col gap-2.5 p-0">
-          {gitlabProjectInfo.projects.map((project) => (
-            <li key={project.id}>
+          {gitlabProjectsList.projects.map((project) => (
+            <li key={project.data.id}>
               <button
                 className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left text-inherit transition hover:border-brand hover:shadow-[0_4px_16px_var(--color-card-hover-shadow)] dark:border-slate-800 dark:bg-gray-900 dark:hover:border-brand"
                 type="button"
-                onClick={() => gitlabProjectInfo.openProject(project)}
+                onClick={() => model.openProject(project)}
               >
                 <ProjectAvatar
                   className="h-10 w-10 shrink-0 rounded-[10px] object-cover"
@@ -78,7 +54,7 @@ export const HomePage = withViewModel(HomeVM, ({ model }) => {
                     {project.name}
                   </span>
                   <span className="truncate text-[13px] text-slate-500">
-                    {project.path_with_namespace}
+                    {project.data.path_with_namespace}
                   </span>
                 </span>
               </button>
