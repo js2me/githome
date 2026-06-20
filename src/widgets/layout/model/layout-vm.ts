@@ -111,7 +111,8 @@ export class LayoutVM extends VM {
   @computed
   get showRepositoryBreadcrumbs() {
     return (
-      this.globals.router.isRepositorySectionOpen &&
+      (this.globals.router.routes.repositoryRoot.isOpened ||
+        this.globals.router.routes.repositoryRoot.hasOpenedChildren) && 
       this.repository !== null &&
       this.projectId !== null
     );

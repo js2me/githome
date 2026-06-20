@@ -49,9 +49,26 @@ pnpm tauri:build:macos-universal
 
 Артефакты появятся в `src-tauri/target/universal-apple-darwin/release/bundle/` (`.dmg`, `.app`).
 
+### Windows
+
+1. Установите [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) с компонентом **Desktop development with C++**.
+2. Установите [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (Evergreen Bootstrapper), если его ещё нет в системе.
+3. Установите [Rust](https://www.rust-lang.org/tools/install) и [Node.js LTS](https://nodejs.org/).
+
+Сборка:
+
+```powershell
+pnpm install
+pnpm tauri:build
+# или
+pwsh ./scripts/build-tauri.ps1
+```
+
+Артефакты появятся в `src-tauri/target/release/bundle/` (`.msi`, `.exe` NSIS installer).
+
 ### CI (GitHub Actions)
 
-Workflow `.github/workflows/tauri-build.yml` собирает приложение на `ubuntu-22.04` и `macos-latest` и загружает bundle-артефакты. Запускается при push/PR в `main` и вручную через **Actions → Build Tauri → Run workflow**.
+Workflow `.github/workflows/tauri-build.yml` собирает приложение на `ubuntu-22.04`, `macos-latest` и `windows-latest`, затем загружает bundle-артефакты. Запускается при push/PR в `main` и вручную через **Actions → Build Tauri → Run workflow**.
 
 ## IDE
 

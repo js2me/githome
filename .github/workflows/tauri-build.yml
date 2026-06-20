@@ -27,6 +27,10 @@ jobs:
             rust-target: universal-apple-darwin
             tauri-args: "--target universal-apple-darwin"
             artifact-name: githome-macos-universal
+          - platform: windows-latest
+            rust-target: x86_64-pc-windows-msvc
+            tauri-args: ""
+            artifact-name: githome-windows-x86_64
 
     runs-on: ${{ matrix.platform }}
     steps:

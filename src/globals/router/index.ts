@@ -55,11 +55,4 @@ export class Router extends RouterLib<RoutesMap> {
     this.history = history;
     this.query = query;
   }
-
-  get isRepositorySectionOpen() {
-    return (
-      this.routes.repositoryRoot.isOpened ||
-      this.routes.repositoryRoot.hasOpenedChildren
-    );
-  }
 }

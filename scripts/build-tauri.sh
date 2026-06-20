@@ -22,6 +22,7 @@ case "$TARGET" in
     ;;
   *)
     echo "Usage: $0 [linux|macos-universal]" >&2
+    echo "On Windows use: pwsh ./scripts/build-tauri.ps1" >&2
     exit 1
     ;;
 esac

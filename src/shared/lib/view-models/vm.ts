@@ -5,7 +5,7 @@ import {
   type ViewModelParams,
 } from "mobx-view-model";
 import type { Globals } from "@/globals";
-import type { ViewModelsStore } from "@/globals/stores/view-models";
+import { VMStore } from "./vm-store";
 
 export class VM<
   Payload extends AnyObject = EmptyObject,
@@ -14,7 +14,7 @@ export class VM<
 > extends ViewModelBase<Payload, ParentViewModel, ComponentProps> {
   abortSignal = this.unmountSignal;
 
-  protected override get viewModels(): ViewModelsStore {
+  protected override get viewModels(): VMStore {
     return this.globals.stores.viewModels;
   }
 

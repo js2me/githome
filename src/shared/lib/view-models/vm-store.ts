@@ -5,9 +5,9 @@ import {
   ViewModelStoreBase,
 } from "mobx-view-model";
 import type { VM } from "@/shared/lib/view-models/vm";
-import type { Globals } from "..";
+import type { Globals } from "../../../globals";
 
-export class ViewModelsStore extends ViewModelStoreBase {
+export class VMStore extends ViewModelStoreBase {
   constructor(private globals: Globals) {
     super({
       vmConfig: {

@@ -2,14 +2,14 @@ import { QueryClient } from "mobx-tanstack-query";
 import { Repository } from "@/entities/gitlab-repositories/model/repository";
 import { Router } from "./router";
 import { SettingsStore } from "./stores/settings";
-import { ViewModelsStore } from "./stores/view-models";
+import { VMStore } from "../shared/lib/view-models/vm-store";
 
 export class Globals {
   readonly router: Router;
   readonly stores: {
     settings: SettingsStore;
     repository: Repository;
-    viewModels: ViewModelsStore;
+    viewModels: VMStore;
     queryClient: QueryClient;
   };
 
@@ -30,7 +30,7 @@ export class Globals {
     this.stores = {
       settings,
       repository: new Repository(settings),
-      viewModels: new ViewModelsStore(this),
+      viewModels: new VMStore(this),
       queryClient,
     };
   }
