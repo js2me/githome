@@ -83,7 +83,11 @@
         "deb",
         "AppImage"
       ],
-      "category": "Development"
+      "category": "Development",
+      "packageName": "git-home",
+      "executableName": "githome",
+      "synopsis": "GitHome desktop client for GitLab",
+      "description": "Desktop client for GitLab merge requests and code review."
     },
     "mac": {
       "target": [

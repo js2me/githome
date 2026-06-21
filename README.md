@@ -39,6 +39,20 @@ pnpm build:electron
 | macOS | `.dmg` |
 | Windows | `.exe` (NSIS installer) |
 
+### Установка `.deb` на Ubuntu
+
+Пакет называется `git-home` (как у старой Tauri-сборки) — обновление через apt/dpkg должно проходить без конфликтов.
+
+Если раньше ставили `.deb` из раннего Electron-релиза с именем `githome`, удалите оба пакета и поставьте заново:
+
+```bash
+sudo apt remove git-home githome
+sudo dpkg -i git-home_*.deb
+sudo apt -f install
+```
+
+Или используйте `.AppImage` — он не конфликтует с системными пакетами.
+
 ### Требования для локальной сборки
 
 - **Linux / macOS / Windows:** Node.js LTS, pnpm
