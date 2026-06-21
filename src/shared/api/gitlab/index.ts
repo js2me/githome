@@ -4,6 +4,7 @@ import type { GitLabProjectDC } from "./data-contracts";
 import { approveMergeRequest } from "./endpoints/approve-merge-request";
 import { cancelMergeRequestRequestedChanges } from "./endpoints/cancel-merge-request-requested-changes";
 import { createMergeRequestDiffDiscussion } from "./endpoints/create-merge-request-diff-discussion";
+import { createMergeRequestDiscussion } from "./endpoints/create-merge-request-discussion";
 import { getFrequentProjects } from "./endpoints/get-frequent-projects";
 import { getMergeRequestChanges } from "./endpoints/get-merge-request-changes";
 import { getMergeRequestDetail } from "./endpoints/get-merge-request-detail";
@@ -53,6 +54,8 @@ export const gitlabApi = {
   getMergeRequestDiscussions,
 
   createMergeRequestDiffDiscussion,
+
+  createMergeRequestDiscussion,
 
   resolveMergeRequestDiscussion,
 

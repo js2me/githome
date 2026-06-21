@@ -12,13 +12,14 @@ import {
 } from "@/shared/ui/mr-state-badge";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { StatusMessage } from "@/shared/ui/status-message";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { ChangesActiveFileLink } from "./changes-active-file-link";
 import { ChangesFileTree } from "./changes-file-tree";
 import { ChangesTreeLayout } from "./changes-tree-layout";
 import { useActiveDiffFile } from "../hooks/use-active-diff-file";
 import { DiffSearchProvider } from "@/shared/ui/git-diff/diff-search";
 import { MergeRequestChanges } from "./merge-request-changes";
+import { MergeRequestCommentForm } from "./merge-request-comment-form";
 import { MergeRequestDiscussions } from "./merge-request-discussions";
 import { MrReviewActions } from "./mr-review-actions";
 
@@ -195,6 +196,11 @@ export const MergeRequestDetail = ({
   submitCommentError,
   onAddComment,
   onClearSubmitError,
+  canCommentOnMr,
+  isSubmittingMrComment,
+  submitMrCommentError,
+  onSubmitMrComment,
+  onClearSubmitMrCommentError,
   loadFileContent,
   onResolveDiscussion,
   resolvingDiscussionId,
@@ -215,6 +221,11 @@ export const MergeRequestDetail = ({
   submitCommentError: string | null;
   onAddComment: (input: CreateDiffCommentInput) => Promise<boolean>;
   onClearSubmitError: () => void;
+  canCommentOnMr: boolean;
+  isSubmittingMrComment: boolean;
+  submitMrCommentError: string | null;
+  onSubmitMrComment: (body: string) => Promise<boolean>;
+  onClearSubmitMrCommentError: () => void;
   loadFileContent?: (filePath: string, ref: string) => Promise<string>;
   onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId: string | null;
@@ -237,10 +248,6 @@ export const MergeRequestDetail = ({
   const description = mergeRequest.description ?? "";
   const { activeFileKey, setActiveFileKey } = useActiveDiffFile(changes);
   const showChangesTree = changes.length > 0;
-  const activityDiscussions = useMemo(
-    () => discussions.filter((discussion) => discussion.notes.every((note) => !note.position)),
-    [discussions],
-  );
 
   const mainContent = (
     <div className="flex min-w-0 flex-col gap-5">
@@ -372,18 +379,26 @@ export const MergeRequestDetail = ({
       <section className="flex flex-col gap-3">
         <h3 className="m-0 flex items-center gap-2 text-lg font-semibold">
           Activity
-          {activityDiscussions.length > 0 && (
+          {discussions.length > 0 && (
             <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-              {activityDiscussions.length}
+              {discussions.length}
             </span>
           )}
         </h3>
         <MergeRequestDiscussions
-          discussions={activityDiscussions}
+          discussions={discussions}
           onResolveDiscussion={onResolveDiscussion}
           resolvingDiscussionId={resolvingDiscussionId}
         />
       </section>
+
+      <MergeRequestCommentForm
+        canComment={canCommentOnMr}
+        isSubmitting={isSubmittingMrComment}
+        submitError={submitMrCommentError}
+        onSubmit={onSubmitMrComment}
+        onClearSubmitError={onClearSubmitMrCommentError}
+      />
 
       <section className="flex flex-col gap-3">
         <h3 className="m-0 flex items-center gap-2 text-lg font-semibold">

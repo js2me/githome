@@ -1,5 +1,5 @@
 import { ArrowDownToLine, ArrowUpToLine } from "@gravity-ui/icons";
-import { memo, useEffect, useState, type ReactNode } from "react";
+import { memo, useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import type {
   DiffExpandGap,
   DiffExpandMode,
@@ -244,6 +244,21 @@ export const DiffLineRow = memo(
       ? "bg-blue-50 dark:bg-blue-950/70"
       : "";
 
+    const lineNumInteractionClassName = isCommentable
+      ? "cursor-pointer hover:bg-blue-50/60 dark:hover:bg-blue-950/40"
+      : "";
+    const handleLineNumMouseDown = isCommentable
+      ? (event: MouseEvent) => {
+          event.preventDefault();
+          onLineMouseDown?.();
+        }
+      : undefined;
+    const handleLineNumClick = isCommentable
+      ? (event: MouseEvent) => {
+          onCommentClick(event.shiftKey);
+        }
+      : undefined;
+
     return (
       <div
         className={cn("group w-full min-w-max items-start overflow-visible", diffGridClassName)}
@@ -256,9 +271,12 @@ export const DiffLineRow = memo(
             surface.oldNum,
             hasThreads && !isSelected && "bg-orange-50 dark:bg-orange-950",
             selectionClassName,
+            lineNumInteractionClassName,
             isSelectionStart && "shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]",
             isSelectionEnd && "shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]",
           )}
+          onMouseDown={handleLineNumMouseDown}
+          onClick={handleLineNumClick}
         >
           <div className="git-diff-line-num-inner">
             {line.oldLine ?? ""}
@@ -270,6 +288,9 @@ export const DiffLineRow = memo(
                 )}
                 type="button"
                 title="Оставить комментарий"
+                onMouseDown={(event) => {
+                  event.stopPropagation();
+                }}
                 onClick={(event) => {
                   event.stopPropagation();
                   onCommentClick(event.shiftKey);
@@ -285,9 +306,12 @@ export const DiffLineRow = memo(
             "git-diff-line-num",
             surface.newNum,
             selectionClassName,
+            lineNumInteractionClassName,
             isSelectionStart && "shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]",
             isSelectionEnd && "shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]",
           )}
+          onMouseDown={handleLineNumMouseDown}
+          onClick={handleLineNumClick}
         >
           <div className="git-diff-line-num-inner">
             {line.newLine ?? ""}
@@ -304,24 +328,8 @@ export const DiffLineRow = memo(
             "git-diff-code",
             surface.code,
             selectionClassName,
-            isCommentable && "cursor-pointer select-none hover:shadow-[inset_0_0_0_1px_var(--color-accent-blue-emphasis)]",
             isSelected && "shadow-[inset_0_0_0_1px_var(--color-accent-blue-emphasis)]",
           )}
-          onMouseDown={
-            isCommentable
-              ? (event) => {
-                  event.preventDefault();
-                  onLineMouseDown?.();
-                }
-              : undefined
-          }
-          onClick={
-            isCommentable
-              ? (event) => {
-                  onCommentClick(event.shiftKey);
-                }
-              : undefined
-          }
         >
           <code>
             <DiffLineContent
@@ -384,7 +392,7 @@ export const DiffThreadRow = memo(
     }, [thread.discussionId, thread.resolved]);
 
     return (
-      <div className="w-full min-w-0 max-w-full overflow-hidden border-t-2 border-[var(--color-brand-border-accent)]">
+      <div className="w-full min-w-full border-t-2 border-[var(--color-brand-border-accent)]">
         <div
           className={cn(
             "bg-[var(--diff-header-bg)] px-3.5 py-3",
