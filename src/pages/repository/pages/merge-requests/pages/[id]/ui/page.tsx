@@ -25,6 +25,7 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
             <MergeRequestDetail
               mergeRequest={detailView.mergeRequest}
               changes={detailView.changes}
+              changesError={detailView.changesError}
               discussions={detailView.discussions}
               approvals={detailView.approvals}
               canComment={detailView.mergeRequest.diff_refs != null}
@@ -32,6 +33,11 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
               submitCommentError={mrInfo.submitDiffCommentError}
               onAddComment={mrInfo.submitDiffComment}
               onClearSubmitError={mrInfo.clearSubmitDiffCommentError}
+              canCommentOnMr={detailView.mergeRequest.state === "opened"}
+              isSubmittingMrComment={mrInfo.isSubmittingMrComment}
+              submitMrCommentError={mrInfo.submitMrCommentError}
+              onSubmitMrComment={mrInfo.submitMrComment}
+              onClearSubmitMrCommentError={mrInfo.clearSubmitMrCommentError}
               loadFileContent={mrInfo.loadDiffFileContent}
               onResolveDiscussion={mrInfo.resolveDiscussion}
               resolvingDiscussionId={mrInfo.resolvingDiscussionId}

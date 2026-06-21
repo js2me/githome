@@ -1,4 +1,4 @@
-import { action, computed, observable, runInAction } from "mobx";
+import { action, computed, observable, reaction, runInAction } from "mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type {
   GitLabDiscussionDC,
@@ -9,7 +9,11 @@ import type {
   GitLabUserDC,
 } from "@/shared/api/gitlab";
 import type { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
-import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
+import {
+  createGitlabApiQuery,
+  createGitlabQuery,
+  createInfiniteGitlabQuery,
+} from "@/shared/lib/gitlab/create-query";
 import {
   buildMergeRequestApprovalView,
   type MergeRequestApprovalView,
@@ -29,10 +33,10 @@ const mergeRequestParams = (ctx: RepositoryModelContext) => {
   return { project, mergeRequestIid };
 };
 
-const selectMergeRequestChanges = (data: unknown): GitLabMergeRequestChangeDC[] => {
-  const payload = data as { changes?: GitLabMergeRequestChangeDC[] };
-  return payload.changes ?? [];
-};
+type MergeRequestParams = Exclude<
+  ReturnType<typeof mergeRequestParams>,
+  false
+>;
 
 const sortMergeRequestDiscussions = (
   discussions: GitLabDiscussionDC[],
@@ -46,10 +50,6 @@ const sortMergeRequestDiscussions = (
     });
 };
 
-const selectMergeRequestDiscussions = (data: unknown): GitLabDiscussionDC[] => {
-  return sortMergeRequestDiscussions(data as GitLabDiscussionDC[]);
-};
-
 export class MrInfoModel {
   mergeRequestDetailQuery;
   mergeRequestChangesQuery;
@@ -60,6 +60,8 @@ export class MrInfoModel {
 
   @observable accessor isSubmittingDiffComment = false;
   @observable accessor submitDiffCommentError = "";
+  @observable accessor isSubmittingMrComment = false;
+  @observable accessor submitMrCommentError = "";
   @observable accessor resolvingDiscussionId = "";
   @observable accessor resolveDiscussionError = "";
   @observable accessor reviewActionInProgress = null as MrReviewAction | null;
@@ -83,7 +85,10 @@ export class MrInfoModel {
       },
     });
 
-    this.mergeRequestChangesQuery = createGitlabQuery<GitLabMergeRequestChangeDC[]>({
+    this.mergeRequestChangesQuery = createGitlabApiQuery<
+      GitLabMergeRequestChangeDC[],
+      MergeRequestParams
+    >({
       globals: ctx.globals,
       abortSignal: ctx.unmountSignal,
       params: () => {
@@ -92,37 +97,56 @@ export class MrInfoModel {
           return false;
         }
 
-        return {
-          path: `/projects/${mr.project.id}/merge_requests/${mr.mergeRequestIid}/changes`,
-          query: {
-            access_raw_diffs: true,
-            unidiff: true,
-          },
-        };
+        return mr;
       },
-      select: selectMergeRequestChanges,
+      queryKey: ({ connection, project, mergeRequestIid }) =>
+        [
+          "merge-request-changes",
+          "compare",
+          connection.gitlabUrl,
+          project.id,
+          mergeRequestIid,
+        ] as const,
+      queryFn: ({ connection, project, mergeRequestIid, signal }) =>
+        gitlabApi.getMergeRequestChanges(
+          connection,
+          project,
+          mergeRequestIid,
+          signal,
+        ),
     });
 
-    this.mergeRequestDiscussionsQuery = createGitlabQuery<GitLabDiscussionDC[]>({
-      globals: ctx.globals,
-      abortSignal: ctx.unmountSignal,
-      params: () => {
-        const mr = mergeRequestParams(ctx);
-        if (!mr) {
-          return false;
+    this.mergeRequestDiscussionsQuery =
+      createInfiniteGitlabQuery<GitLabDiscussionDC>({
+        globals: ctx.globals,
+        abortSignal: ctx.unmountSignal,
+        params: () => {
+          const mr = mergeRequestParams(ctx);
+          if (!mr) {
+            return false;
+          }
+
+          return {
+            path: `/projects/${mr.project.id}/merge_requests/${mr.mergeRequestIid}/discussions`,
+            query: {
+              per_page: 100,
+              sort: "asc",
+            },
+          };
+        },
+      });
+
+    reaction(
+      () => ({
+        hasNextPage: this.mergeRequestDiscussionsQuery.hasNextPage,
+        isFetchingNextPage: this.mergeRequestDiscussionsQuery.isFetchingNextPage,
+      }),
+      ({ hasNextPage, isFetchingNextPage }) => {
+        if (hasNextPage && !isFetchingNextPage) {
+          void this.mergeRequestDiscussionsQuery.fetchNextPage();
         }
-
-        return {
-          path: `/projects/${mr.project.id}/merge_requests/${mr.mergeRequestIid}/discussions`,
-          query: {
-            per_page: 100,
-            page: 1,
-            sort: "asc",
-          },
-        };
       },
-      select: selectMergeRequestDiscussions,
-    });
+    );
 
     this.currentUserQuery = createGitlabQuery<number | null>({
       globals: ctx.globals,
@@ -191,15 +215,18 @@ export class MrInfoModel {
 
   @computed
   get mergeRequestDiscussions(): GitLabDiscussionDC[] | null {
-    const serverDiscussions = this.mergeRequestDiscussionsQuery.data ?? null;
+    const pages = this.mergeRequestDiscussionsQuery.data?.pages;
+    if (!pages) {
+      return null;
+    }
+
+    const serverDiscussions = sortMergeRequestDiscussions(
+      pages.flatMap((page) => page.items),
+    );
     const localDiscussions =
       this.locallyCreatedDiscussionsKey === this.mergeRequestKey
         ? this.locallyCreatedDiscussions
         : [];
-
-    if (!serverDiscussions) {
-      return null;
-    }
 
     if (localDiscussions.length === 0) {
       return serverDiscussions;
@@ -243,10 +270,21 @@ export class MrInfoModel {
   }
 
   @computed
+  get changesErrorMessage() {
+    const error = this.mergeRequestChangesQuery.error;
+    if (!error) {
+      return null;
+    }
+
+    return error instanceof Error
+      ? error.message
+      : "Не удалось загрузить изменения";
+  }
+
+  @computed
   get errorMessage() {
     for (const query of [
       this.mergeRequestDetailQuery,
-      this.mergeRequestChangesQuery,
       this.mergeRequestDiscussionsQuery,
     ]) {
       const error = query.error;
@@ -269,11 +307,15 @@ export class MrInfoModel {
 
   @computed
   get isDetailReady() {
+    const changesReady =
+      this.mergeRequestChanges !== null ||
+      this.mergeRequestChangesQuery.isError;
+
     return (
       !this.isLoading &&
       !this.errorMessage &&
       this.mergeRequestDetail !== null &&
-      this.mergeRequestChanges !== null &&
+      changesReady &&
       this.mergeRequestDiscussions !== null &&
       this.mergeRequestApprovals !== null
     );
@@ -287,7 +329,8 @@ export class MrInfoModel {
 
     return {
       mergeRequest: this.mergeRequestDetail!,
-      changes: this.mergeRequestChanges!,
+      changes: this.mergeRequestChanges ?? [],
+      changesError: this.changesErrorMessage,
       discussions: this.mergeRequestDiscussions!,
       approvals: this.mergeRequestApprovals!,
     };
@@ -378,6 +421,68 @@ export class MrInfoModel {
   @action.bound
   clearSubmitDiffCommentError() {
     this.submitDiffCommentError = "";
+  }
+
+  @action.bound
+  async submitMrComment(body: string) {
+    const connection = this.ctx.globals.stores.settings.activeConnection;
+    const project = this.ctx.selectedProject;
+    const mergeRequestIid = this.ctx.mergeRequestIid;
+
+    if (!connection || !project || mergeRequestIid === null) {
+      this.submitMrCommentError = "Merge request не выбран";
+      return false;
+    }
+
+    if (!body.trim()) {
+      this.submitMrCommentError = "Введите текст комментария";
+      return false;
+    }
+
+    this.isSubmittingMrComment = true;
+    this.submitMrCommentError = "";
+
+    try {
+      const localDiscussionsKey = `${project.id}:${mergeRequestIid}`;
+      const createdDiscussion = await gitlabApi.createMergeRequestDiscussion(
+        connection,
+        project,
+        mergeRequestIid,
+        body.trim(),
+      );
+
+      runInAction(() => {
+        const currentLocalDiscussions =
+          this.locallyCreatedDiscussionsKey === localDiscussionsKey
+            ? this.locallyCreatedDiscussions
+            : [];
+
+        this.locallyCreatedDiscussionsKey = localDiscussionsKey;
+        this.locallyCreatedDiscussions = sortMergeRequestDiscussions([
+          ...currentLocalDiscussions,
+          createdDiscussion,
+        ]);
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.submitMrCommentError =
+          error instanceof Error
+            ? error.message
+            : "Не удалось отправить комментарий";
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isSubmittingMrComment = false;
+      });
+    }
+  }
+
+  @action.bound
+  clearSubmitMrCommentError() {
+    this.submitMrCommentError = "";
   }
 
   @action

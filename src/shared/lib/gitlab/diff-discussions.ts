@@ -13,6 +13,24 @@ export interface InlineDiffThread {
   resolved: boolean;
 }
 
+export const getUserDiscussionNotes = (discussion: GitLabDiscussionDC) =>
+  discussion.notes.filter((note) => !note.system);
+
+export const isSystemActivityDiscussion = (discussion: GitLabDiscussionDC) =>
+  discussion.notes.length > 0 &&
+  discussion.notes.every((note) => note.system);
+
+export const filterDiscussionsForActivity = (
+  discussions: GitLabDiscussionDC[],
+): GitLabDiscussionDC[] =>
+  discussions
+    .filter((discussion) => !isSystemActivityDiscussion(discussion))
+    .map((discussion) => ({
+      ...discussion,
+      notes: getUserDiscussionNotes(discussion),
+    }))
+    .filter((discussion) => discussion.notes.length > 0);
+
 export const isDiscussionResolved = (discussion: GitLabDiscussionDC) => {
   const resolvableNotes = discussion.notes.filter((note) => note.resolvable);
   return (
@@ -89,65 +107,137 @@ export const getDiffLineKey = (position: GitLabNotePositionDC): string | null =>
   return null;
 };
 
+const buildLineKey = (
+  path: string,
+  side: "old" | "new",
+  line: number,
+): string => `${path}:${side}:${line}`;
+
 export const getDiffLineKeyForChange = (
   position: GitLabNotePositionDC,
   change: GitLabMergeRequestChangeDC,
-): string | null => {
+): string | null => getDiffLineKeysForChange(position, change)[0] ?? null;
+
+export const getDiffLineKeysForChange = (
+  position: GitLabNotePositionDC,
+  change: GitLabMergeRequestChangeDC,
+): string[] => {
   if (!positionMatchesChange(position, change)) {
-    return null;
+    return [];
   }
 
   const side = getPositionSide(position);
   const rangeStart = position.line_range?.start;
   const rangeEnd = position.line_range?.end;
+  const keys = new Set<string>();
 
-  if (side === "new" || (!side && position.new_line != null)) {
-    const line =
-      toLineNumber(position.new_line) ??
-      toLineNumber(rangeStart?.new_line) ??
-      toLineNumber(rangeEnd?.new_line);
+  const newLine =
+    toLineNumber(position.new_line) ??
+    toLineNumber(rangeStart?.new_line) ??
+    toLineNumber(rangeEnd?.new_line);
+  const oldLine =
+    toLineNumber(position.old_line) ??
+    toLineNumber(rangeStart?.old_line) ??
+    toLineNumber(rangeEnd?.old_line);
 
-    if (line !== null) {
-      return `${change.new_path}:new:${line}`;
+  if (side === "new" || (!side && newLine !== null)) {
+    if (newLine !== null) {
+      keys.add(buildLineKey(change.new_path, "new", newLine));
     }
   }
 
-  if (side === "old" || (!side && position.old_line != null)) {
-    const line =
-      toLineNumber(position.old_line) ??
-      toLineNumber(rangeStart?.old_line) ??
-      toLineNumber(rangeEnd?.old_line);
-
-    if (line !== null) {
-      return `${change.old_path}:old:${line}`;
+  if (side === "old" || (!side && oldLine !== null)) {
+    if (oldLine !== null) {
+      keys.add(buildLineKey(change.old_path, "old", oldLine));
     }
   }
 
-  return null;
+  if (keys.size === 0 && newLine !== null) {
+    keys.add(buildLineKey(change.new_path, "new", newLine));
+  }
+
+  if (keys.size === 0 && oldLine !== null) {
+    keys.add(buildLineKey(change.old_path, "old", oldLine));
+  }
+
+  return [...keys];
+};
+
+export const getLineKeysFromDiffLine = (
+  oldPath: string,
+  newPath: string,
+  line: DiffDisplayLine,
+): string[] => {
+  const keys = new Set<string>();
+
+  if (line.type === "add" && line.newLine !== null) {
+    keys.add(buildLineKey(newPath, "new", line.newLine));
+  } else if (line.type === "delete" && line.oldLine !== null) {
+    keys.add(buildLineKey(oldPath, "old", line.oldLine));
+  } else if (line.type === "context") {
+    if (line.newLine !== null) {
+      keys.add(buildLineKey(newPath, "new", line.newLine));
+    }
+    if (line.oldLine !== null) {
+      keys.add(buildLineKey(oldPath, "old", line.oldLine));
+    }
+  }
+
+  return [...keys];
 };
 
 export const getLineKeyFromDiffLine = (
   oldPath: string,
   newPath: string,
   line: DiffDisplayLine,
-): string | null => {
-  if (line.type === "add" && line.newLine !== null) {
-    return `${newPath}:new:${line.newLine}`;
+): string | null => getLineKeysFromDiffLine(oldPath, newPath, line)[0] ?? null;
+
+export const collectThreadsForLine = (
+  oldPath: string,
+  newPath: string,
+  line: DiffDisplayLine,
+  threadIndex: Map<string, InlineDiffThread[]>,
+): InlineDiffThread[] => {
+  const keys = getLineKeysFromDiffLine(oldPath, newPath, line);
+  const threads: InlineDiffThread[] = [];
+  const seenDiscussionIds = new Set<string>();
+
+  for (const key of keys) {
+    for (const thread of threadIndex.get(key) ?? []) {
+      if (seenDiscussionIds.has(thread.discussionId)) {
+        continue;
+      }
+
+      seenDiscussionIds.add(thread.discussionId);
+      threads.push(thread);
+    }
   }
 
-  if (line.type === "delete" && line.oldLine !== null) {
-    return `${oldPath}:old:${line.oldLine}`;
+  return threads;
+};
+
+export const getOrphanThreadsForChange = (
+  threadIndex: Map<string, InlineDiffThread[]>,
+  placedDiscussionIds: ReadonlySet<string>,
+): InlineDiffThread[] => {
+  const orphans: InlineDiffThread[] = [];
+  const seenDiscussionIds = new Set<string>();
+
+  for (const threads of threadIndex.values()) {
+    for (const thread of threads) {
+      if (
+        placedDiscussionIds.has(thread.discussionId) ||
+        seenDiscussionIds.has(thread.discussionId)
+      ) {
+        continue;
+      }
+
+      seenDiscussionIds.add(thread.discussionId);
+      orphans.push(thread);
+    }
   }
 
-  if (line.type === "context" && line.newLine !== null) {
-    return `${newPath}:new:${line.newLine}`;
-  }
-
-  if (line.type === "context" && line.oldLine !== null) {
-    return `${oldPath}:old:${line.oldLine}`;
-  }
-
-  return null;
+  return orphans;
 };
 
 const getDiscussionAnchorNote = (discussion: GitLabDiscussionDC) =>
@@ -158,7 +248,7 @@ const buildInlineThread = (
 ): InlineDiffThread | null => {
   const thread: InlineDiffThread = {
     discussionId: discussion.id,
-    notes: discussion.notes.filter((note) => !note.system),
+    notes: getUserDiscussionNotes(discussion),
     resolvable: isDiscussionResolvable(discussion),
     resolved: isDiscussionResolved(discussion),
   };
@@ -183,8 +273,8 @@ export const indexDiffDiscussionsForChange = (
       continue;
     }
 
-    const key = getDiffLineKeyForChange(anchorNote.position, change);
-    if (!key) {
+    const keys = getDiffLineKeysForChange(anchorNote.position, change);
+    if (keys.length === 0) {
       continue;
     }
 
@@ -193,9 +283,15 @@ export const indexDiffDiscussionsForChange = (
       continue;
     }
 
-    const threads = index.get(key) ?? [];
-    threads.push(thread);
-    index.set(key, threads);
+    for (const key of keys) {
+      const threads = index.get(key) ?? [];
+      if (threads.some((item) => item.discussionId === thread.discussionId)) {
+        continue;
+      }
+
+      threads.push(thread);
+      index.set(key, threads);
+    }
   }
 
   return index;
@@ -247,7 +343,8 @@ export const getFileLevelThreadsForChange = (
       continue;
     }
 
-    const hasLineKey = Boolean(getDiffLineKeyForChange(anchorNote.position, change));
+    const hasLineKey =
+      getDiffLineKeysForChange(anchorNote.position, change).length > 0;
     if (hasLineKey) {
       continue;
     }

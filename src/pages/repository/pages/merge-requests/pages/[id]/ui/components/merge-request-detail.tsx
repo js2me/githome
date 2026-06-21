@@ -12,6 +12,7 @@ import {
 } from "@/shared/ui/mr-state-badge";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { StatusMessage } from "@/shared/ui/status-message";
+import { filterDiscussionsForActivity } from "@/shared/lib/gitlab/diff-discussions";
 import { useCallback, useMemo, useState } from "react";
 import { ChangesActiveFileLink } from "./changes-active-file-link";
 import { ChangesFileTree } from "./changes-file-tree";
@@ -19,6 +20,7 @@ import { ChangesTreeLayout } from "./changes-tree-layout";
 import { useActiveDiffFile } from "../hooks/use-active-diff-file";
 import { DiffSearchProvider } from "@/shared/ui/git-diff/diff-search";
 import { MergeRequestChanges } from "./merge-request-changes";
+import { MergeRequestCommentForm } from "./merge-request-comment-form";
 import { MergeRequestDiscussions } from "./merge-request-discussions";
 import { MrReviewActions } from "./mr-review-actions";
 
@@ -189,12 +191,18 @@ const BranchLabel = ({
 export const MergeRequestDetail = ({
   mergeRequest,
   changes,
+  changesError = null,
   discussions,
   canComment,
   isSubmittingComment,
   submitCommentError,
   onAddComment,
   onClearSubmitError,
+  canCommentOnMr,
+  isSubmittingMrComment,
+  submitMrCommentError,
+  onSubmitMrComment,
+  onClearSubmitMrCommentError,
   loadFileContent,
   onResolveDiscussion,
   resolvingDiscussionId,
@@ -209,12 +217,18 @@ export const MergeRequestDetail = ({
 }: {
   mergeRequest: GitLabMergeRequestDC;
   changes: GitLabMergeRequestChangeDC[];
+  changesError?: string | null;
   discussions: GitLabDiscussionDC[];
   canComment: boolean;
   isSubmittingComment: boolean;
   submitCommentError: string | null;
   onAddComment: (input: CreateDiffCommentInput) => Promise<boolean>;
   onClearSubmitError: () => void;
+  canCommentOnMr: boolean;
+  isSubmittingMrComment: boolean;
+  submitMrCommentError: string | null;
+  onSubmitMrComment: (body: string) => Promise<boolean>;
+  onClearSubmitMrCommentError: () => void;
   loadFileContent?: (filePath: string, ref: string) => Promise<string>;
   onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId: string | null;
@@ -238,7 +252,7 @@ export const MergeRequestDetail = ({
   const { activeFileKey, setActiveFileKey } = useActiveDiffFile(changes);
   const showChangesTree = changes.length > 0;
   const activityDiscussions = useMemo(
-    () => discussions.filter((discussion) => discussion.notes.every((note) => !note.position)),
+    () => filterDiscussionsForActivity(discussions),
     [discussions],
   );
 
@@ -385,6 +399,14 @@ export const MergeRequestDetail = ({
         />
       </section>
 
+      <MergeRequestCommentForm
+        canComment={canCommentOnMr}
+        isSubmitting={isSubmittingMrComment}
+        submitError={submitMrCommentError}
+        onSubmit={onSubmitMrComment}
+        onClearSubmitError={onClearSubmitMrCommentError}
+      />
+
       <section className="flex flex-col gap-3">
         <h3 className="m-0 flex items-center gap-2 text-lg font-semibold">
           Changes
@@ -394,6 +416,7 @@ export const MergeRequestDetail = ({
             </span>
           )}
         </h3>
+        {changesError && <StatusMessage error>{changesError}</StatusMessage>}
         <MergeRequestChanges
           changes={changes}
           discussions={discussions}
@@ -403,7 +426,11 @@ export const MergeRequestDetail = ({
           onAddComment={onAddComment}
           onClearSubmitError={onClearSubmitError}
           headRef={mergeRequest.diff_refs?.head_sha ?? null}
-          baseRef={mergeRequest.diff_refs?.base_sha ?? null}
+          baseRef={
+            mergeRequest.diff_refs?.start_sha ??
+            mergeRequest.diff_refs?.base_sha ??
+            null
+          }
           loadFileContent={loadFileContent}
           onResolveThread={onResolveDiscussion}
           resolvingDiscussionId={resolvingDiscussionId}

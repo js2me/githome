@@ -49,7 +49,7 @@ const isDiffCodeRow = (row: VirtualDiffRow) =>
   row.type === "line" || row.type === "hunk" || row.type === "expand";
 
 const getDiffRowLayoutClassName = (row: VirtualDiffRow) =>
-  isDiffCodeRow(row) ? "w-full min-w-max" : "w-full min-w-0 max-w-full";
+  isDiffCodeRow(row) ? "w-full min-w-max" : "w-full min-w-full";
 
 type DiffThreadResolveProps = {
   onResolveThread?: (discussionId: string, resolved: boolean) => void;

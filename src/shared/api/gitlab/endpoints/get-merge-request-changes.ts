@@ -1,7 +1,60 @@
 import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabFetch } from "../client";
+import { getVisibleMergeRequestChanges } from "@/shared/lib/gitlab/merge-request-changes-visibility";
+import { fetchGitlabJson, gitlabFetch } from "../client";
 import type { GitLabMergeRequestChangeDC, GitLabProjectDC } from "../data-contracts";
-import { splitRawDiffByFile } from "@/shared/lib/gitlab/split-raw-diff";
+import { getMergeRequestDetail } from "./get-merge-request-detail";
+
+interface GitLabCompareDiffDC {
+  old_path: string;
+  new_path: string;
+  diff?: string;
+  new_file?: boolean;
+  renamed_file?: boolean;
+  deleted_file?: boolean;
+}
+
+interface GitLabCompareResponseDC {
+  diffs?: GitLabCompareDiffDC[];
+  compare_timeout?: boolean;
+}
+
+const mapCompareDiffToChange = (
+  diff: GitLabCompareDiffDC,
+): GitLabMergeRequestChangeDC => ({
+  old_path: diff.old_path,
+  new_path: diff.new_path,
+  diff: diff.diff ?? "",
+  new_file: Boolean(diff.new_file),
+  renamed_file: Boolean(diff.renamed_file),
+  deleted_file: Boolean(diff.deleted_file),
+});
+
+const fetchMergeRequestChangesViaCompare = async (
+  connection: GitLabConnection,
+  project: GitLabProjectDC,
+  startSha: string,
+  headSha: string,
+  signal?: AbortSignal,
+): Promise<GitLabMergeRequestChangeDC[]> => {
+  const payload = await fetchGitlabJson<GitLabCompareResponseDC>(
+    connection,
+    `/projects/${project.id}/repository/compare`,
+    {
+      query: {
+        from: startSha,
+        to: headSha,
+        unidiff: true,
+      },
+      signal,
+    },
+  );
+
+  if (payload.compare_timeout) {
+    throw new Error("GitLab compare timeout");
+  }
+
+  return (payload.diffs ?? []).map(mapCompareDiffToChange);
+};
 
 const fetchAllMergeRequestDiffs = async (
   connection: GitLabConnection,
@@ -21,14 +74,14 @@ const fetchAllMergeRequestDiffs = async (
 
     const response = await gitlabFetch(
       connection,
-      `/projects/${project.id}/merge_requests/${mergeRequestIid}/diffs?${params.toString()}`,
+      `/projects/${project.id}/merge_requests/${mergeRequestIid}/diffs?${params}`,
       signal,
     );
 
-    const batch = (await response.json()) as GitLabMergeRequestChangeDC[];
-    allDiffs.push(...batch);
+    const pageDiffs = (await response.json()) as GitLabMergeRequestChangeDC[];
+    allDiffs.push(...pageDiffs);
 
-    const nextPage = response.headers.get("X-Next-Page");
+    const nextPage = response.headers.get("x-next-page");
     if (!nextPage) {
       break;
     }
@@ -36,73 +89,8 @@ const fetchAllMergeRequestDiffs = async (
     page = Number(nextPage);
   }
 
-  return allDiffs;
+  return getVisibleMergeRequestChanges(allDiffs);
 };
-
-const fetchMergeRequestRawDiffs = async (
-  connection: GitLabConnection,
-  project: GitLabProjectDC,
-  mergeRequestIid: number,
-  signal?: AbortSignal,
-): Promise<string> => {
-  const response = await gitlabFetch(
-    connection,
-    `/projects/${project.id}/merge_requests/${mergeRequestIid}/raw_diffs`,
-    signal,
-  );
-
-  if (!response.ok) {
-    throw new Error(`GitLab API error: ${response.status}`);
-  }
-
-  return response.text();
-};
-
-const fetchMergeRequestChangesFromChangesEndpoint = async (
-  connection: GitLabConnection,
-  project: GitLabProjectDC,
-  mergeRequestIid: number,
-  signal?: AbortSignal,
-): Promise<GitLabMergeRequestChangeDC[]> => {
-  const params = new URLSearchParams({
-    access_raw_diffs: "true",
-    unidiff: "true",
-  });
-
-  const response = await gitlabFetch(
-    connection,
-    `/projects/${project.id}/merge_requests/${mergeRequestIid}/changes?${params.toString()}`,
-    signal,
-  );
-
-  const payload = (await response.json()) as {
-    changes?: GitLabMergeRequestChangeDC[];
-  };
-
-  return payload.changes ?? [];
-};
-
-const mergeMissingDiffs = (
-  diffs: GitLabMergeRequestChangeDC[],
-  source: Map<string, string>,
-) =>
-  diffs.map((change) => {
-    if (change.diff?.trim() || change.too_large) {
-      return change;
-    }
-
-    const fromSource =
-      source.get(change.new_path) ?? source.get(change.old_path) ?? "";
-
-    if (!fromSource.trim()) {
-      return change;
-    }
-
-    return {
-      ...change,
-      diff: fromSource,
-    };
-  });
 
 export const getMergeRequestChanges = async (
   connection: GitLabConnection,
@@ -110,61 +98,33 @@ export const getMergeRequestChanges = async (
   mergeRequestIid: number,
   signal?: AbortSignal,
 ): Promise<GitLabMergeRequestChangeDC[]> => {
-  let diffs = await fetchAllMergeRequestDiffs(
+  const mergeRequest = await getMergeRequestDetail(
     connection,
     project,
     mergeRequestIid,
     signal,
   );
+  const { start_sha: startSha, head_sha: headSha } =
+    mergeRequest.diff_refs ?? {};
 
-  const hasMissingDiffs = diffs.some(
-    (change) => !change.diff?.trim() && !change.too_large,
-  );
-
-  if (hasMissingDiffs) {
+  if (startSha && headSha) {
     try {
-      const rawDiffs = await fetchMergeRequestRawDiffs(
+      return await fetchMergeRequestChangesViaCompare(
         connection,
         project,
-        mergeRequestIid,
+        startSha,
+        headSha,
         signal,
       );
-      diffs = mergeMissingDiffs(diffs, splitRawDiffByFile(rawDiffs));
     } catch {
-      // raw_diffs is unavailable on older GitLab versions
+      // compare can time out on very large diffs
     }
   }
 
-  const stillMissingDiffs = diffs.some(
-    (change) => !change.diff?.trim() && !change.too_large,
+  return fetchAllMergeRequestDiffs(
+    connection,
+    project,
+    mergeRequestIid,
+    signal,
   );
-
-  if (stillMissingDiffs) {
-    try {
-      const changesFromEndpoint = await fetchMergeRequestChangesFromChangesEndpoint(
-        connection,
-        project,
-        mergeRequestIid,
-        signal,
-      );
-      const changesByPath = new Map<string, string>();
-
-      for (const change of changesFromEndpoint) {
-        if (!change.diff?.trim()) {
-          continue;
-        }
-
-        changesByPath.set(change.new_path, change.diff);
-        if (change.old_path !== change.new_path) {
-          changesByPath.set(change.old_path, change.diff);
-        }
-      }
-
-      diffs = mergeMissingDiffs(diffs, changesByPath);
-    } catch {
-      // keep partial diffs
-    }
-  }
-
-  return diffs;
 };

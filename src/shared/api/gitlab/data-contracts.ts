@@ -50,6 +50,9 @@ export interface GitLabMergeRequestChangeDC {
   too_large?: boolean;
   collapsed?: boolean;
   generated_file?: boolean;
+  added_lines?: number;
+  removed_lines?: number;
+  file_hash?: string;
 }
 
 export interface GitLabNotePositionLinePointDC {

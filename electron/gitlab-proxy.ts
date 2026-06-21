@@ -64,6 +64,13 @@ export const handleGitlabProxyRequest = (
 
   try {
     const target = new URL(`${protocol}://${proxyHost}${proxyPath}`);
+    const authHeader = req.headers["private-token"] ?? req.headers["PRIVATE-TOKEN"];
+    const token = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+
+    if (token && !target.searchParams.has("private_token")) {
+      target.searchParams.set("private_token", token);
+    }
+
     proxyGitlabRequest(req, res, target);
   } catch (error) {
     res.statusCode = 400;

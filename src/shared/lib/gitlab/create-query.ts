@@ -2,6 +2,7 @@ import { createQuery } from "mobx-tanstack-query/preset";
 import type { DefaultError } from "@tanstack/query-core";
 import type { Globals } from "@/globals";
 import { buildGitlabRequestHeaders, resolveGitlabRequestUrl } from "@/shared/api/gitlab";
+import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
 import {
   buildFetchQueryKey,
   buildFetchQueryUrl,
@@ -54,6 +55,47 @@ const resolveGitlabFetchParams = (
       }),
     },
   };
+};
+
+export type CreateGitlabApiQueryOptions<TData, TParams extends object> = {
+  globals: Globals;
+  abortSignal: AbortSignal;
+  params: () => MaybeFalsy<TParams>;
+  queryKey: (resolved: { connection: GitLabConnection } & TParams) => readonly unknown[];
+  queryFn: (
+    resolved: { connection: GitLabConnection; signal: AbortSignal } & TParams,
+  ) => Promise<TData>;
+};
+
+export const createGitlabApiQuery = <TData, TParams extends object>(
+  options: CreateGitlabApiQueryOptions<TData, TParams>,
+) => {
+  return createQuery<TData, DefaultError, TData>({
+    abortSignal: options.abortSignal,
+    options: () => {
+      const connection = options.globals.stores.settings.activeConnection;
+      const params = options.params();
+
+      if (!connection || !params) {
+        return { enabled: false, queryKey: ["gitlab-api", null] as const };
+      }
+
+      return {
+        enabled: true,
+        queryKey: options.queryKey({ connection, ...params }),
+      };
+    },
+    queryFn: async ({ signal }) => {
+      const connection = options.globals.stores.settings.activeConnection;
+      const params = options.params();
+
+      if (!connection || !params) {
+        throw new Error("GitLab API query is not configured");
+      }
+
+      return options.queryFn({ connection, signal, ...params });
+    },
+  });
 };
 
 export const createGitlabQuery = <TData = unknown>(

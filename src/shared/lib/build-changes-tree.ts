@@ -51,6 +51,13 @@ export const getChangeFileStatus = (
 };
 
 const getChangeDiffStats = (change: GitLabMergeRequestChangeDC) => {
+  if (change.added_lines != null || change.removed_lines != null) {
+    return {
+      additions: change.added_lines ?? 0,
+      deletions: change.removed_lines ?? 0,
+    };
+  }
+
   if (!change.diff?.trim()) {
     return { additions: 0, deletions: 0 };
   }

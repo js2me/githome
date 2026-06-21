@@ -217,3 +217,62 @@ export const fetchGitlabJson = async <T>(
 
   return (await response.json()) as T;
 };
+
+export const buildMergeRequestWebPath = (
+  projectPath: string,
+  mergeRequestIid: number,
+  resource: string,
+) => `/${projectPath}/-/merge_requests/${mergeRequestIid}/${resource}`;
+
+export const fetchGitlabWebJson = async <T>(
+  connection: GitLabConnection,
+  path: string,
+  options?: {
+    query?: Record<string, string | number | boolean | null | undefined>;
+    signal?: AbortSignal;
+  },
+): Promise<T> => {
+  const response = await fetch(
+    resolveGitlabRequestUrl(
+      connection.gitlabUrl,
+      buildGitlabPath(path, {
+        ...options?.query,
+        private_token: connection.gitToken,
+      }),
+    ),
+    {
+      headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
+        "PRIVATE-TOKEN": connection.gitToken,
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      }),
+      redirect: "manual",
+      signal: options?.signal,
+    },
+  );
+
+  if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
+    throw new Error(
+      "GitLab web API: требуется авторизация (редирект на страницу входа). Проверьте токен доступа.",
+    );
+  }
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      errorBody
+        ? `GitLab web API error: ${response.status} — ${errorBody.slice(0, 200)}`
+        : `GitLab web API error: ${response.status}`,
+    );
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    const body = await response.text();
+    throw new Error(
+      `GitLab web API returned non-JSON response: ${body.slice(0, 200)}`,
+    );
+  }
+
+  return (await response.json()) as T;
+};

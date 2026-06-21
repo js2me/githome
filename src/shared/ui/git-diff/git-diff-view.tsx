@@ -51,6 +51,7 @@ import {
   getFileLevelThreadsForChange,
   indexDiffDiscussionsForChange,
 } from "@/shared/lib/gitlab/diff-discussions";
+import { isAutoCollapsedMergeRequestChange } from "@/shared/lib/gitlab/merge-request-changes-visibility";
 import {
   getDiffFileElementId,
   getDiffFileHeaderRowId,
@@ -225,11 +226,6 @@ const DiffFileCopyButton = memo(
   },
 );
 
-const isAutoCollapsedChange = (change: GitLabMergeRequestChangeDC) =>
-  !change.diff?.trim() &&
-  !change.too_large &&
-  Boolean(change.collapsed || change.generated_file);
-
 const GitDiffFile = memo(
   ({
     change,
@@ -266,7 +262,7 @@ const GitDiffFile = memo(
     const filePath = getExpandFilePath(change);
     const fileRef = change.deleted_file ? baseRef : headRef;
     const canExpand = Boolean(loadFileContent && fileRef && filePath);
-    const isAutoCollapsed = isAutoCollapsedChange(change);
+    const isAutoCollapsed = isAutoCollapsedMergeRequestChange(change);
     const [isFileExpanded, setIsFileExpanded] = useState(!isAutoCollapsed);
     const [expandedDiff, setExpandedDiff] = useState<string | null>(null);
     const [isLoadingCollapsedExpand, setIsLoadingCollapsedExpand] =
