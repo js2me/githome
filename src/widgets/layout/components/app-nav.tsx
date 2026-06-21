@@ -54,22 +54,6 @@ export const AppNav = observer(() => {
       <nav className="flex min-w-0 flex-1 items-center gap-1">
         <ConnectionPicker />
 
-        <span className="select-none text-sm text-slate-300 dark:text-slate-600">
-          /
-        </span>
-
-        <button
-          className={cn(
-            navLinkClassName,
-            model.isHomeOpen &&
-            "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-          )}
-          type="button"
-          onClick={model.openRepositories}
-        >
-          Репозитории
-        </button>
-
         {model.repositoryBreadcrumb && (
           <>
             <span className="select-none text-sm text-slate-300 dark:text-slate-600">

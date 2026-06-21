@@ -51,9 +51,16 @@ pnpm build:electron
 pnpm build
 ```
 
-## CI (GitHub Actions)
+## CI и релизы (GitHub Actions)
 
-Workflow `.github/workflows/electron-build.yml` собирает приложение на `ubuntu-22.04`, `macos-latest` и `windows-latest` и загружает installers. Запускается при push/PR в `main` и вручную через **Actions → Build Electron → Run workflow**.
+Workflow `.github/workflows/release.yml` запускается при каждом push в `main` (и вручную через **Actions → Release → Run workflow**):
+
+1. Собирает **AppImage** и **.deb** на Ubuntu
+2. Собирает **.exe** (NSIS) на Windows
+3. Создаёт GitHub Release с тегом = **short hash коммита** (7 символов, например `a1b2c3d`)
+4. Прикрепляет все installers к релизу
+
+Для создания релизов в репозитории нужны права **Settings → Actions → General → Workflow permissions → Read and write permissions**.
 
 ## IDE
 

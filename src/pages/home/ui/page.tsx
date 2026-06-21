@@ -10,14 +10,13 @@ export const HomePage = withViewModel(HomeVM, ({ model }) => {
     <section className="max-w-[760px]">
       <h2 className="mb-2 text-2xl font-semibold">Недавние репозитории</h2>
       <p className="m-0 text-slate-500">
-        Выберите или добавьте связку GitLab URL + токен через кнопку слева от
-        «Репозитории». Для активной связки загружаем до 10 часто используемых
-        проектов.
+        Выберите или добавьте связку GitLab URL + токен в шапке. Для активной
+        связки загружаем до 10 часто используемых проектов.
       </p>
 
       {model.showConfigurePrompt && (
         <StatusMessage>
-          Добавьте связку GitLab URL + токен через кнопку слева от «Репозитории».
+          Добавьте связку GitLab URL + токен в шапке.
         </StatusMessage>
       )}
 

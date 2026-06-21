@@ -40,11 +40,6 @@ export class LayoutVM extends VM {
   }
 
   @computed
-  get isHomeOpen() {
-    return this.globals.router.routes.home.isOpened;
-  }
-
-  @computed
   get projectId(): number | null {
     return RepositoryPageVM.resolveProjectId(this.globals);
   }
@@ -205,12 +200,6 @@ export class LayoutVM extends VM {
   clearDraft() {
     this.draftGitlabUrl = "";
     this.draftGitToken = "";
-  }
-
-  @action.bound
-  openRepositories() {
-    this.globals.stores.repository.clear();
-    void this.globals.router.routes.home.open();
   }
 
   @action.bound
