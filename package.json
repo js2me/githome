@@ -2,23 +2,26 @@
   "name": "githome",
   "private": true,
   "version": "0.1.0",
+  "description": "GitHome desktop client for GitLab",
+  "author": {
+    "name": "js2me",
+    "email": "js2me@users.noreply.github.com"
+  },
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "dev:electron": "ELECTRON=1 vite",
+    "build": "tsc && WEB_ONLY=1 vite build",
+    "build:electron": "tsc && ELECTRON=1 vite build && electron-builder",
     "preview": "vite preview",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "tauri:build:macos-universal": "tauri build --target universal-apple-darwin"
+    "postinstall": "node node_modules/electron/install.js"
   },
   "dependencies": {
     "@gravity-ui/icons": "^2.18.0",
     "@shikijs/langs": "^4.2.0",
     "@tanstack/query-core": "^5.101.0",
     "@tanstack/react-virtual": "^3.14.3",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2",
     "diff": "^9.0.0",
     "mobx": "^6.16.0",
     "mobx-location-history": "^9.4.0",
@@ -35,14 +38,59 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.1",
-    "@tauri-apps/cli": "^2",
+    "@types/node": "^24.3.0",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^4.3.1",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
     "mobx-view-model-vite-plugin": "^1.4.1",
     "tailwindcss": "^4.3.1",
     "typescript": "~5.8.3",
-    "vite": "^7.0.4"
+    "vite": "^7.0.4",
+    "vite-plugin-electron": "^0.29.0"
   },
-  "packageManager": "pnpm@10.12.1"
+  "packageManager": "pnpm@10.12.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "electron",
+      "electron-winstaller",
+      "esbuild"
+    ]
+  },
+  "build": {
+    "appId": "com.js2me.githome",
+    "productName": "GitHome",
+    "asar": true,
+    "directories": {
+      "output": "release",
+      "buildResources": "resources"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "deb",
+        "AppImage"
+      ],
+      "category": "Development",
+      "desktopName": "githome",
+      "syncDesktopName": true
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
+  }
 }

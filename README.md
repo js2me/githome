@@ -1,75 +1,60 @@
 # GitHome
 
-Desktop-клиент для GitLab на базе Tauri + React + TypeScript.
+Desktop-клиент для GitLab на базе Electron + React + TypeScript.
 
 ## Разработка
 
-```bash
-pnpm install
-pnpm tauri:dev
-```
-
-## Сборка Tauri
-
-### Ubuntu / Debian
-
-1. Установите системные зависимости:
-
-```bash
-sudo ./scripts/install-linux-deps.sh
-```
-
-2. Соберите приложение:
+В браузере (быстрая итерация по UI):
 
 ```bash
 pnpm install
-./scripts/build-tauri.sh linux
-# или
-pnpm tauri:build
+pnpm dev
 ```
 
-Артефакты появятся в `src-tauri/target/release/bundle/` (`.deb`, `.AppImage`).
-
-### macOS
-
-Нужны Xcode Command Line Tools:
-
-```bash
-xcode-select --install
-```
-
-Сборка универсального бинарника (Apple Silicon + Intel):
+Desktop-приложение с Chromium:
 
 ```bash
 pnpm install
-./scripts/build-tauri.sh macos-universal
-# или
-pnpm tauri:build:macos-universal
+pnpm dev:electron
 ```
 
-Артефакты появятся в `src-tauri/target/universal-apple-darwin/release/bundle/` (`.dmg`, `.app`).
+Если Electron не стартует с ошибкой `Electron failed to install correctly`, переустановите бинарник:
 
-### Windows
+```bash
+pnpm rebuild electron
+```
 
-1. Установите [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) с компонентом **Desktop development with C++**.
-2. Установите [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (Evergreen Bootstrapper), если его ещё нет в системе.
-3. Установите [Rust](https://www.rust-lang.org/tools/install) и [Node.js LTS](https://nodejs.org/).
+## Сборка Electron
 
-Сборка:
-
-```powershell
+```bash
 pnpm install
-pnpm tauri:build
-# или
-pwsh ./scripts/build-tauri.ps1
+pnpm build:electron
 ```
 
-Артефакты появятся в `src-tauri/target/release/bundle/` (`.msi`, `.exe` NSIS installer).
+Артефакты появятся в `release/`:
 
-### CI (GitHub Actions)
+| Платформа | Форматы |
+|---|---|
+| Linux | `.deb`, `.AppImage` |
+| macOS | `.dmg` |
+| Windows | `.exe` (NSIS installer) |
 
-Workflow `.github/workflows/tauri-build.yml` собирает приложение на `ubuntu-22.04`, `macos-latest` и `windows-latest`, затем загружает bundle-артефакты. Запускается при push/PR в `main` и вручную через **Actions → Build Tauri → Run workflow**.
+### Требования для локальной сборки
+
+- **Linux / macOS / Windows:** Node.js LTS, pnpm
+- **Windows:** Visual Studio Build Tools с **Desktop development with C++**
+- **macOS:** Xcode Command Line Tools
+
+Сборка web-only (без Electron):
+
+```bash
+pnpm build
+```
+
+## CI (GitHub Actions)
+
+Workflow `.github/workflows/electron-build.yml` собирает приложение на `ubuntu-22.04`, `macos-latest` и `windows-latest` и загружает installers. Запускается при push/PR в `main` и вручную через **Actions → Build Electron → Run workflow**.
 
 ## IDE
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- [VS Code](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)

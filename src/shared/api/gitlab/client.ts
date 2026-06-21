@@ -33,8 +33,9 @@ export const resolveGitlabRequestUrl = (
   path: string,
 ): string => {
   const baseUrl = normalizeGitlabBaseUrl(gitlabUrl);
+  const useProxy = import.meta.env.DEV || import.meta.env.VITE_ELECTRON;
 
-  if (!import.meta.env.DEV) {
+  if (!useProxy) {
     return `${baseUrl}${path}`;
   }
 
@@ -46,7 +47,9 @@ export const buildGitlabRequestHeaders = (
   gitlabUrl: string,
   headers: Record<string, string>,
 ): Record<string, string> => {
-  if (!import.meta.env.DEV) {
+  const useProxy = import.meta.env.DEV || import.meta.env.VITE_ELECTRON;
+
+  if (!useProxy) {
     return headers;
   }
 
