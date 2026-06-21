@@ -14,7 +14,7 @@
     "dev": "vite",
     "dev:electron": "cross-env ELECTRON=1 vite",
     "build": "cross-env WEB_ONLY=1 tsc && cross-env WEB_ONLY=1 vite build",
-    "build:electron": "cross-env ELECTRON=1 tsc && cross-env ELECTRON=1 vite build && electron-builder",
+    "build:electron": "cross-env ELECTRON=1 tsc && cross-env ELECTRON=1 vite build && electron-builder --publish never",
     "preview": "vite preview",
     "postinstall": "node node_modules/electron/install.js"
   },
@@ -64,6 +64,7 @@
   "build": {
     "appId": "com.js2me.githome",
     "productName": "GitHome",
+    "publish": null,
     "asar": true,
     "directories": {
       "output": "release",
