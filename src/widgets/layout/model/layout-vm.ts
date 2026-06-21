@@ -203,6 +203,11 @@ export class LayoutVM extends VM {
   }
 
   @action.bound
+  openHome() {
+    void this.globals.router.routes.home.open();
+  }
+
+  @action.bound
   openRepository() {
     const projectId = this.projectIdParam;
     if (!projectId) {

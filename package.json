@@ -69,6 +69,9 @@
     "productName": "GitHome",
     "publish": null,
     "asar": true,
+    "asarUnpack": [
+      "dist/**"
+    ],
     "directories": {
       "output": "release",
       "buildResources": "resources"

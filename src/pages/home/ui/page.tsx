@@ -1,65 +1,106 @@
 import { withViewModel } from "mobx-view-model-react";
+import { cn } from "@/shared/lib/cn";
+import { formatProjectCount } from "@/shared/lib/gitlab/format-project-count";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { HomeVM } from "../model";
 import { ProjectAvatar } from "./components/project-avatar";
+import { ProjectsLoadMoreSentinel } from "./components/projects-load-more-sentinel";
 
 export const HomePage = withViewModel(HomeVM, ({ model }) => {
   const { gitlabProjectsList } = model;
 
   return (
-    <section className="max-w-[760px]">
-      <h2 className="mb-2 text-2xl font-semibold">Недавние репозитории</h2>
-      <p className="m-0 text-slate-500">
-        Выберите или добавьте связку GitLab URL + токен в шапке. Для активной
-        связки загружаем до 10 часто используемых проектов.
-      </p>
+    <section className="max-w-[960px]">
+      <h2 className="mb-4 text-2xl font-semibold">Проекты</h2>
+
+      {model.isConfigured && (
+        <nav
+          aria-label="Категории проектов"
+          className="flex flex-wrap gap-x-5 gap-y-2 border-b border-slate-200 dark:border-slate-800"
+        >
+          {model.tabs.map((tab) => (
+            <button
+              key={tab.id}
+              aria-current={tab.isActive ? "page" : undefined}
+              className={cn(
+                "relative mb-[-1px] flex items-center gap-1.5 border-b-2 pb-2.5 text-sm transition",
+                tab.isActive
+                  ? "border-[var(--color-accent-blue)] font-semibold text-slate-900 dark:text-slate-100"
+                  : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200",
+              )}
+              type="button"
+              onClick={() => model.setActiveTab(tab.id)}
+            >
+              {tab.label}
+              {tab.count != null && (
+                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-normal text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                  {formatProjectCount(tab.count)}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+      )}
 
       {model.showConfigurePrompt && (
-        <StatusMessage>
+        <StatusMessage className="mt-4">
           Добавьте связку GitLab URL + токен в шапке.
         </StatusMessage>
       )}
 
       {model.showProjectsLoading && (
-        <StatusMessage>Загружаем проекты...</StatusMessage>
+        <StatusMessage className="mt-4">Загружаем проекты...</StatusMessage>
       )}
 
       {model.showProjectsError && (
-        <StatusMessage error>{gitlabProjectsList.errorMessage}</StatusMessage>
+        <StatusMessage className="mt-4" error>
+          {gitlabProjectsList.errorMessage}
+        </StatusMessage>
       )}
 
       {model.showProjectsEmpty && (
-        <StatusMessage>
+        <StatusMessage className="mt-4">
           Проекты не найдены для {model.connectionLabel}.
         </StatusMessage>
       )}
 
       {model.showProjectsList && (
-        <ul className="mt-5 flex list-none flex-col gap-2.5 p-0">
+        <ul className="mt-1 flex list-none flex-col p-0">
           {gitlabProjectsList.projects.map((project) => (
-            <li key={project.data.id}>
+            <li
+              key={project.data.id}
+              className="border-b border-slate-200 last:border-b-0 dark:border-slate-800"
+            >
               <button
-                className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left text-inherit transition hover:border-brand hover:shadow-[0_4px_16px_var(--color-card-hover-shadow)] dark:border-slate-800 dark:bg-gray-900 dark:hover:border-brand"
+                className="flex w-full cursor-pointer items-center gap-2.5 px-1 py-2 text-left text-inherit transition hover:bg-slate-50 dark:hover:bg-slate-900/60"
                 type="button"
                 onClick={() => model.openProject(project)}
               >
                 <ProjectAvatar
-                  className="h-10 w-10 shrink-0 rounded-[10px] object-cover"
+                  className="h-7 w-7 shrink-0 rounded-md object-cover"
                   project={project}
                 />
 
                 <span className="flex min-w-0 flex-col gap-0.5">
-                  <span className="text-[15px] font-semibold text-slate-900 dark:text-slate-200">
+                  <span className="truncate text-sm font-semibold text-slate-900 dark:text-slate-200">
                     {project.name}
                   </span>
-                  <span className="truncate text-[13px] text-slate-500">
+                  <span className="truncate text-xs text-slate-500">
                     {project.data.path_with_namespace}
                   </span>
                 </span>
               </button>
             </li>
           ))}
+          <ProjectsLoadMoreSentinel
+            disabled={!model.canLoadMoreProjects}
+            onLoadMore={() => model.loadMoreProjects()}
+          />
         </ul>
+      )}
+
+      {model.showProjectsLoadingMore && (
+        <StatusMessage className="mt-2">Загружаем ещё...</StatusMessage>
       )}
     </section>
   );

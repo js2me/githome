@@ -1,24 +1,50 @@
-import { app, BrowserWindow, Menu, shell } from "electron";
+import { app, BrowserWindow, Menu, dialog, shell } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { startAppServer } from "./app-server";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-process.env.APP_ROOT = path.join(__dirname, "..");
-process.env.DIST = path.join(process.env.APP_ROOT, "dist");
-process.env.VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+const getDistPath = () =>
+  path.join(
+    app.isPackaged ? app.getAppPath() : path.join(__dirname, ".."),
+    "dist",
+  );
 
 const preloadPath = path.join(__dirname, "preload.mjs");
-const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 
 let mainWindow: BrowserWindow | null = null;
 let appServer: Awaited<ReturnType<typeof startAppServer>> | null = null;
 
+const resolvePageUrl = async (): Promise<string> => {
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL?.trim();
+  if (!app.isPackaged && devServerUrl) {
+    return devServerUrl;
+  }
+
+  const distPath = getDistPath();
+  appServer ??= await startAppServer(distPath);
+
+  if (!appServer.url) {
+    throw new Error(`Failed to resolve app URL (dist: ${distPath})`);
+  }
+
+  return appServer.url;
+};
+
 const createWindow = async () => {
-  const pageUrl = isDev
-    ? process.env.VITE_DEV_SERVER_URL!
-    : (appServer ??= await startAppServer(process.env.DIST!)).url;
+  let pageUrl: string;
+
+  try {
+    pageUrl = await resolvePageUrl();
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to start GitHome";
+    console.error(message, error);
+    dialog.showErrorBox("GitHome", message);
+    app.quit();
+    return;
+  }
 
   mainWindow = new BrowserWindow({
     title: "GitHome",
@@ -30,7 +56,7 @@ const createWindow = async () => {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
     },
   });
 
@@ -53,7 +79,15 @@ const createWindow = async () => {
     }
   });
 
-  await mainWindow.loadURL(pageUrl);
+  try {
+    await mainWindow.loadURL(pageUrl);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to open GitHome window";
+    console.error(message, error);
+    dialog.showErrorBox("GitHome", message);
+    app.quit();
+  }
 };
 
 app.whenReady().then(() => {

@@ -18,7 +18,7 @@ export const ConnectionPicker = observer(() => {
   const model = useViewModel(LayoutVM);
   const settings = model.globals.stores.settings;
   const popupRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
 
   const buttonLabel = settings.activeItem
     ? getConnectionLabel(settings.activeItem)
@@ -34,7 +34,7 @@ export const ConnectionPicker = observer(() => {
 
       if (
         popupRef.current?.contains(target) ||
-        buttonRef.current?.contains(target)
+        triggerRef.current?.contains(target)
       ) {
         return;
       }
@@ -57,22 +57,42 @@ export const ConnectionPicker = observer(() => {
     };
   }, [model, model.isConnectionPopupOpen]);
 
+  const activeClassName =
+    model.isConnectionPopupOpen &&
+    "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-200";
+
   return (
     <div className="relative">
-      <button
-        ref={buttonRef}
-        className={cn(
-          navLinkClassName,
-          model.isConnectionPopupOpen &&
-            "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-200",
-        )}
-        type="button"
-        aria-expanded={model.isConnectionPopupOpen}
-        aria-haspopup="dialog"
-        onClick={model.toggleConnectionPopup}
-      >
-        {buttonLabel}
-      </button>
+      <div ref={triggerRef} className="inline-flex items-stretch">
+        <button
+          className={cn(navLinkClassName, "rounded-r-none", activeClassName)}
+          type="button"
+          onClick={model.openHome}
+        >
+          {buttonLabel}
+        </button>
+        <button
+          className={cn(
+            navLinkClassName,
+            "rounded-l-none px-1.5 text-slate-400 dark:text-slate-500",
+            activeClassName,
+          )}
+          type="button"
+          aria-expanded={model.isConnectionPopupOpen}
+          aria-haspopup="dialog"
+          aria-label="Управление связками GitLab"
+          onClick={model.toggleConnectionPopup}
+        >
+          <svg
+            aria-hidden
+            className="h-4 w-4"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+          >
+            <path d="M4.427 6.427a.75.75 0 0 1 1.06 0L8 8.94l2.513-2.513a.75.75 0 1 1 1.06 1.06l-3.043 3.043a.75.75 0 0 1-1.06 0L4.427 7.487a.75.75 0 0 1 0-1.06Z" />
+          </svg>
+        </button>
+      </div>
 
       {model.isConnectionPopupOpen && (
         <div
