@@ -12,9 +12,9 @@
   "desktopName": "githome",
   "scripts": {
     "dev": "vite",
-    "dev:electron": "ELECTRON=1 vite",
-    "build": "tsc && WEB_ONLY=1 vite build",
-    "build:electron": "tsc && ELECTRON=1 vite build && electron-builder",
+    "dev:electron": "cross-env ELECTRON=1 vite",
+    "build": "cross-env WEB_ONLY=1 tsc && cross-env WEB_ONLY=1 vite build",
+    "build:electron": "cross-env ELECTRON=1 tsc && cross-env ELECTRON=1 vite build && electron-builder",
     "preview": "vite preview",
     "postinstall": "node node_modules/electron/install.js"
   },
@@ -43,6 +43,7 @@
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^4.3.1",
+    "cross-env": "^7.0.3",
     "electron": "^37.2.6",
     "electron-builder": "^26.0.12",
     "mobx-view-model-vite-plugin": "^1.4.1",
