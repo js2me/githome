@@ -55,10 +55,11 @@ pnpm build
 
 Workflow `.github/workflows/release.yml` запускается при каждом push в `main` (и вручную через **Actions → Release → Run workflow**):
 
-1. Собирает **AppImage** и **.deb** на Ubuntu
-2. Собирает **.exe** (NSIS) на Windows
-3. Создаёт GitHub Release с тегом = **short hash коммита** (7 символов, например `a1b2c3d`)
-4. Прикрепляет все installers к релизу
+1. **build-app** (один раз на Ubuntu) — `tsc` + Vite: `dist/` и `dist-electron/`
+2. **package** (matrix) — скачивает bundle и собирает installers:
+   - Ubuntu → `.AppImage`, `.deb`
+   - Windows → `.exe`
+3. **release** — GitHub Release с тегом = **short hash коммита** (7 символов)
 
 Для создания релизов в репозитории нужны права **Settings → Actions → General → Workflow permissions → Read and write permissions**.
 

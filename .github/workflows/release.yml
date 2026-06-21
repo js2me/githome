@@ -11,7 +11,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-app:
+    permissions:
+      contents: read
+    runs-on: ubuntu-22.04
+    env:
+      CI: true
+      ELECTRON: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend and Electron bundles
+        run: pnpm build:app
+
+      - name: Upload app bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-bundle
+          if-no-files-found: error
+          path: |
+            dist
+            dist-electron
+
+  package:
+    needs: build-app
     permissions:
       contents: read
     env:
@@ -23,12 +60,20 @@ jobs:
         include:
           - os: ubuntu-22.04
             artifact: linux
+            platform: linux
           - os: windows-latest
             artifact: windows
+            platform: win
 
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download app bundles
+        uses: actions/download-artifact@v4
+        with:
+          name: app-bundle
+          path: .
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -47,10 +92,10 @@ jobs:
       - name: Ensure Electron binary is installed
         run: node node_modules/electron/install.js
 
-      - name: Build Electron app
-        run: pnpm build:electron
+      - name: Package desktop app
+        run: pnpm package:${{ matrix.platform }}
 
-      - name: Upload build artifacts
+      - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
@@ -61,7 +106,7 @@ jobs:
             release/*.exe
 
   release:
-    needs: build
+    needs: package
     runs-on: ubuntu-latest
     permissions:
       contents: write
