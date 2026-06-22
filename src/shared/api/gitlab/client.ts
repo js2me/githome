@@ -218,6 +218,43 @@ export const fetchGitlabJson = async <T>(
   return (await response.json()) as T;
 };
 
+export const gitlabWebFetch = async (
+  connection: GitLabConnection,
+  path: string,
+  signal?: AbortSignal,
+) => {
+  const response = await fetch(
+    resolveGitlabRequestUrl(
+      connection.gitlabUrl,
+      buildGitlabPath(path, { private_token: connection.gitToken }),
+    ),
+    {
+      headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
+        "PRIVATE-TOKEN": connection.gitToken,
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      }),
+      redirect: "manual",
+      signal,
+    },
+  );
+
+  if (
+    response.type === "opaqueredirect" ||
+    (response.status >= 300 && response.status < 400)
+  ) {
+    throw new Error(
+      "GitLab web API: требуется авторизация (редирект на страницу входа). Проверьте токен доступа.",
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(`GitLab web API error: ${response.status}`);
+  }
+
+  return response;
+};
+
 export const buildMergeRequestWebPath = (
   projectPath: string,
   mergeRequestIid: number,

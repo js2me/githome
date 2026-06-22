@@ -1,10 +1,6 @@
-export interface GitLabHighlightedDiffLineDC {
-  type?: string | null;
-  old_line?: number | null;
-  new_line?: number | null;
-  text?: string | null;
-  rich_text?: string | null;
-}
+import type { GitLabHighlightedDiffLineDC } from "@/shared/api/gitlab/data-contracts";
+
+export type { GitLabHighlightedDiffLineDC };
 
 const decodeHtmlEntities = (value: string) => {
   if (typeof document !== "undefined") {

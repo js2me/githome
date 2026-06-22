@@ -55,6 +55,42 @@ export interface GitLabMergeRequestChangeDC {
   file_hash?: string;
 }
 
+export interface GitLabHighlightedDiffLineDC {
+  type?: string | null;
+  old_line?: number | null;
+  new_line?: number | null;
+  text?: string | null;
+  rich_text?: string | null;
+}
+
+export interface GitLabDiffsBatchFileDC {
+  old_path: string;
+  new_path: string;
+  diff?: string;
+  new_file?: boolean;
+  renamed_file?: boolean;
+  deleted_file?: boolean;
+  too_large?: boolean;
+  collapsed?: boolean;
+  generated_file?: boolean;
+  added_lines?: number;
+  removed_lines?: number;
+  file_hash?: string;
+  highlighted_diff_lines?: GitLabHighlightedDiffLineDC[];
+}
+
+export interface GitLabMergeRequestVersionDC {
+  id: number;
+  head_commit_sha: string;
+  base_commit_sha: string;
+  start_commit_sha: string;
+  created_at: string;
+}
+
+export interface GitLabDiffsBatchResponseDC {
+  diff_files: GitLabDiffsBatchFileDC[];
+}
+
 export interface GitLabNotePositionLinePointDC {
   type?: string | null;
   old_line?: number | null;

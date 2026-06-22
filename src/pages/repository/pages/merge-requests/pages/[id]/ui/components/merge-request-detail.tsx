@@ -1,7 +1,8 @@
 import type {
   GitLabDiscussionDC,
-  GitLabMergeRequestDC,
   GitLabMergeRequestChangeDC,
+  GitLabMergeRequestDC,
+  GitLabMergeRequestVersionDC,
 } from "@/shared/api/gitlab";
 import type { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
 import type { MergeRequestApprovalView } from "@/shared/lib/gitlab/merge-request-approval-view";
@@ -12,6 +13,7 @@ import {
 } from "@/shared/ui/mr-state-badge";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { StatusMessage } from "@/shared/ui/status-message";
+import { cn } from "@/shared/lib/cn";
 import { filterDiscussionsForActivity } from "@/shared/lib/gitlab/diff-discussions";
 import { useCallback, useMemo, useState } from "react";
 import { ChangesActiveFileLink } from "./changes-active-file-link";
@@ -20,6 +22,7 @@ import { ChangesTreeLayout } from "./changes-tree-layout";
 import { useActiveDiffFile } from "../hooks/use-active-diff-file";
 import { DiffSearchProvider } from "@/shared/ui/git-diff/diff-search";
 import { MergeRequestChanges } from "./merge-request-changes";
+import { DiffVersionPicker } from "./diff-version-picker";
 import { MergeRequestCommentForm } from "./merge-request-comment-form";
 import { MergeRequestDiscussions } from "./merge-request-discussions";
 import { MrReviewActions } from "./mr-review-actions";
@@ -214,6 +217,9 @@ export const MergeRequestDetail = ({
   onUnapprove,
   onRequestChanges,
   onCancelRequestChanges,
+  diffVersions = [],
+  selectedDiffVersionId = null,
+  onSelectDiffVersion,
 }: {
   mergeRequest: GitLabMergeRequestDC;
   changes: GitLabMergeRequestChangeDC[];
@@ -240,6 +246,9 @@ export const MergeRequestDetail = ({
   onUnapprove: () => void;
   onRequestChanges: () => void;
   onCancelRequestChanges: () => void;
+  diffVersions?: GitLabMergeRequestVersionDC[];
+  selectedDiffVersionId?: number | null;
+  onSelectDiffVersion: (id: number | null) => void;
 }) => {
   const stateKey = isDraft(mergeRequest) ? "draft" : mergeRequest.state;
   const authorName = getAuthorName(mergeRequest);
@@ -255,6 +264,8 @@ export const MergeRequestDetail = ({
     () => filterDiscussionsForActivity(discussions),
     [discussions],
   );
+  const [activityExpanded, setActivityExpanded] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
   const mainContent = (
     <div className="flex min-w-0 flex-col gap-5">
@@ -376,27 +387,57 @@ export const MergeRequestDetail = ({
 
       {description.trim() && (
         <section className="flex flex-col gap-3">
-          <h3 className="m-0 text-lg font-semibold">Описание</h3>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900">
-            <GitLabMarkdown text={description} />
-          </div>
+          <button
+            type="button"
+            className="m-0 flex items-center gap-2 text-lg font-semibold cursor-pointer bg-transparent border-none p-0 text-left"
+            onClick={() => setDescriptionExpanded((v) => !v)}
+            aria-expanded={descriptionExpanded}
+          >
+            <svg
+              className={cn("h-4 w-4 shrink-0 transition-transform", descriptionExpanded && "rotate-90")}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path d="M6 4l8 6-8 6V4z" />
+            </svg>
+            Описание
+          </button>
+          {descriptionExpanded && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900">
+              <GitLabMarkdown text={description} />
+            </div>
+          )}
         </section>
       )}
 
       <section className="flex flex-col gap-3">
-        <h3 className="m-0 flex items-center gap-2 text-lg font-semibold">
+        <button
+          type="button"
+          className="m-0 flex items-center gap-2 text-lg font-semibold cursor-pointer bg-transparent border-none p-0 text-left"
+          onClick={() => setActivityExpanded((v) => !v)}
+          aria-expanded={activityExpanded}
+        >
+          <svg
+            className={cn("h-4 w-4 shrink-0 transition-transform", activityExpanded && "rotate-90")}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path d="M6 4l8 6-8 6V4z" />
+          </svg>
           Activity
           {activityDiscussions.length > 0 && (
             <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
               {activityDiscussions.length}
             </span>
           )}
-        </h3>
-        <MergeRequestDiscussions
-          discussions={activityDiscussions}
-          onResolveDiscussion={onResolveDiscussion}
-          resolvingDiscussionId={resolvingDiscussionId}
-        />
+        </button>
+        {activityExpanded && (
+          <MergeRequestDiscussions
+            discussions={activityDiscussions}
+            onResolveDiscussion={onResolveDiscussion}
+            resolvingDiscussionId={resolvingDiscussionId}
+          />
+        )}
       </section>
 
       <MergeRequestCommentForm
@@ -414,6 +455,13 @@ export const MergeRequestDetail = ({
             <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
               {changes.length}
             </span>
+          )}
+          {diffVersions.length > 1 && (
+            <DiffVersionPicker
+              versions={diffVersions}
+              selectedVersionId={selectedDiffVersionId}
+              onSelectVersion={onSelectDiffVersion}
+            />
           )}
         </h3>
         {changesError && <StatusMessage error>{changesError}</StatusMessage>}

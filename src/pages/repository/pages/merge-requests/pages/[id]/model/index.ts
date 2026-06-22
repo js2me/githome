@@ -26,6 +26,19 @@ export class MergeRequestPageVM extends VM<{}, RepositoryPageVM> {
   constructor(globals: Globals, params: InferViewModelParams<MergeRequestPageVM>) {
     super(globals, params);
 
-    this.mrInfo = new MrInfoModel(this);
+    this.mrInfo = new MrInfoModel({
+      globals,
+      abortSignal: this.unmountSignal,
+      params: () => {
+        const project = this.selectedProject;
+        const mergeRequestIid = this.mergeRequestIid;
+
+        if (!project || mergeRequestIid === null) {
+          return false;
+        }
+
+        return { project, mergeRequestIid };
+      },
+    });
   }
 }

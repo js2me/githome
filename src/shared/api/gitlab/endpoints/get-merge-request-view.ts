@@ -13,7 +13,7 @@ export const getMergeRequestView = async (
 ) => {
   const [detail, changes, discussions, approvals] = await Promise.all([
     getMergeRequestDetail(connection, project, mergeRequestIid, signal),
-    getMergeRequestChanges(connection, project, mergeRequestIid, signal),
+    getMergeRequestChanges(connection, project, mergeRequestIid, null, null, signal),
     getMergeRequestDiscussions(connection, project, mergeRequestIid, signal),
     getMergeRequestApprovalView(connection, project, mergeRequestIid, signal),
   ]);

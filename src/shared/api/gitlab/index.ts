@@ -7,6 +7,7 @@ import { createMergeRequestDiffDiscussion } from "./endpoints/create-merge-reque
 import { createMergeRequestDiscussion } from "./endpoints/create-merge-request-discussion";
 import { getFrequentProjects } from "./endpoints/get-frequent-projects";
 import { getMergeRequestChanges } from "./endpoints/get-merge-request-changes";
+import { getMergeRequestVersions } from "./endpoints/get-merge-request-versions";
 import { getMergeRequestDetail } from "./endpoints/get-merge-request-detail";
 import { getMergeRequestDiscussions } from "./endpoints/get-merge-request-discussions";
 import { getMergeRequestView } from "./endpoints/get-merge-request-view";
@@ -50,6 +51,8 @@ export const gitlabApi = {
   getMergeRequestDetail,
 
   getMergeRequestChanges,
+
+  getMergeRequestVersions,
 
   getMergeRequestDiscussions,
 

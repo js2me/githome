@@ -48,6 +48,9 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
               onUnapprove={mrInfo.unapprove}
               onRequestChanges={mrInfo.requestChanges}
               onCancelRequestChanges={mrInfo.cancelRequestChanges}
+              diffVersions={detailView.diffVersions}
+              selectedDiffVersionId={detailView.selectedDiffVersionId}
+              onSelectDiffVersion={mrInfo.selectDiffVersion}
             />
           )}
       </section>

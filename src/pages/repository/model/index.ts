@@ -8,9 +8,8 @@ import type {
 import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
 import { ProjectReadmeModel } from "./project-readme";
-import type { RepositoryModelContext } from "./repository-model-context";
 
-export class RepositoryPageVM extends VM implements RepositoryModelContext {
+export class RepositoryPageVM extends VM {
   projectQuery;
   readmeModel;
 
