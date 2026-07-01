@@ -28,14 +28,139 @@ const getGitlabOrigin = (gitlabUrl: string) => {
   };
 };
 
+const shouldUseGitlabProxy = () =>
+  import.meta.env.DEV || import.meta.env.VITE_ELECTRON === true;
+
+const GITLAB_UPLOAD_AVATAR_TO_API: Array<{
+  pattern: RegExp;
+  toApiPath: (id: string) => string;
+}> = [
+  {
+    pattern: /^\/uploads\/-\/system\/project\/avatar\/(\d+)\//,
+    toApiPath: (id) => `/api/v4/projects/${id}/avatar`,
+  },
+  {
+    pattern: /^\/uploads\/-\/system\/group\/avatar\/(\d+)\//,
+    toApiPath: (id) => `/api/v4/groups/${id}/avatar`,
+  },
+];
+
+const resolveGitlabAssetApiPath = (pathname: string): string => {
+  for (const { pattern, toApiPath } of GITLAB_UPLOAD_AVATAR_TO_API) {
+    const match = pathname.match(pattern);
+    if (match?.[1]) {
+      return toApiPath(match[1]);
+    }
+  }
+
+  return pathname;
+};
+
+const normalizeAssetUrl = (assetUrl: string, gitlabBase: string): string => {
+  const trimmed = assetUrl.trim();
+
+  if (trimmed.startsWith("//")) {
+    return `${new URL(gitlabBase).protocol}${trimmed}`;
+  }
+
+  return trimmed;
+};
+
+const parseGitlabAssetLocation = (
+  assetUrl: string,
+  gitlabBase: string,
+): { host: string; pathname: string; search: string } | null => {
+  const normalizedAssetUrl = normalizeAssetUrl(assetUrl, gitlabBase);
+  const gitlabOrigin = new URL(gitlabBase).origin;
+  const { host } = getGitlabOrigin(gitlabBase);
+
+  if (normalizedAssetUrl.startsWith("/")) {
+    const questionIndex = normalizedAssetUrl.indexOf("?");
+    return {
+      host,
+      pathname:
+        questionIndex >= 0
+          ? normalizedAssetUrl.slice(0, questionIndex)
+          : normalizedAssetUrl,
+      search:
+        questionIndex >= 0 ? normalizedAssetUrl.slice(questionIndex + 1) : "",
+    };
+  }
+
+  try {
+    const parsed = new URL(normalizedAssetUrl);
+
+    if (parsed.origin !== gitlabOrigin && parsed.host !== host) {
+      return null;
+    }
+
+    return {
+      host: parsed.host,
+      pathname: parsed.pathname,
+      search: parsed.search.slice(1),
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const resolveGitlabAssetUrl = (
+  connection: GitLabConnection,
+  assetUrl: string | null | undefined,
+): string | null => {
+  if (!assetUrl?.trim()) {
+    return null;
+  }
+
+  const gitlabBase = normalizeGitlabBaseUrl(connection.gitlabUrl);
+  const location = parseGitlabAssetLocation(assetUrl, gitlabBase);
+
+  if (!location) {
+    return normalizeAssetUrl(assetUrl, gitlabBase);
+  }
+
+  if (!shouldUseGitlabProxy()) {
+    return normalizeAssetUrl(assetUrl, gitlabBase);
+  }
+
+  const apiPath = resolveGitlabAssetApiPath(location.pathname);
+  const query = location.search ? `?${location.search}` : "";
+  return `${GIT_PROXY_PREFIX}/${location.host}${apiPath}${query}`;
+};
+
+export const isGitlabProxiedAssetUrl = (url: string) =>
+  url.startsWith(`${GIT_PROXY_PREFIX}/`);
+
+export const fetchGitlabAssetBlob = async (
+  connection: GitLabConnection,
+  assetUrl: string,
+  signal?: AbortSignal,
+): Promise<Blob> => {
+  const url = resolveGitlabAssetUrl(connection, assetUrl);
+  if (!url) {
+    throw new Error("GitLab asset URL is empty");
+  }
+
+  const response = await fetch(url, {
+    headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
+      "PRIVATE-TOKEN": connection.gitToken,
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitLab asset error: ${response.status}`);
+  }
+
+  return response.blob();
+};
+
 export const resolveGitlabRequestUrl = (
   gitlabUrl: string,
   path: string,
 ): string => {
   const baseUrl = normalizeGitlabBaseUrl(gitlabUrl);
-  const useProxy = import.meta.env.DEV || import.meta.env.VITE_ELECTRON;
-
-  if (!useProxy) {
+  if (!shouldUseGitlabProxy()) {
     return `${baseUrl}${path}`;
   }
 
@@ -47,9 +172,7 @@ export const buildGitlabRequestHeaders = (
   gitlabUrl: string,
   headers: Record<string, string>,
 ): Record<string, string> => {
-  const useProxy = import.meta.env.DEV || import.meta.env.VITE_ELECTRON;
-
-  if (!useProxy) {
+  if (!shouldUseGitlabProxy()) {
     return headers;
   }
 

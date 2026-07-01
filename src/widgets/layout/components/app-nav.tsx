@@ -2,6 +2,7 @@ import { observer } from "mobx-react-lite";
 import { useViewModel } from "mobx-view-model-react";
 import type { GitLabProjectDC } from "@/shared/api/gitlab";
 import { cn } from "@/shared/lib/cn";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
 import { LayoutVM } from "../model/layout-vm";
 import { ConnectionPicker } from "./connection-picker";
 
@@ -16,7 +17,13 @@ const ProjectAvatar = ({
   className: string;
 }) => {
   if (project.avatar_url) {
-    return <img className={className} src={project.avatar_url} alt="" />;
+    return (
+      <GitlabAvatar
+        className={className}
+        avatarUrl={project.avatar_url}
+        name={project.name}
+      />
+    );
   }
 
   return (

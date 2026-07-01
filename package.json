@@ -17,7 +17,9 @@
     "build:app": "cross-env ELECTRON=1 tsc && cross-env ELECTRON=1 vite build",
     "package:linux": "electron-builder --publish never --linux",
     "package:win": "electron-builder --publish never --win",
+    "package:mac": "electron-builder --publish never --mac",
     "build:electron": "pnpm build:app && electron-builder --publish never",
+    "build:full": "pnpm build:app && electron-builder --publish never --linux --win --mac",
     "preview": "vite preview",
     "postinstall": "node node_modules/electron/install.js"
   },

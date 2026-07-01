@@ -4,6 +4,11 @@ import https from "node:https";
 
 export const GIT_PROXY_PREFIX = "/git-proxy";
 
+const getPrivateToken = (req: IncomingMessage) => {
+  const authHeader = req.headers["private-token"] ?? req.headers["PRIVATE-TOKEN"];
+  return Array.isArray(authHeader) ? authHeader[0] : authHeader;
+};
+
 export const proxyGitlabRequest = (
   req: IncomingMessage,
   res: ServerResponse,
@@ -12,6 +17,15 @@ export const proxyGitlabRequest = (
   const headers = { ...req.headers };
   delete headers["x-gitlab-proxy-protocol"];
   delete headers["x-gitlab-proxy-host"];
+  delete headers.host;
+  delete headers.connection;
+
+  const token = getPrivateToken(req);
+  if (token) {
+    headers["PRIVATE-TOKEN"] = token;
+    delete headers["private-token"];
+  }
+
   headers.host = target.host;
 
   const client = target.protocol === "https:" ? https : http;
@@ -37,6 +51,11 @@ export const proxyGitlabRequest = (
       res.end(`GitLab proxy error: ${error.message}`);
     }
   });
+
+  if (req.method === "GET" || req.method === "HEAD") {
+    proxyReq.end();
+    return;
+  }
 
   req.pipe(proxyReq);
 };
@@ -64,10 +83,10 @@ export const handleGitlabProxyRequest = (
 
   try {
     const target = new URL(`${protocol}://${proxyHost}${proxyPath}`);
-    const authHeader = req.headers["private-token"] ?? req.headers["PRIVATE-TOKEN"];
-    const token = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+    const token = getPrivateToken(req);
+    const isUploadPath = target.pathname.startsWith("/uploads/");
 
-    if (token && !target.searchParams.has("private_token")) {
+    if (token && !target.searchParams.has("private_token") && !isUploadPath) {
       target.searchParams.set("private_token", token);
     }
 

@@ -6,6 +6,7 @@ import { cancelMergeRequestRequestedChanges } from "./endpoints/cancel-merge-req
 import { createMergeRequestDiffDiscussion } from "./endpoints/create-merge-request-diff-discussion";
 import { createMergeRequestDiscussion } from "./endpoints/create-merge-request-discussion";
 import { getFrequentProjects } from "./endpoints/get-frequent-projects";
+import { getMergeRequestApprovalCounts } from "./endpoints/get-merge-request-approval-counts";
 import { getMergeRequestChanges } from "./endpoints/get-merge-request-changes";
 import { getMergeRequestVersions } from "./endpoints/get-merge-request-versions";
 import { getMergeRequestDetail } from "./endpoints/get-merge-request-detail";
@@ -48,6 +49,8 @@ export const gitlabApi = {
 
   getProjectMergeRequests,
 
+  getMergeRequestApprovalCounts,
+
   getMergeRequestDetail,
 
   getMergeRequestChanges,
@@ -75,5 +78,12 @@ export const gitlabApi = {
   renderMarkdown,
 };
 
-export { buildGitlabRequestHeaders, normalizeGitlabBaseUrl, resolveGitlabRequestUrl } from "./client";
+export {
+  buildGitlabRequestHeaders,
+  fetchGitlabAssetBlob,
+  isGitlabProxiedAssetUrl,
+  normalizeGitlabBaseUrl,
+  resolveGitlabAssetUrl,
+  resolveGitlabRequestUrl,
+} from "./client";
 export type * from "./data-contracts";

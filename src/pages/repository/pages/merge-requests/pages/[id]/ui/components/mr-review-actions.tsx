@@ -4,16 +4,21 @@ import type {
 } from "@/shared/api/gitlab";
 import type { MergeRequestApprovalView } from "@/shared/lib/gitlab/merge-request-approval-view";
 import type { MrReviewAction } from "../../model/mr-info";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 
 const getReviewerStateLabel = (state: string) => {
   switch (state) {
     case "reviewed":
+    case "approved":
       return "Одобрил";
     case "requested_changes":
       return "Запросил правки";
     case "reviewing":
+    case "review_started":
       return "Ревью в процессе";
+    case "unapproved":
+      return "Отозвал апрув";
     case "unreviewed":
       return "Ожидает ревью";
     default:
@@ -27,25 +32,17 @@ const ReviewerAvatar = ({
 }: {
   name: string;
   avatarUrl: string | null;
-}) =>
-  avatarUrl ? (
-    <img
-      className="h-6 w-6 rounded-full object-cover"
-      src={avatarUrl}
-      alt=""
-      title={name}
-    />
-  ) : (
-    <div
-      className="grid h-6 w-6 place-items-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300"
-      title={name}
-    >
-      {name.slice(0, 1).toUpperCase()}
-    </div>
-  );
+}) => (
+  <GitlabAvatar
+    className="h-6 w-6 rounded-full object-cover"
+    avatarUrl={avatarUrl}
+    name={name}
+  />
+);
 
 const ReviewerRow = ({ reviewer }: { reviewer: GitLabMergeRequestReviewerDC }) => {
-  const isApproved = reviewer.state === "reviewed";
+  const isApproved =
+    reviewer.state === "reviewed" || reviewer.state === "approved";
   const requestedChanges = reviewer.state === "requested_changes";
 
   return (

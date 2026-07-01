@@ -9,6 +9,7 @@ import {
   useState,
   type RefObject,
 } from "react";
+import type { InlineDiffThread } from "@/shared/lib/gitlab/diff-discussions";
 import type { VirtualDiffRow } from "@/shared/lib/build-diff-virtual-rows";
 import type { DiffExpandMode } from "@/shared/lib/expand-diff-context";
 import type { DiffLineSelection } from "@/shared/lib/diff-line-selection";
@@ -56,6 +57,66 @@ type DiffThreadResolveProps = {
   resolvingDiscussionId?: string | null;
 };
 
+const useResolvedThreadExpansion = () => {
+  const [expandedDiscussionIds, setExpandedDiscussionIds] = useState<
+    Set<string>
+  >(() => new Set());
+
+  const isThreadExpanded = useCallback(
+    (threadOrDiscussionId: InlineDiffThread | string) => {
+      const discussionId =
+        typeof threadOrDiscussionId === "string"
+          ? threadOrDiscussionId
+          : threadOrDiscussionId.discussionId;
+      const resolved =
+        typeof threadOrDiscussionId === "string"
+          ? true
+          : threadOrDiscussionId.resolved;
+
+      return !resolved || expandedDiscussionIds.has(discussionId);
+    },
+    [expandedDiscussionIds],
+  );
+
+  const toggleThreadExpanded = useCallback((discussionId: string) => {
+    setExpandedDiscussionIds((current) => {
+      const next = new Set(current);
+      if (next.has(discussionId)) {
+        next.delete(discussionId);
+      } else {
+        next.add(discussionId);
+      }
+      return next;
+    });
+  }, []);
+
+  const collapseThreads = useCallback((discussionIds: string[]) => {
+    if (discussionIds.length === 0) {
+      return;
+    }
+
+    setExpandedDiscussionIds((current) => {
+      const next = new Set(current);
+      let changed = false;
+
+      for (const discussionId of discussionIds) {
+        if (next.delete(discussionId)) {
+          changed = true;
+        }
+      }
+
+      return changed ? next : current;
+    });
+  }, []);
+
+  return {
+    expandedDiscussionIds,
+    isThreadExpanded,
+    toggleThreadExpanded,
+    collapseThreads,
+  };
+};
+
 const VirtualDiffRowView = memo(
   ({
     row,
@@ -76,6 +137,8 @@ const VirtualDiffRowView = memo(
     onExpandGap,
     onResolveThread,
     resolvingDiscussionId,
+    isThreadExpanded,
+    onToggleThreadExpanded,
   }: {
     row: VirtualDiffRow;
     canComment: boolean;
@@ -93,6 +156,8 @@ const VirtualDiffRowView = memo(
     onCancelComment: () => void;
     onSubmitComment: () => void;
     onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
+    isThreadExpanded: (threadOrDiscussionId: InlineDiffThread | string) => boolean;
+    onToggleThreadExpanded: (discussionId: string) => void;
   } & DiffThreadResolveProps) => {
     if (row.type === "expand") {
       return (
@@ -126,6 +191,9 @@ const VirtualDiffRowView = memo(
           rowId={row.id}
           canComment={canComment}
           hasThreads={row.threadsCount > 0}
+          threads={row.threads}
+          isThreadExpanded={isThreadExpanded}
+          onToggleThreadExpand={onToggleThreadExpanded}
           isSelected={selectionFlags.isSelected}
           isSelectionStart={selectionFlags.isSelectionStart}
           isSelectionEnd={selectionFlags.isSelectionEnd}
@@ -155,6 +223,8 @@ const VirtualDiffRowView = memo(
           thread={row.thread}
           onResolveThread={onResolveThread}
           resolvingDiscussionId={resolvingDiscussionId}
+          expanded={isThreadExpanded(row.thread)}
+          onToggleExpand={() => onToggleThreadExpanded(row.thread.discussionId)}
         />
       );
     }
@@ -193,6 +263,8 @@ const StaticDiffBody = memo(
     onRegisterScrollToRow,
     onResolveThread,
     resolvingDiscussionId,
+    isThreadExpanded,
+    onToggleThreadExpanded,
   }: {
     rows: VirtualDiffRow[];
     canComment: boolean;
@@ -210,6 +282,8 @@ const StaticDiffBody = memo(
     onSubmitComment: () => void;
     onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
     onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
+    isThreadExpanded: (threadOrDiscussionId: InlineDiffThread | string) => boolean;
+    onToggleThreadExpanded: (discussionId: string) => void;
   } & DiffThreadResolveProps) => {
     const normalizedSelection = useMemo(() => {
       if (!lineSelection) {
@@ -251,7 +325,7 @@ const StaticDiffBody = memo(
     }, [onRegisterScrollToRow]);
 
     return (
-    <div className="w-full">
+    <div className="w-full pl-7">
       {rows.map((row) => (
         <div
           key={row.id}
@@ -277,6 +351,8 @@ const StaticDiffBody = memo(
           onExpandGap={onExpandGap}
           onResolveThread={onResolveThread}
           resolvingDiscussionId={resolvingDiscussionId}
+          isThreadExpanded={isThreadExpanded}
+          onToggleThreadExpanded={onToggleThreadExpanded}
         />
         </div>
       ))}
@@ -341,6 +417,9 @@ const VirtualizedDiffBody = memo(
     onRegisterScrollToRow,
     onResolveThread,
     resolvingDiscussionId,
+    isThreadExpanded,
+    onToggleThreadExpanded,
+    expandedThreadSignature,
   }: {
     rows: VirtualDiffRow[];
     canComment: boolean;
@@ -359,6 +438,9 @@ const VirtualizedDiffBody = memo(
     onSubmitComment: () => void;
     onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
     onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
+    isThreadExpanded: (threadOrDiscussionId: InlineDiffThread | string) => boolean;
+    onToggleThreadExpanded: (discussionId: string) => void;
+    expandedThreadSignature: string;
   } & DiffThreadResolveProps) => {
     const listRef = useRef<HTMLDivElement>(null);
     const rowIds = useMemo(() => rows.map((row) => row.id).join("\0"), [rows]);
@@ -414,7 +496,7 @@ const VirtualizedDiffBody = memo(
 
     useLayoutEffect(() => {
       virtualizer.measure();
-    }, [rowIds, virtualizer]);
+    }, [rowIds, expandedThreadSignature, virtualizer]);
 
     useEffect(() => {
       if (!commentFormLineKey) {
@@ -446,7 +528,7 @@ const VirtualizedDiffBody = memo(
     }, [onRegisterScrollToRow, rows, virtualizer]);
 
     return (
-      <div ref={listRef} className="diff-viewport w-full">
+      <div ref={listRef} className="diff-viewport w-full pl-7">
         <div
           className="relative w-full"
           style={{
@@ -492,6 +574,8 @@ const VirtualizedDiffBody = memo(
                   onExpandGap={onExpandGap}
                   onResolveThread={onResolveThread}
                   resolvingDiscussionId={resolvingDiscussionId}
+                  isThreadExpanded={isThreadExpanded}
+                  onToggleThreadExpanded={onToggleThreadExpanded}
                 />
               </div>
             );
@@ -544,6 +628,35 @@ export const DiffBody = memo(
     onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
     onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
   } & DiffThreadResolveProps) => {
+    const {
+      isThreadExpanded,
+      toggleThreadExpanded,
+      expandedDiscussionIds,
+      collapseThreads,
+    } = useResolvedThreadExpansion();
+    const expandedThreadSignature = Array.from(expandedDiscussionIds).join(",");
+    const resolvedThreadIds = useMemo(() => {
+      const ids = new Set<string>();
+      for (const row of rows) {
+        if (row.type === "thread" && row.thread.resolved) {
+          ids.add(row.thread.discussionId);
+        }
+      }
+      return ids;
+    }, [rows]);
+    const prevResolvedThreadIdsRef = useRef<Set<string>>(new Set());
+
+    useEffect(() => {
+      const newlyResolved = [...resolvedThreadIds].filter(
+        (id) => !prevResolvedThreadIdsRef.current.has(id),
+      );
+      prevResolvedThreadIdsRef.current = resolvedThreadIds;
+
+      if (newlyResolved.length > 0) {
+        collapseThreads(newlyResolved);
+      }
+    }, [collapseThreads, resolvedThreadIds]);
+
     if (virtualized) {
       return (
         <VirtualizedDiffBody
@@ -566,6 +679,9 @@ export const DiffBody = memo(
           onRegisterScrollToRow={onRegisterScrollToRow}
           onResolveThread={onResolveThread}
           resolvingDiscussionId={resolvingDiscussionId}
+          isThreadExpanded={isThreadExpanded}
+          onToggleThreadExpanded={toggleThreadExpanded}
+          expandedThreadSignature={expandedThreadSignature}
         />
       );
     }
@@ -590,6 +706,8 @@ export const DiffBody = memo(
         onRegisterScrollToRow={onRegisterScrollToRow}
         onResolveThread={onResolveThread}
         resolvingDiscussionId={resolvingDiscussionId}
+        isThreadExpanded={isThreadExpanded}
+        onToggleThreadExpanded={toggleThreadExpanded}
       />
     );
   },

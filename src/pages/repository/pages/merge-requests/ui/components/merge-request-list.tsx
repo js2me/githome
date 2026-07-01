@@ -1,5 +1,6 @@
 import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
 import { cx } from "yummies/css";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
 import {
   getMrStateBadgeState,
   mrStateBadgeVariants,
@@ -37,12 +38,34 @@ const getStateLabel = (mergeRequest: GitLabMergeRequestDC) => {
   return mergeRequest.state;
 };
 
+const ApprovalCheckCircleIcon = () => (
+  <svg
+    className="text-green-600 dark:text-green-400"
+    viewBox="0 0 16 16"
+    width="16"
+    height="16"
+    aria-hidden="true"
+  >
+    <circle cx="8" cy="8" r="7" fill="currentColor" />
+    <path
+      d="m4.75 8 2.25 2.25 4.75-4.75"
+      fill="none"
+      stroke="white"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 export const MergeRequestList = ({
   mergeRequests,
+  approvalCounts,
   selectedMergeRequestIid,
   onSelect,
 }: {
   mergeRequests: GitLabMergeRequestDC[];
+  approvalCounts: Record<number, number>;
   selectedMergeRequestIid: number | null;
   onSelect: (mergeRequest: GitLabMergeRequestDC) => void;
 }) => {
@@ -53,6 +76,7 @@ export const MergeRequestList = ({
         const stateKey = isDraft(mergeRequest) ? "draft" : mergeRequest.state;
         const authorName = getAuthorName(mergeRequest);
         const authorAvatarUrl = mergeRequest.author?.avatar_url ?? null;
+        const approvalCount = approvalCounts[mergeRequest.iid];
 
         return (
           <li key={mergeRequest.id}>
@@ -71,14 +95,25 @@ export const MergeRequestList = ({
                 <span className="min-w-0 flex-1 text-[15px] font-semibold text-slate-900 dark:text-slate-200">
                   {mergeRequest.title}
                 </span>
-                <span
-                  className={mrStateBadgeVariants({
-                    state: getMrStateBadgeState(stateKey),
-                    size: "sm",
-                  })}
-                >
-                  {getStateLabel(mergeRequest)}
-                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  {approvalCount !== undefined && (
+                    <span
+                      className="inline-flex items-center gap-1 text-[13px] font-semibold text-green-700 dark:text-green-400"
+                      title={`${approvalCount} апрув(ов)`}
+                    >
+                      {approvalCount}
+                      <ApprovalCheckCircleIcon />
+                    </span>
+                  )}
+                  <span
+                    className={mrStateBadgeVariants({
+                      state: getMrStateBadgeState(stateKey),
+                      size: "sm",
+                    })}
+                  >
+                    {getStateLabel(mergeRequest)}
+                  </span>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">
@@ -89,17 +124,11 @@ export const MergeRequestList = ({
               </div>
 
               <div className="flex items-center gap-2 text-[13px] text-slate-600 dark:text-slate-400">
-                {authorAvatarUrl ? (
-                  <img
-                    className="h-6 w-6 rounded-full object-cover"
-                    src={authorAvatarUrl}
-                    alt=""
-                  />
-                ) : (
-                  <div className="grid h-6 w-6 place-items-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                    {authorName.slice(0, 1).toUpperCase()}
-                  </div>
-                )}
+                <GitlabAvatar
+                  className="h-6 w-6 rounded-full object-cover"
+                  avatarUrl={authorAvatarUrl}
+                  name={authorName}
+                />
                 <span>{authorName}</span>
               </div>
             </button>

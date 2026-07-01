@@ -25,6 +25,7 @@ export const MergeRequestsPage = withViewModel(MergeRequestsVM, ({ model }) => {
       {mrList.showList && (
         <MergeRequestList
           mergeRequests={mrList.mergeRequests}
+          approvalCounts={mrList.approvalCounts}
           selectedMergeRequestIid={mrList.selectedMergeRequestIid}
           onSelect={mrList.openMergeRequest}
         />

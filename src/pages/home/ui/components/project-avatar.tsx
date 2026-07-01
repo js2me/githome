@@ -1,5 +1,6 @@
 import type { GitlabProjectInfo } from "@/entities/gitlab-projects/model/gitlab-project-info";
 import { cn } from "@/shared/lib/cn";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
 
 export const ProjectAvatar = ({
   project,
@@ -10,7 +11,11 @@ export const ProjectAvatar = ({
 }) => {
   if (project.data.avatar_url) {
     return (
-      <img className={className} src={project.data.avatar_url} alt="" />
+      <GitlabAvatar
+        className={className}
+        avatarUrl={project.data.avatar_url}
+        name={project.displayName}
+      />
     );
   }
 

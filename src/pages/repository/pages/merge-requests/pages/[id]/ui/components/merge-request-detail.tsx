@@ -12,6 +12,7 @@ import {
   mrStateBadgeVariants,
 } from "@/shared/ui/mr-state-badge";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { cn } from "@/shared/lib/cn";
 import { filterDiscussionsForActivity } from "@/shared/lib/gitlab/diff-discussions";
@@ -252,7 +253,6 @@ export const MergeRequestDetail = ({
 }) => {
   const stateKey = isDraft(mergeRequest) ? "draft" : mergeRequest.state;
   const authorName = getAuthorName(mergeRequest);
-  const authorAvatarUrl = mergeRequest.author?.avatar_url ?? null;
   const changesCount = getChangesCount(mergeRequest);
   const assigneeNames = getAssigneeNames(mergeRequest);
   const userNotesCount = mergeRequest.user_notes_count ?? 0;
@@ -306,17 +306,11 @@ export const MergeRequestDetail = ({
 
         <div className="flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-slate-500">
           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-            {authorAvatarUrl ? (
-              <img
-                className="h-6 w-6 rounded-full object-cover"
-                src={authorAvatarUrl}
-                alt=""
-              />
-            ) : (
-              <div className="grid h-6 w-6 place-items-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                {authorName.slice(0, 1).toUpperCase()}
-              </div>
-            )}
+            <GitlabAvatar
+              className="h-6 w-6 rounded-full object-cover"
+              avatarUrl={mergeRequest.author?.avatar_url}
+              name={authorName}
+            />
             <span>{authorName}</span>
           </div>
 
@@ -424,7 +418,7 @@ export const MergeRequestDetail = ({
           >
             <path d="M6 4l8 6-8 6V4z" />
           </svg>
-          Activity
+          Активность
           {activityDiscussions.length > 0 && (
             <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
               {activityDiscussions.length}

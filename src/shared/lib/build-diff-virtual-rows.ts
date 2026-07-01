@@ -51,6 +51,7 @@ export type VirtualDiffRow =
       pairedLine: DiffDisplayLine | null;
       prefix: "+" | "-" | " ";
       threadsCount: number;
+      threads: InlineDiffThread[];
       wordDiffSegments: ReturnType<typeof computeWordDiffSegments> | null;
       estimatedHeight: number;
     }
@@ -163,6 +164,7 @@ const pushLineWithThreads = ({
     pairedLine,
     prefix: getLinePrefix(line),
     threadsCount: threads.length,
+    threads,
     wordDiffSegments: buildWordDiffSegments(line, pairedLine),
     estimatedHeight: DIFF_LINE_HEIGHT,
   });
@@ -178,7 +180,7 @@ const pushLineWithThreads = ({
       id: `thread:${thread.discussionId}`,
       lineKey: lineKey ?? "",
       thread,
-      estimatedHeight: estimateThreadHeight(thread),
+      estimatedHeight: thread.resolved ? 0 : estimateThreadHeight(thread),
     });
   }
 
@@ -414,7 +416,7 @@ const pushOrphanThreads = ({
       id: `thread:${thread.discussionId}`,
       lineKey: "",
       thread,
-      estimatedHeight: estimateThreadHeight(thread),
+      estimatedHeight: thread.resolved ? 0 : estimateThreadHeight(thread),
     });
   }
 };

@@ -1,5 +1,5 @@
 import { ArrowDownToLine, ArrowUpToLine } from "@gravity-ui/icons";
-import { memo, useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import type {
   DiffExpandGap,
   DiffExpandMode,
@@ -15,11 +15,104 @@ import { cn } from "@/shared/lib/cn";
 import type { InlineDiffThread } from "@/shared/lib/gitlab/diff-discussions";
 import type { DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
 import { useDiffSyntaxHighlight } from "./diff-syntax-highlight";
 import { SearchHighlightedText, useRowSearchHighlight } from "./diff-search";
 import { HighlightedCode } from "./highlighted-code";
 
 export const diffGridClassName = "git-diff-grid";
+
+const getNotePreview = (body: string, maxLength = 48) => {
+  const plain = body
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/[#*_~[\]()]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (plain.length <= maxLength) {
+    return plain;
+  }
+
+  return `${plain.slice(0, maxLength).trimEnd()}…`;
+};
+
+const formatRelativeTime = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / 60_000);
+
+  if (diffMinutes < 1) {
+    return "только что";
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} мин. назад`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours} ч. назад`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) {
+    return `${diffDays} дн. назад`;
+  }
+
+  return date.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+export const ResolvedThreadAvatar = memo(
+  ({
+    thread,
+    onClick,
+  }: {
+    thread: InlineDiffThread;
+    onClick: () => void;
+  }) => {
+    const firstNote = thread.notes[0];
+    if (!firstNote) {
+      return null;
+    }
+
+    const authorName = firstNote.author?.name ?? "Unknown";
+    const preview = getNotePreview(firstNote.body);
+
+    return (
+      <div className="git-diff-thread-avatar-wrap">
+        <button
+          className="git-diff-thread-avatar-button"
+          type="button"
+          aria-label={`Разрешённый комментарий: ${authorName}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onClick();
+          }}
+        >
+          <GitlabAvatar
+            className="h-5 w-5 rounded-full object-cover"
+            avatarUrl={firstNote.author?.avatar_url}
+            name={authorName}
+          />
+        </button>
+        <div className="git-diff-thread-tooltip" role="tooltip">
+          <span className="font-semibold">{authorName}:</span> {preview}
+        </div>
+      </div>
+    );
+  },
+);
 
 const getLineSurfaceClasses = (type: DiffDisplayLine["type"]) => {
   switch (type) {
@@ -216,6 +309,9 @@ export const DiffLineRow = memo(
     rowId,
     canComment,
     hasThreads,
+    threads,
+    isThreadExpanded,
+    onToggleThreadExpand,
     isSelected,
     isSelectionStart,
     isSelectionEnd,
@@ -230,6 +326,9 @@ export const DiffLineRow = memo(
     rowId?: string;
     canComment: boolean;
     hasThreads: boolean;
+    threads: InlineDiffThread[];
+    isThreadExpanded?: (discussionId: string) => boolean;
+    onToggleThreadExpand?: (discussionId: string) => void;
     isSelected: boolean;
     isSelectionStart: boolean;
     isSelectionEnd: boolean;
@@ -240,6 +339,14 @@ export const DiffLineRow = memo(
   }) => {
     const surface = getLineSurfaceClasses(line.type);
     const isCommentable = canComment && lineKey;
+    const collapsedResolvedThreads = threads.filter(
+      (thread) =>
+        thread.resolved && !(isThreadExpanded?.(thread.discussionId) ?? false),
+    );
+    const hasVisibleThreads =
+      hasThreads &&
+      (threads.some((thread) => !thread.resolved) ||
+        collapsedResolvedThreads.length < threads.length);
     const selectionClassName = isSelected
       ? "bg-blue-50 dark:bg-blue-950/70"
       : "";
@@ -261,15 +368,30 @@ export const DiffLineRow = memo(
 
     return (
       <div
-        className={cn("group w-full min-w-max items-start overflow-visible", diffGridClassName)}
+        className={cn(
+          "group relative w-full min-w-max items-start overflow-visible",
+          diffGridClassName,
+          collapsedResolvedThreads.length > 0 && "git-diff-line--has-resolved-thread",
+        )}
         data-diff-row-id={rowId}
         onMouseEnter={isCommentable ? onLineMouseEnter : undefined}
       >
+        {collapsedResolvedThreads.length > 0 && (
+          <div className="git-diff-line-thread-avatars">
+            {collapsedResolvedThreads.map((thread) => (
+              <ResolvedThreadAvatar
+                key={thread.discussionId}
+                thread={thread}
+                onClick={() => onToggleThreadExpand?.(thread.discussionId)}
+              />
+            ))}
+          </div>
+        )}
         <div
           className={cn(
             "git-diff-line-num git-diff-line-num--old-border",
             surface.oldNum,
-            hasThreads && !isSelected && "bg-orange-50 dark:bg-orange-950",
+            hasVisibleThreads && !isSelected && "bg-orange-50 dark:bg-orange-950",
             selectionClassName,
             lineNumInteractionClassName,
             isSelectionStart && "shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]",
@@ -344,105 +466,151 @@ export const DiffLineRow = memo(
   },
 );
 
-const InlineThreadNote = memo(({ note }: { note: GitLabNoteDC }) => (
-  <div className="flex min-w-0 gap-3">
-    {note.author?.avatar_url ? (
-      <img
-        className="h-8 w-8 shrink-0 rounded-full object-cover"
-        src={note.author.avatar_url}
-        alt=""
-      />
-    ) : (
-      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-200 text-[13px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-        {(note.author?.name ?? "Unknown").slice(0, 1).toUpperCase()}
-      </div>
-    )}
+const InlineThreadNote = memo(
+  ({
+    note,
+    isReply = false,
+    resolvedBy,
+  }: {
+    note: GitLabNoteDC;
+    isReply?: boolean;
+    resolvedBy?: string | null;
+  }) => {
+    const authorName = note.author?.name ?? "Unknown";
+    const authorUsername = note.author?.username ?? "";
 
-    <div className="min-w-0 flex-1">
-      <div className="mb-1 flex flex-wrap items-center gap-2 text-[13px]">
-        <strong className="text-slate-900 dark:text-slate-200">
-          {note.author?.name ?? "Unknown"}
-        </strong>
-        {note.author?.username && (
-          <span className="font-normal text-slate-500">@{note.author.username}</span>
-        )}
-      </div>
-      <GitLabMarkdown
-        text={note.body}
-        className="min-w-0 max-w-full text-sm leading-normal text-slate-800 dark:text-slate-300"
-      />
-    </div>
-  </div>
-));
+    return (
+      <article className={cn("flex min-w-0 gap-3", isReply && "pl-11")}>
+        <GitlabAvatar
+          className="h-8 w-8 shrink-0 rounded-full object-cover"
+          avatarUrl={note.author?.avatar_url}
+          name={authorName}
+        />
+
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+            <strong className="text-slate-900 dark:text-slate-200">
+              {authorName}
+            </strong>
+            {authorUsername && (
+              <span className="font-normal text-slate-500">@{authorUsername}</span>
+            )}
+            <time className="text-xs text-slate-400" dateTime={note.created_at}>
+              {formatRelativeTime(note.created_at)}
+            </time>
+          </div>
+
+          {resolvedBy && !isReply && (
+            <div className="mb-1.5 text-xs text-blue-600 dark:text-blue-400">
+              Разрешён {formatRelativeTime(note.updated_at)} — {resolvedBy}
+            </div>
+          )}
+
+          <GitLabMarkdown
+            text={note.body}
+            className="min-w-0 max-w-full text-sm leading-normal text-slate-800 dark:text-slate-300"
+          />
+        </div>
+      </article>
+    );
+  },
+);
 
 export const DiffThreadRow = memo(
   ({
     thread,
     onResolveThread,
     resolvingDiscussionId,
+    expanded: expandedProp,
+    onToggleExpand,
+    placement = "inline",
   }: {
     thread: InlineDiffThread;
     onResolveThread?: (discussionId: string, resolved: boolean) => void;
     resolvingDiscussionId?: string | null;
+    expanded?: boolean;
+    onToggleExpand?: () => void;
+    placement?: "inline" | "file";
   }) => {
-    const [expanded, setExpanded] = useState(() => !thread.resolved);
+    const [internalExpanded, setInternalExpanded] = useState(() => !thread.resolved);
+    const isControlled = expandedProp !== undefined;
+    const expanded = isControlled ? expandedProp : internalExpanded;
 
     useEffect(() => {
-      setExpanded(!thread.resolved);
-    }, [thread.discussionId, thread.resolved]);
+      if (!isControlled) {
+        setInternalExpanded(!thread.resolved);
+      }
+    }, [isControlled, thread.discussionId, thread.resolved]);
+
+    const toggleExpanded = useCallback(() => {
+      if (onToggleExpand) {
+        onToggleExpand();
+        return;
+      }
+
+      setInternalExpanded((value) => !value);
+    }, [onToggleExpand]);
+
+    if (thread.resolved && !expanded) {
+      if (placement === "inline") {
+        return null;
+      }
+
+      const firstNote = thread.notes[0];
+      if (!firstNote) {
+        return null;
+      }
+
+      return (
+        <div className="border-b border-slate-200 px-3.5 py-2 dark:border-[var(--color-border-default)]">
+          <ResolvedThreadAvatar thread={thread} onClick={toggleExpanded} />
+        </div>
+      );
+    }
+
+    const [firstNote, ...replies] = thread.notes;
+    if (!firstNote) {
+      return null;
+    }
+
+    const resolvedBy = thread.resolved
+      ? (firstNote.author?.name ?? "Unknown")
+      : null;
 
     return (
       <div className="w-full min-w-full border-t-2 border-[var(--color-brand-border-accent)]">
-        <div
-          className={cn(
-            "bg-[var(--diff-header-bg)] px-3.5 py-3",
-            thread.resolved && "bg-green-50 dark:bg-green-950",
-          )}
-        >
-          {thread.resolved && (
-            <div className="mb-2 flex items-center justify-between gap-3 text-[11px] font-bold uppercase text-green-800 dark:text-green-300">
-              <span>Разрешён</span>
-              <button
-                className="cursor-pointer rounded-md border border-green-200 bg-white px-2 py-1 text-[11px] font-semibold normal-case text-green-800 transition hover:bg-green-100 dark:border-green-800 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900"
-                type="button"
-                aria-expanded={expanded}
-                onClick={() => setExpanded((value) => !value)}
-              >
-                {expanded ? "Скрыть" : "Показать"}
-              </button>
-            </div>
-          )}
+        <div className="bg-white px-3.5 py-3 dark:bg-gray-900">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-gray-900">
+            <div className="p-3.5">
+              <InlineThreadNote
+                note={firstNote}
+                resolvedBy={resolvedBy}
+              />
 
-          {expanded && (
-            <>
-              {thread.notes.map((note, index) => (
-                <div
-                  key={note.id}
-                  className={cn(
-                    index > 0 &&
-                      "mt-2.5 border-t border-slate-200 pt-2.5 dark:border-[var(--color-border-default)]",
-                  )}
-                >
-                  <InlineThreadNote note={note} />
-                </div>
-              ))}
-
-              {thread.resolvable && onResolveThread && (
-                <div className="mt-3 flex justify-end border-t border-slate-200 pt-3 dark:border-[var(--color-border-default)]">
-                  <button
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
-                    type="button"
-                    disabled={resolvingDiscussionId === thread.discussionId}
-                    onClick={() =>
-                      onResolveThread(thread.discussionId, !thread.resolved)
-                    }
-                  >
-                    {thread.resolved ? "Открыть тред" : "Разрешить тред"}
-                  </button>
+              {replies.length > 0 && (
+                <div className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-700">
+                  {replies.map((note) => (
+                    <InlineThreadNote key={note.id} note={note} isReply />
+                  ))}
                 </div>
               )}
-            </>
-          )}
+            </div>
+
+            {thread.resolvable && onResolveThread && (
+              <div className="flex justify-end border-t border-slate-200 px-3.5 py-2.5 dark:border-slate-700">
+                <button
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+                  type="button"
+                  disabled={resolvingDiscussionId === thread.discussionId}
+                  onClick={() =>
+                    onResolveThread(thread.discussionId, !thread.resolved)
+                  }
+                >
+                  {thread.resolved ? "Открыть тред" : "Разрешить тред"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );

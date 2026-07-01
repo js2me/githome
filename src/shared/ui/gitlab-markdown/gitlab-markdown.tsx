@@ -10,6 +10,7 @@ import {
   postProcessGitLabHtml,
   sanitizeGitlabCodeBlocks,
 } from "@/shared/lib/gitlab/post-process-html";
+import { hydrateProxiedGitlabImages } from "@/shared/lib/gitlab/hydrate-gitlab-images";
 import { enhanceMarkdownCodeBlocks } from "@/shared/lib/syntax-highlight/enhance-markdown-code-blocks";
 import { useSyntaxTheme } from "@/shared/lib/syntax-highlight/use-syntax-theme";
 import { cn } from "@/shared/lib/cn";
@@ -125,7 +126,7 @@ export const GitLabMarkdown = memo(
           }
 
           const processedHtml = sanitizeGitlabCodeBlocks(
-            postProcessGitLabHtml(renderedHtml, context.connection.gitlabUrl),
+            postProcessGitLabHtml(renderedHtml, context.connection),
           );
           setCachedGitLabMarkdown(cacheKey, processedHtml);
           setHtml(processedHtml);
@@ -142,7 +143,7 @@ export const GitLabMarkdown = memo(
     }, [context, text]);
 
     useEffect(() => {
-      if (!html || !containerRef.current) {
+      if (!html || !containerRef.current || !context) {
         return;
       }
 
@@ -156,10 +157,16 @@ export const GitLabMarkdown = memo(
         }
       });
 
+      const cleanupImages = hydrateProxiedGitlabImages(
+        containerRef.current,
+        context.connection,
+      );
+
       return () => {
         cancelled = true;
+        cleanupImages();
       };
-    }, [html, theme]);
+    }, [context, html, theme]);
 
     if (!text.trim()) {
       return null;

@@ -6,6 +6,7 @@ import {
   isDiscussionResolved,
 } from "@/shared/lib/gitlab/diff-discussions";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { DiscussionResolveActions } from "./discussion-resolve-actions";
 
@@ -41,23 +42,14 @@ const formatPosition = (note: GitLabNoteDC) => {
 const isDiscussionResolvedState = isDiscussionResolved;
 
 const AuthorAvatar = ({ note }: { note: GitLabNoteDC }) => {
-  const authorAvatarUrl = note.author?.avatar_url ?? null;
   const authorName = note.author?.name ?? "Unknown";
 
-  if (authorAvatarUrl) {
-    return (
-      <img
-        className="h-8 w-8 shrink-0 rounded-full object-cover"
-        src={authorAvatarUrl}
-        alt=""
-      />
-    );
-  }
-
   return (
-    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-200 text-[13px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-      {authorName.slice(0, 1).toUpperCase()}
-    </div>
+    <GitlabAvatar
+      className="h-8 w-8 shrink-0 rounded-full object-cover"
+      avatarUrl={note.author?.avatar_url}
+      name={authorName}
+    />
   );
 };
 

@@ -16,6 +16,11 @@ const preloadPath = path.join(__dirname, "preload.mjs");
 let mainWindow: BrowserWindow | null = null;
 let appServer: Awaited<ReturnType<typeof startAppServer>> | null = null;
 
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+}
+
 const resolvePageUrl = async (): Promise<string> => {
   const devServerUrl = process.env.VITE_DEV_SERVER_URL?.trim();
   if (!app.isPackaged && devServerUrl) {
@@ -90,16 +95,30 @@ const createWindow = async () => {
   }
 };
 
-app.whenReady().then(() => {
-  Menu.setApplicationMenu(null);
-  void createWindow();
-
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      void createWindow();
+if (gotSingleInstanceLock) {
+  app.on("second-instance", () => {
+    if (!mainWindow) {
+      return;
     }
+
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+
+    mainWindow.focus();
   });
-});
+
+  app.whenReady().then(() => {
+    Menu.setApplicationMenu(null);
+    void createWindow();
+
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        void createWindow();
+      }
+    });
+  });
+}
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {

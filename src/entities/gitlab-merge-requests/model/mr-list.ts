@@ -1,6 +1,7 @@
 import { action, computed } from "mobx";
+import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabMergeRequestDC, GitLabProjectDC } from "@/shared/api/gitlab";
-import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
+import { createGitlabApiQuery, createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import { Globals } from "@/globals";
 
 export interface MrListParams {
@@ -14,6 +15,7 @@ export interface MrListParams {
 
 export class MrList {
   mergeRequestsQuery;
+  mergeRequestApprovalCountsQuery;
 
   constructor(private params: MrListParams) {
     this.mergeRequestsQuery = createGitlabQuery<GitLabMergeRequestDC[]>({
@@ -28,6 +30,40 @@ export class MrList {
           per_page: 20,
         },
       }),
+    });
+
+    this.mergeRequestApprovalCountsQuery = createGitlabApiQuery<
+      Record<number, number>,
+      { project: GitLabProjectDC; mergeRequestIids: number[] }
+    >({
+      globals: params.globals,
+      abortSignal: params.abortSignal,
+      params: () => {
+        const project = params.selectedProject;
+        const mergeRequestIids = this.mergeRequests.map(
+          (mergeRequest) => mergeRequest.iid,
+        );
+
+        if (!project || mergeRequestIids.length === 0) {
+          return false;
+        }
+
+        return { project, mergeRequestIids };
+      },
+      queryKey: ({ connection, project, mergeRequestIids }) =>
+        [
+          "merge-request-list-approval-counts",
+          connection.gitlabUrl,
+          project.id,
+          mergeRequestIids,
+        ] as const,
+      queryFn: ({ connection, project, mergeRequestIids, signal }) =>
+        gitlabApi.getMergeRequestApprovalCounts(
+          connection,
+          project,
+          mergeRequestIids,
+          signal,
+        ),
     });
   }
 
@@ -77,6 +113,11 @@ export class MrList {
   @computed
   get showList() {
     return this.mergeRequests.length > 0;
+  }
+
+  @computed
+  get approvalCounts(): Record<number, number> {
+    return this.mergeRequestApprovalCountsQuery.data ?? {};
   }
 
   @action.bound

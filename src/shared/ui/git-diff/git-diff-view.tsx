@@ -21,6 +21,7 @@ import {
   buildDiffVirtualRows,
 } from "@/shared/lib/build-diff-virtual-rows";
 import { cn } from "@/shared/lib/cn";
+import { cva } from "yummies/css";
 import type { DiffLineSelection } from "@/shared/lib/diff-line-selection";
 import {
   getLineFromVirtualRows,
@@ -93,11 +94,18 @@ const getChangeBadge = (change: GitLabMergeRequestChangeDC) => {
   return null;
 };
 
-const badgeClasses: Record<string, string> = {
-  new: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-  deleted: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-200",
-  renamed: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-};
+const diffFileBadgeVariants = cva(
+  "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase",
+  {
+    variants: {
+      badge: {
+        new: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
+        deleted: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-200",
+        renamed: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+      },
+    },
+  },
+);
 
 const getExpandFilePath = (change: GitLabMergeRequestChangeDC) => {
   if (change.deleted_file) {
@@ -109,11 +117,25 @@ const getExpandFilePath = (change: GitLabMergeRequestChangeDC) => {
 
 const getFileNameFromPath = (path: string) => path.split("/").pop() ?? path;
 
-const diffFileCopyButtonClassName =
-  "inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800";
+const diffFileCopyButtonVariants = cva(
+  "inline-flex cursor-pointer items-center justify-center rounded transition disabled:cursor-wait disabled:opacity-60",
+  {
+    variants: {
+      compact: {
+        true: "h-5 w-5 text-[var(--color-fg-subtle)] hover:bg-[var(--color-accent-emphasis-hover)] hover:text-[var(--diff-code-text)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)] [&_svg]:h-3 [&_svg]:w-3",
+        false:
+          "h-7 w-7 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800",
+      },
+    },
+    defaultVariants: {
+      compact: false,
+    },
+  },
+);
 
-const diffFileHeaderTextButtonClassName =
-  "inline-flex h-7 cursor-pointer items-center rounded border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800";
+const diffFileHeaderTextButtonVariants = cva(
+  "inline-flex h-7 cursor-pointer items-center rounded border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800",
+);
 
 const DiffFileCopyIcon = ({
   children,
@@ -178,10 +200,12 @@ const DiffFileCopyButton = memo(
     label,
     icon,
     getValue,
+    compact = false,
   }: {
     label: string;
     icon: ReactNode;
     getValue: () => string | Promise<string>;
+    compact?: boolean;
   }) => {
     const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
 
@@ -201,7 +225,7 @@ const DiffFileCopyButton = memo(
 
     return (
       <button
-        className={diffFileCopyButtonClassName}
+        className={diffFileCopyButtonVariants({ compact })}
         type="button"
         title={
           status === "copied"
@@ -1044,17 +1068,33 @@ const GitDiffFile = memo(
               </svg>
             </button>
           )}
-          <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-[var(--diff-code-text)]">
-            {headerSearchHighlight.ranges.length > 0 ? (
-              <SearchHighlightedText
-                text={searchFilePath}
-                ranges={headerSearchHighlight.ranges}
-                activeRange={headerSearchHighlight.activeRange}
+          <div className="flex min-w-0 flex-1 items-center gap-0.5">
+            <span className="min-w-0 truncate font-mono text-[13px] text-[var(--diff-code-text)]">
+              {headerSearchHighlight.ranges.length > 0 ? (
+                <SearchHighlightedText
+                  text={searchFilePath}
+                  ranges={headerSearchHighlight.ranges}
+                  activeRange={headerSearchHighlight.activeRange}
+                />
+              ) : (
+                searchFilePath
+              )}
+            </span>
+            <div className="flex shrink-0 items-center">
+              <DiffFileCopyButton
+                compact
+                label="копировать путь"
+                icon={copyPathIcon}
+                getValue={() => filePath}
               />
-            ) : (
-              searchFilePath
-            )}
-          </span>
+              <DiffFileCopyButton
+                compact
+                label="копировать имя"
+                icon={copyNameIcon}
+                getValue={() => getFileNameFromPath(filePath)}
+              />
+            </div>
+          </div>
 
           {parsed && (parsed.additions > 0 || parsed.deletions > 0) && (
             <span className="flex shrink-0 items-center gap-2 font-mono text-xs font-bold">
@@ -1072,27 +1112,12 @@ const GitDiffFile = memo(
           )}
 
           {badge && (
-            <span
-              className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase",
-                badgeClasses[badge],
-              )}
-            >
+            <span className={diffFileBadgeVariants({ badge })}>
               {badge}
             </span>
           )}
 
-          <div className="ml-2 flex shrink-0 items-center gap-1.5">
-            <DiffFileCopyButton
-              label="копировать путь"
-              icon={copyPathIcon}
-              getValue={() => filePath}
-            />
-            <DiffFileCopyButton
-              label="копировать имя"
-              icon={copyNameIcon}
-              getValue={() => getFileNameFromPath(filePath)}
-            />
+          <div className="ml-2 flex shrink-0 items-center">
             <DiffFileCopyButton
               label="копировать содержимое"
               icon={copyContentIcon}
@@ -1102,7 +1127,7 @@ const GitDiffFile = memo(
 
           {canComment && (
             <button
-              className={diffFileHeaderTextButtonClassName}
+              className={diffFileHeaderTextButtonVariants()}
               type="button"
               onClick={() => {
                 setIsFileCommentOpen((value) => !value);
@@ -1161,6 +1186,7 @@ const GitDiffFile = memo(
                 thread={thread}
                 onResolveThread={onResolveThread}
                 resolvingDiscussionId={resolvingDiscussionId}
+                placement="file"
               />
             ))}
           </div>

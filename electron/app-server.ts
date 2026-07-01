@@ -20,6 +20,10 @@ const MIME_TYPES: Record<string, string> = {
 const getContentType = (filePath: string) =>
   MIME_TYPES[path.extname(filePath).toLowerCase()] ?? "application/octet-stream";
 
+/** Stable origin so Electron localStorage survives restarts (port 0 would change every launch). */
+const APP_SERVER_HOST = "127.0.0.1";
+const APP_SERVER_PORT = 14_200;
+
 const resolveStaticPath = (distPath: string, requestPath: string) => {
   const pathname = decodeURIComponent(requestPath.split("?")[0] ?? "/");
   const relativePath =
@@ -62,17 +66,23 @@ export const startAppServer = async (distPath: string) => {
   });
 
   await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
+    server.once("error", (error: NodeJS.ErrnoException) => {
+      if (error.code === "EADDRINUSE") {
+        reject(
+          new Error(
+            `Port ${APP_SERVER_PORT} is already in use. Close the other GitHome window and try again.`,
+          ),
+        );
+        return;
+      }
+
+      reject(error);
+    });
+    server.listen(APP_SERVER_PORT, APP_SERVER_HOST, () => resolve());
   });
 
-  const address = server.address();
-  if (!address || typeof address === "string") {
-    throw new Error("Failed to start GitHome app server");
-  }
-
   return {
-    url: `http://127.0.0.1:${address.port}`,
+    url: `http://${APP_SERVER_HOST}:${APP_SERVER_PORT}`,
     close: () =>
       new Promise<void>((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()));

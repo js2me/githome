@@ -1,13 +1,17 @@
-import { normalizeGitlabBaseUrl } from "@/shared/api/gitlab";
+import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
+import { normalizeGitlabBaseUrl, resolveGitlabAssetUrl } from "@/shared/api/gitlab";
 
 const isExternalUrl = (href: string) => /^https?:\/\//i.test(href);
 
-export const postProcessGitLabHtml = (html: string, gitlabBaseUrl: string) => {
+export const postProcessGitLabHtml = (
+  html: string,
+  connection: GitLabConnection,
+) => {
   if (!html.trim()) {
     return "";
   }
 
-  const baseUrl = normalizeGitlabBaseUrl(gitlabBaseUrl);
+  const baseUrl = normalizeGitlabBaseUrl(connection.gitlabUrl);
   const document = new DOMParser().parseFromString(html, "text/html");
 
   for (const link of document.querySelectorAll("a[href]")) {
@@ -28,8 +32,13 @@ export const postProcessGitLabHtml = (html: string, gitlabBaseUrl: string) => {
 
   for (const image of document.querySelectorAll("img[src]")) {
     const src = image.getAttribute("src");
-    if (src?.startsWith("/")) {
-      image.setAttribute("src", `${baseUrl}${src}`);
+    if (!src) {
+      continue;
+    }
+
+    const resolvedSrc = resolveGitlabAssetUrl(connection, src);
+    if (resolvedSrc) {
+      image.setAttribute("src", resolvedSrc);
     }
   }
 

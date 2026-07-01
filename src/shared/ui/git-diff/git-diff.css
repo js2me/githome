@@ -232,3 +232,76 @@
   width: 16px;
   height: 16px;
 }
+
+.git-diff-line--has-resolved-thread {
+  overflow: visible;
+}
+
+.git-diff-line-thread-avatars {
+  position: absolute;
+  top: 50%;
+  left: -26px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transform: translateY(-50%);
+}
+
+.git-diff-thread-avatar-wrap {
+  position: relative;
+  display: flex;
+}
+
+.git-diff-thread-avatar-button {
+  display: flex;
+  cursor: pointer;
+  border: 2px solid var(--diff-canvas);
+  border-radius: 9999px;
+  background: transparent;
+  padding: 0;
+  line-height: 0;
+  transition: box-shadow 0.1s linear;
+}
+
+.git-diff-thread-avatar-button:hover,
+.git-diff-thread-avatar-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-brand);
+  outline: none;
+}
+
+.git-diff-thread-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 10;
+  width: max-content;
+  max-width: 280px;
+  transform: translateX(-50%);
+  border-radius: 6px;
+  background: #2d333b;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #fff;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease-out;
+}
+
+.git-diff-thread-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #2d333b;
+}
+
+.git-diff-thread-avatar-wrap:hover .git-diff-thread-tooltip,
+.git-diff-thread-avatar-wrap:focus-within .git-diff-thread-tooltip {
+  opacity: 1;
+}
