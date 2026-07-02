@@ -1,10 +1,15 @@
 import type { GitLabDiscussionDC, GitLabNoteDC } from "@/shared/api/gitlab";
-import { useEffect, useState } from "react";
+import { Pencil } from "@gravity-ui/icons";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import {
   isDiscussionResolvable,
   isDiscussionResolved,
 } from "@/shared/lib/gitlab/diff-discussions";
+import {
+  canEditGitLabNote,
+  getDiscussionNoteKey,
+} from "@/shared/lib/gitlab/note-permissions";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
@@ -55,14 +60,64 @@ const AuthorAvatar = ({ note }: { note: GitLabNoteDC }) => {
 
 const DiscussionNote = ({
   note,
+  discussionId,
   isReply,
+  currentUserId = null,
+  onUpdateDiscussionNote,
+  updatingNoteKey = null,
+  updateNoteError = null,
+  onClearUpdateNoteError,
 }: {
   note: GitLabNoteDC;
+  discussionId: string;
   isReply: boolean;
+  currentUserId?: number | null;
+  onUpdateDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+    body: string,
+  ) => Promise<boolean>;
+  updatingNoteKey?: string | null;
+  updateNoteError?: string | null;
+  onClearUpdateNoteError?: () => void;
 }) => {
   const position = formatPosition(note);
   const authorName = note.author?.name ?? "Unknown";
   const authorUsername = note.author?.username ?? "";
+  const canEdit = canEditGitLabNote(note, currentUserId);
+  const noteKey = getDiscussionNoteKey(discussionId, note.id);
+  const isSaving = updatingNoteKey === noteKey;
+  const [isEditing, setIsEditing] = useState(false);
+  const [editBody, setEditBody] = useState(note.body);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setEditBody(note.body);
+    }
+  }, [isEditing, note.body]);
+
+  const handleStartEdit = useCallback(() => {
+    setEditBody(note.body);
+    setIsEditing(true);
+    onClearUpdateNoteError?.();
+  }, [note.body, onClearUpdateNoteError]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditBody(note.body);
+    setIsEditing(false);
+    onClearUpdateNoteError?.();
+  }, [note.body, onClearUpdateNoteError]);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!onUpdateDiscussionNote) {
+      return;
+    }
+
+    const success = await onUpdateDiscussionNote(discussionId, note.id, editBody);
+    if (success) {
+      setIsEditing(false);
+    }
+  }, [discussionId, editBody, note.id, onUpdateDiscussionNote]);
 
   return (
     <article
@@ -75,20 +130,35 @@ const DiscussionNote = ({
       <AuthorAvatar note={note} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <header className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-          <span className="text-sm font-bold text-slate-900 dark:text-slate-200">
-            {authorName}
-          </span>
-          {authorUsername && (
-            <span className="text-[13px] text-slate-500">@{authorUsername}</span>
-          )}
-          <time className="text-xs text-slate-400" dateTime={note.created_at}>
-            {formatDateTime(note.created_at)}
-          </time>
-          {note.resolvable && note.resolved && (
-            <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-bold uppercase text-green-800 dark:bg-green-950 dark:text-green-300">
-              Resolved
+        <header className="flex items-start gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            <span className="text-sm font-bold text-slate-900 dark:text-slate-200">
+              {authorName}
             </span>
+            {authorUsername && (
+              <span className="text-[13px] text-slate-500">@{authorUsername}</span>
+            )}
+            <time className="text-xs text-slate-400" dateTime={note.created_at}>
+              {formatDateTime(note.created_at)}
+            </time>
+            {note.resolvable && note.resolved && (
+              <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-bold uppercase text-green-800 dark:bg-green-950 dark:text-green-300">
+                Resolved
+              </span>
+            )}
+          </div>
+
+          {canEdit && onUpdateDiscussionNote && !isEditing && (
+            <button
+              className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+              type="button"
+              title="Редактировать"
+              aria-label="Редактировать комментарий"
+              disabled={Boolean(updatingNoteKey)}
+              onClick={handleStartEdit}
+            >
+              <Pencil width={14} height={14} />
+            </button>
           )}
         </header>
 
@@ -101,11 +171,55 @@ const DiscussionNote = ({
           </div>
         )}
 
-        <GitLabMarkdown
-          text={note.body}
-          className="min-w-0 max-w-full text-slate-800 dark:text-slate-300"
-          italic={note.system}
-        />
+        {isEditing ? (
+          <div>
+            <textarea
+              className="min-h-[72px] w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand focus:shadow-[0_0_0_3px_var(--color-brand-focus-shadow)] disabled:opacity-60 dark:border-slate-700 dark:bg-canvas-default dark:text-slate-200"
+              value={editBody}
+              onChange={(event) => {
+                setEditBody(event.target.value);
+                if (updateNoteError) {
+                  onClearUpdateNoteError?.();
+                }
+              }}
+              rows={3}
+              disabled={isSaving}
+            />
+
+            {updateNoteError && isEditing && (
+              <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
+                {updateNoteError}
+              </div>
+            )}
+
+            <div className="mt-2.5 flex gap-2">
+              <button
+                className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 text-[13px] font-semibold text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                type="button"
+                disabled={isSaving || !editBody.trim()}
+                onClick={() => {
+                  void handleSaveEdit();
+                }}
+              >
+                {isSaving ? "Сохранение..." : "Сохранить"}
+              </button>
+              <button
+                className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
+                type="button"
+                disabled={isSaving}
+                onClick={handleCancelEdit}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        ) : (
+          <GitLabMarkdown
+            text={note.body}
+            className="min-w-0 max-w-full text-slate-800 dark:text-slate-300"
+            italic={note.system}
+          />
+        )}
       </div>
     </article>
   );
@@ -115,10 +229,24 @@ const DiscussionThread = ({
   discussion,
   onResolveDiscussion,
   resolvingDiscussionId,
+  currentUserId,
+  onUpdateDiscussionNote,
+  updatingNoteKey,
+  updateNoteError,
+  onClearUpdateNoteError,
 }: {
   discussion: GitLabDiscussionDC;
   onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId: string | null;
+  currentUserId?: number | null;
+  onUpdateDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+    body: string,
+  ) => Promise<boolean>;
+  updatingNoteKey?: string | null;
+  updateNoteError?: string | null;
+  onClearUpdateNoteError?: () => void;
 }) => {
   const [firstNote, ...replies] = discussion.notes;
   const resolved = isDiscussionResolvedState(discussion);
@@ -156,12 +284,31 @@ const DiscussionThread = ({
 
       {expanded && (
         <>
-          <DiscussionNote note={firstNote} isReply={false} />
+          <DiscussionNote
+            note={firstNote}
+            discussionId={discussion.id}
+            isReply={false}
+            currentUserId={currentUserId}
+            onUpdateDiscussionNote={onUpdateDiscussionNote}
+            updatingNoteKey={updatingNoteKey}
+            updateNoteError={updateNoteError}
+            onClearUpdateNoteError={onClearUpdateNoteError}
+          />
 
           {replies.length > 0 && (
             <div className="flex flex-col gap-3 pb-3.5">
               {replies.map((note) => (
-                <DiscussionNote key={note.id} note={note} isReply />
+                <DiscussionNote
+                  key={note.id}
+                  note={note}
+                  discussionId={discussion.id}
+                  isReply
+                  currentUserId={currentUserId}
+                  onUpdateDiscussionNote={onUpdateDiscussionNote}
+                  updatingNoteKey={updatingNoteKey}
+                  updateNoteError={updateNoteError}
+                  onClearUpdateNoteError={onClearUpdateNoteError}
+                />
               ))}
             </div>
           )}
@@ -184,10 +331,24 @@ export const MergeRequestDiscussions = ({
   discussions,
   onResolveDiscussion,
   resolvingDiscussionId,
+  currentUserId,
+  onUpdateDiscussionNote,
+  updatingNoteKey,
+  updateNoteError,
+  onClearUpdateNoteError,
 }: {
   discussions: GitLabDiscussionDC[];
   onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId: string | null;
+  currentUserId?: number | null;
+  onUpdateDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+    body: string,
+  ) => Promise<boolean>;
+  updatingNoteKey?: string | null;
+  updateNoteError?: string | null;
+  onClearUpdateNoteError?: () => void;
 }) => {
   if (discussions.length === 0) {
     return <StatusMessage>Комментариев пока нет.</StatusMessage>;
@@ -201,6 +362,11 @@ export const MergeRequestDiscussions = ({
           discussion={discussion}
           onResolveDiscussion={onResolveDiscussion}
           resolvingDiscussionId={resolvingDiscussionId}
+          currentUserId={currentUserId}
+          onUpdateDiscussionNote={onUpdateDiscussionNote}
+          updatingNoteKey={updatingNoteKey}
+          updateNoteError={updateNoteError}
+          onClearUpdateNoteError={onClearUpdateNoteError}
         />
       ))}
     </div>

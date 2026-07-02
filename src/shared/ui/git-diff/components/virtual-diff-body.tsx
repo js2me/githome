@@ -55,6 +55,15 @@ const getDiffRowLayoutClassName = (row: VirtualDiffRow) =>
 type DiffThreadResolveProps = {
   onResolveThread?: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId?: string | null;
+  currentUserId?: number | null;
+  onUpdateDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+    body: string,
+  ) => Promise<boolean>;
+  updatingNoteKey?: string | null;
+  updateNoteError?: string | null;
+  onClearUpdateNoteError?: () => void;
 };
 
 const useResolvedThreadExpansion = () => {
@@ -137,6 +146,11 @@ const VirtualDiffRowView = memo(
     onExpandGap,
     onResolveThread,
     resolvingDiscussionId,
+    currentUserId,
+    onUpdateDiscussionNote,
+    updatingNoteKey,
+    updateNoteError,
+    onClearUpdateNoteError,
     isThreadExpanded,
     onToggleThreadExpanded,
   }: {
@@ -225,6 +239,11 @@ const VirtualDiffRowView = memo(
           resolvingDiscussionId={resolvingDiscussionId}
           expanded={isThreadExpanded(row.thread)}
           onToggleExpand={() => onToggleThreadExpanded(row.thread.discussionId)}
+          currentUserId={currentUserId}
+          onUpdateNote={onUpdateDiscussionNote}
+          updatingNoteKey={updatingNoteKey}
+          updateNoteError={updateNoteError}
+          onClearUpdateNoteError={onClearUpdateNoteError}
         />
       );
     }
@@ -263,6 +282,11 @@ const StaticDiffBody = memo(
     onRegisterScrollToRow,
     onResolveThread,
     resolvingDiscussionId,
+    currentUserId,
+    onUpdateDiscussionNote,
+    updatingNoteKey,
+    updateNoteError,
+    onClearUpdateNoteError,
     isThreadExpanded,
     onToggleThreadExpanded,
   }: {
@@ -351,6 +375,11 @@ const StaticDiffBody = memo(
               onExpandGap={onExpandGap}
               onResolveThread={onResolveThread}
               resolvingDiscussionId={resolvingDiscussionId}
+              currentUserId={currentUserId}
+              onUpdateDiscussionNote={onUpdateDiscussionNote}
+              updatingNoteKey={updatingNoteKey}
+              updateNoteError={updateNoteError}
+              onClearUpdateNoteError={onClearUpdateNoteError}
               isThreadExpanded={isThreadExpanded}
               onToggleThreadExpanded={onToggleThreadExpanded}
             />
@@ -417,6 +446,11 @@ const VirtualizedDiffBody = memo(
     onRegisterScrollToRow,
     onResolveThread,
     resolvingDiscussionId,
+    currentUserId,
+    onUpdateDiscussionNote,
+    updatingNoteKey,
+    updateNoteError,
+    onClearUpdateNoteError,
     isThreadExpanded,
     onToggleThreadExpanded,
     expandedThreadSignature,
@@ -574,6 +608,11 @@ const VirtualizedDiffBody = memo(
                   onExpandGap={onExpandGap}
                   onResolveThread={onResolveThread}
                   resolvingDiscussionId={resolvingDiscussionId}
+                  currentUserId={currentUserId}
+                  onUpdateDiscussionNote={onUpdateDiscussionNote}
+                  updatingNoteKey={updatingNoteKey}
+                  updateNoteError={updateNoteError}
+                  onClearUpdateNoteError={onClearUpdateNoteError}
                   isThreadExpanded={isThreadExpanded}
                   onToggleThreadExpanded={onToggleThreadExpanded}
                 />
@@ -608,6 +647,11 @@ export const DiffBody = memo(
     onRegisterScrollToRow,
     onResolveThread,
     resolvingDiscussionId,
+    currentUserId,
+    onUpdateDiscussionNote,
+    updatingNoteKey,
+    updateNoteError,
+    onClearUpdateNoteError,
   }: {
     rows: VirtualDiffRow[];
     virtualized: boolean;
@@ -679,6 +723,11 @@ export const DiffBody = memo(
           onRegisterScrollToRow={onRegisterScrollToRow}
           onResolveThread={onResolveThread}
           resolvingDiscussionId={resolvingDiscussionId}
+          currentUserId={currentUserId}
+          onUpdateDiscussionNote={onUpdateDiscussionNote}
+          updatingNoteKey={updatingNoteKey}
+          updateNoteError={updateNoteError}
+          onClearUpdateNoteError={onClearUpdateNoteError}
           isThreadExpanded={isThreadExpanded}
           onToggleThreadExpanded={toggleThreadExpanded}
           expandedThreadSignature={expandedThreadSignature}
@@ -706,6 +755,11 @@ export const DiffBody = memo(
         onRegisterScrollToRow={onRegisterScrollToRow}
         onResolveThread={onResolveThread}
         resolvingDiscussionId={resolvingDiscussionId}
+        currentUserId={currentUserId}
+        onUpdateDiscussionNote={onUpdateDiscussionNote}
+        updatingNoteKey={updatingNoteKey}
+        updateNoteError={updateNoteError}
+        onClearUpdateNoteError={onClearUpdateNoteError}
         isThreadExpanded={isThreadExpanded}
         onToggleThreadExpanded={toggleThreadExpanded}
       />

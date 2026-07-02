@@ -134,6 +134,11 @@ export const GitDiffFile = memo(
     loadFileContent,
     onResolveThread,
     resolvingDiscussionId,
+    currentUserId,
+    onUpdateDiscussionNote,
+    updatingNoteKey,
+    updateNoteError,
+    onClearUpdateNoteError,
     isActive,
     onActiveFileChange,
   }: {
@@ -149,6 +154,15 @@ export const GitDiffFile = memo(
     loadFileContent?: DiffFileContentLoader;
     onResolveThread?: (discussionId: string, resolved: boolean) => void;
     resolvingDiscussionId?: string | null;
+    currentUserId?: number | null;
+    onUpdateDiscussionNote?: (
+      discussionId: string,
+      noteId: number,
+      body: string,
+    ) => Promise<boolean>;
+    updatingNoteKey?: string | null;
+    updateNoteError?: string | null;
+    onClearUpdateNoteError?: () => void;
     isActive?: boolean;
     onActiveFileChange?: (fileKey: string) => void;
   }) => {
@@ -961,6 +975,11 @@ export const GitDiffFile = memo(
               onRegisterScrollToRow={handleRegisterScrollToRow}
               onResolveThread={onResolveThread}
               resolvingDiscussionId={resolvingDiscussionId}
+              currentUserId={currentUserId}
+              onUpdateDiscussionNote={onUpdateDiscussionNote}
+              updatingNoteKey={updatingNoteKey}
+              updateNoteError={updateNoteError}
+              onClearUpdateNoteError={onClearUpdateNoteError}
             />
           </DiffSyntaxHighlightProvider>
         );
@@ -1147,6 +1166,11 @@ export const GitDiffFile = memo(
                 onResolveThread={onResolveThread}
                 resolvingDiscussionId={resolvingDiscussionId}
                 placement="file"
+                currentUserId={currentUserId}
+                onUpdateNote={onUpdateDiscussionNote}
+                updatingNoteKey={updatingNoteKey}
+                updateNoteError={updateNoteError}
+                onClearUpdateNoteError={onClearUpdateNoteError}
               />
             ))}
           </div>

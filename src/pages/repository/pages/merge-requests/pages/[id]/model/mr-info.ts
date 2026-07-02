@@ -61,6 +61,8 @@ export class MrInfoModel {
   @observable accessor submitMrCommentError = "";
   @observable accessor resolvingDiscussionId = "";
   @observable accessor resolveDiscussionError = "";
+  @observable accessor updatingNoteKey = "";
+  @observable accessor updateNoteError = "";
   @observable accessor reviewActionInProgress = null as MrReviewAction | null;
   @observable accessor reviewActionError = "";
   @observable accessor locallyCreatedDiscussionsKey = "";
@@ -241,6 +243,11 @@ export class MrInfoModel {
   }
 
   @computed
+  get currentUserId(): number | null {
+    return this.currentUserQuery.error ? null : (this.currentUserQuery.data ?? null);
+  }
+
+  @computed
   get mergeRequestApprovals(): MergeRequestApprovalView | null {
     if (
       this.currentUserQuery.isLoading ||
@@ -251,7 +258,7 @@ export class MrInfoModel {
     }
 
     return buildMergeRequestApprovalView(
-      this.currentUserQuery.error ? null : (this.currentUserQuery.data ?? null),
+      this.currentUserId,
       this.mergeRequestApprovalsQuery.error
         ? null
         : (this.mergeRequestApprovalsQuery.data ?? null),
@@ -426,6 +433,11 @@ export class MrInfoModel {
   }
 
   @action
+  clearUpdateNoteError() {
+    this.updateNoteError = "";
+  }
+
+  @action
   clearReviewActionError() {
     this.reviewActionError = "";
   }
@@ -582,6 +594,58 @@ export class MrInfoModel {
     } finally {
       runInAction(() => {
         this.resolvingDiscussionId = "";
+      });
+    }
+  }
+
+  @action.bound
+  async updateDiscussionNote(
+    discussionId: string,
+    noteId: number,
+    body: string,
+  ) {
+    const connection = this.options.globals.stores.settings.activeConnection;
+    const mr = this.options.params();
+
+    if (!connection || !mr) {
+      this.updateNoteError = "Merge request не выбран";
+      return false;
+    }
+
+    const trimmedBody = body.trim();
+    if (!trimmedBody) {
+      this.updateNoteError = "Введите текст комментария";
+      return false;
+    }
+
+    const noteKey = `${discussionId}:${noteId}`;
+    this.updatingNoteKey = noteKey;
+    this.updateNoteError = "";
+
+    try {
+      await gitlabApi.updateMergeRequestDiscussionNote(
+        connection,
+        mr.project,
+        mr.mergeRequestIid,
+        discussionId,
+        noteId,
+        trimmedBody,
+      );
+
+      await this.invalidateMergeRequestView();
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.updateNoteError =
+          error instanceof Error
+            ? error.message
+            : "Не удалось обновить комментарий";
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.updatingNoteKey = "";
       });
     }
   }

@@ -20,6 +20,11 @@ export const GitDiff = withPropsViewModel(GitDiffVM,
       loadFileContent,
       onResolveThread,
       resolvingDiscussionId,
+      currentUserId,
+      onUpdateDiscussionNote,
+      updatingNoteKey,
+      updateNoteError,
+      onClearUpdateNoteError,
       activeFileKey,
       onActiveFileChange, } }
   }) => {
@@ -49,6 +54,11 @@ export const GitDiff = withPropsViewModel(GitDiffVM,
               loadFileContent={loadFileContent}
               onResolveThread={onResolveThread}
               resolvingDiscussionId={resolvingDiscussionId}
+              currentUserId={currentUserId}
+              onUpdateDiscussionNote={onUpdateDiscussionNote}
+              updatingNoteKey={updatingNoteKey}
+              updateNoteError={updateNoteError}
+              onClearUpdateNoteError={onClearUpdateNoteError}
               isActive={activeFileKey === fileKey}
               onActiveFileChange={onActiveFileChange}
             />

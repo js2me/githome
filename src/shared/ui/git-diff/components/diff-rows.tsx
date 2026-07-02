@@ -1,4 +1,4 @@
-import { ArrowDownToLine, ArrowUpToLine } from "@gravity-ui/icons";
+import { ArrowDownToLine, ArrowUpToLine, Pencil } from "@gravity-ui/icons";
 import {
   memo,
   useCallback,
@@ -24,6 +24,10 @@ import type { GitLabNoteDC } from "@/shared/api/gitlab";
 import type { WordDiffSegment } from "@/shared/lib/compute-word-diff";
 import { cn } from "@/shared/lib/cn";
 import type { InlineDiffThread } from "@/shared/lib/gitlab/diff-discussions";
+import {
+  canEditGitLabNote,
+  getDiscussionNoteKey,
+} from "@/shared/lib/gitlab/note-permissions";
 import type { DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
@@ -560,15 +564,65 @@ export const DiffLineRow = memo(
 const InlineThreadNote = memo(
   ({
     note,
+    discussionId,
     isReply = false,
     resolvedBy,
+    currentUserId = null,
+    onUpdateNote,
+    updatingNoteKey = null,
+    updateNoteError = null,
+    onClearUpdateNoteError,
   }: {
     note: GitLabNoteDC;
+    discussionId: string;
     isReply?: boolean;
     resolvedBy?: string | null;
+    currentUserId?: number | null;
+    onUpdateNote?: (
+      discussionId: string,
+      noteId: number,
+      body: string,
+    ) => Promise<boolean>;
+    updatingNoteKey?: string | null;
+    updateNoteError?: string | null;
+    onClearUpdateNoteError?: () => void;
   }) => {
     const authorName = note.author?.name ?? "Unknown";
     const authorUsername = note.author?.username ?? "";
+    const canEdit = canEditGitLabNote(note, currentUserId);
+    const noteKey = getDiscussionNoteKey(discussionId, note.id);
+    const isSaving = updatingNoteKey === noteKey;
+    const [isEditing, setIsEditing] = useState(false);
+    const [editBody, setEditBody] = useState(note.body);
+
+    useEffect(() => {
+      if (!isEditing) {
+        setEditBody(note.body);
+      }
+    }, [isEditing, note.body]);
+
+    const handleStartEdit = useCallback(() => {
+      setEditBody(note.body);
+      setIsEditing(true);
+      onClearUpdateNoteError?.();
+    }, [note.body, onClearUpdateNoteError]);
+
+    const handleCancelEdit = useCallback(() => {
+      setEditBody(note.body);
+      setIsEditing(false);
+      onClearUpdateNoteError?.();
+    }, [note.body, onClearUpdateNoteError]);
+
+    const handleSaveEdit = useCallback(async () => {
+      if (!onUpdateNote) {
+        return;
+      }
+
+      const success = await onUpdateNote(discussionId, note.id, editBody);
+      if (success) {
+        setIsEditing(false);
+      }
+    }, [discussionId, editBody, note.id, onUpdateNote]);
 
     return (
       <article className={cn("flex min-w-0 gap-3", isReply && "pl-11")}>
@@ -579,16 +633,33 @@ const InlineThreadNote = memo(
         />
 
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
-            <strong className="text-slate-900 dark:text-slate-200">
-              {authorName}
-            </strong>
-            {authorUsername && (
-              <span className="font-normal text-slate-500">@{authorUsername}</span>
+          <div className="mb-1 flex items-start gap-2 text-[13px]">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+              <strong className="text-slate-900 dark:text-slate-200">
+                {authorName}
+              </strong>
+              {authorUsername && (
+                <span className="font-normal text-slate-500">
+                  @{authorUsername}
+                </span>
+              )}
+              <time className="text-xs text-slate-400" dateTime={note.created_at}>
+                {formatRelativeTime(note.created_at)}
+              </time>
+            </div>
+
+            {canEdit && onUpdateNote && !isEditing && (
+              <button
+                className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                type="button"
+                title="Редактировать"
+                aria-label="Редактировать комментарий"
+                disabled={Boolean(updatingNoteKey)}
+                onClick={handleStartEdit}
+              >
+                <Pencil width={14} height={14} />
+              </button>
             )}
-            <time className="text-xs text-slate-400" dateTime={note.created_at}>
-              {formatRelativeTime(note.created_at)}
-            </time>
           </div>
 
           {resolvedBy && !isReply && (
@@ -597,10 +668,54 @@ const InlineThreadNote = memo(
             </div>
           )}
 
-          <GitLabMarkdown
-            text={note.body}
-            className="min-w-0 max-w-full text-sm leading-normal text-slate-800 dark:text-slate-300"
-          />
+          {isEditing ? (
+            <div>
+              <textarea
+                className="min-h-[72px] w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand focus:shadow-[0_0_0_3px_var(--color-brand-focus-shadow)] disabled:opacity-60 dark:border-slate-700 dark:bg-canvas-default dark:text-slate-200"
+                value={editBody}
+                onChange={(event) => {
+                  setEditBody(event.target.value);
+                  if (updateNoteError) {
+                    onClearUpdateNoteError?.();
+                  }
+                }}
+                rows={3}
+                disabled={isSaving}
+              />
+
+              {updateNoteError && isEditing && (
+                <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
+                  {updateNoteError}
+                </div>
+              )}
+
+              <div className="mt-2.5 flex gap-2">
+                <button
+                  className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 text-[13px] font-semibold text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  type="button"
+                  disabled={isSaving || !editBody.trim()}
+                  onClick={() => {
+                    void handleSaveEdit();
+                  }}
+                >
+                  {isSaving ? "Сохранение..." : "Сохранить"}
+                </button>
+                <button
+                  className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
+                  type="button"
+                  disabled={isSaving}
+                  onClick={handleCancelEdit}
+                >
+                  Отмена
+                </button>
+              </div>
+            </div>
+          ) : (
+            <GitLabMarkdown
+              text={note.body}
+              className="min-w-0 max-w-full text-sm leading-normal text-slate-800 dark:text-slate-300"
+            />
+          )}
         </div>
       </article>
     );
@@ -615,6 +730,11 @@ export const DiffThreadRow = memo(
     expanded: expandedProp,
     onToggleExpand,
     placement = "inline",
+    currentUserId,
+    onUpdateNote,
+    updatingNoteKey,
+    updateNoteError,
+    onClearUpdateNoteError,
   }: {
     thread: InlineDiffThread;
     onResolveThread?: (discussionId: string, resolved: boolean) => void;
@@ -622,6 +742,15 @@ export const DiffThreadRow = memo(
     expanded?: boolean;
     onToggleExpand?: () => void;
     placement?: "inline" | "file";
+    currentUserId?: number | null;
+    onUpdateNote?: (
+      discussionId: string,
+      noteId: number,
+      body: string,
+    ) => Promise<boolean>;
+    updatingNoteKey?: string | null;
+    updateNoteError?: string | null;
+    onClearUpdateNoteError?: () => void;
   }) => {
     const [internalExpanded, setInternalExpanded] = useState(() => !thread.resolved);
     const isControlled = expandedProp !== undefined;
@@ -675,13 +804,29 @@ export const DiffThreadRow = memo(
             <div className="p-3.5">
               <InlineThreadNote
                 note={firstNote}
+                discussionId={thread.discussionId}
                 resolvedBy={resolvedBy}
+                currentUserId={currentUserId}
+                onUpdateNote={onUpdateNote}
+                updatingNoteKey={updatingNoteKey}
+                updateNoteError={updateNoteError}
+                onClearUpdateNoteError={onClearUpdateNoteError}
               />
 
               {replies.length > 0 && (
                 <div className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-700">
                   {replies.map((note) => (
-                    <InlineThreadNote key={note.id} note={note} isReply />
+                    <InlineThreadNote
+                      key={note.id}
+                      note={note}
+                      discussionId={thread.discussionId}
+                      isReply
+                      currentUserId={currentUserId}
+                      onUpdateNote={onUpdateNote}
+                      updatingNoteKey={updatingNoteKey}
+                      updateNoteError={updateNoteError}
+                      onClearUpdateNoteError={onClearUpdateNoteError}
+                    />
                   ))}
                 </div>
               )}

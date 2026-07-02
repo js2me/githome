@@ -114,6 +114,7 @@ export interface GitLabNoteDC {
   type?: string | null;
   body: string;
   author?: {
+    id?: number;
     name?: string;
     username?: string;
     avatar_url?: string | null;
@@ -123,6 +124,7 @@ export interface GitLabNoteDC {
   system?: boolean;
   resolvable?: boolean;
   resolved?: boolean;
+  can_update?: boolean;
   position?: GitLabNotePositionDC | null;
 }
 

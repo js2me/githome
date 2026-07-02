@@ -16,6 +16,15 @@ export interface GitDiffPayload {
   loadFileContent?: DiffFileContentLoader;
   onResolveThread?: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId?: string | null;
+  currentUserId?: number | null;
+  onUpdateDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+    body: string,
+  ) => Promise<boolean>;
+  updatingNoteKey?: string | null;
+  updateNoteError?: string | null;
+  onClearUpdateNoteError?: () => void;
   activeFileKey?: string | null;
   onActiveFileChange?: (fileKey: string) => void;
 }

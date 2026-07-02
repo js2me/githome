@@ -20,6 +20,7 @@ import { renderMarkdown } from "./endpoints/render-markdown";
 import { requestMergeRequestChanges } from "./endpoints/request-merge-request-changes";
 import { resolveMergeRequestDiscussion } from "./endpoints/resolve-merge-request-discussion";
 import { unapproveMergeRequest } from "./endpoints/unapprove-merge-request";
+import { updateMergeRequestDiscussionNote } from "./endpoints/update-merge-request-discussion-note";
 
 export const gitlabApi = {
   async fetch<T = unknown>(
@@ -64,6 +65,8 @@ export const gitlabApi = {
   createMergeRequestDiscussion,
 
   resolveMergeRequestDiscussion,
+
+  updateMergeRequestDiscussionNote,
 
   getMergeRequestView,
 

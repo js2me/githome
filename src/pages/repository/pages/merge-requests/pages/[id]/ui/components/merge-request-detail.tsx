@@ -211,6 +211,11 @@ export const MergeRequestDetail = ({
   onResolveDiscussion,
   resolvingDiscussionId,
   resolveDiscussionError,
+  currentUserId,
+  onUpdateDiscussionNote,
+  updatingNoteKey,
+  updateNoteError,
+  onClearUpdateNoteError,
   approvals,
   reviewActionInProgress,
   reviewActionError,
@@ -240,6 +245,15 @@ export const MergeRequestDetail = ({
   onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId: string | null;
   resolveDiscussionError?: string | null;
+  currentUserId?: number | null;
+  onUpdateDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+    body: string,
+  ) => Promise<boolean>;
+  updatingNoteKey?: string | null;
+  updateNoteError?: string | null;
+  onClearUpdateNoteError?: () => void;
   approvals: MergeRequestApprovalView;
   reviewActionInProgress: MrReviewAction | null;
   reviewActionError: string | null;
@@ -430,6 +444,11 @@ export const MergeRequestDetail = ({
             discussions={activityDiscussions}
             onResolveDiscussion={onResolveDiscussion}
             resolvingDiscussionId={resolvingDiscussionId}
+            currentUserId={currentUserId}
+            onUpdateDiscussionNote={onUpdateDiscussionNote}
+            updatingNoteKey={updatingNoteKey}
+            updateNoteError={updateNoteError}
+            onClearUpdateNoteError={onClearUpdateNoteError}
           />
         )}
       </section>
@@ -476,6 +495,11 @@ export const MergeRequestDetail = ({
           loadFileContent={loadFileContent}
           onResolveThread={onResolveDiscussion}
           resolvingDiscussionId={resolvingDiscussionId}
+          currentUserId={currentUserId}
+          onUpdateDiscussionNote={onUpdateDiscussionNote}
+          updatingNoteKey={updatingNoteKey}
+          updateNoteError={updateNoteError}
+          onClearUpdateNoteError={onClearUpdateNoteError}
           activeFileKey={activeFileKey}
           onActiveFileChange={setActiveFileKey}
         />
