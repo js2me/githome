@@ -4,6 +4,7 @@ import type {
   GitLabNoteDC,
   GitLabNotePositionDC,
 } from "@/shared/api/gitlab";
+import { getDiffFileKey } from "@/shared/lib/diff-search";
 import type { DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
 
 export interface InlineDiffThread {
@@ -325,6 +326,36 @@ export const indexDiffDiscussions = (
   }
 
   return index;
+};
+
+export const buildChangeFileKeysWithDiscussions = (
+  discussions: GitLabDiscussionDC[],
+  changes: GitLabMergeRequestChangeDC[],
+): Set<string> => {
+  const keys = new Set<string>();
+
+  for (const discussion of discussions) {
+    if (isSystemActivityDiscussion(discussion)) {
+      continue;
+    }
+
+    if (getUserDiscussionNotes(discussion).length === 0) {
+      continue;
+    }
+
+    const anchorNote = getDiscussionAnchorNote(discussion);
+    if (!anchorNote?.position) {
+      continue;
+    }
+
+    for (const change of changes) {
+      if (positionMatchesChange(anchorNote.position, change)) {
+        keys.add(getDiffFileKey(change.old_path, change.new_path));
+      }
+    }
+  }
+
+  return keys;
 };
 
 export const getFileLevelThreadsForChange = (

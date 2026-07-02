@@ -18,7 +18,7 @@ export const ChangesTreeLayout = ({
 
   return (
     <div className="flex gap-4">
-      <div className="relative shrink-0 self-stretch" style={{ width }}>
+      <div className="relative z-10 shrink-0 self-stretch" style={{ width }}>
         <div className="sticky top-4 relative">
           {tree}
           <div
@@ -38,7 +38,9 @@ export const ChangesTreeLayout = ({
 
       {connector}
 
-      <div className="flex min-w-0 flex-1 flex-col gap-5">{children}</div>
+      <div className="relative z-20 flex min-w-0 flex-1 flex-col gap-5">
+        {children}
+      </div>
     </div>
   );
 };

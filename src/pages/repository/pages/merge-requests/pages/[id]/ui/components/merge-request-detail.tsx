@@ -21,12 +21,12 @@ import { ChangesActiveFileLink } from "./changes-active-file-link";
 import { ChangesFileTree } from "./changes-file-tree";
 import { ChangesTreeLayout } from "./changes-tree-layout";
 import { useActiveDiffFile } from "../hooks/use-active-diff-file";
-import { DiffSearchProvider } from "@/shared/ui/git-diff/diff-search";
-import { MergeRequestChanges } from "./merge-request-changes";
+import { DiffSearchProvider } from "@/shared/ui/git-diff/components/diff-search";
 import { DiffVersionPicker } from "./diff-version-picker";
 import { MergeRequestCommentForm } from "./merge-request-comment-form";
 import { MergeRequestDiscussions } from "./merge-request-discussions";
 import { MrReviewActions } from "./mr-review-actions";
+import { GitDiff } from "@/shared/ui/git-diff";
 
 const formatDateTime = (value: string) => {
   const date = new Date(value);
@@ -459,7 +459,7 @@ export const MergeRequestDetail = ({
           )}
         </h3>
         {changesError && <StatusMessage error>{changesError}</StatusMessage>}
-        <MergeRequestChanges
+        <GitDiff
           changes={changes}
           discussions={discussions}
           canComment={canComment}
@@ -495,6 +495,7 @@ export const MergeRequestDetail = ({
           tree={
             <ChangesFileTree
               changes={changes}
+              discussions={discussions}
               activeFileKey={activeFileKey}
               onActiveFileChange={setActiveFileKey}
             />

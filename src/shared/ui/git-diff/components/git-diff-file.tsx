@@ -1,6 +1,5 @@
 import {
   memo,
-  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -59,16 +58,16 @@ import {
   getDiffFileKey,
 } from "@/shared/lib/diff-search";
 import { parseUnifiedDiff, type DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
-import { StatusMessage } from "@/shared/ui/status-message";
 import type { DiffFileContentLoader } from "@/shared/lib/syntax-highlight/types";
-import { DiffBody } from "./virtual-diff-body";
 import { DiffFileCollapseBanner } from "./diff-file-collapse-banner";
 import { DiffThreadRow } from "./diff-rows";
 import { SearchHighlightedText, useDiffSearchRegistrationOptional, useRowSearchHighlight } from "./diff-search";
 import { DiffSyntaxHighlightProvider } from "./diff-syntax-highlight";
-import "./git-diff.css";
-
-export type { DiffFileContentLoader };
+import { DiffBody } from "./virtual-diff-body";
+import { DiffFileCopyButton } from "./diff-file-copy-button";
+import { CopyContentIcon } from "./icons/copy-content-icon";
+import { CopyNameIcon } from "./icons/copy-name-icon";
+import { CopyPathIcon } from "./icons/copy-path-icon";
 
 const getChangePath = (change: GitLabMergeRequestChangeDC) => {
   if (change.renamed_file && change.old_path !== change.new_path) {
@@ -117,140 +116,11 @@ const getExpandFilePath = (change: GitLabMergeRequestChangeDC) => {
 
 const getFileNameFromPath = (path: string) => path.split("/").pop() ?? path;
 
-const diffFileCopyButtonVariants = cva(
-  "inline-flex cursor-pointer items-center justify-center rounded transition disabled:cursor-wait disabled:opacity-60",
-  {
-    variants: {
-      compact: {
-        true: "h-5 w-5 text-[var(--color-fg-subtle)] hover:bg-[var(--color-accent-emphasis-hover)] hover:text-[var(--diff-code-text)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)] [&_svg]:h-3 [&_svg]:w-3",
-        false:
-          "h-7 w-7 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800",
-      },
-    },
-    defaultVariants: {
-      compact: false,
-    },
-  },
-);
-
 const diffFileHeaderTextButtonVariants = cva(
   "inline-flex h-7 cursor-pointer items-center rounded border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800",
 );
 
-const DiffFileCopyIcon = ({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) => (
-  <svg
-    aria-hidden="true"
-    className={cn("h-3.5 w-3.5", className)}
-    viewBox="0 0 16 16"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.6"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    {children}
-  </svg>
-);
-
-const copyPathIcon = (
-  <DiffFileCopyIcon>
-    <path d="M2.5 4.5h4l1.5 2h5.5v5.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 12V6a1.5 1.5 0 0 1 .5-1.5Z" />
-    <path d="M5 10.5h6" />
-  </DiffFileCopyIcon>
-);
-
-const copyNameIcon = (
-  <DiffFileCopyIcon>
-    <path d="M4 2.5h5l3 3v8H4z" />
-    <path d="M9 2.5v3h3" />
-    <path d="M6 10h4" />
-  </DiffFileCopyIcon>
-);
-
-const copyContentIcon = (
-  <DiffFileCopyIcon>
-    <path d="M6 4.5h7v9H6z" />
-    <path d="M3 11.5v-9h7" />
-    <path d="M8 7.5h3" />
-    <path d="M8 10.5h3" />
-  </DiffFileCopyIcon>
-);
-
-const copiedIcon = (
-  <DiffFileCopyIcon className="text-green-600 dark:text-green-400">
-    <path d="m3 8.5 3 3 7-7" />
-  </DiffFileCopyIcon>
-);
-
-const copyFailedIcon = (
-  <DiffFileCopyIcon className="text-red-600 dark:text-red-400">
-    <path d="M4.5 4.5 11.5 11.5" />
-    <path d="M11.5 4.5 4.5 11.5" />
-  </DiffFileCopyIcon>
-);
-
-const DiffFileCopyButton = memo(
-  ({
-    label,
-    icon,
-    getValue,
-    compact = false,
-  }: {
-    label: string;
-    icon: ReactNode;
-    getValue: () => string | Promise<string>;
-    compact?: boolean;
-  }) => {
-    const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
-
-    const handleCopy = useCallback(async () => {
-      setStatus("idle");
-
-      try {
-        const value = await getValue();
-        await navigator.clipboard.writeText(value);
-        setStatus("copied");
-        window.setTimeout(() => setStatus("idle"), 1200);
-      } catch {
-        setStatus("failed");
-        window.setTimeout(() => setStatus("idle"), 1600);
-      }
-    }, [getValue]);
-
-    return (
-      <button
-        className={diffFileCopyButtonVariants({ compact })}
-        type="button"
-        title={
-          status === "copied"
-            ? "Скопировано"
-            : status === "failed"
-              ? "Не удалось скопировать"
-              : label
-        }
-        aria-label={label}
-        disabled={status === "copied"}
-        onClick={() => {
-          void handleCopy();
-        }}
-      >
-        {status === "copied"
-          ? copiedIcon
-          : status === "failed"
-            ? copyFailedIcon
-            : icon}
-      </button>
-    );
-  },
-);
-
-const GitDiffFile = memo(
+export const GitDiffFile = memo(
   ({
     change,
     discussions,
@@ -403,6 +273,35 @@ const GitDiffFile = memo(
         setIsLoadingCollapsedExpand(false);
       }
     }, [baseRef, change, headRef, loadFileContent]);
+
+    useEffect(() => {
+      if (
+        change.generated_file ||
+        change.too_large ||
+        change.diff?.trim() ||
+        !loadFileContent ||
+        expandedDiff ||
+        resolvedDiff ||
+        change.new_file ||
+        change.deleted_file
+      ) {
+        return;
+      }
+
+      void handleExpandCollapsedFile();
+    }, [
+      change.deleted_file,
+      change.diff,
+      change.generated_file,
+      change.new_file,
+      change.new_path,
+      change.old_path,
+      change.too_large,
+      expandedDiff,
+      handleExpandCollapsedFile,
+      loadFileContent,
+      resolvedDiff,
+    ]);
 
     const parsed = useMemo(
       () => (effectiveDiff ? parseUnifiedDiff(effectiveDiff) : null),
@@ -618,11 +517,11 @@ const GitDiffFile = memo(
         commentFormLineKey: null,
         expand: canExpand
           ? {
-              gaps: expandGaps,
-              expandState,
-              contextLinesByGapId,
-              loadingGapId,
-            }
+            gaps: expandGaps,
+            expandState,
+            contextLinesByGapId,
+            loadingGapId,
+          }
           : undefined,
       });
     }, [
@@ -661,11 +560,11 @@ const GitDiffFile = memo(
         commentFormLineKey,
         expand: canExpand
           ? {
-              gaps: expandGaps,
-              expandState,
-              contextLinesByGapId,
-              loadingGapId,
-            }
+            gaps: expandGaps,
+            expandState,
+            contextLinesByGapId,
+            loadingGapId,
+          }
           : undefined,
       });
     }, [
@@ -710,7 +609,7 @@ const GitDiffFile = memo(
     }, [effectiveDiff, filePath, fileRef, loadFileContent]);
     const headerRowId = getDiffFileHeaderRowId(fileKey);
     const headerSearchHighlight = useRowSearchHighlight(headerRowId);
-    const scrollToRowRef = useRef<(rowId: string) => void>(() => {});
+    const scrollToRowRef = useRef<(rowId: string) => void>(() => { });
 
     const searchLines = useMemo(
       () =>
@@ -1015,6 +914,67 @@ const GitDiffFile = memo(
       !expandedDiff &&
       !resolvedDiff;
 
+    const renderDiffContent = () => {
+      if (showTooLargeBanner) {
+        return (
+          <DiffFileCollapseBanner
+            change={change}
+            isLoading={false}
+            onExpand={() => undefined}
+          />
+        );
+      }
+
+      if (isAutoCollapsed && !isFileExpanded) {
+        return (
+          <DiffFileCollapseBanner
+            change={change}
+            isLoading={isLoadingCollapsedExpand}
+            onExpand={() => {
+              void handleExpandCollapsedFile();
+            }}
+          />
+        );
+      }
+
+      if (parsed && virtualRows.length > 0) {
+        return (
+          <DiffSyntaxHighlightProvider change={change} parsed={parsed}>
+            <DiffBody
+              rows={virtualRows}
+              virtualized={virtualized}
+              canComment={canComment}
+              lineSelection={lineSelection}
+              orderedLineKeys={orderedLineKeys}
+              commentFormLineKey={commentFormLineKey}
+              commentBody={commentBody}
+              submitError={submitCommentError}
+              isSubmitting={isSubmittingComment}
+              selectionRangeLabel={selectionRangeLabel}
+              onLineClick={handleLineClick}
+              onLineMouseDown={handleLineMouseDown}
+              onLineMouseEnter={handleLineMouseEnter}
+              onCommentBodyChange={setCommentBody}
+              onCancelComment={handleCancelComment}
+              onSubmitComment={handleSubmitComment}
+              onExpandGap={canExpand ? handleExpandGap : undefined}
+              onRegisterScrollToRow={handleRegisterScrollToRow}
+              onResolveThread={onResolveThread}
+              resolvingDiscussionId={resolvingDiscussionId}
+            />
+          </DiffSyntaxHighlightProvider>
+        );
+      }
+
+      return (
+        <div className="p-3.5 text-[13px] text-slate-500">
+          {isResolvingDiff || isLoadingCollapsedExpand
+            ? "Загружаем diff..."
+            : "Нет diff для этого файла."}
+        </div>
+      );
+    };
+
     return (
       <article
         id={getDiffFileElementId(fileKey)}
@@ -1084,13 +1044,13 @@ const GitDiffFile = memo(
               <DiffFileCopyButton
                 compact
                 label="копировать путь"
-                icon={copyPathIcon}
+                icon={<CopyPathIcon />}
                 getValue={() => filePath}
               />
               <DiffFileCopyButton
                 compact
                 label="копировать имя"
-                icon={copyNameIcon}
+                icon={<CopyNameIcon />}
                 getValue={() => getFileNameFromPath(filePath)}
               />
             </div>
@@ -1120,7 +1080,7 @@ const GitDiffFile = memo(
           <div className="ml-2 flex shrink-0 items-center">
             <DiffFileCopyButton
               label="копировать содержимое"
-              icon={copyContentIcon}
+              icon={<CopyContentIcon />}
               getValue={copyFileContent}
             />
           </div>
@@ -1192,121 +1152,8 @@ const GitDiffFile = memo(
           </div>
         )}
 
-        {showTooLargeBanner ? (
-          <DiffFileCollapseBanner
-            change={change}
-            isLoading={false}
-            onExpand={() => undefined}
-          />
-        ) : isAutoCollapsed && !isFileExpanded ? (
-          <DiffFileCollapseBanner
-            change={change}
-            isLoading={isLoadingCollapsedExpand}
-            onExpand={() => {
-              void handleExpandCollapsedFile();
-            }}
-          />
-        ) : parsed && virtualRows.length > 0 ? (
-          <DiffSyntaxHighlightProvider change={change} parsed={parsed}>
-            <DiffBody
-              rows={virtualRows}
-              virtualized={virtualized}
-              canComment={canComment}
-              lineSelection={lineSelection}
-              orderedLineKeys={orderedLineKeys}
-              commentFormLineKey={commentFormLineKey}
-              commentBody={commentBody}
-              submitError={submitCommentError}
-              isSubmitting={isSubmittingComment}
-              selectionRangeLabel={selectionRangeLabel}
-              onLineClick={handleLineClick}
-              onLineMouseDown={handleLineMouseDown}
-              onLineMouseEnter={handleLineMouseEnter}
-              onCommentBodyChange={setCommentBody}
-              onCancelComment={handleCancelComment}
-              onSubmitComment={handleSubmitComment}
-              onExpandGap={canExpand ? handleExpandGap : undefined}
-              onRegisterScrollToRow={handleRegisterScrollToRow}
-              onResolveThread={onResolveThread}
-              resolvingDiscussionId={resolvingDiscussionId}
-            />
-          </DiffSyntaxHighlightProvider>
-        ) : (
-          <div className="p-3.5 text-[13px] text-slate-500">
-            {isResolvingDiff
-              ? "Загружаем diff..."
-              : "Нет diff для этого файла."}
-          </div>
-        )}
+        {renderDiffContent()}
       </article>
-    );
-  },
-);
-
-export const GitDiffView = memo(
-  ({
-    changes,
-    discussions,
-    canComment,
-    isSubmittingComment,
-    submitCommentError,
-    onAddComment,
-    onClearSubmitError,
-    headRef,
-    baseRef,
-    loadFileContent,
-    onResolveThread,
-    resolvingDiscussionId,
-    activeFileKey,
-    onActiveFileChange,
-  }: {
-    changes: GitLabMergeRequestChangeDC[];
-    discussions: GitLabDiscussionDC[];
-    canComment: boolean;
-    isSubmittingComment: boolean;
-    submitCommentError: string | null;
-    onAddComment: (input: CreateDiffCommentInput) => Promise<boolean>;
-    onClearSubmitError: () => void;
-    headRef?: string | null;
-    baseRef?: string | null;
-    loadFileContent?: DiffFileContentLoader;
-    onResolveThread?: (discussionId: string, resolved: boolean) => void;
-    resolvingDiscussionId?: string | null;
-    activeFileKey?: string | null;
-    onActiveFileChange?: (fileKey: string) => void;
-  }) => {
-    if (changes.length === 0) {
-      return (
-        <StatusMessage>Изменения в merge request не найдены.</StatusMessage>
-      );
-    }
-
-    return (
-      <div className="git-diff-view flex flex-col gap-4 overflow-x-auto">
-        {changes.map((change) => {
-          const fileKey = getDiffFileKey(change.old_path, change.new_path);
-
-          return (
-            <GitDiffFile
-              key={`${change.new_path}:${change.old_path}`}
-              change={change}
-              discussions={discussions}
-              canComment={canComment}
-              isSubmittingComment={isSubmittingComment}
-              submitCommentError={submitCommentError}
-              onAddComment={onAddComment}
-              onClearSubmitError={onClearSubmitError}
-              headRef={headRef ?? null}
-              baseRef={baseRef ?? null}
-              loadFileContent={loadFileContent}
-              onResolveThread={onResolveThread}
-              resolvingDiscussionId={resolvingDiscussionId}
-              isActive={activeFileKey === fileKey}
-              onActiveFileChange={onActiveFileChange}
-            />
-          );
-        })}
-      </div>
     );
   },
 );

@@ -271,14 +271,12 @@
   outline: none;
 }
 
-.git-diff-thread-tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  z-index: 10;
+.git-diff-thread-tooltip--portal {
+  position: fixed;
+  z-index: 1000;
   width: max-content;
   max-width: 280px;
-  transform: translateX(-50%);
+  transform: translate(-50%, -100%);
   border-radius: 6px;
   background: #2d333b;
   padding: 6px 10px;
@@ -286,12 +284,10 @@
   line-height: 1.4;
   color: #fff;
   white-space: normal;
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 0.12s ease-out;
 }
 
-.git-diff-thread-tooltip::after {
+.git-diff-thread-tooltip--portal::after {
   content: "";
   position: absolute;
   top: 100%;
@@ -299,9 +295,4 @@
   transform: translateX(-50%);
   border: 5px solid transparent;
   border-top-color: #2d333b;
-}
-
-.git-diff-thread-avatar-wrap:hover .git-diff-thread-tooltip,
-.git-diff-thread-avatar-wrap:focus-within .git-diff-thread-tooltip {
-  opacity: 1;
 }

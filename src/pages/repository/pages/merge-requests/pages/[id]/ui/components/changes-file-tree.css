@@ -161,6 +161,21 @@
   color: var(--file-tree-stats-removed);
 }
 
+.changes-file-tree__comment-icon {
+  display: inline-flex;
+  height: 14px;
+  width: 14px;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--file-tree-muted);
+}
+
+.changes-file-tree__comment-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
 .changes-file-tree__status-icon {
   display: inline-flex;
   height: 14px;

@@ -1,5 +1,16 @@
 import { ArrowDownToLine, ArrowUpToLine } from "@gravity-ui/icons";
-import { memo, useCallback, useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 import type {
   DiffExpandGap,
   DiffExpandMode,
@@ -73,6 +84,74 @@ const formatRelativeTime = (value: string) => {
   });
 };
 
+const ResolvedThreadAvatarTooltip = ({
+  anchorRef,
+  authorName,
+  preview,
+  open,
+}: {
+  anchorRef: RefObject<HTMLDivElement | null>;
+  authorName: string;
+  preview: string;
+  open: boolean;
+}) => {
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(
+    null,
+  );
+
+  const updatePosition = useCallback(() => {
+    const anchor = anchorRef.current;
+    if (!anchor) {
+      return;
+    }
+
+    const rect = anchor.getBoundingClientRect();
+    setPosition({
+      top: rect.top - 8,
+      left: rect.left + rect.width / 2,
+    });
+  }, [anchorRef]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPosition(null);
+      return;
+    }
+
+    updatePosition();
+
+    const handleReposition = () => {
+      updatePosition();
+    };
+
+    window.addEventListener("scroll", handleReposition, true);
+    window.addEventListener("resize", handleReposition);
+
+    return () => {
+      window.removeEventListener("scroll", handleReposition, true);
+      window.removeEventListener("resize", handleReposition);
+    };
+  }, [open, updatePosition]);
+
+  if (!open || !position) {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      className="git-diff-thread-tooltip git-diff-thread-tooltip--portal"
+      role="tooltip"
+      style={{
+        top: position.top,
+        left: position.left,
+      }}
+    >
+      <span className="font-semibold">{authorName}:</span> {preview}
+    </div>,
+    document.body,
+  );
+};
+
 export const ResolvedThreadAvatar = memo(
   ({
     thread,
@@ -81,6 +160,8 @@ export const ResolvedThreadAvatar = memo(
     thread: InlineDiffThread;
     onClick: () => void;
   }) => {
+    const wrapRef = useRef<HTMLDivElement>(null);
+    const [tooltipOpen, setTooltipOpen] = useState(false);
     const firstNote = thread.notes[0];
     if (!firstNote) {
       return null;
@@ -90,7 +171,14 @@ export const ResolvedThreadAvatar = memo(
     const preview = getNotePreview(firstNote.body);
 
     return (
-      <div className="git-diff-thread-avatar-wrap">
+      <div
+        ref={wrapRef}
+        className="git-diff-thread-avatar-wrap"
+        onMouseEnter={() => setTooltipOpen(true)}
+        onMouseLeave={() => setTooltipOpen(false)}
+        onFocus={() => setTooltipOpen(true)}
+        onBlur={() => setTooltipOpen(false)}
+      >
         <button
           className="git-diff-thread-avatar-button"
           type="button"
@@ -106,9 +194,12 @@ export const ResolvedThreadAvatar = memo(
             name={authorName}
           />
         </button>
-        <div className="git-diff-thread-tooltip" role="tooltip">
-          <span className="font-semibold">{authorName}:</span> {preview}
-        </div>
+        <ResolvedThreadAvatarTooltip
+          anchorRef={wrapRef}
+          authorName={authorName}
+          preview={preview}
+          open={tooltipOpen}
+        />
       </div>
     );
   },
@@ -356,14 +447,14 @@ export const DiffLineRow = memo(
       : "";
     const handleLineNumMouseDown = isCommentable
       ? (event: MouseEvent) => {
-          event.preventDefault();
-          onLineMouseDown?.();
-        }
+        event.preventDefault();
+        onLineMouseDown?.();
+      }
       : undefined;
     const handleLineNumClick = isCommentable
       ? (event: MouseEvent) => {
-          onCommentClick(event.shiftKey);
-        }
+        onCommentClick(event.shiftKey);
+      }
       : undefined;
 
     return (

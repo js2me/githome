@@ -7,12 +7,13 @@ export const isHiddenMergeRequestChange = (
     return false;
   }
 
-  return Boolean(change.collapsed || change.generated_file);
+  return Boolean(change.generated_file);
 };
 
 export const isAutoCollapsedMergeRequestChange = (
   change: GitLabMergeRequestChangeDC,
-): boolean => !change.diff?.trim() && !change.too_large;
+): boolean =>
+  !change.diff?.trim() && !change.too_large && Boolean(change.generated_file);
 
 export const getVisibleMergeRequestChanges = (
   changes: GitLabMergeRequestChangeDC[],

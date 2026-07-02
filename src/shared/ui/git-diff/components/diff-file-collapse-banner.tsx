@@ -24,7 +24,7 @@ export const DiffFileCollapseBanner = memo(
       );
     }
 
-    const message = change.generated_file ? (
+    const message = (
       <>
         Сгенерированные файлы по умолчанию свёрнуты. Чтобы изменить это
         поведение, отредактируйте файл{" "}
@@ -41,11 +41,6 @@ export const DiffFileCollapseBanner = memo(
           Подробнее
         </a>
         .
-      </>
-    ) : (
-      <>
-        Файлы с большими изменениями по умолчанию свёрнуты, чтобы ускорить
-        просмотр.
       </>
     );
 

@@ -1,6 +1,10 @@
-import { FileCode, Folder, FolderOpen, Magnifier } from "@gravity-ui/icons";
+import { Comment, FileCode, Folder, FolderOpen, Magnifier } from "@gravity-ui/icons";
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
+import type {
+  GitLabDiscussionDC,
+  GitLabMergeRequestChangeDC,
+} from "@/shared/api/gitlab";
+import { buildChangeFileKeysWithDiscussions } from "@/shared/lib/gitlab/diff-discussions";
 import {
   buildChangesTree,
   type ChangeFileStatus,
@@ -189,6 +193,7 @@ const TreeNodeView = memo(
     depth,
     activeFileKey,
     expandedPaths,
+    fileKeysWithDiscussions,
     onToggleFolder,
     onSelectFile,
     onActiveFileChange,
@@ -197,6 +202,7 @@ const TreeNodeView = memo(
     depth: number;
     activeFileKey: string | null;
     expandedPaths: Set<string>;
+    fileKeysWithDiscussions: ReadonlySet<string>;
     onToggleFolder: (path: string) => void;
     onSelectFile: (change: GitLabMergeRequestChangeDC) => void;
     onActiveFileChange?: (fileKey: string) => void;
@@ -238,6 +244,7 @@ const TreeNodeView = memo(
                   depth={depth + 1}
                   activeFileKey={activeFileKey}
                   expandedPaths={expandedPaths}
+                  fileKeysWithDiscussions={fileKeysWithDiscussions}
                   onToggleFolder={onToggleFolder}
                   onSelectFile={onSelectFile}
                   onActiveFileChange={onActiveFileChange}
@@ -250,6 +257,7 @@ const TreeNodeView = memo(
     }
 
     const isActive = activeFileKey === node.id;
+    const hasDiscussions = fileKeysWithDiscussions.has(node.id);
 
     return (
       <button
@@ -282,6 +290,15 @@ const TreeNodeView = memo(
             <span className="changes-file-tree__stat-removed">−{node.deletions}</span>
           )}
         </span>
+        {hasDiscussions && (
+          <span
+            className="changes-file-tree__comment-icon"
+            title="Есть комментарии"
+            aria-hidden="true"
+          >
+            <Comment />
+          </span>
+        )}
         <FileStatusIcon status={node.status} />
       </button>
     );
@@ -291,14 +308,20 @@ const TreeNodeView = memo(
 export const ChangesFileTree = memo(
   ({
     changes,
+    discussions,
     activeFileKey,
     onActiveFileChange,
   }: {
     changes: GitLabMergeRequestChangeDC[];
+    discussions: GitLabDiscussionDC[];
     activeFileKey: string | null;
     onActiveFileChange?: (fileKey: string) => void;
   }) => {
     const tree = useMemo(() => buildChangesTree(changes), [changes]);
+    const fileKeysWithDiscussions = useMemo(
+      () => buildChangeFileKeysWithDiscussions(discussions, changes),
+      [changes, discussions],
+    );
     const navRef = useRef<HTMLElement>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const filteredTree = useMemo(
@@ -387,6 +410,7 @@ export const ChangesFileTree = memo(
               depth={0}
               activeFileKey={activeFileKey}
               expandedPaths={expandedPaths}
+              fileKeysWithDiscussions={fileKeysWithDiscussions}
               onToggleFolder={handleToggleFolder}
               onSelectFile={scrollToDiffFile}
               onActiveFileChange={onActiveFileChange}

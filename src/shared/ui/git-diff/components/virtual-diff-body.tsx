@@ -325,38 +325,38 @@ const StaticDiffBody = memo(
     }, [onRegisterScrollToRow]);
 
     return (
-    <div className="w-full pl-7">
-      {rows.map((row) => (
-        <div
-          key={row.id}
-          className={getDiffRowLayoutClassName(row)}
-          data-diff-row-id={row.id}
-        >
-          <VirtualDiffRowView
-          row={row}
-          canComment={canComment}
-          selectedLineKeys={selectedLineKeys}
-          selectionStartKey={selectionStartKey}
-          selectionEndKey={selectionEndKey}
-          commentBody={commentBody}
-          submitError={submitError}
-          isSubmitting={isSubmitting}
-          selectionRangeLabel={selectionRangeLabel}
-          onLineClick={onLineClick}
-          onLineMouseDown={onLineMouseDown}
-          onLineMouseEnter={onLineMouseEnter}
-          onCommentBodyChange={onCommentBodyChange}
-          onCancelComment={onCancelComment}
-          onSubmitComment={onSubmitComment}
-          onExpandGap={onExpandGap}
-          onResolveThread={onResolveThread}
-          resolvingDiscussionId={resolvingDiscussionId}
-          isThreadExpanded={isThreadExpanded}
-          onToggleThreadExpanded={onToggleThreadExpanded}
-        />
-        </div>
-      ))}
-    </div>
+      <div className="w-full pl-7">
+        {rows.map((row) => (
+          <div
+            key={row.id}
+            className={getDiffRowLayoutClassName(row)}
+            data-diff-row-id={row.id}
+          >
+            <VirtualDiffRowView
+              row={row}
+              canComment={canComment}
+              selectedLineKeys={selectedLineKeys}
+              selectionStartKey={selectionStartKey}
+              selectionEndKey={selectionEndKey}
+              commentBody={commentBody}
+              submitError={submitError}
+              isSubmitting={isSubmitting}
+              selectionRangeLabel={selectionRangeLabel}
+              onLineClick={onLineClick}
+              onLineMouseDown={onLineMouseDown}
+              onLineMouseEnter={onLineMouseEnter}
+              onCommentBodyChange={onCommentBodyChange}
+              onCancelComment={onCancelComment}
+              onSubmitComment={onSubmitComment}
+              onExpandGap={onExpandGap}
+              onResolveThread={onResolveThread}
+              resolvingDiscussionId={resolvingDiscussionId}
+              isThreadExpanded={isThreadExpanded}
+              onToggleThreadExpanded={onToggleThreadExpanded}
+            />
+          </div>
+        ))}
+      </div>
     );
   },
 );
