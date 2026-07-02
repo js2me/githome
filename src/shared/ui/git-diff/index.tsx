@@ -1,34 +1,12 @@
-import { getDiffFileKey } from "@/shared/lib/diff-search";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { GitDiffFile } from "./components/git-diff-file";
 import "./styles.css";
 import { withPropsViewModel } from "mobx-view-model";
-import { GitDiffVM } from "./model";
+import { GitDiffVM } from "./model/git-diff-vm";
 
-export const GitDiff = withPropsViewModel(GitDiffVM,
-  ({
-    model: { payload: {
-      changes,
-      discussions,
-      canComment,
-      isSubmittingComment,
-      submitCommentError,
-      onAddComment,
-      onClearSubmitError,
-      headRef,
-      baseRef,
-      loadFileContent,
-      onResolveThread,
-      resolvingDiscussionId,
-      currentUserId,
-      onUpdateDiscussionNote,
-      updatingNoteKey,
-      updateNoteError,
-      onClearUpdateNoteError,
-      activeFileKey,
-      onActiveFileChange,
-      markdownScope, } }
-  }) => {
+export const GitDiff = withPropsViewModel(
+  GitDiffVM,
+  ({ model: { payload: { changes }, filesGitDiffs } }) => {
     if (changes.length === 0) {
       return (
         <StatusMessage>Изменения в merge request не найдены.</StatusMessage>
@@ -37,35 +15,9 @@ export const GitDiff = withPropsViewModel(GitDiffVM,
 
     return (
       <div className="git-diff flex flex-col gap-4 overflow-x-auto">
-        {changes.map((change) => {
-          const fileKey = getDiffFileKey(change.old_path, change.new_path);
-
-          return (
-            <GitDiffFile
-              key={`${change.new_path}:${change.old_path}`}
-              change={change}
-              discussions={discussions}
-              canComment={canComment}
-              isSubmittingComment={isSubmittingComment}
-              submitCommentError={submitCommentError}
-              onAddComment={onAddComment}
-              onClearSubmitError={onClearSubmitError}
-              headRef={headRef ?? null}
-              baseRef={baseRef ?? null}
-              loadFileContent={loadFileContent}
-              onResolveThread={onResolveThread}
-              resolvingDiscussionId={resolvingDiscussionId}
-              currentUserId={currentUserId}
-              onUpdateDiscussionNote={onUpdateDiscussionNote}
-              updatingNoteKey={updatingNoteKey}
-              updateNoteError={updateNoteError}
-              onClearUpdateNoteError={onClearUpdateNoteError}
-              isActive={activeFileKey === fileKey}
-              onActiveFileChange={onActiveFileChange}
-              markdownScope={markdownScope}
-            />
-          );
-        })}
+        {filesGitDiffs.map((fileModel) => (
+          <GitDiffFile key={fileModel.fileKey} model={fileModel} />
+        ))}
       </div>
     );
   },

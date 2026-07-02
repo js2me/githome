@@ -1,4 +1,5 @@
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { observer } from "mobx-react-lite";
 import {
   memo,
   useCallback,
@@ -18,6 +19,7 @@ import {
   isLineKeyInSelection,
   normalizeDiffLineSelection,
 } from "@/shared/lib/diff-line-selection";
+import type { FileGitDiff } from "../model/file-git-diff";
 import {
   DiffCommentFormRow,
   DiffExpandRow,
@@ -634,26 +636,12 @@ const VirtualizedDiffBody = memo(
   },
 );
 
-export const DiffBody = memo(
-  ({
-    rows,
-    virtualized,
+export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff }) => {
+  const { meta, rows, selection, navigation, parent } = fileGitDiff;
+  const {
     canComment,
-    lineSelection,
-    orderedLineKeys,
-    commentFormLineKey,
-    commentBody,
-    submitError,
-    isSubmitting,
-    selectionRangeLabel,
-    onLineClick,
-    onLineMouseDown,
-    onLineMouseEnter,
-    onCommentBodyChange,
-    onCancelComment,
-    onSubmitComment,
-    onExpandGap,
-    onRegisterScrollToRow,
+    isSubmittingComment,
+    submitCommentError,
     onResolveThread,
     resolvingDiscussionId,
     currentUserId,
@@ -662,108 +650,66 @@ export const DiffBody = memo(
     updateNoteError,
     onClearUpdateNoteError,
     markdownScope,
-  }: {
-    rows: VirtualDiffRow[];
-    virtualized: boolean;
-    canComment: boolean;
-    lineSelection: DiffLineSelection | null;
-    orderedLineKeys: string[];
-    commentFormLineKey: string | null;
-    commentBody: string;
-    submitError: string | null;
-    isSubmitting: boolean;
-    selectionRangeLabel: string | null;
-    onLineClick: (lineKey: string, shiftKey: boolean) => void;
-    onLineMouseDown: (lineKey: string) => void;
-    onLineMouseEnter: (lineKey: string) => void;
-    onCommentBodyChange: (value: string) => void;
-    onCancelComment: () => void;
-    onSubmitComment: () => void;
-    onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
-    onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
-  } & DiffThreadResolveProps) => {
-    const {
-      isThreadExpanded,
-      toggleThreadExpanded,
-      expandedDiscussionIds,
-      collapseThreads,
-    } = useResolvedThreadExpansion();
-    const expandedThreadSignature = Array.from(expandedDiscussionIds).join(",");
-    const resolvedThreadIds = useMemo(() => {
-      const ids = new Set<string>();
-      for (const row of rows) {
-        if (row.type === "thread" && row.thread.resolved) {
-          ids.add(row.thread.discussionId);
-        }
+  } = parent.payload;
+
+  const virtualRows = rows.virtualRows;
+  const virtualized = rows.virtualized;
+  const orderedLineKeys = rows.orderedLineKeys;
+  const commentFormLineKey = rows.commentFormLineKey;
+  const selectionRangeLabel = rows.selectionRangeLabel;
+  const lineSelection = selection.lineSelection;
+  const commentBody = selection.commentBody;
+  const onExpandGap = meta.canExpand ? fileGitDiff.expand.expandGap : undefined;
+
+  const {
+    isThreadExpanded,
+    toggleThreadExpanded,
+    expandedDiscussionIds,
+    collapseThreads,
+  } = useResolvedThreadExpansion();
+  const expandedThreadSignature = Array.from(expandedDiscussionIds).join(",");
+  const resolvedThreadIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of virtualRows) {
+      if (row.type === "thread" && row.thread.resolved) {
+        ids.add(row.thread.discussionId);
       }
-      return ids;
-    }, [rows]);
-    const prevResolvedThreadIdsRef = useRef<Set<string>>(new Set());
-
-    useEffect(() => {
-      const newlyResolved = [...resolvedThreadIds].filter(
-        (id) => !prevResolvedThreadIdsRef.current.has(id),
-      );
-      prevResolvedThreadIdsRef.current = resolvedThreadIds;
-
-      if (newlyResolved.length > 0) {
-        collapseThreads(newlyResolved);
-      }
-    }, [collapseThreads, resolvedThreadIds]);
-
-    if (virtualized) {
-      return (
-        <VirtualizedDiffBody
-          rows={rows}
-          canComment={canComment}
-          lineSelection={lineSelection}
-          orderedLineKeys={orderedLineKeys}
-          commentFormLineKey={commentFormLineKey}
-          commentBody={commentBody}
-          submitError={submitError}
-          isSubmitting={isSubmitting}
-          selectionRangeLabel={selectionRangeLabel}
-          onLineClick={onLineClick}
-          onLineMouseDown={onLineMouseDown}
-          onLineMouseEnter={onLineMouseEnter}
-          onCommentBodyChange={onCommentBodyChange}
-          onCancelComment={onCancelComment}
-          onSubmitComment={onSubmitComment}
-          onExpandGap={onExpandGap}
-          onRegisterScrollToRow={onRegisterScrollToRow}
-          onResolveThread={onResolveThread}
-          resolvingDiscussionId={resolvingDiscussionId}
-          currentUserId={currentUserId}
-          onUpdateDiscussionNote={onUpdateDiscussionNote}
-          updatingNoteKey={updatingNoteKey}
-          updateNoteError={updateNoteError}
-          onClearUpdateNoteError={onClearUpdateNoteError}
-          markdownScope={markdownScope}
-          isThreadExpanded={isThreadExpanded}
-          onToggleThreadExpanded={toggleThreadExpanded}
-          expandedThreadSignature={expandedThreadSignature}
-        />
-      );
     }
+    return ids;
+  }, [virtualRows]);
+  const prevResolvedThreadIdsRef = useRef<Set<string>>(new Set());
 
+  useEffect(() => {
+    const newlyResolved = [...resolvedThreadIds].filter(
+      (id) => !prevResolvedThreadIdsRef.current.has(id),
+    );
+    prevResolvedThreadIdsRef.current = resolvedThreadIds;
+
+    if (newlyResolved.length > 0) {
+      collapseThreads(newlyResolved);
+    }
+  }, [collapseThreads, resolvedThreadIds]);
+
+  if (virtualized) {
     return (
-      <StaticDiffBody
-        rows={rows}
+      <VirtualizedDiffBody
+        rows={virtualRows}
         canComment={canComment}
         lineSelection={lineSelection}
         orderedLineKeys={orderedLineKeys}
+        commentFormLineKey={commentFormLineKey}
         commentBody={commentBody}
-        submitError={submitError}
-        isSubmitting={isSubmitting}
+        submitError={submitCommentError}
+        isSubmitting={isSubmittingComment}
         selectionRangeLabel={selectionRangeLabel}
-        onLineClick={onLineClick}
-        onLineMouseDown={onLineMouseDown}
-        onLineMouseEnter={onLineMouseEnter}
-        onCommentBodyChange={onCommentBodyChange}
-        onCancelComment={onCancelComment}
-        onSubmitComment={onSubmitComment}
+        onLineClick={selection.handleLineClick}
+        onLineMouseDown={selection.handleLineMouseDown}
+        onLineMouseEnter={selection.handleLineMouseEnter}
+        onCommentBodyChange={selection.setCommentBody}
+        onCancelComment={selection.clearSelection}
+        onSubmitComment={selection.submitLineComment}
         onExpandGap={onExpandGap}
-        onRegisterScrollToRow={onRegisterScrollToRow}
+        onRegisterScrollToRow={navigation.registerScrollToRow}
         onResolveThread={onResolveThread}
         resolvingDiscussionId={resolvingDiscussionId}
         currentUserId={currentUserId}
@@ -774,7 +720,39 @@ export const DiffBody = memo(
         markdownScope={markdownScope}
         isThreadExpanded={isThreadExpanded}
         onToggleThreadExpanded={toggleThreadExpanded}
+        expandedThreadSignature={expandedThreadSignature}
       />
     );
-  },
-);
+  }
+
+  return (
+    <StaticDiffBody
+      rows={virtualRows}
+      canComment={canComment}
+      lineSelection={lineSelection}
+      orderedLineKeys={orderedLineKeys}
+      commentBody={commentBody}
+      submitError={submitCommentError}
+      isSubmitting={isSubmittingComment}
+      selectionRangeLabel={selectionRangeLabel}
+      onLineClick={selection.handleLineClick}
+      onLineMouseDown={selection.handleLineMouseDown}
+      onLineMouseEnter={selection.handleLineMouseEnter}
+      onCommentBodyChange={selection.setCommentBody}
+      onCancelComment={selection.clearSelection}
+      onSubmitComment={selection.submitLineComment}
+      onExpandGap={onExpandGap}
+      onRegisterScrollToRow={navigation.registerScrollToRow}
+      onResolveThread={onResolveThread}
+      resolvingDiscussionId={resolvingDiscussionId}
+      currentUserId={currentUserId}
+      onUpdateDiscussionNote={onUpdateDiscussionNote}
+      updatingNoteKey={updatingNoteKey}
+      updateNoteError={updateNoteError}
+      onClearUpdateNoteError={onClearUpdateNoteError}
+      markdownScope={markdownScope}
+      isThreadExpanded={isThreadExpanded}
+      onToggleThreadExpanded={toggleThreadExpanded}
+    />
+  );
+});
