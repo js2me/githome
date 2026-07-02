@@ -10,6 +10,7 @@ import {
   type RefObject,
 } from "react";
 import type { InlineDiffThread } from "@/shared/lib/gitlab/diff-discussions";
+import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
 import type { VirtualDiffRow } from "@/shared/lib/build-diff-virtual-rows";
 import type { DiffExpandMode } from "@/shared/lib/expand-diff-context";
 import type { DiffLineSelection } from "@/shared/lib/diff-line-selection";
@@ -53,6 +54,7 @@ const getDiffRowLayoutClassName = (row: VirtualDiffRow) =>
   isDiffCodeRow(row) ? "w-full min-w-max" : "w-full min-w-full";
 
 type DiffThreadResolveProps = {
+  markdownScope?: GitlabMarkdownScope;
   onResolveThread?: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId?: string | null;
   currentUserId?: number | null;
@@ -151,6 +153,7 @@ const VirtualDiffRowView = memo(
     updatingNoteKey,
     updateNoteError,
     onClearUpdateNoteError,
+    markdownScope,
     isThreadExpanded,
     onToggleThreadExpanded,
   }: {
@@ -234,6 +237,7 @@ const VirtualDiffRowView = memo(
     if (row.type === "thread") {
       return (
         <DiffThreadRow
+          markdownScope={markdownScope}
           thread={row.thread}
           onResolveThread={onResolveThread}
           resolvingDiscussionId={resolvingDiscussionId}
@@ -250,6 +254,7 @@ const VirtualDiffRowView = memo(
 
     return (
       <DiffCommentFormRow
+        markdownScope={markdownScope}
         commentBody={commentBody}
         errorMessage={submitError}
         isSubmitting={isSubmitting}
@@ -287,6 +292,7 @@ const StaticDiffBody = memo(
     updatingNoteKey,
     updateNoteError,
     onClearUpdateNoteError,
+    markdownScope,
     isThreadExpanded,
     onToggleThreadExpanded,
   }: {
@@ -380,6 +386,7 @@ const StaticDiffBody = memo(
               updatingNoteKey={updatingNoteKey}
               updateNoteError={updateNoteError}
               onClearUpdateNoteError={onClearUpdateNoteError}
+              markdownScope={markdownScope}
               isThreadExpanded={isThreadExpanded}
               onToggleThreadExpanded={onToggleThreadExpanded}
             />
@@ -451,6 +458,7 @@ const VirtualizedDiffBody = memo(
     updatingNoteKey,
     updateNoteError,
     onClearUpdateNoteError,
+    markdownScope,
     isThreadExpanded,
     onToggleThreadExpanded,
     expandedThreadSignature,
@@ -613,6 +621,7 @@ const VirtualizedDiffBody = memo(
                   updatingNoteKey={updatingNoteKey}
                   updateNoteError={updateNoteError}
                   onClearUpdateNoteError={onClearUpdateNoteError}
+                  markdownScope={markdownScope}
                   isThreadExpanded={isThreadExpanded}
                   onToggleThreadExpanded={onToggleThreadExpanded}
                 />
@@ -652,6 +661,7 @@ export const DiffBody = memo(
     updatingNoteKey,
     updateNoteError,
     onClearUpdateNoteError,
+    markdownScope,
   }: {
     rows: VirtualDiffRow[];
     virtualized: boolean;
@@ -728,6 +738,7 @@ export const DiffBody = memo(
           updatingNoteKey={updatingNoteKey}
           updateNoteError={updateNoteError}
           onClearUpdateNoteError={onClearUpdateNoteError}
+          markdownScope={markdownScope}
           isThreadExpanded={isThreadExpanded}
           onToggleThreadExpanded={toggleThreadExpanded}
           expandedThreadSignature={expandedThreadSignature}
@@ -760,6 +771,7 @@ export const DiffBody = memo(
         updatingNoteKey={updatingNoteKey}
         updateNoteError={updateNoteError}
         onClearUpdateNoteError={onClearUpdateNoteError}
+        markdownScope={markdownScope}
         isThreadExpanded={isThreadExpanded}
         onToggleThreadExpanded={toggleThreadExpanded}
       />

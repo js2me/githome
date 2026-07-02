@@ -26,7 +26,8 @@ export const GitDiff = withPropsViewModel(GitDiffVM,
       updateNoteError,
       onClearUpdateNoteError,
       activeFileKey,
-      onActiveFileChange, } }
+      onActiveFileChange,
+      markdownScope, } }
   }) => {
     if (changes.length === 0) {
       return (
@@ -61,6 +62,7 @@ export const GitDiff = withPropsViewModel(GitDiffVM,
               onClearUpdateNoteError={onClearUpdateNoteError}
               isActive={activeFileKey === fileKey}
               onActiveFileChange={onActiveFileChange}
+              markdownScope={markdownScope}
             />
           );
         })}

@@ -59,6 +59,8 @@ import {
 } from "@/shared/lib/diff-search";
 import { parseUnifiedDiff, type DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
 import type { DiffFileContentLoader } from "@/shared/lib/syntax-highlight/types";
+import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
+import { GitlabCommentEditor } from "@/shared/ui/gitlab-comment-editor";
 import { DiffFileCollapseBanner } from "./diff-file-collapse-banner";
 import { DiffThreadRow } from "./diff-rows";
 import { SearchHighlightedText, useDiffSearchRegistrationOptional, useRowSearchHighlight } from "./diff-search";
@@ -141,6 +143,7 @@ export const GitDiffFile = memo(
     onClearUpdateNoteError,
     isActive,
     onActiveFileChange,
+    markdownScope,
   }: {
     change: GitLabMergeRequestChangeDC;
     discussions: GitLabDiscussionDC[];
@@ -165,6 +168,7 @@ export const GitDiffFile = memo(
     onClearUpdateNoteError?: () => void;
     isActive?: boolean;
     onActiveFileChange?: (fileKey: string) => void;
+    markdownScope?: GitlabMarkdownScope;
   }) => {
     const badge = getChangeBadge(change);
     const filePath = getExpandFilePath(change);
@@ -179,7 +183,9 @@ export const GitDiffFile = memo(
     const [isResolvingDiff, setIsResolvingDiff] = useState(false);
 
     const effectiveDiff =
-      change.diff || expandedDiff || resolvedDiff || "";
+      isAutoCollapsed && !isFileExpanded
+        ? ""
+        : change.diff || expandedDiff || resolvedDiff || "";
 
     useEffect(() => {
       setIsFileExpanded(!isAutoCollapsed);
@@ -980,6 +986,7 @@ export const GitDiffFile = memo(
               updatingNoteKey={updatingNoteKey}
               updateNoteError={updateNoteError}
               onClearUpdateNoteError={onClearUpdateNoteError}
+              markdownScope={markdownScope}
             />
           </DiffSyntaxHighlightProvider>
         );
@@ -1075,20 +1082,37 @@ export const GitDiffFile = memo(
             </div>
           </div>
 
-          {parsed && (parsed.additions > 0 || parsed.deletions > 0) && (
-            <span className="flex shrink-0 items-center gap-2 font-mono text-xs font-bold">
-              {parsed.additions > 0 && (
-                <span className="text-[var(--diff-stats-added)]">
-                  +{parsed.additions}
-                </span>
-              )}
-              {parsed.deletions > 0 && (
-                <span className="text-[var(--diff-stats-removed)]">
-                  −{parsed.deletions}
-                </span>
-              )}
-            </span>
-          )}
+          {(() => {
+            const showCollapsedStats =
+              isAutoCollapsed &&
+              !isFileExpanded &&
+              (change.added_lines != null || change.removed_lines != null);
+            const additions = showCollapsedStats
+              ? (change.added_lines ?? 0)
+              : parsed?.additions ?? 0;
+            const deletions = showCollapsedStats
+              ? (change.removed_lines ?? 0)
+              : parsed?.deletions ?? 0;
+
+            if (additions <= 0 && deletions <= 0) {
+              return null;
+            }
+
+            return (
+              <span className="flex shrink-0 items-center gap-2 font-mono text-xs font-bold">
+                {additions > 0 && (
+                  <span className="text-[var(--diff-stats-added)]">
+                    +{additions}
+                  </span>
+                )}
+                {deletions > 0 && (
+                  <span className="text-[var(--diff-stats-removed)]">
+                    −{deletions}
+                  </span>
+                )}
+              </span>
+            );
+          })()}
 
           {badge && (
             <span className={diffFileBadgeVariants({ badge })}>
@@ -1124,12 +1148,13 @@ export const GitDiffFile = memo(
             <div className="mb-2 text-xs font-semibold text-blue-700 dark:text-blue-300">
               Комментарий к файлу
             </div>
-            <textarea
-              className="min-h-[72px] w-full resize-y rounded-lg border border-orange-300 bg-white px-3 py-2.5 text-slate-900 outline-none focus:border-brand focus:shadow-[0_0_0_3px_var(--color-brand-focus-shadow)] disabled:opacity-60 dark:border-orange-800 dark:bg-canvas-default dark:text-slate-200"
+            <GitlabCommentEditor
+              projectId={markdownScope?.projectId ?? null}
+              editorClassName="border-orange-300 dark:border-orange-800"
               placeholder="Оставьте комментарий к файлу"
               value={fileCommentBody}
               disabled={isSubmittingComment}
-              onChange={(event) => setFileCommentBody(event.target.value)}
+              onChange={setFileCommentBody}
             />
             {submitCommentError && (
               <div className="mt-2 text-xs text-red-600 dark:text-red-300">
@@ -1171,6 +1196,7 @@ export const GitDiffFile = memo(
                 updatingNoteKey={updatingNoteKey}
                 updateNoteError={updateNoteError}
                 onClearUpdateNoteError={onClearUpdateNoteError}
+                markdownScope={markdownScope}
               />
             ))}
           </div>

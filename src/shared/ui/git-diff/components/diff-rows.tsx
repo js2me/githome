@@ -23,6 +23,7 @@ import {
 import type { GitLabNoteDC } from "@/shared/api/gitlab";
 import type { WordDiffSegment } from "@/shared/lib/compute-word-diff";
 import { cn } from "@/shared/lib/cn";
+import { GitlabCommentEditor } from "@/shared/ui/gitlab-comment-editor";
 import type { InlineDiffThread } from "@/shared/lib/gitlab/diff-discussions";
 import {
   canEditGitLabNote,
@@ -30,7 +31,8 @@ import {
 } from "@/shared/lib/gitlab/note-permissions";
 import type { DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
+import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { useDiffSyntaxHighlight } from "./diff-syntax-highlight";
 import { SearchHighlightedText, useRowSearchHighlight } from "./diff-search";
 import { HighlightedCode } from "./highlighted-code";
@@ -563,6 +565,7 @@ export const DiffLineRow = memo(
 
 const InlineThreadNote = memo(
   ({
+    markdownScope,
     note,
     discussionId,
     isReply = false,
@@ -573,6 +576,7 @@ const InlineThreadNote = memo(
     updateNoteError = null,
     onClearUpdateNoteError,
   }: {
+    markdownScope?: GitlabMarkdownScope;
     note: GitLabNoteDC;
     discussionId: string;
     isReply?: boolean;
@@ -670,11 +674,12 @@ const InlineThreadNote = memo(
 
           {isEditing ? (
             <div>
-              <textarea
-                className="min-h-[72px] w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand focus:shadow-[0_0_0_3px_var(--color-brand-focus-shadow)] disabled:opacity-60 dark:border-slate-700 dark:bg-canvas-default dark:text-slate-200"
+              <GitlabCommentEditor
+                projectId={markdownScope?.projectId ?? null}
+                className="text-sm"
                 value={editBody}
-                onChange={(event) => {
-                  setEditBody(event.target.value);
+                onChange={(value) => {
+                  setEditBody(value);
                   if (updateNoteError) {
                     onClearUpdateNoteError?.();
                   }
@@ -712,6 +717,9 @@ const InlineThreadNote = memo(
             </div>
           ) : (
             <GitLabMarkdown
+              connection={markdownScope?.connection ?? null}
+              projectPath={markdownScope?.projectPath ?? ""}
+              projectId={markdownScope?.projectId ?? 0}
               text={note.body}
               className="min-w-0 max-w-full text-sm leading-normal text-slate-800 dark:text-slate-300"
             />
@@ -724,6 +732,7 @@ const InlineThreadNote = memo(
 
 export const DiffThreadRow = memo(
   ({
+    markdownScope,
     thread,
     onResolveThread,
     resolvingDiscussionId,
@@ -736,6 +745,7 @@ export const DiffThreadRow = memo(
     updateNoteError,
     onClearUpdateNoteError,
   }: {
+    markdownScope?: GitlabMarkdownScope;
     thread: InlineDiffThread;
     onResolveThread?: (discussionId: string, resolved: boolean) => void;
     resolvingDiscussionId?: string | null;
@@ -803,6 +813,7 @@ export const DiffThreadRow = memo(
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-gray-900">
             <div className="p-3.5">
               <InlineThreadNote
+                markdownScope={markdownScope}
                 note={firstNote}
                 discussionId={thread.discussionId}
                 resolvedBy={resolvedBy}
@@ -818,6 +829,7 @@ export const DiffThreadRow = memo(
                   {replies.map((note) => (
                     <InlineThreadNote
                       key={note.id}
+                      markdownScope={markdownScope}
                       note={note}
                       discussionId={thread.discussionId}
                       isReply
@@ -855,6 +867,7 @@ export const DiffThreadRow = memo(
 
 export const DiffCommentFormRow = memo(
   ({
+    markdownScope,
     commentBody,
     errorMessage,
     isSubmitting,
@@ -863,6 +876,7 @@ export const DiffCommentFormRow = memo(
     onCancel,
     onSubmit,
   }: {
+    markdownScope?: GitlabMarkdownScope;
     commentBody: string;
     errorMessage: string | null;
     isSubmitting: boolean;
@@ -878,11 +892,12 @@ export const DiffCommentFormRow = memo(
             Комментарий к строкам {rangeLabel}
           </div>
         )}
-        <textarea
-          className="min-h-[72px] w-full resize-y rounded-lg border border-orange-300 bg-white px-3 py-2.5 text-slate-900 outline-none focus:border-brand focus:shadow-[0_0_0_3px_var(--color-brand-focus-shadow)] disabled:opacity-60 dark:border-orange-800 dark:bg-canvas-default dark:text-slate-200"
+        <GitlabCommentEditor
+          projectId={markdownScope?.projectId ?? null}
+          editorClassName="border-orange-300 dark:border-orange-800"
           placeholder="Напишите комментарий..."
           value={commentBody}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={onChange}
           rows={3}
           disabled={isSubmitting}
         />

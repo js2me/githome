@@ -1,3 +1,4 @@
+import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
 import { cva, type VariantProps } from "yummies/css";
 
 export const mrStateBadgeVariants = cva(
@@ -37,4 +38,48 @@ export const getMrStateBadgeState = (state: string): MrStateBadgeState => {
   }
 
   return "draft";
+};
+
+const isDraft = (mergeRequest: GitLabMergeRequestDC) =>
+  mergeRequest.draft ?? mergeRequest.work_in_progress ?? false;
+
+const getStateLabel = (mergeRequest: GitLabMergeRequestDC) => {
+  if (isDraft(mergeRequest)) {
+    return "Draft";
+  }
+
+  if (mergeRequest.state === "opened") {
+    return "Open";
+  }
+
+  if (mergeRequest.state === "merged") {
+    return "Merged";
+  }
+
+  if (mergeRequest.state === "closed") {
+    return "Closed";
+  }
+
+  return mergeRequest.state;
+};
+
+export const MrStateBadge = ({
+  mergeRequest,
+  size = "sm",
+}: {
+  mergeRequest: GitLabMergeRequestDC;
+  size?: NonNullable<VariantProps<typeof mrStateBadgeVariants>["size"]>;
+}) => {
+  const stateKey = isDraft(mergeRequest) ? "draft" : mergeRequest.state;
+
+  return (
+    <span
+      className={mrStateBadgeVariants({
+        state: getMrStateBadgeState(stateKey),
+        size,
+      })}
+    >
+      {getStateLabel(mergeRequest)}
+    </span>
+  );
 };

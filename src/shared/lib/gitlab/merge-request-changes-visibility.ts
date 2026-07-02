@@ -1,21 +1,15 @@
 import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
 
-export const isHiddenMergeRequestChange = (
+export const isGeneratedMergeRequestChange = (
   change: GitLabMergeRequestChangeDC,
-): boolean => {
-  if (change.diff?.trim() || change.too_large) {
-    return false;
-  }
-
-  return Boolean(change.generated_file);
-};
+): boolean =>
+  Boolean(change.generated_file || change.collapsed);
 
 export const isAutoCollapsedMergeRequestChange = (
   change: GitLabMergeRequestChangeDC,
 ): boolean =>
-  !change.diff?.trim() && !change.too_large && Boolean(change.generated_file);
+  !change.too_large && isGeneratedMergeRequestChange(change);
 
 export const getVisibleMergeRequestChanges = (
   changes: GitLabMergeRequestChangeDC[],
-): GitLabMergeRequestChangeDC[] =>
-  changes.filter((change) => !isHiddenMergeRequestChange(change));
+): GitLabMergeRequestChangeDC[] => changes;

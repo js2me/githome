@@ -4,7 +4,7 @@ import type {
 } from "@/shared/api/gitlab";
 import type { MergeRequestApprovalView } from "@/shared/lib/gitlab/merge-request-approval-view";
 import type { MrReviewAction } from "../../model/mr-info";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 
 const getReviewerStateLabel = (state: string) => {

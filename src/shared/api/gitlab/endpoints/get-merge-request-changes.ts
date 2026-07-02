@@ -31,6 +31,17 @@ interface GitLabCompareResponseDC {
   compare_timeout?: boolean;
 }
 
+interface GitLabDiffFileMetadataDC {
+  generated_file?: boolean;
+  collapsed?: boolean;
+  too_large?: boolean;
+  added_lines?: number;
+  removed_lines?: number;
+}
+
+const getDiffFileMetadataKey = (oldPath: string, newPath: string) =>
+  `${oldPath}\0${newPath}`;
+
 const mapCompareDiffToChange = (
   diff: GitLabCompareDiffDC,
 ): GitLabMergeRequestChangeDC => ({
@@ -64,6 +75,104 @@ const mapBatchFileToChange = (
     removed_lines: file.removed_lines,
     file_hash: file.file_hash,
   };
+};
+
+const fetchMergeRequestDiffMetadata = async (
+  connection: GitLabConnection,
+  project: GitLabProjectDC,
+  mergeRequestIid: number,
+  versionId: number | undefined,
+  signal?: AbortSignal,
+): Promise<Map<string, GitLabDiffFileMetadataDC>> => {
+  const metadata = new Map<string, GitLabDiffFileMetadataDC>();
+  let page = 1;
+
+  const diffsPath = versionId
+    ? `/projects/${project.id}/merge_requests/${mergeRequestIid}/versions/${versionId}`
+    : `/projects/${project.id}/merge_requests/${mergeRequestIid}/diffs`;
+
+  while (true) {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: "100",
+      unidiff: "true",
+    });
+
+    const response = await gitlabFetch(
+      connection,
+      `${diffsPath}?${params}`,
+      signal,
+    );
+
+    const pageDiffs = (await response.json()) as Array<
+      GitLabDiffFileMetadataDC & { old_path: string; new_path: string }
+    >;
+
+    for (const file of pageDiffs) {
+      metadata.set(getDiffFileMetadataKey(file.old_path, file.new_path), {
+        generated_file: file.generated_file,
+        collapsed: file.collapsed,
+        too_large: file.too_large,
+        added_lines: file.added_lines,
+        removed_lines: file.removed_lines,
+      });
+    }
+
+    const nextPage = response.headers.get("x-next-page");
+    if (!nextPage) {
+      break;
+    }
+
+    page = Number(nextPage);
+  }
+
+  return metadata;
+};
+
+const enrichChangesWithDiffMetadata = (
+  changes: GitLabMergeRequestChangeDC[],
+  metadata: Map<string, GitLabDiffFileMetadataDC>,
+): GitLabMergeRequestChangeDC[] =>
+  changes.map((change) => {
+    const meta = metadata.get(
+      getDiffFileMetadataKey(change.old_path, change.new_path),
+    );
+
+    if (!meta) {
+      return change;
+    }
+
+    return {
+      ...change,
+      generated_file: meta.generated_file || undefined,
+      collapsed: meta.collapsed || undefined,
+      too_large: meta.too_large || change.too_large,
+      added_lines: meta.added_lines ?? change.added_lines,
+      removed_lines: meta.removed_lines ?? change.removed_lines,
+    };
+  });
+
+const enrichChangesFromDiffsApi = async (
+  connection: GitLabConnection,
+  project: GitLabProjectDC,
+  mergeRequestIid: number,
+  versionId: number | undefined,
+  changes: GitLabMergeRequestChangeDC[],
+  signal?: AbortSignal,
+): Promise<GitLabMergeRequestChangeDC[]> => {
+  try {
+    const metadata = await fetchMergeRequestDiffMetadata(
+      connection,
+      project,
+      mergeRequestIid,
+      versionId,
+      signal,
+    );
+
+    return enrichChangesWithDiffMetadata(changes, metadata);
+  } catch {
+    return changes;
+  }
 };
 
 const fetchMergeRequestDiffsBatch = async (
@@ -219,36 +328,7 @@ export const getMergeRequestChanges = async (
     isOpen = mergeRequest.state === "opened";
   }
 
-  // 1. repository/compare — работает с PAT; для открытых MR targetBranch→headSha = diff_head
-  if (isOpen && !version && targetBranch && headSha) {
-    try {
-      return await fetchMergeRequestChangesViaCompare(
-        connection,
-        project,
-        targetBranch,
-        headSha,
-        signal,
-      );
-    } catch {
-      // target branch ref may be unresolvable or compare may time out
-    }
-  }
-
-  if (startSha && headSha) {
-    try {
-      return await fetchMergeRequestChangesViaCompare(
-        connection,
-        project,
-        startSha,
-        headSha,
-        signal,
-      );
-    } catch {
-      // compare can time out on very large diffs
-    }
-  }
-
-  // 2. diffs_batch.json — web UI (на corp GitLab часто не работает с PAT)
+  // 1. diffs_batch.json — web UI, совпадает с поведением GitLab (collapsed/generated)
   try {
     return await fetchMergeRequestDiffsBatch(
       connection,
@@ -261,7 +341,7 @@ export const getMergeRequestChanges = async (
     // endpoint может отсутствовать или требовать browser session
   }
 
-  // 3. REST /diffs или /versions/:id — последний fallback
+  // 2. REST /diffs или /versions/:id — метаданные generated_file/collapsed
   try {
     return await fetchAllMergeRequestDiffs(
       connection,
@@ -272,6 +352,53 @@ export const getMergeRequestChanges = async (
     );
   } catch {
     // может не работать на некоторых инстансах
+  }
+
+  // 3. repository/compare — работает с PAT; обогащаем метаданными из /diffs
+  if (isOpen && !version && targetBranch && headSha) {
+    try {
+      const changes = await fetchMergeRequestChangesViaCompare(
+        connection,
+        project,
+        targetBranch,
+        headSha,
+        signal,
+      );
+
+      return enrichChangesFromDiffsApi(
+        connection,
+        project,
+        mergeRequestIid,
+        resolvedVersionId,
+        changes,
+        signal,
+      );
+    } catch {
+      // target branch ref may be unresolvable or compare may time out
+    }
+  }
+
+  if (startSha && headSha) {
+    try {
+      const changes = await fetchMergeRequestChangesViaCompare(
+        connection,
+        project,
+        startSha,
+        headSha,
+        signal,
+      );
+
+      return enrichChangesFromDiffsApi(
+        connection,
+        project,
+        mergeRequestIid,
+        resolvedVersionId,
+        changes,
+        signal,
+      );
+    } catch {
+      // compare can time out on very large diffs
+    }
   }
 
   throw new Error("Failed to fetch merge request changes");

@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite";
 import { useViewModel } from "mobx-view-model-react";
 import type { GitLabProjectDC } from "@/shared/api/gitlab";
 import { cn } from "@/shared/lib/cn";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { LayoutVM } from "../model/layout-vm";
 import { ConnectionPicker } from "./connection-picker";
 

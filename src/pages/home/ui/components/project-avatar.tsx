@@ -1,6 +1,6 @@
 import type { GitlabProjectInfo } from "@/entities/gitlab-projects/model/gitlab-project-info";
 import { cn } from "@/shared/lib/cn";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 
 export const ProjectAvatar = ({
   project,

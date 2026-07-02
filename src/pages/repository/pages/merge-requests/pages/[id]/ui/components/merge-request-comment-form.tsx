@@ -1,13 +1,16 @@
 import { useCallback, useState } from "react";
+import { GitlabCommentEditor } from "@/shared/ui/gitlab-comment-editor";
 import { StatusMessage } from "@/shared/ui/status-message";
 
 export const MergeRequestCommentForm = ({
+  projectId,
   canComment,
   isSubmitting,
   submitError,
   onSubmit,
   onClearSubmitError,
 }: {
+  projectId: number;
   canComment: boolean;
   isSubmitting: boolean;
   submitError: string | null;
@@ -46,11 +49,12 @@ export const MergeRequestCommentForm = ({
       </div>
 
       <div className="px-4 py-3.5">
-        <textarea
-          className="min-h-[96px] w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-slate-900 outline-none focus:border-brand focus:shadow-[0_0_0_3px_var(--color-brand-focus-shadow)] disabled:opacity-60 dark:border-slate-700 dark:bg-canvas-default dark:text-slate-200"
+        <GitlabCommentEditor
+          projectId={projectId}
+          className="min-h-[96px]"
           placeholder="Напишите общий комментарий к этому merge request..."
           value={body}
-          onChange={(event) => handleChange(event.target.value)}
+          onChange={handleChange}
           rows={4}
           disabled={isSubmitting}
         />

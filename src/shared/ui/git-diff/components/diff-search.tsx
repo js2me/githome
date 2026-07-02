@@ -5,6 +5,7 @@ import {
   useContext,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -337,7 +338,7 @@ export const DiffSearchStickyMiniBar = memo(() => {
   }
 
   const shouldShow =
-    !ui.isMainBarInView && (ui.query.length > 0 || ui.miniBarActive);
+    ui.miniBarActive || (!ui.isMainBarInView && ui.query.length > 0);
 
   if (!shouldShow) {
     return null;
@@ -377,6 +378,7 @@ export const DiffSearchProvider = memo(
   const [miniBarActive, setMiniBarActive] = useState(false);
   const [isMainBarInView, setIsMainBarInView] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [focusRequestId, setFocusRequestId] = useState(0);
   const [registryVersion, setRegistryVersion] = useState(0);
   const deferredQuery = useDeferredValue(query);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -481,23 +483,51 @@ export const DiffSearchProvider = memo(
   const open = useCallback(() => {
     setIsOpen(true);
 
-    requestAnimationFrame(() => {
-      const useMiniBar = !isMainFindBarVisible();
-      setMiniBarActive(useMiniBar);
+    const mainBarVisible = isMainFindBarVisible();
+    setIsMainBarInView(mainBarVisible);
+    setMiniBarActive(!mainBarVisible);
+    setFocusRequestId((value) => value + 1);
+  }, [isMainFindBarVisible]);
 
-      requestAnimationFrame(() => {
-        if (useMiniBar) {
-          miniInputRef.current?.focus();
-          miniInputRef.current?.select();
-          return;
+  useLayoutEffect(() => {
+    if (focusRequestId === 0) {
+      return;
+    }
+
+    const focusSearchInput = () => {
+      if (miniBarActive) {
+        const miniInput = miniInputRef.current;
+        if (!miniInput) {
+          return false;
         }
 
-        setMiniBarActive(false);
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      });
+        miniInput.focus();
+        miniInput.select();
+        return true;
+      }
+
+      const mainInput = inputRef.current;
+      if (!mainInput) {
+        return false;
+      }
+
+      mainInput.focus();
+      mainInput.select();
+      return true;
+    };
+
+    if (focusSearchInput()) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      focusSearchInput();
     });
-  }, [isMainFindBarVisible]);
+
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [focusRequestId, miniBarActive]);
 
   const openRef = useRef(open);
   openRef.current = open;

@@ -1,5 +1,4 @@
 import { withViewModel } from "mobx-view-model-react";
-import { GitLabMarkdownProvider } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { MergeRequestPageVM } from "../model";
 import { MergeRequestDetail } from "./components/merge-request-detail";
@@ -9,10 +8,14 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
   const detailView = mrInfo.detailView;
   const connection = model.globals.stores.settings.activeConnection;
   const projectPath = model.project?.path_with_namespace ?? "";
+  const markdownScope = {
+    connection,
+    projectPath,
+    projectId: model.project?.id ?? 0,
+  };
 
   return (
-    <GitLabMarkdownProvider connection={connection} projectPath={projectPath}>
-      <section>
+    <section>
         {mrInfo.isLoading && (
           <StatusMessage>Загружаем merge request...</StatusMessage>
         )}
@@ -23,6 +26,7 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
 
         {detailView && (
             <MergeRequestDetail
+              markdownScope={markdownScope}
               mergeRequest={detailView.mergeRequest}
               changes={detailView.changes}
               changesError={detailView.changesError}
@@ -59,6 +63,5 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
             />
           )}
       </section>
-    </GitLabMarkdownProvider>
   );
 });

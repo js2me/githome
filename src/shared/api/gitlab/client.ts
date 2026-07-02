@@ -262,6 +262,36 @@ export const gitlabFetch = async (
   return response;
 };
 
+export const gitlabPostForm = async <T>(
+  connection: GitLabConnection,
+  path: string,
+  formData: FormData,
+  signal?: AbortSignal,
+): Promise<T> => {
+  const response = await fetch(
+    resolveGitlabRequestUrl(connection.gitlabUrl, `/api/v4${path}`),
+    {
+      method: "POST",
+      headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
+        "PRIVATE-TOKEN": connection.gitToken,
+      }),
+      body: formData,
+      signal,
+    },
+  );
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      errorBody
+        ? `GitLab API error: ${response.status} — ${errorBody}`
+        : `GitLab API error: ${response.status}`,
+    );
+  }
+
+  return (await response.json()) as T;
+};
+
 export const gitlabPost = async <T>(
   connection: GitLabConnection,
   path: string,

@@ -7,12 +7,10 @@ import type {
 import type { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
 import type { MergeRequestApprovalView } from "@/shared/lib/gitlab/merge-request-approval-view";
 import type { MrReviewAction } from "../../model/mr-info";
-import {
-  getMrStateBadgeState,
-  mrStateBadgeVariants,
-} from "@/shared/ui/mr-state-badge";
+import { MrStateBadge } from "@/entities/gitlab-merge-requests/ui/mr-state-badge";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
+import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { cn } from "@/shared/lib/cn";
 import { filterDiscussionsForActivity } from "@/shared/lib/gitlab/diff-discussions";
@@ -43,9 +41,6 @@ const formatDateTime = (value: string) => {
   });
 };
 
-const isDraft = (mergeRequest: GitLabMergeRequestDC) =>
-  mergeRequest.draft ?? mergeRequest.work_in_progress ?? false;
-
 const getAuthorName = (mergeRequest: GitLabMergeRequestDC) =>
   mergeRequest.author?.name ?? "Unknown";
 
@@ -63,26 +58,6 @@ const getAssigneeNames = (mergeRequest: GitLabMergeRequestDC) =>
   (mergeRequest.assignees ?? [])
     .map((assignee) => assignee.name)
     .filter((name): name is string => Boolean(name));
-
-const getStateLabel = (mergeRequest: GitLabMergeRequestDC) => {
-  if (isDraft(mergeRequest)) {
-    return "Draft";
-  }
-
-  if (mergeRequest.state === "opened") {
-    return "Open";
-  }
-
-  if (mergeRequest.state === "merged") {
-    return "Merged";
-  }
-
-  if (mergeRequest.state === "closed") {
-    return "Closed";
-  }
-
-  return mergeRequest.state;
-};
 
 const CopyIcon = ({ className = "" }: { className?: string }) => (
   <svg
@@ -193,6 +168,7 @@ const BranchLabel = ({
 };
 
 export const MergeRequestDetail = ({
+  markdownScope,
   mergeRequest,
   changes,
   changesError = null,
@@ -227,6 +203,7 @@ export const MergeRequestDetail = ({
   selectedDiffVersionId = null,
   onSelectDiffVersion,
 }: {
+  markdownScope: GitlabMarkdownScope;
   mergeRequest: GitLabMergeRequestDC;
   changes: GitLabMergeRequestChangeDC[];
   changesError?: string | null;
@@ -265,7 +242,6 @@ export const MergeRequestDetail = ({
   selectedDiffVersionId?: number | null;
   onSelectDiffVersion: (id: number | null) => void;
 }) => {
-  const stateKey = isDraft(mergeRequest) ? "draft" : mergeRequest.state;
   const authorName = getAuthorName(mergeRequest);
   const changesCount = getChangesCount(mergeRequest);
   const assigneeNames = getAssigneeNames(mergeRequest);
@@ -294,14 +270,7 @@ export const MergeRequestDetail = ({
           <h2 className="m-0 min-w-0 flex-1 text-[22px] leading-snug dark:text-slate-200">
             {mergeRequest.title}
           </h2>
-          <span
-            className={mrStateBadgeVariants({
-              state: getMrStateBadgeState(stateKey),
-              size: "md",
-            })}
-          >
-            {getStateLabel(mergeRequest)}
-          </span>
+          <MrStateBadge mergeRequest={mergeRequest} size="md" />
           <a
             className="ml-auto shrink-0 rounded-lg bg-orange-50 px-3 py-2 text-[13px] font-semibold text-orange-700 no-underline hover:bg-orange-100 dark:bg-orange-950 dark:text-orange-300 dark:hover:bg-orange-900"
             href={mergeRequest.web_url}
@@ -412,7 +381,10 @@ export const MergeRequestDetail = ({
           </button>
           {descriptionExpanded && (
             <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900">
-              <GitLabMarkdown text={description} />
+              <GitLabMarkdown
+                {...markdownScope}
+                text={description}
+              />
             </div>
           )}
         </section>
@@ -441,6 +413,7 @@ export const MergeRequestDetail = ({
         </button>
         {activityExpanded && (
           <MergeRequestDiscussions
+            markdownScope={markdownScope}
             discussions={activityDiscussions}
             onResolveDiscussion={onResolveDiscussion}
             resolvingDiscussionId={resolvingDiscussionId}
@@ -454,6 +427,7 @@ export const MergeRequestDetail = ({
       </section>
 
       <MergeRequestCommentForm
+        projectId={markdownScope.projectId}
         canComment={canCommentOnMr}
         isSubmitting={isSubmittingMrComment}
         submitError={submitMrCommentError}
@@ -479,6 +453,7 @@ export const MergeRequestDetail = ({
         </h3>
         {changesError && <StatusMessage error>{changesError}</StatusMessage>}
         <GitDiff
+          markdownScope={markdownScope}
           changes={changes}
           discussions={discussions}
           canComment={canComment}

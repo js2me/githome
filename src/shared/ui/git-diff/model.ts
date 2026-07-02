@@ -1,6 +1,7 @@
 import { GitLabDiscussionDC, GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
 import { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
 import { DiffFileContentLoader } from "@/shared/lib/syntax-highlight/types";
+import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
 import { ViewModelBase } from "mobx-view-model";
 
 export interface GitDiffPayload {
@@ -27,6 +28,7 @@ export interface GitDiffPayload {
   onClearUpdateNoteError?: () => void;
   activeFileKey?: string | null;
   onActiveFileChange?: (fileKey: string) => void;
+  markdownScope?: GitlabMarkdownScope;
 }
 
 export class GitDiffVM extends ViewModelBase<GitDiffPayload> {}

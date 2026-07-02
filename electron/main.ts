@@ -74,16 +74,6 @@ const createWindow = async () => {
     return { action: "deny" };
   });
 
-  mainWindow.webContents.on("before-input-event", (event, input) => {
-    if (
-      input.type === "keyDown" &&
-      (input.control || input.meta) &&
-      input.key.toLowerCase() === "f"
-    ) {
-      event.preventDefault();
-    }
-  });
-
   try {
     await mainWindow.loadURL(pageUrl);
   } catch (error) {

@@ -163,3 +163,11 @@ export interface GitLabProjectReadmeDC {
   content: string;
   encoding?: string;
 }
+
+export interface GitLabMarkdownUploadDC {
+  id: number;
+  alt: string;
+  url: string;
+  full_path: string;
+  markdown: string;
+}

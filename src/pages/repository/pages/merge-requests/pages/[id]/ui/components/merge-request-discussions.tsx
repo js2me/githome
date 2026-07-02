@@ -10,8 +10,10 @@ import {
   canEditGitLabNote,
   getDiscussionNoteKey,
 } from "@/shared/lib/gitlab/note-permissions";
+import { GitlabCommentEditor } from "@/shared/ui/gitlab-comment-editor";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
+import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { DiscussionResolveActions } from "./discussion-resolve-actions";
 
@@ -59,6 +61,7 @@ const AuthorAvatar = ({ note }: { note: GitLabNoteDC }) => {
 };
 
 const DiscussionNote = ({
+  markdownScope,
   note,
   discussionId,
   isReply,
@@ -68,6 +71,7 @@ const DiscussionNote = ({
   updateNoteError = null,
   onClearUpdateNoteError,
 }: {
+  markdownScope: GitlabMarkdownScope;
   note: GitLabNoteDC;
   discussionId: string;
   isReply: boolean;
@@ -173,11 +177,12 @@ const DiscussionNote = ({
 
         {isEditing ? (
           <div>
-            <textarea
-              className="min-h-[72px] w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand focus:shadow-[0_0_0_3px_var(--color-brand-focus-shadow)] disabled:opacity-60 dark:border-slate-700 dark:bg-canvas-default dark:text-slate-200"
+            <GitlabCommentEditor
+              projectId={markdownScope.projectId}
+              className="text-sm"
               value={editBody}
-              onChange={(event) => {
-                setEditBody(event.target.value);
+              onChange={(value) => {
+                setEditBody(value);
                 if (updateNoteError) {
                   onClearUpdateNoteError?.();
                 }
@@ -215,6 +220,7 @@ const DiscussionNote = ({
           </div>
         ) : (
           <GitLabMarkdown
+            {...markdownScope}
             text={note.body}
             className="min-w-0 max-w-full text-slate-800 dark:text-slate-300"
             italic={note.system}
@@ -226,6 +232,7 @@ const DiscussionNote = ({
 };
 
 const DiscussionThread = ({
+  markdownScope,
   discussion,
   onResolveDiscussion,
   resolvingDiscussionId,
@@ -235,6 +242,7 @@ const DiscussionThread = ({
   updateNoteError,
   onClearUpdateNoteError,
 }: {
+  markdownScope: GitlabMarkdownScope;
   discussion: GitLabDiscussionDC;
   onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId: string | null;
@@ -285,6 +293,7 @@ const DiscussionThread = ({
       {expanded && (
         <>
           <DiscussionNote
+            markdownScope={markdownScope}
             note={firstNote}
             discussionId={discussion.id}
             isReply={false}
@@ -300,6 +309,7 @@ const DiscussionThread = ({
               {replies.map((note) => (
                 <DiscussionNote
                   key={note.id}
+                  markdownScope={markdownScope}
                   note={note}
                   discussionId={discussion.id}
                   isReply
@@ -328,6 +338,7 @@ const DiscussionThread = ({
 };
 
 export const MergeRequestDiscussions = ({
+  markdownScope,
   discussions,
   onResolveDiscussion,
   resolvingDiscussionId,
@@ -337,6 +348,7 @@ export const MergeRequestDiscussions = ({
   updateNoteError,
   onClearUpdateNoteError,
 }: {
+  markdownScope: GitlabMarkdownScope;
   discussions: GitLabDiscussionDC[];
   onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId: string | null;
@@ -359,6 +371,7 @@ export const MergeRequestDiscussions = ({
       {discussions.map((discussion) => (
         <DiscussionThread
           key={discussion.id}
+          markdownScope={markdownScope}
           discussion={discussion}
           onResolveDiscussion={onResolveDiscussion}
           resolvingDiscussionId={resolvingDiscussionId}

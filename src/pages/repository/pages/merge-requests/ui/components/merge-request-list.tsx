@@ -1,10 +1,7 @@
 import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
 import { cx } from "yummies/css";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar/gitlab-avatar";
-import {
-  getMrStateBadgeState,
-  mrStateBadgeVariants,
-} from "@/shared/ui/mr-state-badge";
+import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
+import { MrStateBadge } from "@/entities/gitlab-merge-requests/ui/mr-state-badge";
 
 const formatUpdatedAt = (value: string) => {
   const date = new Date(value);
@@ -20,41 +17,24 @@ const formatUpdatedAt = (value: string) => {
   });
 };
 
-const isDraft = (mergeRequest: GitLabMergeRequestDC) =>
-  mergeRequest.draft ?? mergeRequest.work_in_progress ?? false;
-
 const getAuthorName = (mergeRequest: GitLabMergeRequestDC) =>
   mergeRequest.author?.name ?? "Unknown";
 
-const getStateLabel = (mergeRequest: GitLabMergeRequestDC) => {
-  if (isDraft(mergeRequest)) {
-    return "Draft";
-  }
-
-  if (mergeRequest.state === "opened") {
-    return "Open";
-  }
-
-  return mergeRequest.state;
-};
-
 const ApprovalCheckCircleIcon = () => (
   <svg
-    className="text-green-600 dark:text-green-400"
+    className="text-green-600 dark:text-green-300"
     viewBox="0 0 16 16"
-    width="16"
-    height="16"
+    width="14"
+    height="14"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
     aria-hidden="true"
   >
-    <circle cx="8" cy="8" r="7" fill="currentColor" />
-    <path
-      d="m4.75 8 2.25 2.25 4.75-4.75"
-      fill="none"
-      stroke="white"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <circle cx="8" cy="8" r="6.25" />
+    <path d="m4.75 8 2.25 2.25 4.75-4.75" />
   </svg>
 );
 
@@ -73,7 +53,6 @@ export const MergeRequestList = ({
     <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
       {mergeRequests.map((mergeRequest) => {
         const isSelected = selectedMergeRequestIid === mergeRequest.iid;
-        const stateKey = isDraft(mergeRequest) ? "draft" : mergeRequest.state;
         const authorName = getAuthorName(mergeRequest);
         const authorAvatarUrl = mergeRequest.author?.avatar_url ?? null;
         const approvalCount = approvalCounts[mergeRequest.iid];
@@ -98,21 +77,14 @@ export const MergeRequestList = ({
                 <div className="flex shrink-0 items-center gap-2">
                   {approvalCount !== undefined && (
                     <span
-                      className="inline-flex items-center gap-1 text-[13px] font-semibold text-green-700 dark:text-green-400"
+                      className="inline-flex items-center gap-1 text-[13px] font-semibold text-green-700 dark:text-green-300"
                       title={`${approvalCount} апрув(ов)`}
                     >
                       {approvalCount}
                       <ApprovalCheckCircleIcon />
                     </span>
                   )}
-                  <span
-                    className={mrStateBadgeVariants({
-                      state: getMrStateBadgeState(stateKey),
-                      size: "sm",
-                    })}
-                  >
-                    {getStateLabel(mergeRequest)}
-                  </span>
+                  <MrStateBadge mergeRequest={mergeRequest} />
                 </div>
               </div>
 

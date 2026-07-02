@@ -85,8 +85,8 @@ importers:
         specifier: ^26.0.12
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)
       mobx-view-model-vite-plugin:
-        specifier: ^1.4.1
-        version: 1.4.1(mobx-view-model-react@10.3.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@10.2.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0))
+        specifier: ^1.4.3
+        version: 1.4.3(mobx-view-model-react@10.3.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@10.2.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0))
       tailwindcss:
         specifier: ^4.3.1
         version: 4.3.1
@@ -1592,8 +1592,8 @@ packages:
       '@tanstack/query-core': ^5.90.2
       mobx: ^6.12.4
 
-  mobx-view-model-devtools@0.1.1:
-    resolution: {integrity: sha512-3zdXCaYjMAwzEqVpwVn9XaV7nfR9HcKwZ8SDb2FE16PJ1addhduru3hbPj+B/V3qY/CacFK8tX2mRrxe8SMfQw==}
+  mobx-view-model-devtools@0.1.3:
+    resolution: {integrity: sha512-tRmalfQ5phw3OnOcxvWglnAQ3x9Ip1U4GfUUTUGmP1FZlkM6VEzJV+X9Hhfn8PXk2SOt/IW10bGNtVwI9AccXA==}
 
   mobx-view-model-react@10.3.0:
     resolution: {integrity: sha512-wXnkdzNRjaMwqfk+WX4Yc5+c9F+bByZpDTqQ/i2JOrpvsG+3dBx84YchvsuYFFEhHYBtw4wflPZ08V6Pitw5qg==}
@@ -1603,11 +1603,11 @@ packages:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
 
-  mobx-view-model-vite-plugin@1.4.1:
-    resolution: {integrity: sha512-aMKZ3zC7WIK7TcZRaVbOmpe3yAlM2zjNGNfYS43zkrcx4YZomTAeGlKPNVtjVOUZhDpmnE4mRiCft2ABAY1ElA==}
+  mobx-view-model-vite-plugin@1.4.3:
+    resolution: {integrity: sha512-SQMfs9Ca5g37SVDgEqAYg4VDeBalkf1qHnBkI/jWjKwyx0UdRPlqQ3qy6TIuoakBN/IbXc/FwLnXZQrEiVgiZg==}
     peerDependencies:
-      mobx-view-model: ^10.0.0
-      mobx-view-model-react: ^10.0.0
+      mobx-view-model: ^10.2.2
+      mobx-view-model-react: ^10.2.2
       vite: ^6.0.0 || ^7.0.0 || ^8.0.0
 
   mobx-view-model@10.2.3:
@@ -3691,7 +3691,7 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  mobx-view-model-devtools@0.1.1:
+  mobx-view-model-devtools@0.1.3:
     dependencies:
       '@gravity-ui/icons': 2.18.0(react@18.3.1)
       mobx: 6.16.1
@@ -3718,11 +3718,11 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  mobx-view-model-vite-plugin@1.4.1(mobx-view-model-react@10.3.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@10.2.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)):
+  mobx-view-model-vite-plugin@1.4.3(mobx-view-model-react@10.3.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@10.2.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)):
     dependencies:
       magic-string: 0.30.21
       mobx-view-model: 10.2.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-view-model-devtools: 0.1.1
+      mobx-view-model-devtools: 0.1.3
       mobx-view-model-react: 10.3.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       vite: 7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)
     transitivePeerDependencies:
