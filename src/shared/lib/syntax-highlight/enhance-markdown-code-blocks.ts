@@ -1,9 +1,6 @@
 import { resolveGitlabLanguage } from "@/shared/lib/gitlab/syntax/lang";
 import { renderSyntaxTokensToHtml } from "./render-syntax-html";
-import {
-  highlightCodeBlockTokens,
-  type SyntaxTheme,
-} from "./shiki-highlighter";
+import { syntaxHighlighter, type SyntaxTheme } from "./syntax-highlighter";
 
 const stripInlineStyles = (root: ParentNode) => {
   for (const element of root.querySelectorAll("[style]")) {
@@ -54,7 +51,11 @@ const enhanceCodeBlock = async (pre: HTMLElement, theme: SyntaxTheme) => {
     return;
   }
 
-  const lines = await highlightCodeBlockTokens(source, lang, theme);
+  const lines = await syntaxHighlighter.highlightCodeBlockTokens(
+    source,
+    lang,
+    theme,
+  );
   if (lines.length === 0) {
     pre.classList.add("gitlab-markdown-plain-code");
     return;
