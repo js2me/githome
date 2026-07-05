@@ -14,7 +14,7 @@ const LayoutContent = observer(({ children, model }: LayoutProps) => {
 
   return (
     <GitLabConnectionProvider connection={connection}>
-      <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900">
+      <div className="flex min-h-screen flex-col bg-canvas-default">
         <AppNav />
         <main className="flex-1 p-6">
           <Suspense fallback={null}>{children}</Suspense>

@@ -8,48 +8,58 @@
   --color-brand-border-accent: rgb(252 109 38 / 0.7);
   --color-card-hover-shadow: rgb(15 23 42 / 0.06);
 
-  /* Canvas & surfaces */
-  --color-canvas-default: #ffffff;
-  --color-canvas-subtle: #fafafa;
-  --color-canvas-inset: #f5f5f5;
-  --color-canvas-muted: #f0f0f0;
-  --color-canvas-emphasis: #ececec;
-  --color-canvas-overlay: #ffffff;
+  /* Brand palette (orange — не зависит от UI-темы) */
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-300: #fdba74;
+  --color-orange-600: var(--color-brand-hover);
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-900: #7c2d12;
+  --color-orange-950: #431407;
+
+  /* Canvas & surfaces (Tokyo Night Light) */
+  --color-canvas-default: #e6e7ed;
+  --color-canvas-subtle: #d6d8df;
+  --color-canvas-inset: #dadce3;
+  --color-canvas-muted: #e1e2e8;
+  --color-canvas-emphasis: #dadce3;
+  --color-canvas-overlay: #e6e7ed;
 
   /* Borders */
-  --color-border-default: #dbdbdb;
-  --color-border-muted: #dcdcde;
-  --color-border-subtle: #d0d7de;
+  --color-border-default: #c1c2c7;
+  --color-border-muted: #c7c9d4;
+  --color-border-subtle: #b8bac4;
 
   /* Text */
-  --color-fg-default: #303030;
-  --color-fg-muted: #737278;
-  --color-fg-subtle: #595959;
-  --color-fg-on-emphasis: #ffffff;
-  --color-fg-link: #1f75cb;
-  --color-fg-code: #24292e;
-  --color-fg-line-num: #89888d;
-  --color-fg-comment-btn: #57606a;
+  --color-fg-default: #343b58;
+  --color-fg-muted: #6c6e75;
+  --color-fg-subtle: #9da0ab;
+  --color-fg-on-emphasis: #e6e7ed;
+  --color-fg-link: #2959aa;
+  --color-fg-code: #343b58;
+  --color-fg-line-num: #9da0ab;
+  --color-fg-comment-btn: #6c6e75;
 
   /* Accent */
-  --color-accent-blue: #428fdc;
-  --color-accent-blue-emphasis: #2563eb;
-  --color-accent-blue-ring: rgb(66 143 220 / 0.3);
-  --color-accent-emphasis-hover: #ececec;
+  --color-accent-blue: #2959aa;
+  --color-accent-blue-emphasis: #0f4b6e;
+  --color-accent-blue-ring: rgb(41 89 170 / 0.3);
+  --color-accent-emphasis-hover: #e1e2e8;
 
   /* Success */
-  --color-success-emphasis: #1aaa55;
-  --color-success-emphasis-hover: #168f48;
-  --color-success-fg: #1f883d;
-  --color-stats-added: #108548;
+  --color-success-emphasis: #166775;
+  --color-success-emphasis-hover: #0f5563;
+  --color-success-fg: #166775;
+  --color-stats-added: #166775;
 
   /* Danger */
-  --color-danger-fg: #c9190b;
-  --color-stats-removed: #dd2b0e;
+  --color-danger-fg: #914c54;
+  --color-stats-removed: #914c54;
 
   /* Comment button */
-  --color-comment-btn-hover-bg: #fff1e8;
-  --color-comment-btn-hover-fg: #c2410c;
+  --color-comment-btn-hover-bg: var(--color-orange-50);
+  --color-comment-btn-hover-fg: var(--color-orange-700);
 
   /* Collapse banner */
   --color-collapse-btn-border: #868686;
@@ -62,30 +72,30 @@
   --color-file-renamed: #2563eb;
   --color-file-modified: #c17d00;
 
-  /* Diff */
-  --diff-border: var(--color-border-default);
+  /* Diff (Tokyo Night Light) */
+  --diff-border: #c7c9d4;
   --diff-code-font-size: 13px;
   --diff-code-line-height: 1.6;
-  --diff-line-added: #ecfdf0;
-  --diff-line-removed: #fbe9eb;
-  --diff-line-num-new: #ddfbe6;
-  --diff-line-num-old: #f9d7dc;
-  --diff-inline-added: #c7f0d2;
-  --diff-inline-removed: #fac5cd;
-  --diff-prefix-added: #9bafa1;
-  --diff-prefix-removed: #ae969a;
-  --diff-line-num-text: var(--color-fg-line-num);
-  --diff-code-text: var(--color-fg-default);
-  --diff-hunk-bg: var(--color-canvas-subtle);
-  --diff-hunk-text: var(--color-fg-muted);
-  --diff-expand-bg: var(--color-canvas-inset);
-  --diff-header-bg: var(--color-canvas-subtle);
-  --diff-stats-added: var(--color-success-fg);
-  --diff-stats-removed: var(--color-danger-fg);
+  --diff-line-added: #cfdee1;
+  --diff-line-removed: #e6dee4;
+  --diff-line-num-new: #c9dbe1;
+  --diff-line-num-old: #d6c6cc;
+  --diff-inline-added: #b8d4d6;
+  --diff-inline-removed: #e6cfd4;
+  --diff-prefix-added: #166775;
+  --diff-prefix-removed: #914c54;
+  --diff-line-num-text: #9da0ab;
+  --diff-code-text: #343b58;
+  --diff-hunk-bg: #dcdee3;
+  --diff-hunk-text: #6c6e75;
+  --diff-expand-bg: #dcdee3;
+  --diff-header-bg: #dcdee3;
+  --diff-stats-added: #166775;
+  --diff-stats-removed: #914c54;
   --diff-canvas: var(--color-canvas-default);
-  --diff-search-active-bg: #ff9632;
-  --diff-search-active-fg: #1f2328;
-  --diff-search-inactive-bg: #fff8c5;
+  --diff-search-active-bg: #8f5e15;
+  --diff-search-active-fg: #e6e7ed;
+  --diff-search-inactive-bg: #e8e4d0;
 
   /* File tree */
   --file-tree-bg: var(--color-canvas-overlay);
@@ -102,186 +112,198 @@
   --markdown-fg-muted: var(--color-fg-muted);
   --markdown-fg-link: var(--color-fg-link);
   --markdown-code-bg: rgb(175 184 193 / 0.2);
-  --markdown-pre-bg: #f6f8fa;
-  --markdown-pre-fg: var(--color-fg-code);
-  --markdown-table-stripe-bg: #f6f8fa;
+  --markdown-pre-bg: #e6e7ed;
+  --markdown-pre-fg: #343b58;
+  --markdown-table-stripe-bg: #dcdee3;
   --markdown-img-bg: var(--color-canvas-default);
 
-  /* Syntax highlighting */
-  --syntax-default: #333333;
-  --syntax-comment: #998877;
-  --syntax-string: #d14;
-  --syntax-keyword: #333333;
-  --syntax-type: #445588;
-  --syntax-function: #990000;
-  --syntax-number: #009999;
-  --syntax-attr: #008080;
-  --syntax-literal: #0086b3;
+  /* Syntax highlighting (Tokyo Night Light) — https://marketplace.visualstudio.com/items?itemName=enkia.tokyo-night */
+  --syntax-default: #343b58;
+  --syntax-comment: #6c6e75;
+  --syntax-string: #385f0d;
+  --syntax-keyword: #8c4351;
+  --syntax-type: #006c86;
+  --syntax-function: #2959aa;
+  --syntax-number: #965027;
+  --syntax-attr: #5a3e8e;
+  --syntax-literal: #0f4b6e;
 
-  /* Tailwind palette — slate */
-  --color-slate-50: #f8fafc;
-  --color-slate-100: #f1f5f9;
-  --color-slate-200: #e2e8f0;
-  --color-slate-300: #cbd5e1;
-  --color-slate-400: #94a3b8;
-  --color-slate-500: #64748b;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
-  --color-slate-800: #1e293b;
-  --color-slate-900: #0f172a;
-  --color-slate-950: #020617;
+  /* Tailwind palette — slate (Tokyo Night Light, привязка к fg) */
+  --color-slate-50: #d6d8df;
+  --color-slate-100: #e1e2e8;
+  --color-slate-200: #c7c9d4;
+  --color-slate-300: #c1c2c7;
+  --color-slate-400: var(--color-fg-subtle);
+  --color-slate-500: var(--color-fg-muted);
+  --color-slate-600: #565f89;
+  --color-slate-700: #40434f;
+  --color-slate-800: #363c4d;
+  --color-slate-900: var(--color-fg-default);
+  --color-slate-950: #2d3047;
 
   /* Tailwind palette — gray */
-  --color-gray-900: #111827;
-
-  /* Tailwind palette — orange */
-  --color-orange-50: #fff7ed;
-  --color-orange-100: #ffedd5;
-  --color-orange-300: #fdba74;
-  --color-orange-600: #ea580c;
-  --color-orange-700: #c2410c;
-  --color-orange-800: #9a3412;
-  --color-orange-950: #431407;
+  --color-gray-900: #343b58;
 
   /* Tailwind palette — green */
-  --color-green-50: #f0fdf4;
-  --color-green-100: #dcfce7;
-  --color-green-200: #bbf7d0;
-  --color-green-300: #86efac;
-  --color-green-600: #16a34a;
-  --color-green-700: #15803d;
-  --color-green-800: #166534;
-  --color-green-900: #14532d;
-  --color-green-950: #052e16;
+  --color-green-50: #e8f0f2;
+  --color-green-100: #cfdee1;
+  --color-green-200: #b8d4d6;
+  --color-green-300: #8ec5c8;
+  --color-green-600: #166775;
+  --color-green-700: #0f5563;
+  --color-green-800: #0d4a56;
+  --color-green-900: #0a3a44;
+  --color-green-950: #062a31;
 
   /* Tailwind palette — red */
-  --color-red-50: #fef2f2;
-  --color-red-100: #fee2e2;
-  --color-red-200: #fecaca;
-  --color-red-300: #fca5a5;
-  --color-red-600: #dc2626;
-  --color-red-700: #b91c1c;
-  --color-red-800: #991b1b;
-  --color-red-900: #7f1d1d;
-  --color-red-950: #450a0a;
+  --color-red-50: #f5e8ea;
+  --color-red-100: #e6dee4;
+  --color-red-200: #e6cfd4;
+  --color-red-300: #d4a8ae;
+  --color-red-600: #914c54;
+  --color-red-700: #7a3f46;
+  --color-red-800: #69353c;
+  --color-red-900: #562b31;
+  --color-red-950: #3d1f24;
 
   /* Tailwind palette — blue */
-  --color-blue-100: #dbeafe;
-  --color-blue-300: #93c5fd;
-  --color-blue-700: #1d4ed8;
-  --color-blue-950: #172554;
+  --color-blue-100: #dce4f2;
+  --color-blue-300: #7aa2d4;
+  --color-blue-700: #2959aa;
+  --color-blue-950: #1a3a6e;
 
   /* Tailwind palette — white / black */
-  --color-white: #ffffff;
-  --color-black: #000000;
+  --color-white: #e6e7ed;
+  --color-black: #343b58;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-canvas-default: #0d1117;
-    --color-canvas-subtle: #161b22;
-    --color-canvas-inset: #161b22;
-    --color-canvas-muted: #21262d;
-    --color-canvas-emphasis: #30363d;
-    --color-canvas-overlay: #111827;
-
-    --color-border-default: #30363d;
-    --color-border-muted: #30363d;
-    --color-border-subtle: #484f58;
-
-    --color-fg-default: #e6edf3;
-    --color-fg-muted: #8b949e;
-    --color-fg-subtle: #8b949e;
-    --color-fg-link: #61afef;
-    --color-fg-code: #e6edf3;
-    --color-fg-line-num: #6e7681;
-    --color-fg-comment-btn: #8b949e;
-
-    --color-accent-emphasis-hover: #21262d;
-
-    --color-stats-added: #3fb950;
-    --color-stats-removed: #ff7b72;
-
-    --color-comment-btn-hover-bg: #3d2b1f;
-    --color-comment-btn-hover-fg: #fdba74;
-
-    --color-collapse-bg: #2d2218;
-    --color-collapse-btn-border: #5c5c66;
-    --color-collapse-btn-bg: #28272d;
-    --color-collapse-btn-bg-hover: #35343c;
-
-    --diff-line-added: #12261e;
-    --diff-line-removed: #2d1114;
-    --diff-line-num-new: #1a3324;
-    --diff-line-num-old: #3d1f24;
-    --diff-inline-added: #1b4721;
-    --diff-inline-removed: #5c1f1a;
-    --diff-prefix-added: #3fb950;
-    --diff-prefix-removed: #ff7b72;
-    --diff-canvas: #0d1117;
-
-    --markdown-code-bg: rgb(110 118 129 / 0.4);
-    --markdown-pre-bg: #161b22;
-    --markdown-pre-fg: #e6edf3;
-    --markdown-table-stripe-bg: #161b22;
-    --markdown-img-bg: #0d1117;
-
-    --diff-search-active-bg: #9e6a03;
-    --diff-search-active-fg: #f0f6fc;
-    --diff-search-inactive-bg: #6e5a1f;
-  }
-}
-
+/* Тёмная тема — только через класс .dark (ThemeManager в Globals) */
 .dark {
-  --color-canvas-default: #0d1117;
-  --color-canvas-subtle: #161b22;
-  --color-canvas-inset: #161b22;
-  --color-canvas-muted: #21262d;
-  --color-canvas-emphasis: #30363d;
-  --color-canvas-overlay: #111827;
+  /* Canvas & surfaces — Dracula Official (dracula-theme.theme-dracula) */
+  --color-canvas-default: #282a36;
+  --color-canvas-subtle: #21222c;
+  --color-canvas-inset: #343746;
+  --color-canvas-muted: #343746;
+  --color-canvas-emphasis: #44475a;
+  --color-canvas-overlay: #21222c;
 
-  --color-border-default: #30363d;
-  --color-border-muted: #30363d;
-  --color-border-subtle: #484f58;
+  --color-border-default: #44475a;
+  --color-border-muted: #44475a;
+  --color-border-subtle: #191a21;
 
-  --color-fg-default: #e6edf3;
-  --color-fg-muted: #8b949e;
-  --color-fg-subtle: #8b949e;
-  --color-fg-link: #61afef;
-  --color-fg-code: #e6edf3;
-  --color-fg-line-num: #6e7681;
-  --color-fg-comment-btn: #8b949e;
+  --color-fg-default: #f8f8f2;
+  --color-fg-muted: #6272a4;
+  --color-fg-subtle: #6272a4;
+  --color-fg-on-emphasis: #282a36;
+  --color-fg-link: #8be9fd;
+  --color-fg-code: #f8f8f2;
+  --color-fg-line-num: #6272a4;
+  --color-fg-comment-btn: #6272a4;
 
-  --color-accent-emphasis-hover: #21262d;
+  --color-accent-blue: #8be9fd;
+  --color-accent-blue-emphasis: #bd93f9;
+  --color-accent-blue-ring: rgb(139 233 253 / 0.3);
+  --color-accent-emphasis-hover: #343746;
 
-  --color-stats-added: #3fb950;
-  --color-stats-removed: #ff7b72;
+  --color-success-emphasis: #50fa7b;
+  --color-success-emphasis-hover: #69ff94;
+  --color-success-fg: #50fa7b;
+  --color-stats-added: #50fa7b;
 
-  --color-comment-btn-hover-bg: #3d2b1f;
-  --color-comment-btn-hover-fg: #fdba74;
+  --color-danger-fg: #ff5555;
+  --color-stats-removed: #ff5555;
 
-  --color-collapse-bg: #2d2218;
-  --color-collapse-btn-border: #5c5c66;
-  --color-collapse-btn-bg: #28272d;
-  --color-collapse-btn-bg-hover: #35343c;
+  --color-comment-btn-hover-bg: var(--color-orange-950);
+  --color-comment-btn-hover-fg: var(--color-orange-300);
 
-  --diff-line-added: #12261e;
-  --diff-line-removed: #2d1114;
-  --diff-line-num-new: #1a3324;
-  --diff-line-num-old: #3d1f24;
-  --diff-inline-added: #1b4721;
-  --diff-inline-removed: #5c1f1a;
-  --diff-prefix-added: #3fb950;
-  --diff-prefix-removed: #ff7b72;
-  --diff-canvas: #0d1117;
+  --color-collapse-bg: var(--color-orange-950);
+  --color-collapse-btn-border: #6272a4;
+  --color-collapse-btn-bg: #21222c;
+  --color-collapse-btn-bg-hover: #343746;
 
-  --markdown-code-bg: rgb(110 118 129 / 0.4);
-  --markdown-pre-bg: #161b22;
-  --markdown-pre-fg: #e6edf3;
-  --markdown-table-stripe-bg: #161b22;
-  --markdown-img-bg: #0d1117;
+  --color-card-hover-shadow: rgb(0 0 0 / 0.24);
 
-  --diff-search-active-bg: #9e6a03;
-  --diff-search-active-fg: #f0f6fc;
-  --diff-search-inactive-bg: #6e5a1f;
+  /* Diff — Dracula Official (diffEditor.* / gitDecoration.*) */
+  --diff-border: #44475a;
+  --diff-line-added: #293f3b;
+  --diff-line-removed: #5d3038;
+  --diff-line-num-new: #2c473f;
+  --diff-line-num-old: #55333c;
+  --diff-inline-added: #2c6250;
+  --diff-inline-removed: #62363e;
+  --diff-prefix-added: #50fa7b;
+  --diff-prefix-removed: #ff5555;
+  --diff-line-num-text: #6272a4;
+  --diff-code-text: #f8f8f2;
+  --diff-hunk-bg: #343746;
+  --diff-hunk-text: #6272a4;
+  --diff-expand-bg: #21222c;
+  --diff-header-bg: #343746;
+  --diff-stats-added: #50fa7b;
+  --diff-stats-removed: #ff5555;
+  --diff-canvas: var(--color-canvas-default);
+  --diff-search-active-bg: #ffb86c;
+  --diff-search-active-fg: #282a36;
+  --diff-search-inactive-bg: #44475a;
+
+  --markdown-code-bg: rgb(98 114 164 / 0.25);
+  --markdown-pre-bg: #282a36;
+  --markdown-pre-fg: #f8f8f2;
+  --markdown-table-stripe-bg: #343746;
+  --markdown-img-bg: #282a36;
+  --markdown-fg-link: #8be9fd;
+
+  /* Tailwind palette — slate (Dracula: светлые оттенки = текст, тёмные = фон) */
+  --color-slate-50: #191a21;
+  --color-slate-100: #e2e2e8;
+  --color-slate-200: #f8f8f2;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #9399b2;
+  --color-slate-500: #8189a8;
+  --color-slate-600: #6272a4;
+  --color-slate-700: #44475a;
+  --color-slate-800: #343746;
+  --color-slate-900: #21222c;
+  --color-slate-950: #191a21;
+
+  --color-gray-900: #282a36;
+
+  --color-green-50: #2d443f;
+  --color-green-100: #305544;
+  --color-green-200: #356b4c;
+  --color-green-300: #50fa7b;
+  --color-green-600: #50fa7b;
+  --color-green-700: #69ff94;
+  --color-green-800: #3dd665;
+  --color-green-900: #2d443f;
+  --color-green-950: #21222c;
+
+  --color-red-50: #4a313b;
+  --color-red-100: #55333c;
+  --color-red-200: #62363e;
+  --color-red-300: #ff6e6e;
+  --color-red-600: #ff5555;
+  --color-red-700: #ff5555;
+  --color-red-800: #ff6e6e;
+  --color-red-900: #6b3740;
+  --color-red-950: #21222c;
+
+  --color-blue-100: #343746;
+  --color-blue-300: #8be9fd;
+  --color-blue-700: #8be9fd;
+  --color-blue-950: #21222c;
+
+  --color-white: #343746;
+  --color-black: #f8f8f2;
+
+  /* Syntax highlighting — Dracula Official token palette */
+  --syntax-default: #f8f8f2;
+  --syntax-comment: #6272a4;
+  --syntax-string: #f1fa8c;
+  --syntax-keyword: #ff79c6;
+  --syntax-type: #8be9fd;
+  --syntax-function: #50fa7b;
+  --syntax-number: #ffb86c;
+  --syntax-attr: #8be9fd;
+  --syntax-literal: #ffb86c;
 }

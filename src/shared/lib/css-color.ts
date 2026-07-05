@@ -1,20 +1,37 @@
 const syntaxColorFallbacks = {
-  "--syntax-default": "#333333",
-  "--syntax-comment": "#998877",
-  "--syntax-string": "#d14",
-  "--syntax-keyword": "#333333",
-  "--syntax-type": "#445588",
-  "--syntax-function": "#990000",
-  "--syntax-number": "#009999",
-  "--syntax-attr": "#008080",
-  "--syntax-literal": "#0086b3",
+  "--syntax-default": "#343b58",
+  "--syntax-comment": "#6c6e75",
+  "--syntax-string": "#385f0d",
+  "--syntax-keyword": "#8c4351",
+  "--syntax-type": "#006c86",
+  "--syntax-function": "#2959aa",
+  "--syntax-number": "#965027",
+  "--syntax-attr": "#5a3e8e",
+  "--syntax-literal": "#0f4b6e",
 } as const;
 
 type SyntaxColorVar = keyof typeof syntaxColorFallbacks;
 
 const colorCache = new Map<SyntaxColorVar, string>();
+let colorCacheThemeKey = "";
+
+const getColorCacheThemeKey = () => {
+  if (typeof document === "undefined") {
+    return "";
+  }
+
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue("--syntax-default")
+    .trim();
+};
 
 export const cssColor = (variable: SyntaxColorVar): string => {
+  const themeKey = getColorCacheThemeKey();
+  if (themeKey !== colorCacheThemeKey) {
+    colorCache.clear();
+    colorCacheThemeKey = themeKey;
+  }
+
   const cached = colorCache.get(variable);
   if (cached) {
     return cached;

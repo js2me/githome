@@ -2,7 +2,7 @@ import { computed } from "mobx";
 import type { GitLabProjectDC } from "@/shared/api/gitlab";
 
 export class GitlabProjectInfo {
-  constructor(readonly data: GitLabProjectDC) {}
+  constructor(readonly data: GitLabProjectDC) { }
 
   @computed
   get name() {
@@ -10,7 +10,7 @@ export class GitlabProjectInfo {
   }
 
   @computed
-  get displayName() {
+  get logoFallbackSymbol() {
     const name = this.name.trim();
 
     return name ? name.slice(0, 1).toUpperCase() : "?";

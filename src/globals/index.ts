@@ -2,6 +2,7 @@ import { QueryClient } from "mobx-tanstack-query";
 import { Repository } from "@/entities/gitlab-repositories/model/repository";
 import { Router } from "./router";
 import { SettingsStore } from "./stores/settings";
+import { ThemeManager } from "./stores/theme-manager";
 import { VMStore } from "../shared/lib/view-models/vm-store";
 
 export class Globals {
@@ -11,6 +12,7 @@ export class Globals {
     repository: Repository;
     viewModels: VMStore;
     queryClient: QueryClient;
+    theme: ThemeManager;
   };
 
   constructor() {
@@ -32,6 +34,29 @@ export class Globals {
       repository: new Repository(settings),
       viewModels: new VMStore(this),
       queryClient,
+      theme: new ThemeManager(),
     };
   }
 }
+
+let globalsInstance: Globals | null = null;
+
+export const initGlobals = (): Globals => {
+  if (!globalsInstance) {
+    globalsInstance = new Globals();
+  }
+
+  return globalsInstance;
+};
+
+export const globals: Globals = new Proxy({} as Globals, {
+  get(_target, prop, receiver) {
+    if (!globalsInstance) {
+      throw new Error(
+        "Globals not initialized. Import @/app/bootstrap/base before use.",
+      );
+    }
+
+    return Reflect.get(globalsInstance, prop, receiver);
+  },
+});

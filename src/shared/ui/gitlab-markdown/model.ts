@@ -1,5 +1,4 @@
 import { action, observable, reaction, runInAction } from "mobx";
-import { colorScheme } from "mobx-web-api";
 import { ViewModelBase } from "mobx-view-model";
 import { createRef } from "yummies/mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
@@ -16,6 +15,7 @@ import {
 } from "@/shared/lib/gitlab/post-process-html";
 import { enhanceMarkdownCodeBlocks } from "@/shared/lib/syntax-highlight/enhance-markdown-code-blocks";
 import { getSyntaxTheme } from "@/shared/lib/syntax-highlight/syntax-theme";
+import { globals } from "@/globals";
 
 export interface GitlabMarkdownScope {
   connection: GitLabConnection | null;
@@ -70,7 +70,7 @@ export class GitlabMarkdownVM extends ViewModelBase<GitlabMarkdownPayload> {
         html: this.html,
         hasScope: this.hasScope,
         connection: this.payload.connection,
-        isDark: colorScheme.isDark,
+        isDark: globals.stores.theme.isDark,
         container: this.container.current,
       }),
       () => {

@@ -5,14 +5,20 @@ import { RepositoryPageVM } from "@/pages/repository/model";
 import type { GitLabProjectDC } from "@/shared/api/gitlab";
 import { isConnectionDraftValid } from "@/shared/lib/gitlab/connection";
 import { VM } from "@/shared/lib/view-models/vm";
+import { AppSettings } from "./app-settings";
 
 export class LayoutVM extends VM {
+  readonly appSettings: AppSettings;
+
   @observable accessor draftGitlabUrl = "";
   @observable accessor draftGitToken = "";
   @observable accessor isConnectionPopupOpen = false;
+  @observable accessor isSettingsPopupOpen = false;
 
   constructor(globals: Globals, params: ViewModelParams) {
     super(globals, params);
+
+    this.appSettings = new AppSettings(globals);
 
     reaction(
       () => this.globals.stores.settings.activeItem,
@@ -75,11 +81,6 @@ export class LayoutVM extends VM {
   }
 
   @computed
-  get isRepositoryOverviewOpen() {
-    return this.globals.router.routes.repository.isOpened;
-  }
-
-  @computed
   get isMergeRequestsNavActive() {
     return this.isMergeRequestsOpen && !this.isMergeRequestDetailOpen;
   }
@@ -87,11 +88,6 @@ export class LayoutVM extends VM {
   @computed
   get showMergeRequestBreadcrumb() {
     return this.isMergeRequestDetailOpen && this.mergeRequestIid !== null;
-  }
-
-  @computed
-  get isRepositorySidebarVisible() {
-    return this.projectId !== null && !this.isMergeRequestDetailOpen;
   }
 
   @computed
@@ -141,6 +137,21 @@ export class LayoutVM extends VM {
   @action.bound
   toggleConnectionPopup() {
     this.isConnectionPopupOpen = !this.isConnectionPopupOpen;
+  }
+
+  @action
+  openSettingsPopup() {
+    this.isSettingsPopupOpen = true;
+  }
+
+  @action
+  closeSettingsPopup() {
+    this.isSettingsPopupOpen = false;
+  }
+
+  @action.bound
+  toggleSettingsPopup() {
+    this.isSettingsPopupOpen = !this.isSettingsPopupOpen;
   }
 
   @action.bound

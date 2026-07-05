@@ -24,11 +24,42 @@ export type FetchQueryKey = readonly (
   | null
 )[];
 
-export type CreateFetchQueryOptions<TData> = {
+export type FetchQueryDynamicOptions<TData = unknown> = {
+  refetchInterval?: number | false;
+  select?: (data: unknown) => TData;
+  staleTime?: number;
+  gcTime?: number;
+  retry?: boolean | number;
+  meta?: Record<string, unknown>;
+  refetchOnWindowFocus?: boolean | "always";
+  refetchOnReconnect?: boolean | "always";
+  refetchOnMount?: boolean | "always";
+};
+
+export type InfiniteFetchQueryDynamicOptions = Omit<
+  FetchQueryDynamicOptions,
+  "select"
+>;
+
+export type CreateFetchQueryOptions<TData = unknown> = {
   abortSignal: AbortSignal;
   params: () => MaybeFalsy<FetchQueryParams>;
-  select?: (data: unknown) => TData;
+  queryOptions?:
+    | FetchQueryDynamicOptions<TData>
+    | (() => FetchQueryDynamicOptions<TData>);
 };
+
+const resolveQueryOptions = <TData>(
+  queryOptions?: CreateFetchQueryOptions<TData>["queryOptions"],
+): FetchQueryDynamicOptions<TData> => {
+  if (typeof queryOptions === "function") {
+    return queryOptions();
+  }
+
+  return queryOptions ?? {};
+};
+
+export { resolveQueryOptions };
 
 export const serializeFetchQuery = (
   query?: FetchQueryParams["query"],
@@ -124,8 +155,8 @@ export const createFetchQuery = <TData = unknown>(
 
       return {
         enabled: !!fetchParams,
-        select: options.select,
         queryKey: buildFetchQueryKey(fetchParams),
+        ...resolveQueryOptions(options.queryOptions),
       };
     },
     queryFn: async ({ signal, queryKey }) => {

@@ -14,7 +14,7 @@ export const GitDiff = withPropsViewModel(
     }
 
     return (
-      <div className="git-diff flex flex-col gap-4 overflow-x-auto">
+      <div className="git-diff flex flex-col gap-4 overflow-x-auto [overflow-anchor:auto]">
         {filesGitDiffs.map((fileModel) => (
           <GitDiffFile key={fileModel.fileKey} model={fileModel} />
         ))}

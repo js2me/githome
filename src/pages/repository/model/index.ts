@@ -1,4 +1,4 @@
-import { computed, reaction } from "mobx";
+import { action, computed, reaction } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import type {
@@ -148,5 +148,12 @@ export class RepositoryPageVM extends VM {
       !this.readmeErrorMessage &&
       this.readme === null
     );
+  }
+
+  @action.bound
+  openMergeRequests() {
+    void this.globals.router.routes.mergeRequests.open({
+      projectId: this.projectIdParam,
+    });
   }
 }

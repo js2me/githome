@@ -5,6 +5,7 @@ import {
   buildFetchQueryUrl,
   type FetchQueryKey,
   type FetchQueryParams,
+  type InfiniteFetchQueryDynamicOptions,
   type MaybeFalsy,
   parseFetchQueryKey,
   resolveFetchQueryParams,
@@ -22,6 +23,19 @@ export type CreateInfiniteFetchQueryOptions = {
   abortSignal: AbortSignal;
   params: () => MaybeFalsy<FetchQueryParams>;
   initialPageParam?: number;
+  queryOptions?:
+    | InfiniteFetchQueryDynamicOptions
+    | (() => InfiniteFetchQueryDynamicOptions);
+};
+
+const resolveInfiniteQueryOptions = (
+  queryOptions?: CreateInfiniteFetchQueryOptions["queryOptions"],
+): InfiniteFetchQueryDynamicOptions => {
+  if (typeof queryOptions === "function") {
+    return queryOptions();
+  }
+
+  return queryOptions ?? {};
 };
 
 const getPerPage = (query: FetchQueryParams["query"]) => {
@@ -88,6 +102,7 @@ export const createInfiniteFetchQuery = <TItem = unknown>(
       return {
         enabled: !!fetchParams,
         queryKey: buildFetchQueryKey(fetchParams),
+        ...resolveInfiniteQueryOptions(options.queryOptions),
       };
     },
     queryFn: async ({ pageParam, signal, queryKey }) => {

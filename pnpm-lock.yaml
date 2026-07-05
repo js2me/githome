@@ -45,8 +45,8 @@ importers:
         specifier: ^10.2.3
         version: 10.3.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-web-api:
-        specifier: ^1.14.0
-        version: 1.14.0(mobx@6.16.1)(react@18.3.1)
+        specifier: ^1.14.1
+        version: 1.14.1(mobx@6.16.1)(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -78,6 +78,9 @@ importers:
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       electron:
         specifier: ^37.2.6
         version: 37.10.3
@@ -1065,6 +1068,10 @@ packages:
     resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
     engines: {node: '>=12'}
 
+  dotenv@17.4.2:
+    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
+    engines: {node: '>=12'}
+
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
@@ -1619,8 +1626,8 @@ packages:
       react:
         optional: true
 
-  mobx-web-api@1.14.0:
-    resolution: {integrity: sha512-ZLPtRcqCz2dBB81C1HlYA2prjOB1rVuJ+TTIFCyP6qMnv1vy3vTGUoq3TVbJwW/OR9fJG22/EXth+VoMZlwOzg==}
+  mobx-web-api@1.14.1:
+    resolution: {integrity: sha512-JcWKaFhFGZr56mjxzE1U9KKy7WBWu3ct63HNtEz/GqQsbQWC98xObXf5lxJBvWelaWooz0AyqW+GnaWYKf8YpQ==}
     peerDependencies:
       mobx: ^6.13.6
 
@@ -3088,6 +3095,8 @@ snapshots:
 
   dotenv@16.6.1: {}
 
+  dotenv@17.4.2: {}
+
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -3698,7 +3707,7 @@ snapshots:
       mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-swiss-knife: 1.15.1(mobx@6.16.1)(react@18.3.1)
       mobx-view-model: 10.2.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-web-api: 1.14.0(mobx@6.16.1)(react@18.3.1)
+      mobx-web-api: 1.14.1(mobx@6.16.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
       simplebar: 6.3.3
@@ -3742,7 +3751,7 @@ snapshots:
       - mobx-react-lite
       - react-dom
 
-  mobx-web-api@1.14.0(mobx@6.16.1)(react@18.3.1):
+  mobx-web-api@1.14.1(mobx@6.16.1)(react@18.3.1):
     dependencies:
       mobx: 6.16.1
       yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)

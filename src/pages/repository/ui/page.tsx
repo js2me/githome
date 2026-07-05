@@ -25,6 +25,14 @@ export const RepositoryPage = observer(() => {
             <h2 className="mb-4 text-[22px] font-semibold">{project.name}</h2>
             <p className="mb-4 text-sm text-slate-500">{project.path_with_namespace}</p>
 
+            <button
+              className="mb-4 cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
+              type="button"
+              onClick={model.openMergeRequests}
+            >
+              Merge requests
+            </button>
+
             {model.isReadmeLoading && (
               <StatusMessage>Загружаем README...</StatusMessage>
             )}

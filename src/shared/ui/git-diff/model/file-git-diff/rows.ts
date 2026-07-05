@@ -109,7 +109,7 @@ export class FileGitDiffRows {
     return (
       Boolean(content.parsed) &&
       this.virtualRows.length > 0 &&
-      !(meta.isAutoCollapsed && !content.isFileExpanded)
+      !(meta.isDiffContentHidden)
     );
   }
 }

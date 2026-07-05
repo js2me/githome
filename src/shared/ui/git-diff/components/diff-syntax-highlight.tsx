@@ -1,20 +1,17 @@
 import {
-  createContext, startTransition,
+  createContext,
+  startTransition,
   useContext,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
-  useState,
-  type ReactNode
+  type ReactNode,
 } from "react";
 import { observer } from "mobx-react-lite";
 import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
-import { getDiffLineTokenKey } from "@/shared/lib/syntax-highlight/diff-line-token-key";
-import { getLanguageFromPath } from "@/shared/lib/syntax-highlight/language-from-path";
-import {
-  highlightParsedDiffLines,
-  type SyntaxToken,
-} from "@/shared/lib/syntax-highlight/shiki-highlighter";
+import { DiffSyntaxHighlight } from "@/shared/lib/syntax-highlight/diff-syntax-highlight";
+import type { SyntaxToken } from "@/shared/lib/syntax-highlight/syntax-highlighter";
 import { getSyntaxTheme } from "@/shared/lib/syntax-highlight/syntax-theme";
 import type { ParsedFileDiff } from "@/shared/lib/parse-unified-diff";
 
@@ -30,133 +27,66 @@ interface DiffSyntaxHighlightContextValue {
 const DiffSyntaxHighlightContext =
   createContext<DiffSyntaxHighlightContextValue | null>(null);
 
-const VIEWPORT_MARGIN_PX = 240;
+export const DiffSyntaxHighlightProvider = observer(
+  ({
+    change,
+    parsed,
+    children,
+  }: {
+    change: GitLabMergeRequestChangeDC;
+    parsed: ParsedFileDiff | null;
+    children: ReactNode;
+  }) => {
+    const theme = getSyntaxTheme();
+    const rootRef = useRef<HTMLDivElement>(null);
+    const [version, rerender] = useReducer((v) => v + 1, 0);
 
-const isInViewport = (element: Element) => {
-  const rect = element.getBoundingClientRect();
-  return (
-    rect.bottom >= -VIEWPORT_MARGIN_PX &&
-    rect.top <= window.innerHeight + VIEWPORT_MARGIN_PX
-  );
-};
-
-export const DiffSyntaxHighlightProvider = observer(({
-  change,
-  parsed,
-  children,
-}: {
-  change: GitLabMergeRequestChangeDC;
-  parsed: ParsedFileDiff | null;
-  children: ReactNode;
-}) => {
-  const theme = getSyntaxTheme();
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const [lineTokens, setLineTokens] = useState<Map<string, SyntaxToken[]>>(
-    new Map(),
-  );
-
-  const language = useMemo(
-    () =>
-      getLanguageFromPath(change.new_path) ??
-      getLanguageFromPath(change.old_path),
-    [change.new_path, change.old_path],
-  );
-
-  useEffect(() => {
-    const element = rootRef.current;
-    if (!element) {
-      return;
-    }
-
-    // `display: contents` has no layout box, so observe the parent container.
-    const observeTarget = element.parentElement ?? element;
-
-    const markVisible = () => {
-      setIsVisible(true);
-    };
-
-    if (isInViewport(observeTarget)) {
-      markVisible();
-      return;
-    }
-
-    if (typeof IntersectionObserver === "undefined") {
-      markVisible();
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          markVisible();
-          observer.disconnect();
-        }
-      },
-      {
-        root: null,
-        rootMargin: `${VIEWPORT_MARGIN_PX}px 0px`,
-        threshold: 0,
-      },
+    const model = useMemo(
+      () => new DiffSyntaxHighlight(change.new_path, change.old_path),
+      [change.new_path, change.old_path],
     );
 
-    observer.observe(observeTarget);
+    useEffect(() => () => model.dispose(), [model]);
 
-    return () => observer.disconnect();
-  }, []);
+    useEffect(
+      () =>
+        model.subscribe(() => {
+          startTransition(() => {
+            rerender();
+          });
+        }),
+      [model],
+    );
 
-  useEffect(() => {
-    if (!parsed || !language || !isVisible) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const highlight = async () => {
-      const tokens = await highlightParsedDiffLines(parsed, language, theme);
-
-      if (cancelled) {
+    useEffect(() => {
+      const element = rootRef.current;
+      if (!element) {
         return;
       }
 
-      startTransition(() => {
-        setLineTokens(tokens);
-      });
-    };
+      return model.attachRoot(element);
+    }, [model]);
 
-    void highlight();
+    useEffect(() => {
+      model.setContent(parsed, theme);
+    }, [model, parsed, theme]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [isVisible, language, parsed, theme]);
+    const value = useMemo<DiffSyntaxHighlightContextValue>(
+      () => ({
+        getLineTokens: (line) => model.getLineTokens(line),
+      }),
+      [model, version],
+    );
 
-  const value = useMemo<DiffSyntaxHighlightContextValue>(
-    () => ({
-      getLineTokens: (line) => {
-        if (line.type === "no-newline") {
-          return null;
-        }
-
-        const key = getDiffLineTokenKey(line);
-        if (key.endsWith(":null")) {
-          return null;
-        }
-
-        return lineTokens.get(key) ?? null;
-      },
-    }),
-    [lineTokens],
-  );
-
-  return (
-    <DiffSyntaxHighlightContext.Provider value={value}>
-      <div ref={rootRef} className="contents">
-        {children}
-      </div>
-    </DiffSyntaxHighlightContext.Provider>
-  );
-});
+    return (
+      <DiffSyntaxHighlightContext.Provider value={value}>
+        <div ref={rootRef} className="contents">
+          {children}
+        </div>
+      </DiffSyntaxHighlightContext.Provider>
+    );
+  },
+);
 
 export const useDiffSyntaxHighlight = () =>
   useContext(DiffSyntaxHighlightContext);

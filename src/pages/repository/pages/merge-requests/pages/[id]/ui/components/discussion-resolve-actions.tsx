@@ -45,7 +45,13 @@ export const DiscussionResolveActions = memo(
           onClick={() => onResolve(discussionId, !resolved)}
         >
           <CheckIcon />
-          {resolved ? "Открыть тред" : "Разрешить тред"}
+          {isResolving
+            ? resolved
+              ? "Открываем..."
+              : "Разрешаем..."
+            : resolved
+              ? "Открыть тред"
+              : "Разрешить тред"}
         </button>
       </div>
     );

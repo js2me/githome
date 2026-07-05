@@ -1,12 +1,15 @@
 import { bundledLanguages } from "shiki/bundle/web";
 import { createHighlighter } from "shiki/bundle/web";
-import type { BundledLanguage, BundledTheme, Highlighter } from "shiki/bundle/web";
+import type { BundledLanguage, Highlighter } from "shiki/bundle/web";
+import type { ThemeRegistration } from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import type { ParsedFileDiff } from "@/shared/lib/parse-unified-diff";
 import { getDiffLineTokenKey } from "./diff-line-token-key";
 import type { SyntaxLanguage } from "./supported-languages";
+import draculaOfficialTheme from "./themes/dracula-official.json";
+import tokyoNightLightTheme from "./themes/tokyo-night-light.json";
 
-export type SyntaxTheme = Extract<BundledTheme, "github-light" | "github-dark">;
+export type SyntaxTheme = "tokyo-night-light" | "dracula-official";
 
 export interface SyntaxToken {
   content: string;
@@ -18,7 +21,10 @@ export type SyntaxLineTokens = Map<number, SyntaxToken[]>;
 
 type LanguageLoader = () => Promise<{ default: unknown }>;
 
-const THEMES: SyntaxTheme[] = ["github-light", "github-dark"];
+const THEMES: ThemeRegistration[] = [
+  draculaOfficialTheme as ThemeRegistration,
+  tokyoNightLightTheme as ThemeRegistration,
+];
 
 const EXTENDED_LANGUAGE_LOADERS: Record<string, LanguageLoader> = {
   clojure: () => import("@shikijs/langs/clojure"),

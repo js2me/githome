@@ -1,4 +1,5 @@
 import { ArrowDownToLine, ArrowUpToLine, Pencil } from "@gravity-ui/icons";
+import { observer } from "mobx-react-lite";
 import {
   memo,
   useCallback,
@@ -36,6 +37,7 @@ import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { useDiffSyntaxHighlight } from "./diff-syntax-highlight";
 import { SearchHighlightedText, useRowSearchHighlight } from "./diff-search";
 import { HighlightedCode } from "./highlighted-code";
+import type { FileGitDiff } from "../model/file-git-diff";
 
 export const diffGridClassName = "git-diff-grid";
 
@@ -854,13 +856,40 @@ export const DiffThreadRow = memo(
                     onResolveThread(thread.discussionId, !thread.resolved)
                   }
                 >
-                  {thread.resolved ? "Открыть тред" : "Разрешить тред"}
+                  {resolvingDiscussionId === thread.discussionId
+                    ? thread.resolved
+                      ? "Открываем..."
+                      : "Разрешаем..."
+                    : thread.resolved
+                      ? "Открыть тред"
+                      : "Разрешить тред"}
                 </button>
               </div>
             )}
           </div>
         </div>
       </div>
+    );
+  },
+);
+
+export const DiffLineCommentForm = observer(
+  ({ fileGitDiff }: { fileGitDiff: FileGitDiff }) => {
+    const { selection, rows, parent } = fileGitDiff;
+    const { markdownScope, submitCommentError, isSubmittingComment } =
+      parent.payload;
+
+    return (
+      <DiffCommentFormRow
+        markdownScope={markdownScope}
+        commentBody={selection.commentBody}
+        errorMessage={submitCommentError}
+        isSubmitting={isSubmittingComment}
+        rangeLabel={rows.selectionRangeLabel}
+        onChange={selection.setCommentBody}
+        onCancel={selection.clearSelection}
+        onSubmit={selection.submitLineComment}
+      />
     );
   },
 );

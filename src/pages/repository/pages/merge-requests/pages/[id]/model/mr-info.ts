@@ -36,6 +36,11 @@ export interface MrInfoModelParams {
   readonly params: () => MrInfoModelContext | false;
 }
 
+const MR_POLL_INTERVAL_MS = 20_000;
+const MR_POLL_QUERY_OPTIONS = {
+  refetchInterval: MR_POLL_INTERVAL_MS,
+} as const;
+
 const sortMergeRequestDiscussions = (
   discussions: GitLabDiscussionDC[],
 ): GitLabDiscussionDC[] => {
@@ -72,6 +77,7 @@ export class MrInfoModel {
     this.mergeRequestDetailQuery = createGitlabQuery<GitLabMergeRequestDC>({
       globals: options.globals,
       abortSignal: options.abortSignal,
+      queryOptions: MR_POLL_QUERY_OPTIONS,
       params: () => {
         const mr = options.params();
         if (!mr) {
@@ -101,6 +107,7 @@ export class MrInfoModel {
       createInfiniteGitlabQuery<GitLabDiscussionDC>({
         globals: options.globals,
         abortSignal: options.abortSignal,
+        queryOptions: MR_POLL_QUERY_OPTIONS,
         params: () => {
           const mr = options.params();
           if (!mr) {
@@ -139,12 +146,15 @@ export class MrInfoModel {
 
         return { path: "/user" };
       },
-      select: (data) => (data as GitLabUserDC).id ?? null,
+      queryOptions: {
+        select: (data) => (data as GitLabUserDC).id ?? null,
+      },
     });
 
     this.mergeRequestApprovalsQuery = createGitlabQuery<GitLabMergeRequestApprovalsDC>({
       globals: options.globals,
       abortSignal: options.abortSignal,
+      queryOptions: MR_POLL_QUERY_OPTIONS,
       params: () => {
         const mr = options.params();
         if (!mr) {
@@ -160,6 +170,7 @@ export class MrInfoModel {
     this.mergeRequestReviewersQuery = createGitlabQuery<GitLabMergeRequestReviewerDC[]>({
       globals: options.globals,
       abortSignal: options.abortSignal,
+      queryOptions: MR_POLL_QUERY_OPTIONS,
       params: () => {
         const mr = options.params();
         if (!mr) {
@@ -218,7 +229,11 @@ export class MrInfoModel {
   get mergeRequestDiscussions(): GitLabDiscussionDC[] | null {
     const pages = this.mergeRequestDiscussionsQuery.data?.pages;
     if (!pages) {
-      return null;
+      if (!this.mergeRequestDiscussionsQuery.isFetched) {
+        return null;
+      }
+
+      return [];
     }
 
     const serverDiscussions = sortMergeRequestDiscussions(
@@ -249,10 +264,14 @@ export class MrInfoModel {
 
   @computed
   get mergeRequestApprovals(): MergeRequestApprovalView | null {
+    const approvalQueries = [
+      this.currentUserQuery,
+      this.mergeRequestApprovalsQuery,
+      this.mergeRequestReviewersQuery,
+    ];
+
     if (
-      this.currentUserQuery.isLoading ||
-      this.mergeRequestApprovalsQuery.isLoading ||
-      this.mergeRequestReviewersQuery.isLoading
+      approvalQueries.some((query) => !query.isFetched && query.isPending)
     ) {
       return null;
     }
@@ -271,7 +290,7 @@ export class MrInfoModel {
   @computed
   get isLoading() {
     return this.viewQueries.some(
-      (query) => query.isLoading || query.isFetching,
+      (query) => !query.isFetched && query.isPending,
     );
   }
 
@@ -442,14 +461,18 @@ export class MrInfoModel {
     this.reviewActionError = "";
   }
 
-  private async invalidateMergeRequestView() {
-    await Promise.all([
-      this.mergeRequestDetailQuery.refetch(),
+  private refreshDiscussions() {
+    return this.mergeRequestDiscussionsQuery.invalidate();
+  }
+
+  private invalidateMergeRequestView() {
+    return Promise.all([
+      this.mergeRequestDetailQuery.invalidate(),
       this.gitDiff.invalidate(),
-      this.mergeRequestDiscussionsQuery.refetch(),
-      this.currentUserQuery.refetch(),
-      this.mergeRequestApprovalsQuery.refetch(),
-      this.mergeRequestReviewersQuery.refetch(),
+      this.mergeRequestDiscussionsQuery.invalidate(),
+      this.currentUserQuery.invalidate(),
+      this.mergeRequestApprovalsQuery.invalidate(),
+      this.mergeRequestReviewersQuery.invalidate(),
     ]);
   }
 
@@ -580,7 +603,7 @@ export class MrInfoModel {
         resolved,
       );
 
-      await this.invalidateMergeRequestView();
+      await this.refreshDiscussions();
 
       return true;
     } catch (error) {
@@ -632,7 +655,7 @@ export class MrInfoModel {
         trimmedBody,
       );
 
-      await this.invalidateMergeRequestView();
+      await this.refreshDiscussions();
 
       return true;
     } catch (error) {

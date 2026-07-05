@@ -14,7 +14,7 @@ export const ProjectAvatar = ({
       <GitlabAvatar
         className={className}
         avatarUrl={project.data.avatar_url}
-        name={project.displayName}
+        name={project.logoFallbackSymbol}
       />
     );
   }
@@ -26,7 +26,7 @@ export const ProjectAvatar = ({
         "grid place-items-center bg-gradient-to-br from-brand to-brand-gradient-to text-base font-bold text-white",
       )}
     >
-      {project.displayName}
+      {project.logoFallbackSymbol}
     </div>
   );
 };

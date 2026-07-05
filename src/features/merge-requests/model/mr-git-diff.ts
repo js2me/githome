@@ -134,7 +134,11 @@ export class MergeRequestGitDiff {
 
   @computed
   get isReady() {
-    return this.changes !== null || this.changesQuery.isError;
+    return (
+      this.changes !== null ||
+      this.changesQuery.isError ||
+      (this.changesQuery.isFetched && this.changesQuery.isFetching)
+    );
   }
 
   @computed
@@ -172,10 +176,10 @@ export class MergeRequestGitDiff {
     );
   }
 
-  async invalidate() {
-    await Promise.all([
-      this.changesQuery.refetch(),
-      this.versionsQuery.refetch(),
+  invalidate() {
+    return Promise.all([
+      this.changesQuery.invalidate(),
+      this.versionsQuery.invalidate(),
     ]);
   }
 }

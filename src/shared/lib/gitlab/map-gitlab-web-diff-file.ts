@@ -36,7 +36,7 @@ export const mapGitlabWebDiffFileToChange = (
   const tooLarge = file.viewer?.name === "no_preview";
   const highlightedLines = file.highlighted_diff_lines ?? [];
   const diff =
-    !collapsed && !tooLarge && highlightedLines.length > 0
+    !tooLarge && highlightedLines.length > 0
       ? buildUnifiedDiffFromGitlabLines(highlightedLines)
       : "";
 

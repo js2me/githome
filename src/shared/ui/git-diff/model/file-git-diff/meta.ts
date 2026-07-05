@@ -4,7 +4,6 @@ import {
   getFileLevelThreadsForChange,
   indexDiffDiscussionsForChange,
 } from "@/shared/lib/gitlab/diff-discussions";
-import { isAutoCollapsedMergeRequestChange } from "@/shared/lib/gitlab/merge-request-changes-visibility";
 import { getDiffFileKey } from "@/shared/lib/diff-search";
 import type { FileGitDiff } from ".";
 import {
@@ -23,8 +22,34 @@ export class FileGitDiffMeta {
     this.change = change;
   }
 
+  @computed
+  get isDiffContentHidden() {
+    const { content } = this.file;
+
+    return (
+      (this.isAutoCollapsed || this.isLazyCollapsed) && !content.isFileExpanded
+    );
+  }
+
+  @computed
+  get isCollapsible() {
+    return this.isAutoCollapsed || this.isLazyCollapsed;
+  }
+
   @action.bound
   syncChange(change: GitLabMergeRequestChangeDC) {
+    const prev = this.change;
+
+    if (
+      prev.old_path === change.old_path &&
+      prev.new_path === change.new_path &&
+      prev.diff?.trim() &&
+      !change.diff?.trim()
+    ) {
+      this.change = { ...change, diff: prev.diff };
+      return;
+    }
+
     this.change = change;
   }
 
@@ -59,7 +84,9 @@ export class FileGitDiffMeta {
 
   @computed
   get isAutoCollapsed() {
-    return isAutoCollapsedMergeRequestChange(this.change);
+    const change = this.change;
+
+    return !change.too_large && Boolean(change.generated_file);
   }
 
   @computed
@@ -88,14 +115,39 @@ export class FileGitDiffMeta {
   }
 
   @computed
+  get isLazyCollapsed() {
+    const change = this.change;
+
+    return (
+      !change.too_large &&
+      !change.generated_file &&
+      Boolean(change.collapsed) &&
+      !change.diff?.trim()
+    );
+  }
+
+  @computed
+  private get showCollapsedStats() {
+    const { content } = this.file;
+    const hasApiStats =
+      this.change.added_lines != null || this.change.removed_lines != null;
+
+    if (!hasApiStats) {
+      return false;
+    }
+
+    if (this.isDiffContentHidden) {
+      return true;
+    }
+
+    return this.isLazyCollapsed && !content.parsed;
+  }
+
+  @computed
   get additions() {
     const { content } = this.file;
-    const showCollapsedStats =
-      this.isAutoCollapsed &&
-      !content.isFileExpanded &&
-      (this.change.added_lines != null || this.change.removed_lines != null);
 
-    return showCollapsedStats
+    return this.showCollapsedStats
       ? (this.change.added_lines ?? 0)
       : (content.parsed?.additions ?? 0);
   }
@@ -103,12 +155,8 @@ export class FileGitDiffMeta {
   @computed
   get deletions() {
     const { content } = this.file;
-    const showCollapsedStats =
-      this.isAutoCollapsed &&
-      !content.isFileExpanded &&
-      (this.change.added_lines != null || this.change.removed_lines != null);
 
-    return showCollapsedStats
+    return this.showCollapsedStats
       ? (this.change.removed_lines ?? 0)
       : (content.parsed?.deletions ?? 0);
   }

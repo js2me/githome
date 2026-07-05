@@ -38,6 +38,51 @@ const diffFileHeaderTextButtonVariants = cva(
   "inline-flex h-7 cursor-pointer items-center rounded border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800",
 );
 
+const FileCommentForm = observer(({ model }: { model: FileGitDiff }) => {
+  const { comments, parent } = model;
+  const { markdownScope, isSubmittingComment, submitCommentError } =
+    parent.payload;
+
+  return (
+    <div className="border-b border-slate-200 bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
+      <div className="mb-2 text-xs font-semibold text-blue-700 dark:text-blue-300">
+        Комментарий к файлу
+      </div>
+      <GitlabCommentEditor
+        projectId={markdownScope?.projectId ?? null}
+        editorClassName="border-orange-300 dark:border-orange-800"
+        placeholder="Оставьте комментарий к файлу"
+        value={comments.fileCommentBody}
+        disabled={isSubmittingComment}
+        onChange={comments.setFileCommentBody}
+      />
+      {submitCommentError && (
+        <div className="mt-2 text-xs text-red-600 dark:text-red-300">
+          {submitCommentError}
+        </div>
+      )}
+      <div className="mt-2 flex justify-end gap-2">
+        <button
+          className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+          type="button"
+          disabled={isSubmittingComment}
+          onClick={comments.cancelFileComment}
+        >
+          Отмена
+        </button>
+        <button
+          className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
+          type="button"
+          disabled={isSubmittingComment || !comments.fileCommentBody.trim()}
+          onClick={comments.submitFileComment}
+        >
+          Отправить
+        </button>
+      </div>
+    </div>
+  );
+});
+
 export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
   const {
     meta,
@@ -53,7 +98,8 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     fileKey,
     badge,
     filePath,
-    isAutoCollapsed,
+    isCollapsible,
+    isDiffContentHidden,
     fileThreads,
     searchFilePath,
     isActive,
@@ -74,12 +120,10 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     searchLines,
     includeCodeLinesInSearch,
   } = rows;
-  const { isFileCommentOpen, fileCommentBody } = comments;
+  const { isFileCommentOpen } = comments;
 
   const {
     canComment,
-    isSubmittingComment,
-    submitCommentError,
     onResolveThread,
     resolvingDiscussionId,
     currentUserId,
@@ -132,7 +176,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       );
     }
 
-    if (isAutoCollapsed && !isFileExpanded) {
+    if (isDiffContentHidden) {
       return (
         <DiffFileCollapseBanner
           change={change}
@@ -182,7 +226,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       }}
     >
       <header className="sticky top-0 z-10 flex items-center gap-2.5 rounded-t-lg border-b border-[var(--diff-border)] bg-[var(--diff-header-bg)] px-3.5 py-2.5">
-        {isAutoCollapsed && (
+        {isCollapsible && (
           <button
             className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--color-fg-subtle)] transition hover:bg-[var(--color-accent-emphasis-hover)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)]"
             type="button"
@@ -275,44 +319,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         )}
       </header>
 
-      {isFileCommentOpen && (
-        <div className="border-b border-slate-200 bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
-          <div className="mb-2 text-xs font-semibold text-blue-700 dark:text-blue-300">
-            Комментарий к файлу
-          </div>
-          <GitlabCommentEditor
-            projectId={markdownScope?.projectId ?? null}
-            editorClassName="border-orange-300 dark:border-orange-800"
-            placeholder="Оставьте комментарий к файлу"
-            value={fileCommentBody}
-            disabled={isSubmittingComment}
-            onChange={comments.setFileCommentBody}
-          />
-          {submitCommentError && (
-            <div className="mt-2 text-xs text-red-600 dark:text-red-300">
-              {submitCommentError}
-            </div>
-          )}
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
-              type="button"
-              disabled={isSubmittingComment}
-              onClick={comments.cancelFileComment}
-            >
-              Отмена
-            </button>
-            <button
-              className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
-              type="button"
-              disabled={isSubmittingComment || !fileCommentBody.trim()}
-              onClick={comments.submitFileComment}
-            >
-              Отправить
-            </button>
-          </div>
-        </div>
-      )}
+      {isFileCommentOpen && <FileCommentForm model={model} />}
 
       {fileThreads.length > 0 && (
         <div className="border-b border-slate-200 dark:border-[var(--color-border-default)]">

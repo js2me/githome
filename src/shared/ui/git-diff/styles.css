@@ -278,11 +278,11 @@
   max-width: 280px;
   transform: translate(-50%, -100%);
   border-radius: 6px;
-  background: #2d333b;
+  background: var(--color-slate-800);
   padding: 6px 10px;
   font-size: 12px;
   line-height: 1.4;
-  color: #fff;
+  color: var(--color-canvas-default);
   white-space: normal;
   pointer-events: none;
 }
@@ -294,5 +294,5 @@
   left: 50%;
   transform: translateX(-50%);
   border: 5px solid transparent;
-  border-top-color: #2d333b;
+  border-top-color: var(--color-slate-800);
 }

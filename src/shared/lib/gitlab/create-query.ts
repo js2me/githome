@@ -14,17 +14,17 @@ import {
   resolveFetchQueryParams,
   serializeFetchQuery,
 } from "@/shared/lib/create-fetch-query";
-import { createInfiniteFetchQuery } from "@/shared/lib/create-infinite-fetch-query";
+import { createInfiniteFetchQuery, type CreateInfiniteFetchQueryOptions } from "@/shared/lib/create-infinite-fetch-query";
 
 type GitlabFetchQueryParams = MaybeFalsy<
   Pick<FetchQueryParams, "path" | "query" | "notFoundAsNull" | "responseType">
 >;
 
-export type CreateGitlabQueryOptions<TData> = {
+export type CreateGitlabQueryOptions<TData = unknown> = {
   globals: Globals;
   abortSignal: AbortSignal;
-  select?: CreateFetchQueryOptions<TData>["select"];
   params: () => GitlabFetchQueryParams;
+  queryOptions?: CreateFetchQueryOptions<TData>["queryOptions"];
 };
 
 const resolveGitlabFetchParams = (
@@ -101,12 +101,10 @@ export const createGitlabApiQuery = <TData, TParams extends object>(
 export const createGitlabQuery = <TData = unknown>(
   options: CreateGitlabQueryOptions<TData>,
 ) => {
-  const { globals, abortSignal, select } = options;
-
-  return createFetchQuery({
-    abortSignal,
-    select,
-    params: () => resolveGitlabFetchParams(globals, options.params),
+  return createFetchQuery<TData>({
+    abortSignal: options.abortSignal,
+    params: () => resolveGitlabFetchParams(options.globals, options.params),
+    queryOptions: options.queryOptions,
   });
 };
 
@@ -115,17 +113,17 @@ export type CreateInfiniteGitlabQueryOptions = {
   abortSignal: AbortSignal;
   initialPageParam?: number;
   params: () => GitlabFetchQueryParams;
+  queryOptions?: CreateInfiniteFetchQueryOptions["queryOptions"];
 };
 
 export const createInfiniteGitlabQuery = <TItem = unknown>(
   options: CreateInfiniteGitlabQueryOptions,
 ) => {
-  const { globals, abortSignal, initialPageParam } = options;
-
   return createInfiniteFetchQuery<TItem>({
-    abortSignal,
-    initialPageParam,
-    params: () => resolveGitlabFetchParams(globals, options.params),
+    abortSignal: options.abortSignal,
+    initialPageParam: options.initialPageParam,
+    params: () => resolveGitlabFetchParams(options.globals, options.params),
+    queryOptions: options.queryOptions,
   });
 };
 

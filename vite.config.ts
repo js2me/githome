@@ -2,9 +2,9 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
-import { mobxVmVitePlugin } from "mobx-view-model-vite-plugin";
 import electron from "vite-plugin-electron/simple";
 import { defineConfig, type Plugin } from "vite";
+import { mobxVmVitePlugin } from "mobx-view-model-vite-plugin";
 import { handleGitlabProxyRequest } from "./electron/gitlab-proxy";
 
 const gitlabProxyPlugin = (): Plugin => ({
@@ -32,6 +32,7 @@ export default defineConfig(({ mode, command }) => {
       gitlabProxyPlugin(),
       tailwindcss(),
       mobxVmVitePlugin({
+        debug: true,
         autoDisplayName: isDev,
         devtools: isDev,
         hmr: isDev,
@@ -45,28 +46,28 @@ export default defineConfig(({ mode, command }) => {
       }),
       ...(isElectron
         ? [
-            electron({
-              main: {
-                entry: "electron/main.ts",
-                vite: {
-                  build: {
-                    outDir: "dist-electron",
-                    rollupOptions: {
-                      external: ["electron"],
-                    },
+          electron({
+            main: {
+              entry: "electron/main.ts",
+              vite: {
+                build: {
+                  outDir: "dist-electron",
+                  rollupOptions: {
+                    external: ["electron"],
                   },
                 },
               },
-              preload: {
-                input: "electron/preload.ts",
-                vite: {
-                  build: {
-                    outDir: "dist-electron",
-                  },
+            },
+            preload: {
+              input: "electron/preload.ts",
+              vite: {
+                build: {
+                  outDir: "dist-electron",
                 },
               },
-            }),
-          ]
+            },
+          }),
+        ]
         : []),
     ],
     define: {

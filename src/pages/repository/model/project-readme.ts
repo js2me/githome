@@ -36,10 +36,12 @@ export class ProjectReadmeModel {
           notFoundAsNull: true,
         };
       },
-      select: (data) =>
-        data
-          ? decodeProjectReadmeContent(data as GitLabProjectReadmeDC)
-          : null,
+      queryOptions: {
+        select: (data) =>
+          data
+            ? decodeProjectReadmeContent(data as GitLabProjectReadmeDC)
+            : null,
+      },
     });
 
     const refGroups = [
@@ -74,16 +76,18 @@ export class ProjectReadmeModel {
                 notFoundAsNull: true,
               };
             },
-            select: (text) => {
-              if (typeof text !== "string" || !text) {
-                return null;
-              }
+            queryOptions: {
+              select: (text) => {
+                if (typeof text !== "string" || !text) {
+                  return null;
+                }
 
-              return {
-                file_name: filePath.split("/").pop() ?? filePath,
-                file_path: filePath,
-                content: text,
-              };
+                return {
+                  file_name: filePath.split("/").pop() ?? filePath,
+                  file_path: filePath,
+                  content: text,
+                };
+              },
             },
           }),
         );

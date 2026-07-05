@@ -8,6 +8,9 @@ import { parseUnifiedDiff } from "@/shared/lib/parse-unified-diff";
 import { DisposableModel } from "./disposable";
 import type { FileGitDiff } from ".";
 
+const shouldStartExpanded = (file: FileGitDiff) =>
+  !file.meta.isAutoCollapsed && !file.meta.isLazyCollapsed;
+
 export class FileGitDiffContent extends DisposableModel {
   @observable accessor isFileExpanded = false;
   @observable accessor expandedDiff: string | null = null;
@@ -17,7 +20,7 @@ export class FileGitDiffContent extends DisposableModel {
 
   constructor(private readonly file: FileGitDiff) {
     super();
-    this.isFileExpanded = !this.file.meta.isAutoCollapsed;
+    this.isFileExpanded = shouldStartExpanded(this.file);
     this.setupReactions();
   }
 
@@ -25,7 +28,7 @@ export class FileGitDiffContent extends DisposableModel {
   get effectiveDiff() {
     const { meta } = this.file;
 
-    if (meta.isAutoCollapsed && !this.isFileExpanded) {
+    if (meta.isDiffContentHidden) {
       return "";
     }
 
@@ -126,8 +129,11 @@ export class FileGitDiffContent extends DisposableModel {
 
   @action.bound
   resetOnPathChange() {
-    this.isFileExpanded = !this.file.meta.isAutoCollapsed;
+    this.isFileExpanded = shouldStartExpanded(this.file);
     this.expandedDiff = null;
+    this.resolvedDiff = null;
+    this.isLoadingCollapsedExpand = false;
+    this.isResolvingDiff = false;
   }
 
   private setupReactions() {
@@ -137,7 +143,6 @@ export class FileGitDiffContent extends DisposableModel {
           [
             this.file.meta.change.new_path,
             this.file.meta.change.old_path,
-            this.file.meta.isAutoCollapsed,
           ] as const,
         () => {
           this.resetOnPathChange();
@@ -157,13 +162,17 @@ export class FileGitDiffContent extends DisposableModel {
           headRef: this.file.parent.payload.headRef,
           baseRef: this.file.parent.payload.baseRef,
           loadFileContent: this.file.parent.payload.loadFileContent,
-          isAutoCollapsed: this.file.meta.isAutoCollapsed,
+          isDiffContentHidden: this.file.meta.isDiffContentHidden,
         }),
         (source) => {
           this.resolvedDiff = null;
           this.isResolvingDiff = false;
 
-          if (source.diff?.trim() || !source.loadFileContent || source.isAutoCollapsed) {
+          if (
+            source.diff?.trim() ||
+            !source.loadFileContent ||
+            source.isDiffContentHidden
+          ) {
             return;
           }
 
@@ -208,39 +217,6 @@ export class FileGitDiffContent extends DisposableModel {
           return () => {
             cancelled = true;
           };
-        },
-      ),
-    );
-
-    this.disposers.push(
-      reaction(
-        () => ({
-          generatedFile: this.file.meta.change.generated_file,
-          tooLarge: this.file.meta.change.too_large,
-          diff: this.file.meta.change.diff,
-          loadFileContent: this.file.parent.payload.loadFileContent,
-          expandedDiff: this.expandedDiff,
-          resolvedDiff: this.resolvedDiff,
-          newFile: this.file.meta.change.new_file,
-          deletedFile: this.file.meta.change.deleted_file,
-          newPath: this.file.meta.change.new_path,
-          oldPath: this.file.meta.change.old_path,
-        }),
-        (source) => {
-          if (
-            source.generatedFile ||
-            source.tooLarge ||
-            source.diff?.trim() ||
-            !source.loadFileContent ||
-            source.expandedDiff ||
-            source.resolvedDiff ||
-            source.newFile ||
-            source.deletedFile
-          ) {
-            return;
-          }
-
-          void this.expandCollapsedFile();
         },
       ),
     );

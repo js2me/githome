@@ -1,5 +1,4 @@
 import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { getVisibleMergeRequestChanges } from "@/shared/lib/gitlab/merge-request-changes-visibility";
 import { buildUnifiedDiffFromGitlabLines } from "@/shared/lib/gitlab/build-unified-diff-from-gitlab-lines";
 import {
   buildGitlabPath,
@@ -293,7 +292,7 @@ const fetchAllMergeRequestDiffs = async (
     page = Number(nextPage);
   }
 
-  return getVisibleMergeRequestChanges(allDiffs);
+  return allDiffs;
 };
 
 export const getMergeRequestChanges = async (

@@ -5,6 +5,7 @@ import { cn } from "@/shared/lib/cn";
 import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { LayoutVM } from "../model/layout-vm";
 import { ConnectionPicker } from "./connection-picker";
+import { SettingsPopup } from "./settings-popup";
 
 const navLinkClassName =
   "cursor-pointer rounded-lg border-none bg-transparent px-3 py-2 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200";
@@ -86,35 +87,41 @@ export const AppNav = observer(() => {
               </span>
             </button>
 
-            <span className="select-none text-sm text-slate-300 dark:text-slate-600">
-              /
-            </span>
-
-            <button
-              className={cn(
-                navLinkClassName,
-                model.isMergeRequestsNavActive &&
-                "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-              )}
-              type="button"
-              onClick={model.openMergeRequests}
-            >
-              Merge Requests
-            </button>
-
-            {model.showMergeRequestBreadcrumb && (
+            {model.isMergeRequestsOpen && (
               <>
                 <span className="select-none text-sm text-slate-300 dark:text-slate-600">
                   /
                 </span>
-                <span className="max-w-80 truncate px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200">
-                  !{model.mergeRequestIid}
-                </span>
+
+                <button
+                  className={cn(
+                    navLinkClassName,
+                    model.isMergeRequestsNavActive &&
+                      "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+                  )}
+                  type="button"
+                  onClick={model.openMergeRequests}
+                >
+                  Merge Requests
+                </button>
+
+                {model.showMergeRequestBreadcrumb && (
+                  <>
+                    <span className="select-none text-sm text-slate-300 dark:text-slate-600">
+                      /
+                    </span>
+                    <span className="max-w-80 truncate px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200">
+                      !{model.mergeRequestIid}
+                    </span>
+                  </>
+                )}
               </>
             )}
           </>
         )}
       </nav>
+
+      <SettingsPopup />
     </header>
   );
 });

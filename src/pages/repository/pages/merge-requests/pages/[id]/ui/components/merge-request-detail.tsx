@@ -138,7 +138,7 @@ const BranchLabel = ({
 
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 py-1 pl-2 pr-1 dark:border-slate-700 dark:bg-slate-950">
-      <span className="min-w-0 truncate">{branch}</span>
+      <span className="min-w-0 truncate text-fg-default">{branch}</span>
       <button
         className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 disabled:cursor-wait dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
         type="button"
@@ -262,12 +262,12 @@ export const MergeRequestDetail = ({
       {resolveDiscussionError && (
         <StatusMessage error>{resolveDiscussionError}</StatusMessage>
       )}
-      <header className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-gray-900">
+      <header className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-canvas-overlay px-5 py-4 dark:border-slate-800">
         <div className="flex flex-wrap items-start gap-2.5">
-          <span className="shrink-0 text-[22px] font-bold text-slate-500">
+          <span className="shrink-0 text-[22px] font-bold text-fg-muted">
             !{mergeRequest.iid}
           </span>
-          <h2 className="m-0 min-w-0 flex-1 text-[22px] leading-snug dark:text-slate-200">
+          <h2 className="m-0 min-w-0 flex-1 text-[22px] leading-snug text-fg-default">
             {mergeRequest.title}
           </h2>
           <MrStateBadge mergeRequest={mergeRequest} size="md" />
@@ -281,20 +281,20 @@ export const MergeRequestDetail = ({
           </a>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 font-mono text-[13px] text-slate-600 dark:text-slate-300">
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[13px] text-fg-muted">
           <BranchLabel branch={mergeRequest.source_branch} label="source branch" />
-          <span className="text-slate-400">→</span>
+          <span className="text-fg-subtle">→</span>
           <BranchLabel branch={mergeRequest.target_branch} label="target branch" />
         </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-slate-500">
-          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+        <div className="flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-fg-muted">
+          <div className="flex items-center gap-2">
             <GitlabAvatar
               className="h-6 w-6 rounded-full object-cover"
               avatarUrl={mergeRequest.author?.avatar_url}
               name={authorName}
             />
-            <span>{authorName}</span>
+            <span className="text-fg-default">{authorName}</span>
           </div>
 
           <span>создан {formatDateTime(mergeRequest.created_at ?? mergeRequest.updated_at)}</span>
@@ -323,7 +323,7 @@ export const MergeRequestDetail = ({
               </span>
             )}
             {mergeRequest.merge_status && (
-              <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              <span className="rounded-full bg-slate-100 px-2 py-1 text-fg-muted dark:bg-slate-800 dark:text-slate-300">
                 merge status: {mergeRequest.merge_status}
               </span>
             )}
@@ -345,8 +345,8 @@ export const MergeRequestDetail = ({
 
         {assigneeNames.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 text-[13px]">
-            <span className="text-slate-500">Assignees:</span>
-            <span>{assigneeNames.join(", ")}</span>
+            <span className="text-fg-muted">Assignees:</span>
+            <span className="text-fg-default">{assigneeNames.join(", ")}</span>
           </div>
         )}
       </header>

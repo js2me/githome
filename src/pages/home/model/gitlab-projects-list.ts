@@ -35,7 +35,9 @@ export class GitlabProjectsList {
       globals: params.globals,
       abortSignal: params.abortSignal,
       params: () => ({ path: "/user" }),
-      select: (data) => (data as GitLabUserDC).id,
+      queryOptions: {
+        select: (data) => (data as GitLabUserDC).id,
+      },
     });
 
     this.countQueries = Object.fromEntries(
