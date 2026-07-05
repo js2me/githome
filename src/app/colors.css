@@ -225,12 +225,12 @@
 
   /* Diff — Dracula Official (diffEditor.* / gitDecoration.*) */
   --diff-border: #44475a;
-  --diff-line-added: #293f3b;
-  --diff-line-removed: #5d3038;
-  --diff-line-num-new: #2c473f;
-  --diff-line-num-old: #55333c;
+  --diff-line-added: #263b38;
+  --diff-line-removed: #542b32;
+  --diff-line-num-new: #1a3930;
+  --diff-line-num-old: #582734;
   --diff-inline-added: #2c6250;
-  --diff-inline-removed: #62363e;
+  --diff-inline-removed: #712138;
   --diff-prefix-added: #50fa7b;
   --diff-prefix-removed: #ff5555;
   --diff-line-num-text: #6272a4;
