@@ -6,6 +6,8 @@ import electron from "vite-plugin-electron/simple";
 import { defineConfig, type Plugin } from "vite";
 import { mobxVmVitePlugin } from "mobx-view-model-vite-plugin";
 import { handleGitlabProxyRequest } from "./electron/gitlab-proxy";
+import dotenv from "dotenv";
+
 
 const gitlabProxyPlugin = (): Plugin => ({
   name: "gitlab-proxy",
@@ -27,12 +29,15 @@ export default defineConfig(({ mode, command }) => {
     process.env.ELECTRON === "1" ||
     (command === "build" && process.env.WEB_ONLY !== "1");
 
+
+  dotenv.config();
+
   return {
     plugins: [
       gitlabProxyPlugin(),
       tailwindcss(),
       mobxVmVitePlugin({
-        debug: true,
+        debug: process.env.DEBUG_VM_VITE_PLUGIN === 'true',
         autoDisplayName: isDev,
         devtools: isDev,
         hmr: isDev,
