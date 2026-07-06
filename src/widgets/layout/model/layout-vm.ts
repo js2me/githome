@@ -1,7 +1,6 @@
 import { action, computed, observable, reaction } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
-import { RepositoryPageVM } from "@/pages/repository/model";
 import type { GitLabProjectDC } from "@/shared/api/gitlab";
 import { isConnectionDraftValid } from "@/shared/lib/gitlab/connection";
 import { VM } from "@/shared/lib/view-models/vm";
@@ -47,7 +46,19 @@ export class LayoutVM extends VM {
 
   @computed
   get projectId(): number | null {
-    return RepositoryPageVM.resolveProjectId(this.globals);
+    const { mergeRequest, mergeRequests, repository } = this.globals.router.routes;
+
+    const projectId =
+      mergeRequest.params?.projectId ??
+      mergeRequests.params?.projectId ??
+      repository.params?.projectId;
+
+    if (!projectId) {
+      return null;
+    }
+
+    const id = Number(projectId);
+    return Number.isNaN(id) ? null : id;
   }
 
   @computed
@@ -64,7 +75,15 @@ export class LayoutVM extends VM {
 
   @computed
   get mergeRequestIid(): number | null {
-    return RepositoryPageVM.resolveMergeRequestIid(this.globals);
+    const mergeRequestIid =
+      this.globals.router.routes.mergeRequest.params?.mergeRequestIid;
+
+    if (!mergeRequestIid) {
+      return null;
+    }
+
+    const iid = Number(mergeRequestIid);
+    return Number.isNaN(iid) ? null : iid;
   }
 
   @computed
@@ -102,8 +121,8 @@ export class LayoutVM extends VM {
   @computed
   get showRepositoryBreadcrumbs() {
     return (
-      (this.globals.router.routes.repositoryRoot.isOpened ||
-        this.globals.router.routes.repositoryRoot.hasOpenedChildren) && 
+      (this.globals.router.routes.repository.isOpened ||
+        this.globals.router.routes.repository.hasOpenedChildren) &&
       this.repository !== null &&
       this.projectId !== null
     );

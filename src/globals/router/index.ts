@@ -14,16 +14,12 @@ export interface RouterParams {
 }
 
 const defineRoutes = () => {
-  const repositoryRoot = createRoute("/repository/:projectId");
-  const repository = repositoryRoot.extend("/", { index: true });
-  const mergeRequests = repositoryRoot.extend("/merge-requests", {
-    exact: true,
-  });
-  const mergeRequest = mergeRequests.extend("/:mergeRequestIid");
+  const repository = createRoute("/repository/:projectId", { exact: false });
+  const mergeRequests = repository.extend("/merge-requests", { exact: true });
+  const mergeRequest = mergeRequests.extend("/:mergeRequestIid", { exact: true });
 
   return {
     home: createRoute("/", { exact: true }),
-    repositoryRoot,
     repository,
     mergeRequests,
     mergeRequest,

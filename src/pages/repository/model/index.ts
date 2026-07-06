@@ -19,9 +19,16 @@ export class RepositoryPageVM extends VM {
     this.projectQuery = createGitlabQuery<GitLabProjectDC>({
       globals,
       abortSignal: this.unmountSignal,
-      params: () => ({
-        path: `/projects/${this.projectId}`,
-      }),
+      params: () => {
+        const projectId = this.projectId;
+        if (projectId === null) {
+          return false;
+        }
+
+        return {
+          path: `/projects/${projectId}`,
+        };
+      },
     });
 
     this.readmeModel = new ProjectReadmeModel({
@@ -41,24 +48,6 @@ export class RepositoryPageVM extends VM {
     );
   }
 
-  static resolveProjectId(globals: Globals): number | null {
-    const { mergeRequest, mergeRequests, repository, repositoryRoot } =
-      globals.router.routes;
-
-    const projectId =
-      mergeRequest.params?.projectId ??
-      mergeRequests.params?.projectId ??
-      repository.params?.projectId ??
-      repositoryRoot.params?.projectId;
-
-    if (!projectId) {
-      return null;
-    }
-
-    const id = Number(projectId);
-    return Number.isNaN(id) ? null : id;
-  }
-
   static resolveMergeRequestIid(globals: Globals): number | null {
     const mergeRequestIid =
       globals.router.routes.mergeRequest.params?.mergeRequestIid;
@@ -72,18 +61,19 @@ export class RepositoryPageVM extends VM {
   }
 
   @computed
-  get projectId(): number {
-    const projectId = RepositoryPageVM.resolveProjectId(this.globals);
-    if (projectId === null) {
-      throw new Error("Project id is missing in route");
+  get projectId(): number | null {
+    const projectId = this.globals.router.routes.repository.params?.projectId;
+    if (!projectId) {
+      return null;
     }
 
-    return projectId;
+    const id = Number(projectId);
+    return Number.isNaN(id) ? null : id;
   }
 
   @computed
   get projectIdParam(): string {
-    return String(this.projectId);
+    return this.projectId !== null ? String(this.projectId) : "";
   }
 
   @computed
@@ -93,13 +83,18 @@ export class RepositoryPageVM extends VM {
 
   @computed
   get selectedProject(): GitLabProjectDC | null {
+    const projectId = this.projectId;
+    if (projectId === null) {
+      return null;
+    }
+
     const fromQuery = this.projectQuery.data;
-    if (fromQuery && fromQuery.id === this.projectId) {
+    if (fromQuery && fromQuery.id === projectId) {
       return fromQuery;
     }
 
     const cached = this.globals.stores.repository.project;
-    if (!cached || cached.id !== this.projectId) {
+    if (!cached || cached.id !== projectId) {
       return null;
     }
 
@@ -152,8 +147,11 @@ export class RepositoryPageVM extends VM {
 
   @action.bound
   openMergeRequests() {
-    void this.globals.router.routes.mergeRequests.open({
-      projectId: this.projectIdParam,
-    });
+    const projectId = this.projectIdParam;
+    if (!projectId) {
+      return;
+    }
+
+    void this.globals.router.routes.mergeRequests.open({ projectId });
   }
 }

@@ -7,7 +7,7 @@ import { Globals } from "@/globals";
 export interface MrListParams {
   globals: Globals;
   readonly abortSignal: AbortSignal;
-  readonly projectId: number;
+  readonly projectId: number | null;
   readonly selectedProject: GitLabProjectDC | null;
   readonly mergeRequestIid: number | null;
 }
@@ -21,15 +21,22 @@ export class MrList {
     this.mergeRequestsQuery = createGitlabQuery<GitLabMergeRequestDC[]>({
       globals: params.globals,
       abortSignal: params.abortSignal,
-      params: () => ({
-        path: `/projects/${params.projectId}/merge_requests`,
-        query: {
-          state: "opened",
-          order_by: "updated_at",
-          sort: "desc",
-          per_page: 20,
-        },
-      }),
+      params: () => {
+        const projectId = params.projectId;
+        if (projectId === null) {
+          return false;
+        }
+
+        return {
+          path: `/projects/${projectId}/merge_requests`,
+          query: {
+            state: "opened",
+            order_by: "updated_at",
+            sort: "desc",
+            per_page: 20,
+          },
+        };
+      },
     });
 
     this.mergeRequestApprovalCountsQuery = createGitlabApiQuery<
@@ -122,8 +129,13 @@ export class MrList {
 
   @action.bound
   openMergeRequest(mergeRequest: GitLabMergeRequestDC) {
+    const projectId = this.params.projectId;
+    if (projectId === null) {
+      return;
+    }
+
     void this.params.globals.router.routes.mergeRequest.open({
-      projectId: String(this.params.projectId),
+      projectId: String(projectId),
       mergeRequestIid: String(mergeRequest.iid),
     });
   }

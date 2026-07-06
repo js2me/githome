@@ -24,6 +24,11 @@ const LayoutContent = observer(({ children, model }: LayoutProps) => {
   );
 });
 
-export const Layout = withViewModel(LayoutVM, (props: LayoutProps) => (
-  <LayoutContent {...props} />
-));
+export const Layout = withViewModel(
+  LayoutVM,
+  (props: LayoutProps) => <LayoutContent {...props} />,
+  {
+    vmConfig: { useReactIds: false },
+    generateId: () => "layout",
+  },
+);

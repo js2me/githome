@@ -4,8 +4,7 @@ import { MergeRequestPageVM } from "../model";
 import { MergeRequestDetail } from "./components/merge-request-detail";
 
 export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) => {
-  const { mrInfo } = model;
-  const detailView = mrInfo.detailView;
+  const detailView = model.mrInfo.detailView;
   const connection = model.globals.stores.settings.activeConnection;
   const projectPath = model.project?.path_with_namespace ?? "";
   const markdownScope = {
@@ -16,12 +15,12 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
 
   return (
     <section>
-        {mrInfo.isLoading && (
+        {model.mrInfo.isLoading && (
           <StatusMessage>Загружаем merge request...</StatusMessage>
         )}
 
-        {mrInfo.showLoadError && (
-          <StatusMessage error>{mrInfo.errorMessage}</StatusMessage>
+        {model.mrInfo.showLoadError && (
+          <StatusMessage error>{model.mrInfo.errorMessage}</StatusMessage>
         )}
 
         {detailView && (
@@ -33,33 +32,33 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
               discussions={detailView.discussions}
               approvals={detailView.approvals}
               canComment={detailView.mergeRequest.diff_refs != null}
-              isSubmittingComment={mrInfo.isSubmittingDiffComment}
-              submitCommentError={mrInfo.submitDiffCommentError}
-              onAddComment={mrInfo.submitDiffComment}
-              onClearSubmitError={mrInfo.clearSubmitDiffCommentError}
+              isSubmittingComment={model.mrInfo.isSubmittingDiffComment}
+              submitCommentError={model.mrInfo.submitDiffCommentError}
+              onAddComment={model.mrInfo.submitDiffComment}
+              onClearSubmitError={model.mrInfo.clearSubmitDiffCommentError}
               canCommentOnMr={detailView.mergeRequest.state === "opened"}
-              isSubmittingMrComment={mrInfo.isSubmittingMrComment}
-              submitMrCommentError={mrInfo.submitMrCommentError}
-              onSubmitMrComment={mrInfo.submitMrComment}
-              onClearSubmitMrCommentError={mrInfo.clearSubmitMrCommentError}
-              loadFileContent={mrInfo.loadDiffFileContent}
-              onResolveDiscussion={mrInfo.resolveDiscussion}
-              resolvingDiscussionId={mrInfo.resolvingDiscussionId}
-              resolveDiscussionError={mrInfo.resolveDiscussionError}
-              currentUserId={mrInfo.currentUserId}
-              onUpdateDiscussionNote={mrInfo.updateDiscussionNote}
-              updatingNoteKey={mrInfo.updatingNoteKey || null}
-              updateNoteError={mrInfo.updateNoteError || null}
-              onClearUpdateNoteError={mrInfo.clearUpdateNoteError}
-              reviewActionInProgress={mrInfo.reviewActionInProgress}
-              reviewActionError={mrInfo.reviewActionError}
-              onApprove={mrInfo.approve}
-              onUnapprove={mrInfo.unapprove}
-              onRequestChanges={mrInfo.requestChanges}
-              onCancelRequestChanges={mrInfo.cancelRequestChanges}
+              isSubmittingMrComment={model.mrInfo.isSubmittingMrComment}
+              submitMrCommentError={model.mrInfo.submitMrCommentError}
+              onSubmitMrComment={model.mrInfo.submitMrComment}
+              onClearSubmitMrCommentError={model.mrInfo.clearSubmitMrCommentError}
+              loadFileContent={model.mrInfo.loadDiffFileContent}
+              onResolveDiscussion={model.mrInfo.resolveDiscussion}
+              resolvingDiscussionId={model.mrInfo.resolvingDiscussionId}
+              resolveDiscussionError={model.mrInfo.resolveDiscussionError}
+              currentUserId={model.mrInfo.currentUserId}
+              onUpdateDiscussionNote={model.mrInfo.updateDiscussionNote}
+              updatingNoteKey={model.mrInfo.updatingNoteKey || null}
+              updateNoteError={model.mrInfo.updateNoteError || null}
+              onClearUpdateNoteError={model.mrInfo.clearUpdateNoteError}
+              reviewActionInProgress={model.mrInfo.reviewActionInProgress}
+              reviewActionError={model.mrInfo.reviewActionError}
+              onApprove={model.mrInfo.approve}
+              onUnapprove={model.mrInfo.unapprove}
+              onRequestChanges={model.mrInfo.requestChanges}
+              onCancelRequestChanges={model.mrInfo.cancelRequestChanges}
               diffVersions={detailView.diffVersions}
               selectedDiffVersionId={detailView.selectedDiffVersionId}
-              onSelectDiffVersion={mrInfo.selectDiffVersion}
+              onSelectDiffVersion={model.mrInfo.selectDiffVersion}
             />
           )}
       </section>

@@ -22,7 +22,7 @@ const settingsTriggerButtonVariants = cva(
 );
 
 export const SettingsPopup = observer(() => {
-  const model = useViewModel(LayoutVM);
+  const model = useViewModel<LayoutVM>();
   const { appSettings } = model;
 
   return (

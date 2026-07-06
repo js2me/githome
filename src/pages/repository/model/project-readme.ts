@@ -12,7 +12,7 @@ type ReadmeQuery = ReturnType<typeof createGitlabQuery<GitLabProjectReadmeDC | n
 export interface ProjectReadmeParams {
   globals: Globals;
   abortSignal: AbortSignal;
-  projectId: () => number;
+  projectId: () => number | null;
   defaultBranch: () => string | null | undefined;
 }
 
@@ -25,13 +25,14 @@ export class ProjectReadmeModel {
       globals: params.globals,
       abortSignal: params.abortSignal,
       params: () => {
+        const projectId = params.projectId();
         const ref = params.defaultBranch()?.trim();
-        if (!ref) {
+        if (projectId === null || !ref) {
           return false;
         }
 
         return {
-          path: `/projects/${params.projectId()}/repository/readme`,
+          path: `/projects/${projectId}/repository/readme`,
           query: { ref },
           notFoundAsNull: true,
         };
@@ -64,13 +65,14 @@ export class ProjectReadmeModel {
             globals: params.globals,
             abortSignal: params.abortSignal,
             params: () => {
+              const projectId = params.projectId();
               const ref = group.resolveRef();
-              if (!ref || !this.shouldRunFallback(queryIndex)) {
+              if (projectId === null || !ref || !this.shouldRunFallback(queryIndex)) {
                 return false;
               }
 
               return {
-                path: `/projects/${params.projectId()}/repository/files/${encodeURIComponent(filePath)}/raw`,
+                path: `/projects/${projectId}/repository/files/${encodeURIComponent(filePath)}/raw`,
                 query: { ref },
                 responseType: "text",
                 notFoundAsNull: true,

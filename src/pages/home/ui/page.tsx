@@ -6,7 +6,9 @@ import { HomeVM } from "../model";
 import { ProjectAvatar } from "./components/project-avatar";
 import { ProjectsLoadMoreSentinel } from "./components/projects-load-more-sentinel";
 
-export const HomePage = withViewModel(HomeVM, ({ model }) => {
+export const HomePage = withViewModel(
+  HomeVM,
+  ({ model }) => {
   const { gitlabProjectsList } = model;
 
   return (
@@ -104,4 +106,9 @@ export const HomePage = withViewModel(HomeVM, ({ model }) => {
       )}
     </section>
   );
-});
+  },
+  {
+    vmConfig: { useReactIds: false },
+    generateId: () => "home",
+  },
+);

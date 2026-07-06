@@ -40,7 +40,7 @@ const ProjectAvatar = ({
 };
 
 export const AppNav = observer(() => {
-  const model = useViewModel(LayoutVM);
+  const model = useViewModel<LayoutVM>();
 
   return (
     <header className="flex items-center gap-4 border-b border-slate-200 bg-white px-5 py-3 dark:border-slate-800 dark:bg-gray-900">

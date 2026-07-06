@@ -1,17 +1,35 @@
-import { observer } from "mobx-react-lite";
-import { useViewModel } from "mobx-view-model-react";
+import { withViewModel } from "mobx-view-model-react";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { RepositoryPageVM } from "../model";
+import { RouteView, RouteViewGroup } from "mobx-route/react";
+import { lazy } from "react";
 
-export const RepositoryPage = observer(() => {
-  const model = useViewModel(RepositoryPageVM);
+
+const MergeRequestsPage = lazy(() =>
+  import("@/pages/repository/pages/merge-requests/ui/page").then((module) => ({
+    default: module.MergeRequestsPage,
+  })),
+);
+
+const MergeRequestPage = lazy(() =>
+  import("@/pages/repository/pages/merge-requests/pages/[id]/ui/page").then(
+    (module) => ({
+      default: module.MergeRequestPage,
+    }),
+  ),
+);
+
+export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
   const project = model.project;
   const connection = model.globals.stores.settings.activeConnection;
   const projectPath = project?.path_with_namespace ?? "";
 
   return (
-    <section>
+    <RouteViewGroup>
+      <RouteView route={model.globals.router.routes.mergeRequests} view={MergeRequestsPage} />
+      <RouteView route={model.globals.router.routes.mergeRequest} view={MergeRequestPage} />
+      <section>
         {model.isLoading && !project && (
           <StatusMessage>Загружаем репозиторий...</StatusMessage>
         )}
@@ -42,8 +60,8 @@ export const RepositoryPage = observer(() => {
             )}
 
             {model.showReadmeMissing && (
-                <StatusMessage>README не найден.</StatusMessage>
-              )}
+              <StatusMessage>README не найден.</StatusMessage>
+            )}
 
             {model.readme && (
               <article className="mt-2 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900">
@@ -60,5 +78,6 @@ export const RepositoryPage = observer(() => {
           </>
         )}
       </section>
+    </RouteViewGroup>
   );
 });
