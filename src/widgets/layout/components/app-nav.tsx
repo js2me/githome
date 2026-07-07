@@ -87,6 +87,26 @@ export const AppNav = observer(() => {
               </span>
             </button>
 
+            {model.isFilesOpen && (
+              <>
+                <span className="select-none text-sm text-slate-300 dark:text-slate-600">
+                  /
+                </span>
+
+                <button
+                  className={cn(
+                    navLinkClassName,
+                    model.isFilesNavActive &&
+                      "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+                  )}
+                  type="button"
+                  onClick={model.openFiles}
+                >
+                  Files
+                </button>
+              </>
+            )}
+
             {model.isMergeRequestsOpen && (
               <>
                 <span className="select-none text-sm text-slate-300 dark:text-slate-600">

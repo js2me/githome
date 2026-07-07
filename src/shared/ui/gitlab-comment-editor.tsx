@@ -10,13 +10,17 @@ import {
   Strikethrough,
 } from "@gravity-ui/icons";
 import {
+  memo,
   useCallback,
   useEffect,
   useRef,
   useState,
   type ClipboardEvent,
   type ComponentPropsWithoutRef,
+  type MutableRefObject,
   type ReactNode,
+  type Ref,
+  type RefObject,
 } from "react";
 import { gitlabApi } from "@/shared/api/gitlab";
 import {
@@ -51,203 +55,162 @@ const getClipboardImageFile = (
   return null;
 };
 
-const ToolbarButton = ({
-  title,
-  disabled,
-  onClick,
-  children,
-}: {
-  title: string;
-  disabled?: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) => (
-  <button
-    className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-600 transition hover:bg-slate-200/80 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100"
-    type="button"
-    title={title}
-    aria-label={title}
-    disabled={disabled}
-    onClick={onClick}
-  >
-    {children}
-  </button>
+const mergeRefs =
+  <T,>(...refs: Array<Ref<T> | undefined>) =>
+  (node: T | null) => {
+    for (const ref of refs) {
+      if (!ref) {
+        continue;
+      }
+
+      if (typeof ref === "function") {
+        ref(node);
+      } else {
+        (ref as MutableRefObject<T | null>).current = node;
+      }
+    }
+  };
+
+const ToolbarButton = memo(
+  ({
+    title,
+    disabled,
+    onClick,
+    children,
+  }: {
+    title: string;
+    disabled?: boolean;
+    onClick: () => void;
+    children: ReactNode;
+  }) => (
+    <button
+      className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-600 transition hover:bg-slate-200/80 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100"
+      type="button"
+      title={title}
+      aria-label={title}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  ),
 );
 
-type GitlabCommentEditorProps = Omit<
-  ComponentPropsWithoutRef<"textarea">,
-  "onChange" | "value"
-> & {
-  value: string;
-  onChange: (value: string) => void;
-  wrapperClassName?: string;
-  editorClassName?: string;
-  projectId?: number | null;
-};
+const getTextareaSelection = (
+  textarea: HTMLTextAreaElement,
+): MarkdownSelection => ({
+  value: textarea.value,
+  selectionStart: textarea.selectionStart,
+  selectionEnd: textarea.selectionEnd,
+});
 
-export const GitlabCommentEditor = ({
-  value,
-  onChange,
-  disabled,
-  className,
-  wrapperClassName,
-  editorClassName,
-  projectId = null,
-  onPaste,
-  ...textareaProps
-}: GitlabCommentEditorProps) => {
-  const connection = useGitLabConnection();
+const GitlabCommentEditorToolbar = memo(
+  ({
+    textareaRef,
+    disabled,
+    projectId,
+    connection,
+    onValueChange,
+  }: {
+    textareaRef: RefObject<HTMLTextAreaElement | null>;
+    disabled: boolean;
+    projectId: number | null;
+    connection: ReturnType<typeof useGitLabConnection>;
+    onValueChange: (value: string) => void;
+  }) => {
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const isDisabled = disabled || isUploadingImage;
 
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const pendingSelectionRef = useRef<{
-    start: number;
-    end: number;
-  } | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+    const applyMarkdown = useCallback(
+      (
+        transform: (selection: MarkdownSelection) => MarkdownSelectionResult,
+      ) => {
+        const textarea = textareaRef.current;
+        if (!textarea || isDisabled) {
+          return;
+        }
 
-  useEffect(() => {
-    if (pendingSelectionRef.current === null || !textareaRef.current) {
-      return;
-    }
+        const result = transform(getTextareaSelection(textarea));
+        textarea.value = result.value;
+        textarea.selectionStart = result.selectionStart;
+        textarea.selectionEnd = result.selectionEnd;
+        onValueChange(result.value);
+        textarea.focus();
+      },
+      [isDisabled, onValueChange, textareaRef],
+    );
 
-    const { start, end } = pendingSelectionRef.current;
-    pendingSelectionRef.current = null;
-    textareaRef.current.selectionStart = start;
-    textareaRef.current.selectionEnd = end;
-    textareaRef.current.focus();
-  }, [value]);
+    const insertUploadedImageMarkdown = useCallback(
+      async (imageFile: File, selectionStart: number, selectionEnd: number) => {
+        if (!connection || !projectId) {
+          return;
+        }
 
-  const getCurrentSelection = useCallback((): MarkdownSelection | null => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      return null;
-    }
+        const textarea = textareaRef.current;
+        if (!textarea) {
+          return;
+        }
 
-    return {
-      value,
-      selectionStart: textarea.selectionStart,
-      selectionEnd: textarea.selectionEnd,
-    };
-  }, [value]);
+        setIsUploadingImage(true);
+        setUploadError(null);
 
-  const applyMarkdown = useCallback(
-    (
-      transform: (selection: MarkdownSelection) => MarkdownSelectionResult,
-    ) => {
-      const selection = getCurrentSelection();
-      if (!selection || disabled || isUploadingImage) {
-        return;
-      }
+        try {
+          const upload = await gitlabApi.uploadProjectMarkdown(
+            connection,
+            projectId,
+            imageFile,
+          );
+          const markdown = upload.markdown;
+          const nextValue =
+            textarea.value.slice(0, selectionStart) +
+            markdown +
+            textarea.value.slice(selectionEnd);
 
-      const result = transform(selection);
-      pendingSelectionRef.current = {
-        start: result.selectionStart,
-        end: result.selectionEnd,
-      };
-      onChange(result.value);
-    },
-    [disabled, getCurrentSelection, isUploadingImage, onChange],
-  );
+          textarea.value = nextValue;
+          textarea.selectionStart = selectionStart + markdown.length;
+          textarea.selectionEnd = selectionStart + markdown.length;
+          onValueChange(nextValue);
+          textarea.focus();
+        } catch (error) {
+          setUploadError(
+            error instanceof Error
+              ? error.message
+              : "Не удалось загрузить изображение",
+          );
+        } finally {
+          setIsUploadingImage(false);
+        }
+      },
+      [connection, onValueChange, projectId, textareaRef],
+    );
 
-  const insertUploadedImageMarkdown = useCallback(
-    async (imageFile: File, selectionStart: number, selectionEnd: number) => {
-      if (!connection || !projectId) {
-        return;
-      }
+    const handleImageSelect = useCallback(
+      async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const imageFile = event.target.files?.[0];
+        event.target.value = "";
 
-      setIsUploadingImage(true);
-      setUploadError(null);
+        if (!imageFile) {
+          return;
+        }
 
-      try {
-        const upload = await gitlabApi.uploadProjectMarkdown(
-          connection,
-          projectId,
+        const textarea = textareaRef.current;
+        if (!textarea) {
+          return;
+        }
+
+        await insertUploadedImageMarkdown(
           imageFile,
+          textarea.selectionStart,
+          textarea.selectionEnd,
         );
-        const markdown = upload.markdown;
-        const nextValue =
-          value.slice(0, selectionStart) +
-          markdown +
-          value.slice(selectionEnd);
+      },
+      [insertUploadedImageMarkdown, textareaRef],
+    );
 
-        pendingSelectionRef.current = {
-          start: selectionStart + markdown.length,
-          end: selectionStart + markdown.length,
-        };
-        onChange(nextValue);
-      } catch (error) {
-        setUploadError(
-          error instanceof Error
-            ? error.message
-            : "Не удалось загрузить изображение",
-        );
-      } finally {
-        setIsUploadingImage(false);
-      }
-    },
-    [connection, onChange, projectId, value],
-  );
-
-  const handlePaste = useCallback(
-    async (event: ClipboardEvent<HTMLTextAreaElement>) => {
-      onPaste?.(event);
-      if (event.defaultPrevented) {
-        return;
-      }
-
-      const imageFile = getClipboardImageFile(event.clipboardData);
-      if (!imageFile) {
-        return;
-      }
-
-      event.preventDefault();
-
-      const textarea = event.currentTarget;
-      await insertUploadedImageMarkdown(
-        imageFile,
-        textarea.selectionStart,
-        textarea.selectionEnd,
-      );
-    },
-    [insertUploadedImageMarkdown, onPaste],
-  );
-
-  const handleImageSelect = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const imageFile = event.target.files?.[0];
-      event.target.value = "";
-
-      if (!imageFile) {
-        return;
-      }
-
-      const textarea = textareaRef.current;
-      if (!textarea) {
-        return;
-      }
-
-      await insertUploadedImageMarkdown(
-        imageFile,
-        textarea.selectionStart,
-        textarea.selectionEnd,
-      );
-    },
-    [insertUploadedImageMarkdown],
-  );
-
-  const isDisabled = disabled || isUploadingImage;
-
-  return (
-    <div className={wrapperClassName}>
-      <div
-        className={cn(
-          "overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-canvas-default",
-          isDisabled && "opacity-60",
-          editorClassName,
-        )}
-      >
+    return (
+      <>
         <div className="flex flex-wrap items-center gap-0.5 border-b border-slate-200 px-2 py-1.5 dark:border-slate-700">
           <ToolbarButton
             title="Жирный"
@@ -286,7 +249,9 @@ export const GitlabCommentEditor = ({
             title="Цитата"
             disabled={isDisabled}
             onClick={() => {
-              applyMarkdown((selection) => prefixMarkdownLines(selection, "> "));
+              applyMarkdown((selection) =>
+                prefixMarkdownLines(selection, "> "),
+              );
             }}
           >
             <QuoteOpen width={14} height={14} />
@@ -313,7 +278,9 @@ export const GitlabCommentEditor = ({
             title="Маркированный список"
             disabled={isDisabled}
             onClick={() => {
-              applyMarkdown((selection) => prefixMarkdownLines(selection, "- "));
+              applyMarkdown((selection) =>
+                prefixMarkdownLines(selection, "- "),
+              );
             }}
           >
             <ListUl width={14} height={14} />
@@ -322,7 +289,9 @@ export const GitlabCommentEditor = ({
             title="Нумерованный список"
             disabled={isDisabled}
             onClick={() => {
-              applyMarkdown((selection) => prefixMarkdownLines(selection, "1. "));
+              applyMarkdown((selection) =>
+                prefixMarkdownLines(selection, "1. "),
+              );
             }}
           >
             <ListOl width={14} height={14} />
@@ -347,33 +316,162 @@ export const GitlabCommentEditor = ({
           />
         </div>
 
+        {isUploadingImage && (
+          <div className="px-3 pt-2 text-[13px] text-slate-500 dark:text-slate-400">
+            Загрузка изображения...
+          </div>
+        )}
+
+        {uploadError && (
+          <div className="px-3 pt-2 text-[13px] text-red-700 dark:text-red-300">
+            {uploadError}
+          </div>
+        )}
+      </>
+    );
+  },
+);
+
+type GitlabCommentEditorProps = Omit<
+  ComponentPropsWithoutRef<"textarea">,
+  "onChange" | "value" | "defaultValue" | "ref"
+> & {
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  onInput?: () => void;
+  inputRef?: RefObject<HTMLTextAreaElement | null>;
+  wrapperClassName?: string;
+  editorClassName?: string;
+  projectId?: number | null;
+};
+
+export const GitlabCommentEditor = ({
+  value,
+  defaultValue = "",
+  onChange,
+  onInput,
+  inputRef,
+  disabled,
+  className,
+  wrapperClassName,
+  editorClassName,
+  projectId = null,
+  onPaste,
+  ...textareaProps
+}: GitlabCommentEditorProps) => {
+  const connection = useGitLabConnection();
+  const internalTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const textareaRef = inputRef ?? internalTextareaRef;
+  const isControlled = value !== undefined;
+  const pendingSelectionRef = useRef<{
+    start: number;
+    end: number;
+  } | null>(null);
+
+  const notifyValueChange = useCallback(
+    (nextValue: string) => {
+      onChange?.(nextValue);
+      onInput?.();
+    },
+    [onChange, onInput],
+  );
+
+  useEffect(() => {
+    if (!isControlled || pendingSelectionRef.current === null) {
+      return;
+    }
+
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+
+    const { start, end } = pendingSelectionRef.current;
+    pendingSelectionRef.current = null;
+    textarea.selectionStart = start;
+    textarea.selectionEnd = end;
+    textarea.focus();
+  }, [isControlled, textareaRef, value]);
+
+  const handlePaste = useCallback(
+    async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+      onPaste?.(event);
+      if (event.defaultPrevented) {
+        return;
+      }
+
+      const imageFile = getClipboardImageFile(event.clipboardData);
+      if (!imageFile || !connection || !projectId) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const textarea = event.currentTarget;
+      const selectionStart = textarea.selectionStart;
+      const selectionEnd = textarea.selectionEnd;
+
+      try {
+        const upload = await gitlabApi.uploadProjectMarkdown(
+          connection,
+          projectId,
+          imageFile,
+        );
+        const markdown = upload.markdown;
+        const nextValue =
+          textarea.value.slice(0, selectionStart) +
+          markdown +
+          textarea.value.slice(selectionEnd);
+
+        textarea.value = nextValue;
+        textarea.selectionStart = selectionStart + markdown.length;
+        textarea.selectionEnd = selectionStart + markdown.length;
+        notifyValueChange(nextValue);
+      } catch {
+        // Toolbar handles upload errors for file picker; paste errors are silent.
+      }
+    },
+    [connection, notifyValueChange, onPaste, projectId],
+  );
+
+  const isDisabled = Boolean(disabled);
+
+  return (
+    <div className={wrapperClassName}>
+      <div
+        className={cn(
+          "overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-canvas-default",
+          isDisabled && "opacity-60",
+          editorClassName,
+        )}
+      >
+        <GitlabCommentEditorToolbar
+          textareaRef={textareaRef}
+          disabled={isDisabled}
+          projectId={projectId}
+          connection={connection}
+          onValueChange={notifyValueChange}
+        />
+
         <textarea
           {...textareaProps}
-          ref={textareaRef}
+          ref={mergeRefs(textareaRef)}
           className={cn(
             "min-h-[72px] w-full resize-y border-0 bg-transparent px-3 py-2.5 text-slate-900 outline-none focus:ring-0 disabled:cursor-not-allowed dark:text-slate-200",
             className,
           )}
-          value={value}
+          value={isControlled ? value : undefined}
+          defaultValue={isControlled ? undefined : defaultValue}
           disabled={isDisabled}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => {
+            notifyValueChange(event.target.value);
+          }}
           onPaste={(event) => {
             void handlePaste(event);
           }}
         />
       </div>
-
-      {isUploadingImage && (
-        <div className="mt-2 text-[13px] text-slate-500 dark:text-slate-400">
-          Загрузка изображения...
-        </div>
-      )}
-
-      {uploadError && (
-        <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
-          {uploadError}
-        </div>
-      )}
     </div>
   );
 };

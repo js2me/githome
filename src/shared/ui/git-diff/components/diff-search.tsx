@@ -15,7 +15,7 @@ import {
 } from "react";
 import {
   areTextRangesEqual,
-  collectDiffSearchMatches,
+  collectDiffSearchMatchesAsync,
   type DiffSearchFileEntry,
   type DiffSearchLineEntry,
   type DiffSearchMatch,
@@ -177,6 +177,63 @@ class DiffSearchHighlightStore {
     }
   }
 
+  updateHighlightsForRows(
+    matches: DiffSearchMatch[],
+    activeMatch: DiffSearchMatch | null,
+    changedRowIds: readonly string[],
+  ) {
+    if (changedRowIds.length === 0) {
+      return;
+    }
+
+    const matchesByRowId = indexMatchesByRowId(matches);
+
+    for (const rowId of changedRowIds) {
+      const ranges = matchesByRowId.get(rowId) ?? [];
+      const activeRange =
+        activeMatch && activeMatch.rowId === rowId
+          ? { start: activeMatch.start, end: activeMatch.end }
+          : null;
+
+      this.setRowState(rowId, { ranges, activeRange });
+    }
+  }
+
+  updateActiveMatch(
+    matches: DiffSearchMatch[],
+    previousActiveMatch: DiffSearchMatch | null,
+    nextActiveMatch: DiffSearchMatch | null,
+  ) {
+    if (
+      previousActiveMatch?.rowId === nextActiveMatch?.rowId &&
+      previousActiveMatch?.start === nextActiveMatch?.start &&
+      previousActiveMatch?.end === nextActiveMatch?.end
+    ) {
+      return;
+    }
+
+    const matchesByRowId = indexMatchesByRowId(matches);
+    const affectedRowIds = new Set<string>();
+
+    if (previousActiveMatch) {
+      affectedRowIds.add(previousActiveMatch.rowId);
+    }
+
+    if (nextActiveMatch) {
+      affectedRowIds.add(nextActiveMatch.rowId);
+    }
+
+    for (const rowId of affectedRowIds) {
+      const ranges = matchesByRowId.get(rowId) ?? [];
+      const activeRange =
+        nextActiveMatch && nextActiveMatch.rowId === rowId
+          ? { start: nextActiveMatch.start, end: nextActiveMatch.end }
+          : null;
+
+      this.setRowState(rowId, { ranges, activeRange });
+    }
+  }
+
   clear() {
     const affectedRowIds = [...this.rowStates.keys()];
     this.rowStates.clear();
@@ -192,6 +249,73 @@ class DiffSearchHighlightStore {
 
 const diffSearchControlButtonClassName =
   "inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-[var(--color-border-default)] bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-[var(--color-canvas-muted)]";
+
+const DiffSearchInput = memo(
+  ({
+    variant,
+    query,
+    inputRef,
+    onQueryChange,
+    onClose,
+    onNext,
+    onPrevious,
+  }: {
+    variant: "full" | "mini";
+    query: string;
+    inputRef: Ref<HTMLInputElement>;
+    onQueryChange: (value: string) => void;
+    onClose: () => void;
+    onNext: () => void;
+    onPrevious: () => void;
+  }) => {
+    const isMini = variant === "mini";
+
+    return (
+      <span
+        className={cn(
+          "inline-grid max-w-full",
+          isMini ? "min-w-[80px]" : "min-w-[180px]",
+        )}
+      >
+        <span
+          className={cn(
+            "invisible col-start-1 row-start-1 whitespace-pre border border-transparent font-mono",
+            isMini ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-sm",
+          )}
+          aria-hidden
+        >
+          {query || " "}
+        </span>
+        <input
+          ref={inputRef}
+          className={cn(
+            "col-start-1 row-start-1 w-full min-w-0 rounded-md border border-[var(--color-border-default)] bg-white font-mono text-[var(--color-fg-default)] outline-none focus:border-brand focus:shadow-[0_0_0_2px_var(--color-brand-focus-shadow)] dark:bg-canvas-default",
+            isMini ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-sm",
+          )}
+          placeholder={isMini ? undefined : "Поиск по файлам и коду..."}
+          type="search"
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              if (event.shiftKey) {
+                onPrevious();
+              } else {
+                onNext();
+              }
+            }
+
+            if (event.key === "Escape") {
+              event.preventDefault();
+              onClose();
+            }
+          }}
+        />
+      </span>
+    );
+  },
+);
 
 const DiffSearchControls = memo(
   ({
@@ -219,33 +343,14 @@ const DiffSearchControls = memo(
 
     return (
       <>
-        <input
-          ref={inputRef}
-          className={cn(
-            "rounded-md border border-[var(--color-border-default)] bg-white font-mono text-[var(--color-fg-default)] outline-none focus:border-brand focus:shadow-[0_0_0_2px_var(--color-brand-focus-shadow)] dark:bg-canvas-default",
-            isMini
-              ? "w-[140px] px-2 py-1 text-xs"
-              : "min-w-[180px] flex-1 px-2.5 py-1.5 text-sm",
-          )}
-          placeholder={isMini ? undefined : "Поиск по файлам и коду..."}
-          type="search"
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              if (event.shiftKey) {
-                onPrevious();
-              } else {
-                onNext();
-              }
-            }
-
-            if (event.key === "Escape") {
-              event.preventDefault();
-              onClose();
-            }
-          }}
+        <DiffSearchInput
+          variant={variant}
+          query={query}
+          inputRef={inputRef}
+          onQueryChange={onQueryChange}
+          onClose={onClose}
+          onNext={onNext}
+          onPrevious={onPrevious}
         />
         <span
           className={cn(
@@ -314,7 +419,7 @@ const DiffSearchFindBar = memo(
   }) => (
     <div
       ref={barRef}
-      className="mb-5 flex items-center gap-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-canvas-subtle)] px-3 py-2"
+      className="mb-5 flex w-fit max-w-[60vw] items-center gap-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-canvas-subtle)] px-3 py-2"
     >
       <DiffSearchControls
         variant="full"
@@ -346,7 +451,7 @@ export const DiffSearchStickyMiniBar = memo(() => {
 
   return (
     <div className="pointer-events-none fixed right-8 top-[62px] z-40">
-      <div className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-canvas-subtle)] px-2 py-1.5">
+      <div className="pointer-events-auto flex w-fit max-w-[60vw] items-center gap-1.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-canvas-subtle)] px-2 py-1.5">
         <DiffSearchControls
           variant="mini"
           query={ui.query}
@@ -394,18 +499,83 @@ export const DiffSearchProvider = memo(
 
   const highlightStore = highlightStoreRef.current;
   const matchesRef = useRef<DiffSearchMatch[]>([]);
+  const activeMatchRef = useRef<DiffSearchMatch | null>(null);
+  const activeIndexRef = useRef(activeIndex);
+  const searchGenerationRef = useRef(0);
+  const pendingScrollToFirstMatchRef = useRef(false);
+  const [matches, setMatches] = useState<DiffSearchMatch[]>([]);
 
-  const matches = useMemo(() => {
-    void registryVersion;
-    const nextMatches = collectDiffSearchMatches(
-      fileEntriesRef.current,
-      deferredQuery,
-    );
-    matchesRef.current = nextMatches;
-    return nextMatches;
-  }, [deferredQuery, registryVersion]);
+  activeIndexRef.current = activeIndex;
 
   const activeMatch = matches[activeIndex] ?? null;
+  activeMatchRef.current = activeMatch;
+
+  useEffect(() => {
+    const trimmedQuery = deferredQuery.trim();
+
+    if (!trimmedQuery) {
+      searchGenerationRef.current += 1;
+      matchesRef.current = [];
+      setMatches([]);
+      highlightStore.clear();
+      return;
+    }
+
+    const generation = searchGenerationRef.current + 1;
+    searchGenerationRef.current = generation;
+    const abortController = new AbortController();
+
+    matchesRef.current = [];
+    setMatches([]);
+    highlightStore.clear();
+
+    void (async () => {
+      try {
+        const result = await collectDiffSearchMatchesAsync(
+          fileEntriesRef.current,
+          deferredQuery,
+          {
+            signal: abortController.signal,
+            onProgress: (partialMatches, changedRowIds) => {
+              if (generation !== searchGenerationRef.current) {
+                return;
+              }
+
+              matchesRef.current = partialMatches;
+              setMatches(partialMatches);
+              highlightStore.updateHighlightsForRows(
+                partialMatches,
+                partialMatches[0] ?? null,
+                changedRowIds,
+              );
+            },
+          },
+        );
+
+        if (generation !== searchGenerationRef.current) {
+          return;
+        }
+
+        matchesRef.current = result;
+        setMatches(result);
+        highlightStore.updateActiveMatch(
+          result,
+          activeMatchRef.current,
+          result[activeIndexRef.current] ?? result[0] ?? null,
+        );
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        throw error;
+      }
+    })();
+
+    return () => {
+      abortController.abort();
+    };
+  }, [deferredQuery, highlightStore, registryVersion]);
 
   const scrollToActiveMatch = useCallback(
     (match: DiffSearchMatch | null) => {
@@ -544,6 +714,7 @@ export const DiffSearchProvider = memo(
 
   useEffect(() => {
     setActiveIndex(0);
+    pendingScrollToFirstMatchRef.current = Boolean(deferredQuery.trim());
   }, [deferredQuery]);
 
   useEffect(() => {
@@ -573,19 +744,23 @@ export const DiffSearchProvider = memo(
   }, [isMainBarInView]);
 
   useEffect(() => {
-    highlightStore.updateHighlights(deferredQuery, matches, activeMatch);
-  }, [activeMatch, deferredQuery, highlightStore, matches]);
+    const nextActiveMatch = matches[activeIndex] ?? null;
+    highlightStore.updateActiveMatch(
+      matches,
+      activeMatchRef.current,
+      nextActiveMatch,
+    );
+    activeMatchRef.current = nextActiveMatch;
+  }, [activeIndex, highlightStore, matches]);
 
   useEffect(() => {
-    if (!deferredQuery.trim()) {
+    if (!pendingScrollToFirstMatchRef.current || matches.length === 0) {
       return;
     }
 
-    const firstMatch = matchesRef.current[0];
-    if (firstMatch) {
-      scrollToActiveMatch(firstMatch);
-    }
-  }, [deferredQuery, scrollToActiveMatch]);
+    pendingScrollToFirstMatchRef.current = false;
+    scrollToActiveMatch(matches[0] ?? null);
+  }, [matches, scrollToActiveMatch]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -768,10 +943,10 @@ export const SearchHighlightedText = memo(
         <mark
           key={`${range.start}:${range.end}:${index}`}
           className={cn(
-            "rounded-sm px-0 text-inherit",
+            "git-diff-search-mark",
             isActive
-              ? "bg-[var(--diff-search-active-bg)] text-[var(--diff-search-active-fg)]"
-              : "bg-[var(--diff-search-inactive-bg)] text-inherit dark:text-[var(--diff-search-active-fg)]",
+              ? "git-diff-search-mark--active"
+              : "git-diff-search-mark--inactive",
           )}
         >
           {text.slice(range.start, range.end)}

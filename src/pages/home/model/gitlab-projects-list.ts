@@ -9,11 +9,14 @@ import {
 } from "@/shared/lib/gitlab/create-query";
 import {
   buildProjectListParams,
-  PROJECT_LIST_TAB_LABELS,
   PROJECT_LIST_TABS,
   PROJECTS_PER_PAGE,
   type ProjectListTab,
 } from "./project-list-tab";
+
+const PROJECT_LIST_QUERY_OPTIONS = {
+  staleTime: 60 * 60 * 1000,
+} as const;
 
 export interface GitlabProjectsListParams {
   globals: Globals;
@@ -21,7 +24,7 @@ export interface GitlabProjectsListParams {
 }
 
 export class GitlabProjectsList {
-  @observable accessor activeTab: ProjectListTab = "contributed";
+  @observable accessor activeTab: ProjectListTab = PROJECT_LIST_TABS[0].id;
 
   readonly currentUserQuery;
   readonly projectsQuery;
@@ -36,22 +39,24 @@ export class GitlabProjectsList {
       abortSignal: params.abortSignal,
       params: () => ({ path: "/user" }),
       queryOptions: {
+        ...PROJECT_LIST_QUERY_OPTIONS,
         select: (data) => (data as GitLabUserDC).id,
       },
     });
 
     this.countQueries = Object.fromEntries(
-      PROJECT_LIST_TABS.map((tab) => [
-        tab,
+      PROJECT_LIST_TABS.map(({ id }) => [
+        id,
         createGitlabListQuery<GitLabProjectDC>({
           globals: params.globals,
           abortSignal: params.abortSignal,
           params: () =>
             buildProjectListParams({
-              tab,
+              tab: id,
               perPage: 1,
               userId: this.currentUserQuery.data,
             }),
+          queryOptions: PROJECT_LIST_QUERY_OPTIONS,
         }),
       ]),
     ) as GitlabProjectsList["countQueries"];
@@ -65,14 +70,15 @@ export class GitlabProjectsList {
           perPage: PROJECTS_PER_PAGE,
           userId: this.currentUserQuery.data,
         }),
+      queryOptions: PROJECT_LIST_QUERY_OPTIONS,
     });
   }
 
   @computed
   get tabs() {
-    return PROJECT_LIST_TABS.map((id) => ({
+    return PROJECT_LIST_TABS.map(({ id, label }) => ({
       id,
-      label: PROJECT_LIST_TAB_LABELS[id],
+      label,
       count: this.countQueries[id].data?.total ?? null,
       isActive: this.activeTab === id,
     }));

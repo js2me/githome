@@ -13,9 +13,12 @@ import { getMergeRequestDetail } from "./endpoints/get-merge-request-detail";
 import { getMergeRequestDiscussions } from "./endpoints/get-merge-request-discussions";
 import { getMergeRequestView } from "./endpoints/get-merge-request-view";
 import { getProject } from "./endpoints/get-project";
+import { getProjectBranches } from "./endpoints/get-project-branches";
 import { getProjectMergeRequests } from "./endpoints/get-project-merge-requests";
 import { getProjectReadme } from "./endpoints/get-project-readme";
 import { getRepositoryFileContent } from "./endpoints/get-repository-file-content";
+import { getRepositoryTree } from "./endpoints/get-repository-tree";
+import { searchProjectBlobs } from "./endpoints/search-project-blobs";
 import { renderMarkdown } from "./endpoints/render-markdown";
 import { requestMergeRequestChanges } from "./endpoints/request-merge-request-changes";
 import { resolveMergeRequestDiscussion } from "./endpoints/resolve-merge-request-discussion";
@@ -45,9 +48,15 @@ export const gitlabApi = {
 
   getProject,
 
+  getProjectBranches,
+
   getProjectReadme,
 
   getRepositoryFileContent,
+
+  getRepositoryTree,
+
+  searchProjectBlobs,
 
   getProjectMergeRequests,
 

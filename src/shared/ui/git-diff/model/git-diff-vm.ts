@@ -6,6 +6,9 @@ import { DiffFileContentLoader } from "@/shared/lib/syntax-highlight/types";
 import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
 import { ViewModelBase } from "mobx-view-model";
 import { FileGitDiff } from "./file-git-diff";
+import type { FileGitDiffContent } from "./file-git-diff/content";
+
+const MAX_CONCURRENT_COLLAPSED_EXPANDS = 3;
 
 export interface GitDiffPayload {
   changes: GitLabMergeRequestChangeDC[];
@@ -15,6 +18,7 @@ export interface GitDiffPayload {
   submitCommentError: string | null;
   onAddComment: (input: CreateDiffCommentInput) => Promise<boolean>;
   onClearSubmitError: () => void;
+  headBranch?: string | null;
   headRef?: string | null;
   baseRef?: string | null;
   loadFileContent?: DiffFileContentLoader;
@@ -36,6 +40,41 @@ export interface GitDiffPayload {
 
 export class GitDiffVM extends ViewModelBase<GitDiffPayload> {
   private readonly fileModelCache = new Map<string, FileGitDiff>();
+  private readonly pendingCollapsedExpands = new Set<FileGitDiffContent>();
+  private activeCollapsedExpands = 0;
+
+  scheduleCollapsedExpand(content: FileGitDiffContent) {
+    if (
+      content.parsed ||
+      content.isLoadingCollapsedExpand ||
+      this.pendingCollapsedExpands.has(content)
+    ) {
+      return;
+    }
+
+    this.pendingCollapsedExpands.add(content);
+    this.runCollapsedExpandQueue();
+  }
+
+  cancelCollapsedExpand(content: FileGitDiffContent) {
+    this.pendingCollapsedExpands.delete(content);
+  }
+
+  private runCollapsedExpandQueue() {
+    while (
+      this.activeCollapsedExpands < MAX_CONCURRENT_COLLAPSED_EXPANDS &&
+      this.pendingCollapsedExpands.size > 0
+    ) {
+      const content = this.pendingCollapsedExpands.values().next().value!;
+      this.pendingCollapsedExpands.delete(content);
+      this.activeCollapsedExpands += 1;
+
+      void content.expandCollapsedFile().finally(() => {
+        this.activeCollapsedExpands -= 1;
+        this.runCollapsedExpandQueue();
+      });
+    }
+  }
 
   @computed
   get filesGitDiffs(): FileGitDiff[] {

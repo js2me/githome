@@ -157,6 +157,43 @@ export interface GitLabMergeRequestReviewerDC {
   created_at: string;
 }
 
+export interface GitLabCommitDC {
+  id: string;
+  short_id: string;
+  title: string;
+  author_name: string;
+  committed_date: string;
+  created_at: string;
+  message: string;
+}
+
+export interface GitLabBranchDC {
+  name: string;
+  merged: boolean;
+  protected: boolean;
+  default: boolean;
+}
+
+export interface GitLabRepositoryTreeItemDC {
+  id: string;
+  name: string;
+  type: "tree" | "blob";
+  path: string;
+  mode: string;
+}
+
+export interface GitLabSearchBlobDC {
+  basename: string;
+  data: string;
+  path: string;
+  filename: string;
+  id: string | null;
+  ref: string;
+  startline: number;
+  project_id: number;
+  group_id: number | null;
+}
+
 export interface GitLabProjectReadmeDC {
   file_name: string;
   file_path: string;

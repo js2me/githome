@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { observer } from "mobx-react-lite";
 import { getDiffFileElementId, getDiffFileHeaderRowId } from "@/shared/lib/diff-search";
 import { cn } from "@/shared/lib/cn";
@@ -21,6 +21,26 @@ import { CopyPathIcon } from "./icons/copy-path-icon";
 
 const getFileNameFromPath = (path: string) => path.split("/").pop() ?? path;
 
+const buildFilesHref = ({
+  projectId,
+  commit,
+  branch,
+  filePath,
+}: {
+  projectId: number;
+  commit: string;
+  branch?: string | null;
+  filePath: string;
+}) => {
+  const query = new URLSearchParams();
+  if (branch) {
+    query.set("branch", branch);
+  }
+  query.set("commit", commit);
+  query.set("file", filePath);
+  return `/repository/${projectId}/files?${query.toString()}`;
+};
+
 const diffFileBadgeVariants = cva(
   "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase",
   {
@@ -38,10 +58,33 @@ const diffFileHeaderTextButtonVariants = cva(
   "inline-flex h-7 cursor-pointer items-center rounded border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800",
 );
 
-const FileCommentForm = observer(({ model }: { model: FileGitDiff }) => {
+const FileCommentForm = ({
+  model,
+  isSubmitting,
+  submitError,
+}: {
+  model: FileGitDiff;
+  isSubmitting: boolean;
+  submitError: string | null;
+}) => {
   const { comments, parent } = model;
-  const { markdownScope, isSubmittingComment, submitCommentError } =
-    parent.payload;
+  const { markdownScope } = parent.payload;
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const submitButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const syncSubmitDisabled = useCallback(() => {
+    const button = submitButtonRef.current;
+    const textarea = textareaRef.current;
+    if (!button || !textarea) {
+      return;
+    }
+
+    button.disabled = isSubmitting || !textarea.value.trim();
+  }, [isSubmitting]);
+
+  useEffect(() => {
+    syncSubmitDisabled();
+  }, [isSubmitting, syncSubmitDisabled]);
 
   return (
     <div className="border-b border-slate-200 bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
@@ -49,39 +92,43 @@ const FileCommentForm = observer(({ model }: { model: FileGitDiff }) => {
         Комментарий к файлу
       </div>
       <GitlabCommentEditor
+        inputRef={textareaRef}
         projectId={markdownScope?.projectId ?? null}
         editorClassName="border-orange-300 dark:border-orange-800"
         placeholder="Оставьте комментарий к файлу"
-        value={comments.fileCommentBody}
-        disabled={isSubmittingComment}
-        onChange={comments.setFileCommentBody}
+        defaultValue=""
+        onInput={syncSubmitDisabled}
+        disabled={isSubmitting}
       />
-      {submitCommentError && (
+      {submitError && (
         <div className="mt-2 text-xs text-red-600 dark:text-red-300">
-          {submitCommentError}
+          {submitError}
         </div>
       )}
       <div className="mt-2 flex justify-end gap-2">
         <button
           className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
           type="button"
-          disabled={isSubmittingComment}
+          disabled={isSubmitting}
           onClick={comments.cancelFileComment}
         >
           Отмена
         </button>
         <button
+          ref={submitButtonRef}
           className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
           type="button"
-          disabled={isSubmittingComment || !comments.fileCommentBody.trim()}
-          onClick={comments.submitFileComment}
+          disabled
+          onClick={() => {
+            void comments.submitFileComment(textareaRef.current?.value ?? "");
+          }}
         >
           Отправить
         </button>
       </div>
     </div>
   );
-});
+};
 
 export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
   const {
@@ -105,6 +152,8 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     isActive,
     additions,
     deletions,
+    isLazyCollapsed,
+    reservedBodyMinHeight,
   } = meta;
 
   const {
@@ -132,7 +181,20 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     updateNoteError,
     onClearUpdateNoteError,
     markdownScope,
+    headBranch,
+    isSubmittingComment,
+    submitCommentError,
   } = payload;
+
+  const openInFilesHref =
+    markdownScope?.projectId && meta.fileRef && meta.filePath
+      ? buildFilesHref({
+          projectId: markdownScope.projectId,
+          commit: meta.fileRef,
+          branch: headBranch ?? null,
+          filePath: meta.filePath,
+        })
+      : null;
 
   const searchRegistration = useDiffSearchRegistrationOptional();
   const registerFile = searchRegistration?.registerFile;
@@ -196,6 +258,14 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       );
     }
 
+    if (isLazyCollapsed && !parsed) {
+      return (
+        <div className="p-3.5 text-[13px] text-slate-500">
+          Загружаем diff...
+        </div>
+      );
+    }
+
     return (
       <div className="p-3.5 text-[13px] text-slate-500">
         {isResolvingDiff || isLoadingCollapsedExpand
@@ -209,7 +279,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     <article
       id={getDiffFileElementId(fileKey)}
       className={cn(
-        "w-max min-w-full rounded-lg border bg-white dark:bg-gray-900",
+        "w-full min-w-0 rounded-lg border bg-white dark:bg-gray-900",
         isActive
           ? "border-accent-blue ring-2 ring-[var(--color-accent-blue-ring)] dark:border-accent-blue"
           : "border-[var(--diff-border)]",
@@ -225,7 +295,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         navigation.setActive();
       }}
     >
-      <header className="sticky top-0 z-10 flex items-center gap-2.5 rounded-t-lg border-b border-[var(--diff-border)] bg-[var(--diff-header-bg)] px-3.5 py-2.5">
+      <header className="sticky top-0 z-20 flex items-center gap-2.5 rounded-t-lg border-b border-[var(--diff-border)] bg-[var(--diff-header-bg)] px-3.5 py-2.5">
         {isCollapsible && (
           <button
             className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--color-fg-subtle)] transition hover:bg-[var(--color-accent-emphasis-hover)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)]"
@@ -306,6 +376,15 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
             icon={<CopyContentIcon />}
             getValue={content.copyFileContent}
           />
+          {openInFilesHref && (
+            <a
+              className={cn(diffFileHeaderTextButtonVariants(), "ml-2 no-underline")}
+              href={openInFilesHref}
+              title="Открыть файл в Files"
+            >
+              открыть в files
+            </a>
+          )}
         </div>
 
         {canComment && (
@@ -319,7 +398,13 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         )}
       </header>
 
-      {isFileCommentOpen && <FileCommentForm model={model} />}
+      {isFileCommentOpen && (
+        <FileCommentForm
+          model={model}
+          isSubmitting={isSubmittingComment}
+          submitError={submitCommentError}
+        />
+      )}
 
       {fileThreads.length > 0 && (
         <div className="border-b border-slate-200 dark:border-[var(--color-border-default)]">
@@ -341,7 +426,14 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         </div>
       )}
 
-      {renderDiffContent()}
+      <div className="git-diff-body-scroll">
+        <div
+          className="w-max min-w-full"
+          style={reservedBodyMinHeight ? { minHeight: reservedBodyMinHeight } : undefined}
+        >
+          {renderDiffContent()}
+        </div>
+      </div>
     </article>
   );
 });

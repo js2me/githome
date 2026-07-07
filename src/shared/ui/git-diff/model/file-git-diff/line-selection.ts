@@ -13,7 +13,6 @@ import { DisposableModel } from "./disposable";
 export class FileGitDiffLineSelection extends DisposableModel {
   @observable accessor lineSelection: DiffLineSelection | null = null;
   @observable accessor selectionAnchorKey: string | null = null;
-  @observable accessor commentBody = "";
   @observable accessor isDraggingSelection = false;
 
   private dragMoved = false;
@@ -27,7 +26,6 @@ export class FileGitDiffLineSelection extends DisposableModel {
   clearSelection() {
     this.lineSelection = null;
     this.selectionAnchorKey = null;
-    this.commentBody = "";
     this.file.parent.payload.onClearSubmitError();
   }
 
@@ -59,7 +57,6 @@ export class FileGitDiffLineSelection extends DisposableModel {
 
     this.lineSelection = nextSelection;
     this.selectionAnchorKey = anchorKey;
-    this.commentBody = "";
     this.file.parent.payload.onClearSubmitError();
   }
 
@@ -83,7 +80,6 @@ export class FileGitDiffLineSelection extends DisposableModel {
     this.isDraggingSelection = true;
     this.selectionAnchorKey = lineKey;
     this.lineSelection = { startKey: lineKey, endKey: lineKey };
-    this.commentBody = "";
     this.file.parent.payload.onClearSubmitError();
   }
 
@@ -102,12 +98,7 @@ export class FileGitDiffLineSelection extends DisposableModel {
   }
 
   @action.bound
-  setCommentBody(value: string) {
-    this.commentBody = value;
-  }
-
-  @action.bound
-  async submitLineComment() {
+  async submitLineComment(body: string) {
     if (!this.lineSelection) {
       return;
     }
@@ -132,7 +123,7 @@ export class FileGitDiffLineSelection extends DisposableModel {
     }
 
     const input: CreateDiffCommentInput = {
-      body: this.commentBody,
+      body,
       oldPath: meta.change.old_path,
       newPath: meta.change.new_path,
       oldLine: endLine.oldLine,

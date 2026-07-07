@@ -3,7 +3,6 @@ import type { FileGitDiff } from ".";
 
 export class FileGitDiffComments {
   @observable accessor isFileCommentOpen = false;
-  @observable accessor fileCommentBody = "";
 
   constructor(private readonly file: FileGitDiff) {}
 
@@ -15,26 +14,21 @@ export class FileGitDiffComments {
   }
 
   @action.bound
-  setFileCommentBody(value: string) {
-    this.fileCommentBody = value;
-  }
-
-  @action.bound
   cancelFileComment() {
     this.isFileCommentOpen = false;
-    this.fileCommentBody = "";
     this.file.parent.payload.onClearSubmitError();
   }
 
   @action.bound
-  async submitFileComment() {
-    if (!this.fileCommentBody.trim()) {
+  async submitFileComment(body: string) {
+    const trimmedBody = body.trim();
+    if (!trimmedBody) {
       return;
     }
 
     const { change } = this.file.meta;
     const success = await this.file.parent.payload.onAddComment({
-      body: this.fileCommentBody.trim(),
+      body: trimmedBody,
       oldPath: change.old_path,
       newPath: change.new_path,
       oldLine: null,

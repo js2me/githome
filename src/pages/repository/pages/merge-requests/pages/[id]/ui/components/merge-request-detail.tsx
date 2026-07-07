@@ -283,7 +283,7 @@ export const MergeRequestDetail = ({
 
         <div className="flex flex-wrap items-center gap-2 font-mono text-[13px] text-fg-muted">
           <BranchLabel branch={mergeRequest.source_branch} label="source branch" />
-          <span className="text-fg-subtle">→</span>
+          <span className="shrink-0 px-0.5 text-lg font-bold text-fg-default">→</span>
           <BranchLabel branch={mergeRequest.target_branch} label="target branch" />
         </div>
 
@@ -461,6 +461,7 @@ export const MergeRequestDetail = ({
           submitCommentError={submitCommentError}
           onAddComment={onAddComment}
           onClearSubmitError={onClearSubmitError}
+          headBranch={mergeRequest.source_branch ?? null}
           headRef={mergeRequest.diff_refs?.head_sha ?? null}
           baseRef={
             mergeRequest.diff_refs?.start_sha ??

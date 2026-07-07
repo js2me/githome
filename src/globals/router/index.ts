@@ -15,12 +15,14 @@ export interface RouterParams {
 
 const defineRoutes = () => {
   const repository = createRoute("/repository/:projectId", { exact: false });
+  const files = repository.extend("/files", { exact: true });
   const mergeRequests = repository.extend("/merge-requests", { exact: true });
   const mergeRequest = mergeRequests.extend("/:mergeRequestIid", { exact: true });
 
   return {
     home: createRoute("/", { exact: true }),
     repository,
+    files,
     mergeRequests,
     mergeRequest,
     notFound: createVirtualRoute(),

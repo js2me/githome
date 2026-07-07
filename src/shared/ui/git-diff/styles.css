@@ -1,3 +1,9 @@
+.git-diff-body-scroll {
+  overflow-x: auto;
+  overflow-y: clip;
+  overflow-anchor: none;
+}
+
 .git-diff-grid {
   display: grid;
   width: 100%;
@@ -295,4 +301,19 @@
   transform: translateX(-50%);
   border: 5px solid transparent;
   border-top-color: var(--color-slate-800);
+}
+
+.git-diff-search-mark {
+  border-radius: 2px;
+  padding: 0;
+}
+
+.git-diff-search-mark--active {
+  background: var(--diff-search-active-bg);
+  color: var(--diff-search-active-fg);
+}
+
+.git-diff-search-mark--inactive {
+  background: var(--diff-search-inactive-bg);
+  color: var(--diff-search-inactive-fg);
 }

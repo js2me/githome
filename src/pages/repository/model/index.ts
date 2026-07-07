@@ -146,6 +146,16 @@ export class RepositoryPageVM extends VM {
   }
 
   @action.bound
+  openFiles() {
+    const projectId = this.projectIdParam;
+    if (!projectId) {
+      return;
+    }
+
+    void this.globals.router.routes.files.open({ projectId });
+  }
+
+  @action.bound
   openMergeRequests() {
     const projectId = this.projectIdParam;
     if (!projectId) {

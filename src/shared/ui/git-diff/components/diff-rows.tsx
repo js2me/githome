@@ -1,5 +1,4 @@
 import { ArrowDownToLine, ArrowUpToLine, Pencil } from "@gravity-ui/icons";
-import { observer } from "mobx-react-lite";
 import {
   memo,
   useCallback,
@@ -37,7 +36,6 @@ import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { useDiffSyntaxHighlight } from "./diff-syntax-highlight";
 import { SearchHighlightedText, useRowSearchHighlight } from "./diff-search";
 import { HighlightedCode } from "./highlighted-code";
-import type { FileGitDiff } from "../model/file-git-diff";
 
 export const diffGridClassName = "git-diff-grid";
 
@@ -846,24 +844,35 @@ export const DiffThreadRow = memo(
               )}
             </div>
 
-            {thread.resolvable && onResolveThread && (
-              <div className="flex justify-end border-t border-slate-200 px-3.5 py-2.5 dark:border-slate-700">
-                <button
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
-                  type="button"
-                  disabled={resolvingDiscussionId === thread.discussionId}
-                  onClick={() =>
-                    onResolveThread(thread.discussionId, !thread.resolved)
-                  }
-                >
-                  {resolvingDiscussionId === thread.discussionId
-                    ? thread.resolved
-                      ? "Открываем..."
-                      : "Разрешаем..."
-                    : thread.resolved
-                      ? "Открыть тред"
-                      : "Разрешить тред"}
-                </button>
+            {(thread.resolved || (thread.resolvable && onResolveThread)) && (
+              <div className="flex justify-end gap-2 border-t border-slate-200 px-3.5 py-2.5 dark:border-slate-700">
+                {thread.resolved && (
+                  <button
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+                    type="button"
+                    onClick={toggleExpanded}
+                  >
+                    Свернуть тред
+                  </button>
+                )}
+                {thread.resolvable && onResolveThread && (
+                  <button
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+                    type="button"
+                    disabled={resolvingDiscussionId === thread.discussionId}
+                    onClick={() =>
+                      onResolveThread(thread.discussionId, !thread.resolved)
+                    }
+                  >
+                    {resolvingDiscussionId === thread.discussionId
+                      ? thread.resolved
+                        ? "Открываем..."
+                        : "Разрешаем..."
+                      : thread.resolved
+                        ? "Открыть тред"
+                        : "Разрешить тред"}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -873,47 +882,43 @@ export const DiffThreadRow = memo(
   },
 );
 
-export const DiffLineCommentForm = observer(
-  ({ fileGitDiff }: { fileGitDiff: FileGitDiff }) => {
-    const { selection, rows, parent } = fileGitDiff;
-    const { markdownScope, submitCommentError, isSubmittingComment } =
-      parent.payload;
-
-    return (
-      <DiffCommentFormRow
-        markdownScope={markdownScope}
-        commentBody={selection.commentBody}
-        errorMessage={submitCommentError}
-        isSubmitting={isSubmittingComment}
-        rangeLabel={rows.selectionRangeLabel}
-        onChange={selection.setCommentBody}
-        onCancel={selection.clearSelection}
-        onSubmit={selection.submitLineComment}
-      />
-    );
-  },
-);
 
 export const DiffCommentFormRow = memo(
   ({
     markdownScope,
-    commentBody,
     errorMessage,
     isSubmitting,
     rangeLabel,
-    onChange,
     onCancel,
     onSubmit,
+    formKey,
   }: {
     markdownScope?: GitlabMarkdownScope;
-    commentBody: string;
     errorMessage: string | null;
     isSubmitting: boolean;
     rangeLabel?: string | null;
-    onChange: (value: string) => void;
     onCancel: () => void;
-    onSubmit: () => void;
-  }) => (
+    onSubmit: (body: string) => void;
+    formKey?: string;
+  }) => {
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const submitButtonRef = useRef<HTMLButtonElement | null>(null);
+
+    const syncSubmitDisabled = useCallback(() => {
+      const button = submitButtonRef.current;
+      const textarea = textareaRef.current;
+      if (!button || !textarea) {
+        return;
+      }
+
+      button.disabled = isSubmitting || !textarea.value.trim();
+    }, [isSubmitting]);
+
+    useEffect(() => {
+      syncSubmitDisabled();
+    }, [formKey, isSubmitting, syncSubmitDisabled]);
+
+    return (
     <div className="w-full min-w-0 max-w-full overflow-hidden">
       <div className="border-t border-slate-200 bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
         {rangeLabel && (
@@ -922,11 +927,13 @@ export const DiffCommentFormRow = memo(
           </div>
         )}
         <GitlabCommentEditor
+          key={formKey}
+          inputRef={textareaRef}
           projectId={markdownScope?.projectId ?? null}
           editorClassName="border-orange-300 dark:border-orange-800"
           placeholder="Напишите комментарий..."
-          value={commentBody}
-          onChange={onChange}
+          defaultValue=""
+          onInput={syncSubmitDisabled}
           rows={3}
           disabled={isSubmitting}
         />
@@ -939,10 +946,11 @@ export const DiffCommentFormRow = memo(
 
         <div className="mt-2.5 flex gap-2">
           <button
+            ref={submitButtonRef}
             className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 text-[13px] font-semibold text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             type="button"
-            disabled={isSubmitting || !commentBody.trim()}
-            onClick={onSubmit}
+            disabled
+            onClick={() => onSubmit(textareaRef.current?.value ?? "")}
           >
             {isSubmitting ? "Отправка..." : "Комментировать"}
           </button>
@@ -957,5 +965,6 @@ export const DiffCommentFormRow = memo(
         </div>
       </div>
     </div>
-  ),
+    );
+  },
 );

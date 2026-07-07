@@ -8,10 +8,12 @@ import {
   buildFetchQueryUrl,
   createFetchQuery,
   type CreateFetchQueryOptions,
+  type FetchQueryDynamicOptions,
   type FetchQueryParams,
   type MaybeFalsy,
   parseFetchQueryKey,
   resolveFetchQueryParams,
+  resolveQueryOptions,
   serializeFetchQuery,
 } from "@/shared/lib/create-fetch-query";
 import { createInfiniteFetchQuery, type CreateInfiniteFetchQueryOptions } from "@/shared/lib/create-infinite-fetch-query";
@@ -132,14 +134,17 @@ export type GitlabListResult<TItem> = {
   total: number | null;
 };
 
-export type CreateGitlabListQueryOptions = {
+export type CreateGitlabListQueryOptions<TItem = unknown> = {
   globals: Globals;
   abortSignal: AbortSignal;
   params: () => GitlabFetchQueryParams;
+  queryOptions?:
+    | FetchQueryDynamicOptions<GitlabListResult<TItem>>
+    | (() => FetchQueryDynamicOptions<GitlabListResult<TItem>>);
 };
 
 export const createGitlabListQuery = <TItem = unknown>(
-  options: CreateGitlabListQueryOptions,
+  options: CreateGitlabListQueryOptions<TItem>,
 ) => {
   const { globals, abortSignal } = options;
 
@@ -151,6 +156,7 @@ export const createGitlabListQuery = <TItem = unknown>(
       return {
         enabled: !!fetchParams,
         queryKey: buildFetchQueryKey(fetchParams),
+        ...resolveQueryOptions(options.queryOptions),
       };
     },
     queryFn: async ({ signal, queryKey }) => {

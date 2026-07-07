@@ -16,7 +16,11 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
   return (
     <section>
         {model.mrInfo.isLoading && (
-          <StatusMessage>Загружаем merge request...</StatusMessage>
+          <StatusMessage>
+            {model.mrInfo.showPreparingDiffs
+              ? "Подготавливаем diff..."
+              : "Загружаем merge request..."}
+          </StatusMessage>
         )}
 
         {model.mrInfo.showLoadError && (

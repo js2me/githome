@@ -12,6 +12,12 @@ const MergeRequestsPage = lazy(() =>
   })),
 );
 
+const FilesPage = lazy(() =>
+  import("@/pages/repository/pages/files/ui/page").then((module) => ({
+    default: module.FilesPage,
+  })),
+);
+
 const MergeRequestPage = lazy(() =>
   import("@/pages/repository/pages/merge-requests/pages/[id]/ui/page").then(
     (module) => ({
@@ -27,6 +33,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
 
   return (
     <RouteViewGroup>
+      <RouteView route={model.globals.router.routes.files} view={FilesPage} />
       <RouteView route={model.globals.router.routes.mergeRequests} view={MergeRequestsPage} />
       <RouteView route={model.globals.router.routes.mergeRequest} view={MergeRequestPage} />
       <section>
@@ -43,13 +50,23 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
             <h2 className="mb-4 text-[22px] font-semibold">{project.name}</h2>
             <p className="mb-4 text-sm text-slate-500">{project.path_with_namespace}</p>
 
-            <button
-              className="mb-4 cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
-              type="button"
-              onClick={model.openMergeRequests}
-            >
-              Merge requests
-            </button>
+            <div className="mb-4 flex gap-2">
+              <button
+                className="cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
+                type="button"
+                onClick={model.openFiles}
+              >
+                Files
+              </button>
+
+              <button
+                className="cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
+                type="button"
+                onClick={model.openMergeRequests}
+              >
+                Merge requests
+              </button>
+            </div>
 
             {model.isReadmeLoading && (
               <StatusMessage>Загружаем README...</StatusMessage>

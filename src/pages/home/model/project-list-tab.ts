@@ -1,27 +1,14 @@
 import type { FetchQueryParams } from "@/shared/lib/create-fetch-query";
 
-export type ProjectListTab =
-  | "contributed"
-  | "starred"
-  | "personal"
-  | "member"
-  | "inactive";
+export const PROJECT_LIST_TABS = [
+  { id: "contributed", label: "Участие" },
+  { id: "starred", label: "Избранные" },
+  { id: "personal", label: "Личные" },
+  { id: "member", label: "Участник" },
+  { id: "inactive", label: "Неактивные" },
+] as const;
 
-export const PROJECT_LIST_TABS: ProjectListTab[] = [
-  "contributed",
-  "starred",
-  "personal",
-  "member",
-  "inactive",
-];
-
-export const PROJECT_LIST_TAB_LABELS: Record<ProjectListTab, string> = {
-  contributed: "Участие",
-  starred: "Избранные",
-  personal: "Личные",
-  member: "Участник",
-  inactive: "Неактивные",
-};
+export type ProjectListTab = (typeof PROJECT_LIST_TABS)[number]["id"];
 
 export const PROJECTS_PER_PAGE = 50;
 

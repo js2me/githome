@@ -59,6 +59,37 @@ export const findTextRanges = (text: string, query: string): TextRange[] => {
   return ranges;
 };
 
+export const collectDiffSearchMatchesForFile = (
+  fileKey: string,
+  { path, lines }: DiffSearchFileEntry,
+  query: string,
+): DiffSearchMatch[] => {
+  const matches: DiffSearchMatch[] = [];
+  const headerRowId = getDiffFileHeaderRowId(fileKey);
+
+  for (const range of findTextRanges(path, query)) {
+    matches.push({
+      fileKey,
+      rowId: headerRowId,
+      start: range.start,
+      end: range.end,
+    });
+  }
+
+  for (const line of lines) {
+    for (const range of findTextRanges(line.text, query)) {
+      matches.push({
+        fileKey,
+        rowId: line.rowId,
+        start: range.start,
+        end: range.end,
+      });
+    }
+  }
+
+  return matches;
+};
+
 export const collectDiffSearchMatches = (
   files: Map<string, DiffSearchFileEntry>,
   query: string,
@@ -69,27 +100,114 @@ export const collectDiffSearchMatches = (
 
   const matches: DiffSearchMatch[] = [];
 
+  for (const [fileKey, entry] of files.entries()) {
+    matches.push(...collectDiffSearchMatchesForFile(fileKey, entry, query));
+  }
+
+  return matches;
+};
+
+const DIFF_SEARCH_LINES_PER_CHUNK = 400;
+
+const yieldToMain = (): Promise<void> => {
+  const scheduler = (
+    globalThis as typeof globalThis & {
+      scheduler?: { yield?: () => Promise<void> };
+    }
+  ).scheduler;
+
+  if (scheduler?.yield) {
+    return scheduler.yield();
+  }
+
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+};
+
+export const collectDiffSearchMatchesAsync = async (
+  files: Map<string, DiffSearchFileEntry>,
+  query: string,
+  options?: {
+    signal?: AbortSignal;
+    onProgress?: (
+      matches: DiffSearchMatch[],
+      changedRowIds: readonly string[],
+    ) => void;
+    linesPerChunk?: number;
+  },
+): Promise<DiffSearchMatch[]> => {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) {
+    return [];
+  }
+
+  const matches: DiffSearchMatch[] = [];
+  const linesPerChunk = options?.linesPerChunk ?? DIFF_SEARCH_LINES_PER_CHUNK;
+  const signal = options?.signal;
+
+  const throwIfAborted = () => {
+    if (signal?.aborted) {
+      throw new DOMException("Diff search aborted", "AbortError");
+    }
+  };
+
+  const reportProgress = (changedRowIds: string[]) => {
+    if (changedRowIds.length === 0) {
+      return;
+    }
+
+    options?.onProgress?.(matches, changedRowIds);
+    changedRowIds.length = 0;
+  };
+
   for (const [fileKey, { path, lines }] of files.entries()) {
+    throwIfAborted();
+
+    const changedRowIds: string[] = [];
     const headerRowId = getDiffFileHeaderRowId(fileKey);
 
-    for (const range of findTextRanges(path, query)) {
+    for (const range of findTextRanges(path, trimmedQuery)) {
       matches.push({
         fileKey,
         rowId: headerRowId,
         start: range.start,
         end: range.end,
       });
+
+      if (!changedRowIds.includes(headerRowId)) {
+        changedRowIds.push(headerRowId);
+      }
     }
 
-    for (const line of lines) {
-      for (const range of findTextRanges(line.text, query)) {
-        matches.push({
-          fileKey,
-          rowId: line.rowId,
-          start: range.start,
-          end: range.end,
-        });
+    reportProgress(changedRowIds);
+
+    for (let offset = 0; offset < lines.length; offset += linesPerChunk) {
+      throwIfAborted();
+
+      const lineChunk = lines.slice(offset, offset + linesPerChunk);
+
+      for (const line of lineChunk) {
+        for (const range of findTextRanges(line.text, trimmedQuery)) {
+          matches.push({
+            fileKey,
+            rowId: line.rowId,
+            start: range.start,
+            end: range.end,
+          });
+
+          if (!changedRowIds.includes(line.rowId)) {
+            changedRowIds.push(line.rowId);
+          }
+        }
       }
+
+      reportProgress(changedRowIds);
+      await yieldToMain();
+    }
+
+    if (lines.length === 0) {
+      await yieldToMain();
     }
   }
 

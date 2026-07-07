@@ -46,11 +46,12 @@ export class LayoutVM extends VM {
 
   @computed
   get projectId(): number | null {
-    const { mergeRequest, mergeRequests, repository } = this.globals.router.routes;
+    const { files, mergeRequest, mergeRequests, repository } = this.globals.router.routes;
 
     const projectId =
       mergeRequest.params?.projectId ??
       mergeRequests.params?.projectId ??
+      files.params?.projectId ??
       repository.params?.projectId;
 
     if (!projectId) {
@@ -89,6 +90,16 @@ export class LayoutVM extends VM {
   @computed
   get isMergeRequestDetailOpen() {
     return this.globals.router.routes.mergeRequest.isOpened;
+  }
+
+  @computed
+  get isFilesOpen() {
+    return this.globals.router.routes.files.isOpened;
+  }
+
+  @computed
+  get isFilesNavActive() {
+    return this.isFilesOpen;
   }
 
   @computed
@@ -245,6 +256,16 @@ export class LayoutVM extends VM {
     }
 
     void this.globals.router.routes.repository.open({ projectId });
+  }
+
+  @action.bound
+  openFiles() {
+    const projectId = this.projectIdParam;
+    if (!projectId) {
+      return;
+    }
+
+    void this.globals.router.routes.files.open({ projectId });
   }
 
   @action.bound

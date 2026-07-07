@@ -93,9 +93,10 @@
   --diff-stats-added: #166775;
   --diff-stats-removed: #914c54;
   --diff-canvas: var(--color-canvas-default);
-  --diff-search-active-bg: #8f5e15;
-  --diff-search-active-fg: #e6e7ed;
-  --diff-search-inactive-bg: #e8e4d0;
+  --diff-search-active-bg: #fbbf24;
+  --diff-search-active-fg: #1e293b;
+  --diff-search-inactive-bg: #fde68a;
+  --diff-search-inactive-fg: #334155;
 
   /* File tree */
   --file-tree-bg: var(--color-canvas-overlay);
@@ -244,7 +245,8 @@
   --diff-canvas: var(--color-canvas-default);
   --diff-search-active-bg: #ffb86c;
   --diff-search-active-fg: #282a36;
-  --diff-search-inactive-bg: #44475a;
+  --diff-search-inactive-bg: #6272a4;
+  --diff-search-inactive-fg: #f8f8f2;
 
   --markdown-code-bg: rgb(98 114 164 / 0.25);
   --markdown-pre-bg: #282a36;

@@ -22,6 +22,7 @@ import type { Globals } from "@/globals";
 import type { GitLabProjectDC } from "@/shared/api/gitlab";
 import { CreateMrComment } from "@/features/merge-requests/model/create-mr-comment";
 import { MergeRequestGitDiff } from "@/features/merge-requests/model/mr-git-diff";
+import { prepareMergeRequestChanges } from "@/features/merge-requests/model/prepare-mr-changes";
 
 export type MrReviewAction = "approve" | "unapprove" | "requestChanges" | "cancelRequestChanges";
 
@@ -72,6 +73,10 @@ export class MrInfoModel {
   @observable accessor reviewActionError = "";
   @observable accessor locallyCreatedDiscussionsKey = "";
   @observable accessor locallyCreatedDiscussions: GitLabDiscussionDC[] = [];
+  @observable accessor preparedChanges: GitLabMergeRequestChangeDC[] | null = null;
+  @observable accessor isPreparingChanges = false;
+
+  private prepareChangesGeneration = 0;
 
   constructor(private readonly options: MrInfoModelParams) {
     this.mergeRequestDetailQuery = createGitlabQuery<GitLabMergeRequestDC>({
@@ -182,6 +187,85 @@ export class MrInfoModel {
         };
       },
     });
+
+    reaction(
+      () => ({
+        changes: this.mergeRequestChanges,
+        mergeRequest: this.mergeRequestDetail,
+        versionId: this.selectedDiffVersionId,
+        key: this.mergeRequestKey,
+        changesReady: this.gitDiff.isReady,
+      }),
+      (source) => {
+        const generation = ++this.prepareChangesGeneration;
+
+        if (!source.changesReady) {
+          runInAction(() => {
+            if (generation === this.prepareChangesGeneration) {
+              this.preparedChanges = null;
+              this.isPreparingChanges = false;
+            }
+          });
+          return;
+        }
+
+        if (!source.changes) {
+          runInAction(() => {
+            if (generation === this.prepareChangesGeneration) {
+              this.preparedChanges = [];
+              this.isPreparingChanges = false;
+            }
+          });
+          return;
+        }
+
+        if (!source.mergeRequest) {
+          return;
+        }
+
+        const headRef = source.mergeRequest.diff_refs?.head_sha ?? null;
+        const baseRef =
+          source.mergeRequest.diff_refs?.start_sha ??
+          source.mergeRequest.diff_refs?.base_sha ??
+          null;
+
+        const needsWork = source.changes.some(
+          (change) =>
+            !change.diff?.trim() && !change.too_large && !change.generated_file,
+        );
+
+        if (!needsWork) {
+          runInAction(() => {
+            if (generation === this.prepareChangesGeneration) {
+              this.preparedChanges = source.changes;
+              this.isPreparingChanges = false;
+            }
+          });
+          return;
+        }
+
+        runInAction(() => {
+          if (generation === this.prepareChangesGeneration) {
+            this.isPreparingChanges = true;
+            this.preparedChanges = null;
+          }
+        });
+
+        void prepareMergeRequestChanges(source.changes, {
+          loadFileContent: (path, ref) => this.loadDiffFileContent(path, ref),
+          headRef,
+          baseRef,
+        }).then((prepared) => {
+          runInAction(() => {
+            if (generation === this.prepareChangesGeneration) {
+              this.preparedChanges = prepared;
+              this.isPreparingChanges = false;
+            }
+          });
+        });
+      },
+      { fireImmediately: true },
+    );
   }
 
   private get viewQueries() {
@@ -289,8 +373,18 @@ export class MrInfoModel {
 
   @computed
   get isLoading() {
-    return this.viewQueries.some(
-      (query) => !query.isFetched && query.isPending,
+    return (
+      this.viewQueries.some(
+        (query) => !query.isFetched && query.isPending,
+      ) || this.isPreparingChanges
+    );
+  }
+
+  @computed
+  get showPreparingDiffs() {
+    return (
+      this.isPreparingChanges &&
+      !this.viewQueries.some((query) => !query.isFetched && query.isPending)
     );
   }
 
@@ -331,7 +425,8 @@ export class MrInfoModel {
       this.mergeRequestDetail !== null &&
       this.gitDiff.isReady &&
       this.mergeRequestDiscussions !== null &&
-      this.mergeRequestApprovals !== null
+      this.mergeRequestApprovals !== null &&
+      this.preparedChanges !== null
     );
   }
 
@@ -343,7 +438,7 @@ export class MrInfoModel {
 
     return {
       mergeRequest: this.mergeRequestDetail!,
-      changes: this.mergeRequestChanges ?? [],
+      changes: this.preparedChanges!,
       changesError: this.changesErrorMessage,
       discussions: this.mergeRequestDiscussions!,
       approvals: this.mergeRequestApprovals!,

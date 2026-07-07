@@ -8,8 +8,7 @@ import { parseUnifiedDiff } from "@/shared/lib/parse-unified-diff";
 import { DisposableModel } from "./disposable";
 import type { FileGitDiff } from ".";
 
-const shouldStartExpanded = (file: FileGitDiff) =>
-  !file.meta.isAutoCollapsed && !file.meta.isLazyCollapsed;
+const shouldStartExpanded = (file: FileGitDiff) => !file.meta.isAutoCollapsed;
 
 export class FileGitDiffContent extends DisposableModel {
   @observable accessor isFileExpanded = false;
@@ -139,6 +138,30 @@ export class FileGitDiffContent extends DisposableModel {
   private setupReactions() {
     this.disposers.push(
       reaction(
+        () => ({
+          isLazyCollapsed: this.file.meta.isLazyCollapsed,
+          parsed: this.parsed,
+          isLoadingCollapsedExpand: this.isLoadingCollapsedExpand,
+          isResolvingDiff: this.isResolvingDiff,
+        }),
+        (state) => {
+          if (
+            !state.isLazyCollapsed ||
+            state.parsed ||
+            state.isLoadingCollapsedExpand ||
+            state.isResolvingDiff
+          ) {
+            return;
+          }
+
+          this.file.parent.scheduleCollapsedExpand(this);
+        },
+        { fireImmediately: true },
+      ),
+    );
+
+    this.disposers.push(
+      reaction(
         () =>
           [
             this.file.meta.change.new_path,
@@ -171,7 +194,8 @@ export class FileGitDiffContent extends DisposableModel {
           if (
             source.diff?.trim() ||
             !source.loadFileContent ||
-            source.isDiffContentHidden
+            source.isDiffContentHidden ||
+            this.file.meta.isLazyCollapsed
           ) {
             return;
           }

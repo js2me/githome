@@ -43,6 +43,7 @@ export class FileGitDiff {
   }
 
   dispose() {
+    this.parent.cancelCollapsedExpand(this.content);
     this.content.dispose();
     this.expand.dispose();
     this.selection.dispose();

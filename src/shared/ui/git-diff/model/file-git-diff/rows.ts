@@ -8,7 +8,7 @@ import {
 import type { FileGitDiff } from ".";
 
 export class FileGitDiffRows {
-  readonly virtualized = false;
+  private static readonly VIRTUALIZE_ROW_THRESHOLD = 80;
 
   constructor(private readonly file: FileGitDiff) {}
 
@@ -25,6 +25,11 @@ export class FileGitDiffRows {
       contextLinesByGapId: expand.contextLinesByGapId,
       loadingGapId: expand.loadingGapId,
     };
+  }
+
+  @computed
+  get virtualized() {
+    return this.baseVirtualRows.length > FileGitDiffRows.VIRTUALIZE_ROW_THRESHOLD;
   }
 
   @computed

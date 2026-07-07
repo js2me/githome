@@ -21,9 +21,9 @@ import {
 } from "@/shared/lib/diff-line-selection";
 import type { FileGitDiff } from "../model/file-git-diff";
 import {
+  DiffCommentFormRow,
   DiffExpandRow,
   DiffHunkRow,
-  DiffLineCommentForm,
   DiffLineRow,
   DiffThreadRow,
 } from "./diff-rows";
@@ -68,6 +68,15 @@ type DiffThreadResolveProps = {
   updatingNoteKey?: string | null;
   updateNoteError?: string | null;
   onClearUpdateNoteError?: () => void;
+};
+
+type DiffLineCommentFormProps = {
+  formKey: string;
+  rangeLabel: string | null;
+  errorMessage: string | null;
+  isSubmitting: boolean;
+  onCancel: () => void;
+  onSubmit: (body: string) => void;
 };
 
 const useResolvedThreadExpansion = () => {
@@ -133,7 +142,6 @@ const useResolvedThreadExpansion = () => {
 const VirtualDiffRowView = memo(
   ({
     row,
-    fileGitDiff,
     canComment,
     selectedLineKeys,
     selectionStartKey,
@@ -152,9 +160,9 @@ const VirtualDiffRowView = memo(
     markdownScope,
     isThreadExpanded,
     onToggleThreadExpanded,
+    lineCommentForm,
   }: {
     row: VirtualDiffRow;
-    fileGitDiff: FileGitDiff;
     canComment: boolean;
     selectedLineKeys: Set<string>;
     selectionStartKey: string | null;
@@ -165,6 +173,7 @@ const VirtualDiffRowView = memo(
     onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
     isThreadExpanded: (threadOrDiscussionId: InlineDiffThread | string) => boolean;
     onToggleThreadExpanded: (discussionId: string) => void;
+    lineCommentForm: DiffLineCommentFormProps | null;
   } & DiffThreadResolveProps) => {
     if (row.type === "expand") {
       return (
@@ -242,14 +251,31 @@ const VirtualDiffRowView = memo(
       );
     }
 
-    return <DiffLineCommentForm fileGitDiff={fileGitDiff} />;
+    if (row.type === "comment-form") {
+      if (!lineCommentForm) {
+        return null;
+      }
+
+      return (
+        <DiffCommentFormRow
+          formKey={lineCommentForm.formKey}
+          markdownScope={markdownScope}
+          errorMessage={lineCommentForm.errorMessage}
+          isSubmitting={lineCommentForm.isSubmitting}
+          rangeLabel={lineCommentForm.rangeLabel}
+          onCancel={lineCommentForm.onCancel}
+          onSubmit={lineCommentForm.onSubmit}
+        />
+      );
+    }
+
+    return null;
   },
 );
 
 const StaticDiffBody = memo(
   ({
     rows,
-    fileGitDiff,
     canComment,
     lineSelection,
     orderedLineKeys,
@@ -268,9 +294,9 @@ const StaticDiffBody = memo(
     markdownScope,
     isThreadExpanded,
     onToggleThreadExpanded,
+    lineCommentForm,
   }: {
     rows: VirtualDiffRow[];
-    fileGitDiff: FileGitDiff;
     canComment: boolean;
     lineSelection: DiffLineSelection | null;
     orderedLineKeys: string[];
@@ -281,6 +307,7 @@ const StaticDiffBody = memo(
     onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
     isThreadExpanded: (threadOrDiscussionId: InlineDiffThread | string) => boolean;
     onToggleThreadExpanded: (discussionId: string) => void;
+    lineCommentForm: DiffLineCommentFormProps | null;
   } & DiffThreadResolveProps) => {
     const normalizedSelection = useMemo(() => {
       if (!lineSelection) {
@@ -331,7 +358,6 @@ const StaticDiffBody = memo(
           >
             <VirtualDiffRowView
               row={row}
-              fileGitDiff={fileGitDiff}
               canComment={canComment}
               selectedLineKeys={selectedLineKeys}
               selectionStartKey={selectionStartKey}
@@ -350,6 +376,7 @@ const StaticDiffBody = memo(
               markdownScope={markdownScope}
               isThreadExpanded={isThreadExpanded}
               onToggleThreadExpanded={onToggleThreadExpanded}
+              lineCommentForm={lineCommentForm}
             />
           </div>
         ))}
@@ -396,11 +423,9 @@ const useWindowScrollMargin = (
 const VirtualizedDiffBody = memo(
   ({
     rows,
-    fileGitDiff,
     canComment,
     lineSelection,
     orderedLineKeys,
-    commentFormLineKey,
     onLineClick,
     onLineMouseDown,
     onLineMouseEnter,
@@ -417,13 +442,12 @@ const VirtualizedDiffBody = memo(
     isThreadExpanded,
     onToggleThreadExpanded,
     expandedThreadSignature,
+    lineCommentForm,
   }: {
     rows: VirtualDiffRow[];
-    fileGitDiff: FileGitDiff;
     canComment: boolean;
     lineSelection: DiffLineSelection | null;
     orderedLineKeys: string[];
-    commentFormLineKey: string | null;
     onLineClick: (lineKey: string, shiftKey: boolean) => void;
     onLineMouseDown: (lineKey: string) => void;
     onLineMouseEnter: (lineKey: string) => void;
@@ -432,6 +456,7 @@ const VirtualizedDiffBody = memo(
     isThreadExpanded: (threadOrDiscussionId: InlineDiffThread | string) => boolean;
     onToggleThreadExpanded: (discussionId: string) => void;
     expandedThreadSignature: string;
+    lineCommentForm: DiffLineCommentFormProps | null;
   } & DiffThreadResolveProps) => {
     const listRef = useRef<HTMLDivElement>(null);
     const rowIds = useMemo(() => rows.map((row) => row.id).join("\0"), [rows]);
@@ -487,23 +512,7 @@ const VirtualizedDiffBody = memo(
 
     useLayoutEffect(() => {
       virtualizer.measure();
-    }, [rowIds, expandedThreadSignature, virtualizer]);
-
-    useEffect(() => {
-      if (!commentFormLineKey) {
-        return;
-      }
-
-      const formIndex = rows.findIndex(
-        (row) => row.type === "comment-form" && row.lineKey === commentFormLineKey,
-      );
-
-      if (formIndex >= 0) {
-        requestAnimationFrame(() => {
-          virtualizer.scrollToIndex(formIndex, { align: "center" });
-        });
-      }
-    }, [commentFormLineKey, rows, virtualizer]);
+    }, [rowIds, expandedThreadSignature, lineCommentForm?.formKey, virtualizer]);
 
     useEffect(() => {
       if (!onRegisterScrollToRow) {
@@ -548,7 +557,6 @@ const VirtualizedDiffBody = memo(
               >
                 <VirtualDiffRowView
                   row={row}
-                  fileGitDiff={fileGitDiff}
                   canComment={canComment}
                   selectedLineKeys={selectedLineKeys}
                   selectionStartKey={selectionStartKey}
@@ -567,6 +575,7 @@ const VirtualizedDiffBody = memo(
                   markdownScope={markdownScope}
                   isThreadExpanded={isThreadExpanded}
                   onToggleThreadExpanded={onToggleThreadExpanded}
+                  lineCommentForm={lineCommentForm}
                 />
               </div>
             );
@@ -589,14 +598,31 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
     updateNoteError,
     onClearUpdateNoteError,
     markdownScope,
+    isSubmittingComment,
+    submitCommentError,
   } = parent.payload;
 
   const virtualRows = rows.virtualRows;
   const virtualized = rows.virtualized;
   const orderedLineKeys = rows.orderedLineKeys;
-  const commentFormLineKey = rows.commentFormLineKey;
   const lineSelection = selection.lineSelection;
+  const commentFormLineKey = rows.commentFormLineKey;
   const onExpandGap = meta.canExpand ? fileGitDiff.expand.expandGap : undefined;
+
+  const lineCommentForm = lineSelection
+    ? {
+        formKey: `${lineSelection.startKey}\0${lineSelection.endKey}`,
+        rangeLabel: rows.selectionRangeLabel,
+        errorMessage: submitCommentError,
+        isSubmitting: isSubmittingComment,
+        onCancel: selection.clearSelection,
+        onSubmit: (body: string) => {
+          void selection.submitLineComment(body);
+        },
+      }
+    : null;
+
+  const lineSelectionKey = lineCommentForm?.formKey ?? null;
 
   const {
     isThreadExpanded,
@@ -627,15 +653,21 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
     }
   }, [collapseThreads, resolvedThreadIds]);
 
+  useEffect(() => {
+    if (!commentFormLineKey) {
+      return;
+    }
+
+    navigation.scrollToRow(`comment-form:${commentFormLineKey}`);
+  }, [commentFormLineKey, lineSelectionKey, navigation]);
+
   if (virtualized) {
     return (
       <VirtualizedDiffBody
         rows={virtualRows}
-        fileGitDiff={fileGitDiff}
         canComment={canComment}
         lineSelection={lineSelection}
         orderedLineKeys={orderedLineKeys}
-        commentFormLineKey={commentFormLineKey}
         onLineClick={selection.handleLineClick}
         onLineMouseDown={selection.handleLineMouseDown}
         onLineMouseEnter={selection.handleLineMouseEnter}
@@ -652,6 +684,7 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
         isThreadExpanded={isThreadExpanded}
         onToggleThreadExpanded={toggleThreadExpanded}
         expandedThreadSignature={expandedThreadSignature}
+        lineCommentForm={lineCommentForm}
       />
     );
   }
@@ -659,7 +692,6 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
   return (
     <StaticDiffBody
       rows={virtualRows}
-      fileGitDiff={fileGitDiff}
       canComment={canComment}
       lineSelection={lineSelection}
       orderedLineKeys={orderedLineKeys}
@@ -678,6 +710,7 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
       markdownScope={markdownScope}
       isThreadExpanded={isThreadExpanded}
       onToggleThreadExpanded={toggleThreadExpanded}
+      lineCommentForm={lineCommentForm}
     />
   );
 });
