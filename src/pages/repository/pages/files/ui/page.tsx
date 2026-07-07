@@ -1,13 +1,13 @@
 import { withViewModel } from "mobx-view-model-react";
 import { StatusMessage } from "@/shared/ui/status-message";
-import { FilesVM } from "../model";
+import { FilesPageVM } from "../model";
 import { BranchPicker } from "./components/branch-picker";
 import { CommitPicker } from "./components/commit-picker";
 import { FilesSearch } from "./components/files-search";
 import { FileTree } from "./components/file-tree";
 import { FileViewer } from "./components/file-viewer";
 
-export const FilesPage = withViewModel(FilesVM, ({ model }) => {
+export const FilesPage = withViewModel(FilesPageVM, ({ model }) => {
   if (!model.ref) {
     return (
       <section>

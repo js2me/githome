@@ -1,13 +1,13 @@
 import { observer } from "mobx-react-lite";
 import { cn } from "@/shared/lib/cn";
 import { Popup } from "@/shared/ui/popup";
-import type { FilesVM } from "../../model";
+import type { FilesPageVM } from "../../model";
 import { CommitsVirtualList } from "./commits-virtual-list";
 
 const pickerButtonClassName =
   "inline-flex max-w-[min(100vw-12rem,320px)] items-center gap-1.5 rounded-[10px] border px-3 py-1.5 text-sm font-semibold transition";
 
-export const CommitPicker = observer(({ model }: { model: FilesVM }) => {
+export const CommitPicker = observer(({ model }: { model: FilesPageVM }) => {
   const { commitsModel } = model;
 
   return (

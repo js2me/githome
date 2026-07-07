@@ -5,7 +5,7 @@ import { RepositoryPageVM } from "@/pages/repository/model";
 import { VM } from "@/shared/lib/view-models/vm";
 import { computed } from "mobx";
 
-export class MergeRequestsVM extends VM<{}, RepositoryPageVM> {
+export class MergeRequestsPageVM extends VM<{}, RepositoryPageVM> {
   mrList;
 
   @computed
@@ -23,7 +23,7 @@ export class MergeRequestsVM extends VM<{}, RepositoryPageVM> {
     return this.parentViewModel.mergeRequestIid;
   }
 
-  constructor(globals: Globals, params: InferViewModelParams<MergeRequestsVM>) {
+  constructor(globals: Globals, params: InferViewModelParams<MergeRequestsPageVM>) {
     super(globals, params);
 
     this.mrList = new MrList(this);

@@ -8,7 +8,7 @@ import {
 } from "./gitlab-projects-list";
 import { VM } from "@/shared/lib/view-models/vm";
 
-export class HomeVM extends VM {
+export class HomePageVM extends VM {
   readonly gitlabProjectsList: GitlabProjectsList;
 
   constructor(globals: Globals, params: ViewModelParams) {

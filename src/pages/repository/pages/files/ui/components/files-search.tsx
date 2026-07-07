@@ -2,7 +2,7 @@ import { File, Magnifier } from "@gravity-ui/icons";
 import { observer } from "mobx-react-lite";
 import { cn } from "@/shared/lib/cn";
 import { Popup } from "@/shared/ui/popup";
-import type { FilesVM } from "../../model";
+import type { FilesPageVM } from "../../model";
 import type { FilesSearchMode } from "../../model/repository-files-search";
 
 const modeButtonClassName =
@@ -11,7 +11,7 @@ const modeButtonClassName =
 const searchInputClassName =
   "w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500";
 
-export const FilesSearch = observer(({ model }: { model: FilesVM }) => {
+export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
   const { searchModel } = model;
 
   return (

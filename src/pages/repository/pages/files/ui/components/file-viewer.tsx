@@ -1,10 +1,10 @@
 import { observer } from "mobx-react-lite";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { StatusMessage } from "@/shared/ui/status-message";
-import type { FilesVM } from "../../model";
+import type { FilesPageVM } from "../../model";
 import { HighlightedSourceCode } from "./highlighted-source-code";
 
-export const FileViewer = observer(({ model }: { model: FilesVM }) => {
+export const FileViewer = observer(({ model }: { model: FilesPageVM }) => {
   if (!model.selectedFilePath) {
     return (
       <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-gray-900">

@@ -12,7 +12,7 @@ import { RepositoryCommitsModel } from "./repository-commits";
 import { RepositoryFilesSearchModel } from "./repository-files-search";
 import { RepositoryTreeModel } from "./repository-tree";
 
-export class FilesVM extends VM<{}, RepositoryPageVM> {
+export class FilesPageVM extends VM<{}, RepositoryPageVM> {
   treeModel;
   commitsModel;
   searchModel;
@@ -26,7 +26,7 @@ export class FilesVM extends VM<{}, RepositoryPageVM> {
 
   private lastProjectId: number | null = null;
 
-  constructor(globals: Globals, params: InferViewModelParams<FilesVM>) {
+  constructor(globals: Globals, params: InferViewModelParams<FilesPageVM>) {
     super(globals, params);
 
     this.commitsModel = new RepositoryCommitsModel({

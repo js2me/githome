@@ -1,9 +1,9 @@
 import { observer } from "mobx-react-lite";
 import { cn } from "@/shared/lib/cn";
 import { Popup } from "@/shared/ui/popup";
-import type { FilesVM } from "../../model";
+import type { FilesPageVM } from "../../model";
 
-export const BranchPicker = observer(({ model }: { model: FilesVM }) => {
+export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
   const currentLabel = model.branchRef ?? "Ветка";
 
   return (
@@ -67,7 +67,7 @@ export const BranchPicker = observer(({ model }: { model: FilesVM }) => {
                 className={cn(
                   "flex w-full items-center border-none bg-transparent px-3 py-2 text-left text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800",
                   isSelected &&
-                    "bg-orange-50 font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+                  "bg-orange-50 font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300",
                 )}
                 type="button"
                 role="option"

@@ -1,9 +1,9 @@
 import { withViewModel } from "mobx-view-model-react";
 import { StatusMessage } from "@/shared/ui/status-message";
-import { MergeRequestsVM } from "../model";
+import { MergeRequestsPageVM } from "../model";
 import { MergeRequestList } from "./components/merge-request-list";
 
-export const MergeRequestsPage = withViewModel(MergeRequestsVM, ({ model }) => {
+export const MergeRequestsPage = withViewModel(MergeRequestsPageVM, ({ model }) => {
   const { mrList } = model;
 
   return (
@@ -19,8 +19,8 @@ export const MergeRequestsPage = withViewModel(MergeRequestsVM, ({ model }) => {
       )}
 
       {mrList.showEmptyListMessage && (
-          <StatusMessage>Открытых merge requests не найдено.</StatusMessage>
-        )}
+        <StatusMessage>Открытых merge requests не найдено.</StatusMessage>
+      )}
 
       {mrList.showList && (
         <MergeRequestList
