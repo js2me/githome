@@ -1,5 +1,4 @@
 import { action, observable, reaction, runInAction } from "mobx";
-import { ViewModelBase } from "mobx-view-model";
 import { createRef } from "yummies/mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
@@ -14,8 +13,7 @@ import {
   sanitizeGitlabCodeBlocks,
 } from "@/shared/lib/gitlab/post-process-html";
 import { enhanceMarkdownCodeBlocks } from "@/shared/lib/syntax-highlight/enhance-markdown-code-blocks";
-import { getSyntaxTheme } from "@/shared/lib/syntax-highlight/syntax-theme";
-import { globals } from "@/globals";
+import { VM } from "@/shared/lib/view-models/vm";
 
 export interface GitlabMarkdownScope {
   connection: GitLabConnection | null;
@@ -29,7 +27,7 @@ export interface GitlabMarkdownPayload extends GitlabMarkdownScope {
   italic?: boolean;
 }
 
-export class GitlabMarkdownVM extends ViewModelBase<GitlabMarkdownPayload> {
+export class GitlabMarkdownVM extends VM<GitlabMarkdownPayload> {
   @observable accessor html: string | null = null;
   @observable accessor hasError = false;
 
@@ -70,7 +68,7 @@ export class GitlabMarkdownVM extends ViewModelBase<GitlabMarkdownPayload> {
         html: this.html,
         hasScope: this.hasScope,
         connection: this.payload.connection,
-        isDark: globals.stores.theme.isDark,
+        isDark: this.globals.stores.theme.isDark,
         container: this.container.current,
       }),
       () => {
@@ -84,7 +82,7 @@ export class GitlabMarkdownVM extends ViewModelBase<GitlabMarkdownPayload> {
 
         let cancelled = false;
         const signal = this.unmountSignal;
-        const theme = getSyntaxTheme();
+        const theme = this.globals.stores.theme.syntaxTheme;
         let cleanupImages: (() => void) | undefined;
 
         const frame = requestAnimationFrame(() => {

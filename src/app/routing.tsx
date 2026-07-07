@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { RouteView, RouteViewGroup } from "mobx-route/react";
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import type { Globals } from "@/globals";
 import { Layout } from "@/widgets/layout";
 
@@ -20,8 +20,10 @@ const RepositoryPage = lazy(() =>
 export const Routing = observer(({ globals }: { globals: Globals }) => {
   return (
     <RouteViewGroup layout={Layout}>
-      <RouteView route={globals.router.routes.home} view={HomePage} />
-      <RouteView route={globals.router.routes.repository} view={RepositoryPage} />
+      <Suspense fallback={null}>
+        <RouteView route={globals.router.routes.home} view={HomePage} />
+        <RouteView route={globals.router.routes.repository} view={RepositoryPage} />
+      </Suspense>
     </RouteViewGroup>
   );
 });

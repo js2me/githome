@@ -4,7 +4,9 @@ import { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
 import { getDiffFileKey } from "@/shared/lib/diff-search";
 import { DiffFileContentLoader } from "@/shared/lib/syntax-highlight/types";
 import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
-import { ViewModelBase } from "mobx-view-model";
+import type { ViewModelParams } from "mobx-view-model";
+import type { Globals } from "@/globals";
+import { VM } from "@/shared/lib/view-models/vm";
 import { FileGitDiff } from "./file-git-diff";
 import type { FileGitDiffContent } from "./file-git-diff/content";
 
@@ -38,10 +40,14 @@ export interface GitDiffPayload {
   markdownScope?: GitlabMarkdownScope;
 }
 
-export class GitDiffVM extends ViewModelBase<GitDiffPayload> {
+export class GitDiffVM extends VM<GitDiffPayload> {
   private readonly fileModelCache = new Map<string, FileGitDiff>();
   private readonly pendingCollapsedExpands = new Set<FileGitDiffContent>();
   private activeCollapsedExpands = 0;
+
+  constructor(globals: Globals, params: ViewModelParams<GitDiffPayload>) {
+    super(globals, params);
+  }
 
   scheduleCollapsedExpand(content: FileGitDiffContent) {
     if (

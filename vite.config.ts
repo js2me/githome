@@ -4,7 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
 import electron from "vite-plugin-electron/simple";
 import { defineConfig, type Plugin } from "vite";
-import { mobxVmVitePlugin } from "mobx-view-model-vite-plugin";
 import { handleGitlabProxyRequest } from "./electron/gitlab-proxy";
 import dotenv from "dotenv";
 
@@ -36,12 +35,6 @@ export default defineConfig(({ mode, command }) => {
     plugins: [
       gitlabProxyPlugin(),
       tailwindcss(),
-      mobxVmVitePlugin({
-        debug: process.env.DEBUG_VM_VITE_PLUGIN === 'true',
-        autoDisplayName: isDev,
-        devtools: isDev,
-        hmr: isDev,
-      }),
       react({
         useAtYourOwnRisk_mutateSwcOptions(options) {
           options.jsc!.parser!.decorators = true;

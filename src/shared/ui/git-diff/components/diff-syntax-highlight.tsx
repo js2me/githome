@@ -12,7 +12,7 @@ import { observer } from "mobx-react-lite";
 import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
 import { DiffSyntaxHighlight } from "@/shared/lib/syntax-highlight/diff-syntax-highlight";
 import type { SyntaxToken } from "@/shared/lib/syntax-highlight/syntax-highlighter";
-import { getSyntaxTheme } from "@/shared/lib/syntax-highlight/syntax-theme";
+import type { Globals } from "@/globals";
 import type { ParsedFileDiff } from "@/shared/lib/parse-unified-diff";
 
 interface DiffSyntaxHighlightContextValue {
@@ -29,15 +29,17 @@ const DiffSyntaxHighlightContext =
 
 export const DiffSyntaxHighlightProvider = observer(
   ({
+    globals,
     change,
     parsed,
     children,
   }: {
+    globals: Globals;
     change: GitLabMergeRequestChangeDC;
     parsed: ParsedFileDiff | null;
     children: ReactNode;
   }) => {
-    const theme = getSyntaxTheme();
+    const theme = globals.stores.theme.syntaxTheme;
     const rootRef = useRef<HTMLDivElement>(null);
     const [version, rerender] = useReducer((v) => v + 1, 0);
 

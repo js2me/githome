@@ -252,7 +252,11 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
 
     if (parsed && virtualRows.length > 0) {
       return (
-        <DiffSyntaxHighlightProvider change={change} parsed={parsed}>
+        <DiffSyntaxHighlightProvider
+          globals={model.parent.globals}
+          change={change}
+          parsed={parsed}
+        >
           <DiffBody fileGitDiff={model} />
         </DiffSyntaxHighlightProvider>
       );

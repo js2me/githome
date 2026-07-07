@@ -38,25 +38,3 @@ export class Globals {
     };
   }
 }
-
-let globalsInstance: Globals | null = null;
-
-export const initGlobals = (): Globals => {
-  if (!globalsInstance) {
-    globalsInstance = new Globals();
-  }
-
-  return globalsInstance;
-};
-
-export const globals: Globals = new Proxy({} as Globals, {
-  get(_target, prop, receiver) {
-    if (!globalsInstance) {
-      throw new Error(
-        "Globals not initialized. Import @/app/bootstrap/base before use.",
-      );
-    }
-
-    return Reflect.get(globalsInstance, prop, receiver);
-  },
-});

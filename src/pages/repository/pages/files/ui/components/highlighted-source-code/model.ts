@@ -3,7 +3,6 @@ import { VM } from "@/shared/lib/view-models/vm";
 import { getLanguageFromPath } from "@/shared/lib/syntax-highlight/language-from-path";
 import { renderSyntaxTokensToHtml } from "@/shared/lib/syntax-highlight/render-syntax-html";
 import { highlightCodeBlockTokens } from "@/shared/lib/syntax-highlight/shiki-highlighter";
-import { getSyntaxTheme } from "@/shared/lib/syntax-highlight/syntax-theme";
 
 export interface HighlightedSourceCodePayload {
   filePath: string;
@@ -52,7 +51,7 @@ export class HighlightedSourceCodeVM extends VM<HighlightedSourceCodePayload> {
       const lines = await highlightCodeBlockTokens(
         content,
         language,
-        getSyntaxTheme(),
+        this.globals.stores.theme.syntaxTheme,
       );
 
       if (generation !== this.highlightGeneration) {
