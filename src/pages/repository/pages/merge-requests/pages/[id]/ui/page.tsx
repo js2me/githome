@@ -1,4 +1,5 @@
 import { withViewModel } from "mobx-view-model-react";
+import { LoadingState } from "@/shared/ui/loading-state";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { MergeRequestPageVM } from "../model";
 import { MergeRequestDetail } from "./components/merge-request-detail";
@@ -16,11 +17,11 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
   return (
     <section>
         {model.mrInfo.isLoading && (
-          <StatusMessage>
+          <LoadingState>
             {model.mrInfo.showPreparingDiffs
               ? "Подготавливаем diff..."
-              : "Загружаем merge request..."}
-          </StatusMessage>
+              : "Загружаем Merge Request"}
+          </LoadingState>
         )}
 
         {model.mrInfo.showLoadError && (

@@ -1,4 +1,3 @@
-import { observer } from "mobx-react-lite";
 import { type ViewModelProps, withViewModel } from "mobx-view-model-react";
 import { Suspense, type ReactNode } from "react";
 import { GitLabConnectionProvider } from "@/shared/lib/gitlab/connection-context";
@@ -9,7 +8,7 @@ export interface LayoutProps extends ViewModelProps<LayoutVM> {
   children: ReactNode;
 }
 
-const LayoutContent = observer(({ children, model }: LayoutProps) => {
+export const Layout = withViewModel(LayoutVM, ({ model, children }: LayoutProps) => {
   const connection = model.globals.stores.settings.activeConnection;
 
   return (
@@ -23,12 +22,3 @@ const LayoutContent = observer(({ children, model }: LayoutProps) => {
     </GitLabConnectionProvider>
   );
 });
-
-export const Layout = withViewModel(
-  LayoutVM,
-  (props: LayoutProps) => <LayoutContent {...props} />,
-  {
-    vmConfig: { useReactIds: false },
-    generateId: () => "layout",
-  },
-);
