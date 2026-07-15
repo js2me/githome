@@ -3,8 +3,8 @@ import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import type { GitlabProjectInfo } from "@/entities/gitlab-projects/model/gitlab-project-info";
 import {
-  GitlabProjectsList,
-  type ProjectListTab,
+    GitlabProjectsList,
+    type ProjectListTab,
 } from "./gitlab-projects-list";
 import { VM } from "@/shared/lib/view-models/vm";
 
@@ -91,7 +91,7 @@ export class HomePageVM extends VM {
   @action.bound
   openProject(project: GitlabProjectInfo) {
     this.globals.stores.repository.setProject(project.data);
-    void this.globals.router.routes.repository.open({
+    void this.globals.routes.repository.open({
       projectId: String(project.data.id),
     });
   }

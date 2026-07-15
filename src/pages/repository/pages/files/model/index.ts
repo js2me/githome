@@ -3,7 +3,7 @@ import { InferViewModelParams } from "mobx-view-model";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabBranchDC } from "@/shared/api/gitlab";
 import type { Globals } from "@/globals";
-import { RepositoryPageVM } from "@/pages/repository/model";
+import { RepositoryPageVM } from "@/pages/repository/model/page-vm";
 import { createGitlabApiQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
 import { isMarkdownPath } from "../lib/repository-tree-utils";

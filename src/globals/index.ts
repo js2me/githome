@@ -5,8 +5,7 @@ import { SettingsStore } from "./stores/settings";
 import { ThemeManager } from "./stores/theme-manager";
 import { VMStore } from "../shared/lib/view-models/vm-store";
 
-export class Globals {
-  readonly router: Router;
+export class Globals extends Router {
   readonly stores: {
     settings: SettingsStore;
     repository: Repository;
@@ -16,7 +15,7 @@ export class Globals {
   };
 
   constructor() {
-    this.router = new Router();
+    super();
     const settings = new SettingsStore();
     const queryClient = new QueryClient({
       defaultOptions: {

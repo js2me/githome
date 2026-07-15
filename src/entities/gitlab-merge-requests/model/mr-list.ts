@@ -134,7 +134,7 @@ export class MrList {
       return;
     }
 
-    void this.params.globals.router.routes.mergeRequest.open({
+    void this.params.globals.routes.mergeRequest.open({
       projectId: String(projectId),
       mergeRequestIid: String(mergeRequest.iid),
     });

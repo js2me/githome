@@ -24,7 +24,7 @@ export class VMStore extends ViewModelStoreBase {
     });
   }
 
-  createViewModel<VMType extends AnyViewModel>(
+  create<VMType extends AnyViewModel>(
     config: ViewModelCreateConfig<VMType>,
   ): VMType {
     const VMClass = config.VM as unknown as Class<

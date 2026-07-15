@@ -25,7 +25,7 @@ export class FilesPageQuerySync {
   ) {
     reaction(
       () => ({
-        isOpen: globals.router.routes.files.isOpened,
+        isOpen: globals.routes.files.isOpened,
         query: this.readQuery(),
       }),
       ({ isOpen, query }) => {
@@ -45,7 +45,7 @@ export class FilesPageQuerySync {
 
     reaction(
       () => ({
-        isOpen: globals.router.routes.files.isOpened,
+        isOpen: globals.routes.files.isOpened,
         state: this.getState(),
       }),
       ({ isOpen, state }) => {
@@ -59,7 +59,7 @@ export class FilesPageQuerySync {
   }
 
   readQuery(): FilesQueryData {
-    const data = this.globals.router.query.data;
+    const data = this.globals.query.data;
 
     return {
       branch: data[FILES_QUERY_KEYS.branch]?.trim() || null,
@@ -79,7 +79,7 @@ export class FilesPageQuerySync {
       return;
     }
 
-    this.globals.router.query.update(
+    this.globals.query.update(
       {
         [FILES_QUERY_KEYS.branch]: state.branch,
         [FILES_QUERY_KEYS.commit]: state.commit,

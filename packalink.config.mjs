@@ -8,10 +8,12 @@ export default {
       packageName: 'mobx-view-model',
       dirName: `${process.env.PACKALINK_VM_PATH}/packages/core/dist`,
       depsPath: '../node_modules',
+      additionalDepsToLink: ['react', 'react-dom'],
     },
     {
       packageName: 'mobx-view-model-react',
       dirName: `${process.env.PACKALINK_VM_PATH}/packages/react/dist`,
+      additionalDepsToLink: ['react', 'react-dom'],
       depsPath: '../node_modules',
     },
     {

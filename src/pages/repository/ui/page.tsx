@@ -1,7 +1,7 @@
 import { withViewModel } from "mobx-view-model-react";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
-import { RepositoryPageVM } from "../model";
+import { RepositoryPageVM } from "../model/page-vm";
 import { RouteView, RouteViewGroup } from "mobx-route/react";
 import { lazy } from "react";
 
@@ -33,9 +33,9 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
 
   return (
     <RouteViewGroup>
-      <RouteView route={model.globals.router.routes.files} view={FilesPage} />
-      <RouteView route={model.globals.router.routes.mergeRequests} view={MergeRequestsPage} />
-      <RouteView route={model.globals.router.routes.mergeRequest} view={MergeRequestPage} />
+      <RouteView route={model.globals.routes.files} view={FilesPage} />
+      <RouteView route={model.globals.routes.mergeRequests} view={MergeRequestsPage} />
+      <RouteView route={model.globals.routes.mergeRequest} view={MergeRequestPage} />
       <section>
         {model.isLoading && !project && (
           <StatusMessage>Загружаем репозиторий...</StatusMessage>

@@ -1,6 +1,6 @@
 import { InferViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
-import { RepositoryPageVM } from "@/pages/repository/model";
+import { RepositoryPageVM } from "@/pages/repository/model/page-vm";
 import { VM } from "@/shared/lib/view-models/vm";
 import { MrInfoModel } from "./mr-info";
 

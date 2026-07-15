@@ -8,6 +8,7 @@ import type {
 import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
 import { ProjectReadmeModel } from "./project-readme";
+import { sleep } from "yummies/async";
 
 export class RepositoryPageVM extends VM {
   projectQuery;
@@ -50,7 +51,7 @@ export class RepositoryPageVM extends VM {
 
   static resolveMergeRequestIid(globals: Globals): number | null {
     const mergeRequestIid =
-      globals.router.routes.mergeRequest.params?.mergeRequestIid;
+      globals.routes.mergeRequest.params?.mergeRequestIid;
 
     if (!mergeRequestIid) {
       return null;
@@ -62,7 +63,7 @@ export class RepositoryPageVM extends VM {
 
   @computed
   get projectId(): number | null {
-    const projectId = this.globals.router.routes.repository.params?.projectId;
+    const projectId = this.globals.routes.repository.params?.projectId;
     if (!projectId) {
       return null;
     }
@@ -152,7 +153,7 @@ export class RepositoryPageVM extends VM {
       return;
     }
 
-    void this.globals.router.routes.files.open({ projectId });
+    void this.globals.routes.files.open({ projectId });
   }
 
   @action.bound
@@ -162,6 +163,12 @@ export class RepositoryPageVM extends VM {
       return;
     }
 
-    void this.globals.router.routes.mergeRequests.open({ projectId });
+    void this.globals.routes.mergeRequests.open({ projectId });
+  }
+
+  protected async willMount() {
+    console.log('tick')
+    await sleep(1000);
+    console.log('tack')
   }
 }

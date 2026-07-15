@@ -21,8 +21,8 @@ export const Routing = observer(({ globals }: { globals: Globals }) => {
   return (
     <RouteViewGroup layout={Layout}>
       <Suspense fallback={null}>
-        <RouteView route={globals.router.routes.home} view={HomePage} />
-        <RouteView route={globals.router.routes.repository} view={RepositoryPage} />
+        <RouteView route={globals.routes.home} view={HomePage} />
+        <RouteView route={globals.routes.repository} view={RepositoryPage} />
       </Suspense>
     </RouteViewGroup>
   );

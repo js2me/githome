@@ -46,7 +46,7 @@ export class LayoutVM extends VM {
 
   @computed
   get projectId(): number | null {
-    const { files, mergeRequest, mergeRequests, repository } = this.globals.router.routes;
+    const { files, mergeRequest, mergeRequests, repository } = this.globals.routes;
 
     const projectId =
       mergeRequest.params?.projectId ??
@@ -77,7 +77,7 @@ export class LayoutVM extends VM {
   @computed
   get mergeRequestIid(): number | null {
     const mergeRequestIid =
-      this.globals.router.routes.mergeRequest.params?.mergeRequestIid;
+      this.globals.routes.mergeRequest.params?.mergeRequestIid;
 
     if (!mergeRequestIid) {
       return null;
@@ -89,12 +89,12 @@ export class LayoutVM extends VM {
 
   @computed
   get isMergeRequestDetailOpen() {
-    return this.globals.router.routes.mergeRequest.isOpened;
+    return this.globals.routes.mergeRequest.isOpened;
   }
 
   @computed
   get isFilesOpen() {
-    return this.globals.router.routes.files.isOpened;
+    return this.globals.routes.files.isOpened;
   }
 
   @computed
@@ -105,7 +105,7 @@ export class LayoutVM extends VM {
   @computed
   get isMergeRequestsOpen() {
     return (
-      this.globals.router.routes.mergeRequests.isOpened ||
+      this.globals.routes.mergeRequests.isOpened ||
       this.isMergeRequestDetailOpen
     );
   }
@@ -132,8 +132,8 @@ export class LayoutVM extends VM {
   @computed
   get showRepositoryBreadcrumbs() {
     return (
-      (this.globals.router.routes.repository.isOpened ||
-        this.globals.router.routes.repository.hasOpenedChildren) &&
+      (this.globals.routes.repository.isOpened ||
+        this.globals.routes.repository.hasOpenedChildren) &&
       this.repository !== null &&
       this.projectId !== null
     );
@@ -245,7 +245,7 @@ export class LayoutVM extends VM {
 
   @action.bound
   openHome() {
-    void this.globals.router.routes.home.open();
+    void this.globals.routes.home.open();
   }
 
   @action.bound
@@ -255,7 +255,7 @@ export class LayoutVM extends VM {
       return;
     }
 
-    void this.globals.router.routes.repository.open({ projectId });
+    void this.globals.routes.repository.open({ projectId });
   }
 
   @action.bound
@@ -265,7 +265,7 @@ export class LayoutVM extends VM {
       return;
     }
 
-    void this.globals.router.routes.files.open({ projectId });
+    void this.globals.routes.files.open({ projectId });
   }
 
   @action.bound
@@ -275,6 +275,6 @@ export class LayoutVM extends VM {
       return;
     }
 
-    void this.globals.router.routes.mergeRequests.open({ projectId });
+    void this.globals.routes.mergeRequests.open({ projectId });
   }
 }

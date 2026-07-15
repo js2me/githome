@@ -6,7 +6,7 @@ import {
   createRoute,
   createVirtualRoute,
   Router as RouterLib,
-  routeConfig,
+  routeConfig
 } from "mobx-route";
 
 export interface RouterParams {
@@ -34,6 +34,8 @@ type RoutesMap = ReturnType<typeof defineRoutes>;
 export class Router extends RouterLib<RoutesMap> {
   history;
   query;
+  // просто чтобы ссылался сюда
+  declare routes;
 
   constructor(params?: RouterParams) {
     const history = createBrowserHistory(params?.history);
