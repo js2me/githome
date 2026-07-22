@@ -8,7 +8,6 @@ import type {
 import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
 import { ProjectReadmeModel } from "./project-readme";
-import { sleep } from "yummies/async";
 
 export class RepositoryPageVM extends VM {
   projectQuery;
@@ -164,11 +163,5 @@ export class RepositoryPageVM extends VM {
     }
 
     void this.globals.routes.mergeRequests.open({ projectId });
-  }
-
-  protected async willMount() {
-    console.log('tick')
-    await sleep(1000);
-    console.log('tack')
   }
 }

@@ -11,7 +11,6 @@ export class VMStore extends ViewModelStoreBase {
   constructor(private globals: Globals) {
     super({
       vmConfig: {
-        useReactIds: true,
         observable: {
           viewModels: {
             useDecorators: true,
