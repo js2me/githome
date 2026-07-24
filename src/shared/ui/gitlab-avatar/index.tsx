@@ -1,4 +1,4 @@
-import { withPropsViewModel } from "mobx-view-model";
+import { withPropsViewModel } from "mobx-view-model-react";
 import { cn } from "@/shared/lib/cn";
 import { GitlabAvatarVM } from "./model";
 

@@ -1,4 +1,4 @@
-import { withPropsViewModel } from "mobx-view-model";
+import { withPropsViewModel } from "mobx-view-model-react";
 import { HighlightedSourceCodeVM } from "./highlighted-source-code/model";
 
 const sourceCodeClassName =
