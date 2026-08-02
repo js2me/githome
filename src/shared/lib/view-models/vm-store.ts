@@ -6,6 +6,7 @@ import {
 } from "mobx-view-model";
 import type { VM } from "@/shared/lib/view-models/vm";
 import type { Globals } from "../../../globals";
+import { reaction } from "mobx";
 
 export class VMStore extends ViewModelStoreBase {
   constructor(private globals: Globals) {
@@ -21,6 +22,10 @@ export class VMStore extends ViewModelStoreBase {
         },
       },
     });
+
+    reaction(() => [...this.viewModels.values()].filter(it => it.constructor.name === 'RepositoryPageVM').length,(count)=>{
+      console.log(">>>>>>>>> RepositoryPageVM COUNT: ", count);
+    })
   }
 
   create<VMType extends AnyViewModel>(

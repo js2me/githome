@@ -5,7 +5,6 @@ import { RepositoryPageVM } from "../model/page-vm";
 import { RouteView, RouteViewGroup } from "mobx-route/react";
 import { lazy } from "react";
 
-
 const MergeRequestsPage = lazy(() =>
   import("@/pages/repository/pages/merge-requests/ui/page").then((module) => ({
     default: module.MergeRequestsPage,
@@ -32,7 +31,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
   const projectPath = project?.path_with_namespace ?? "";
 
   return (
-    <RouteViewGroup>
+    <RouteViewGroup suspense fallback={null}>
       <RouteView route={model.globals.routes.files} view={FilesPage} />
       <RouteView route={model.globals.routes.mergeRequests} view={MergeRequestsPage} />
       <RouteView route={model.globals.routes.mergeRequest} view={MergeRequestPage} />
