@@ -13,6 +13,7 @@ const shouldStartExpanded = (file: FileGitDiff) => !file.meta.isAutoCollapsed;
 export class FileGitDiffContent extends DisposableModel {
   @observable accessor isFileExpanded = false;
   @observable accessor expandedDiff: string | null = null;
+  @observable accessor collapsedExpandError: string | null = null;
   @observable accessor isLoadingCollapsedExpand = false;
   @observable accessor resolvedDiff: string | null = null;
   @observable accessor isResolvingDiff = false;
@@ -83,7 +84,12 @@ export class FileGitDiffContent extends DisposableModel {
       return;
     }
 
+    if (this.isLoadingCollapsedExpand) {
+      return;
+    }
+
     this.isLoadingCollapsedExpand = true;
+    this.collapsedExpandError = null;
 
     try {
       if (change.new_file && headRef) {
@@ -106,6 +112,11 @@ export class FileGitDiffContent extends DisposableModel {
       }
 
       this.isFileExpanded = true;
+    } catch (error) {
+      runInAction(() => {
+        this.collapsedExpandError =
+          error instanceof Error ? error.message : "Не удалось загрузить diff";
+      });
     } finally {
       this.isLoadingCollapsedExpand = false;
     }
@@ -130,6 +141,7 @@ export class FileGitDiffContent extends DisposableModel {
   resetOnPathChange() {
     this.isFileExpanded = shouldStartExpanded(this.file);
     this.expandedDiff = null;
+    this.collapsedExpandError = null;
     this.resolvedDiff = null;
     this.isLoadingCollapsedExpand = false;
     this.isResolvingDiff = false;
@@ -143,13 +155,15 @@ export class FileGitDiffContent extends DisposableModel {
           parsed: this.parsed,
           isLoadingCollapsedExpand: this.isLoadingCollapsedExpand,
           isResolvingDiff: this.isResolvingDiff,
+          collapsedExpandError: this.collapsedExpandError,
         }),
         (state) => {
           if (
             !state.isLazyCollapsed ||
             state.parsed ||
             state.isLoadingCollapsedExpand ||
-            state.isResolvingDiff
+            state.isResolvingDiff ||
+            state.collapsedExpandError
           ) {
             return;
           }

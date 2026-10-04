@@ -247,7 +247,6 @@ export class MrInfoModel {
         runInAction(() => {
           if (generation === this.prepareChangesGeneration) {
             this.isPreparingChanges = true;
-            this.preparedChanges = null;
           }
         });
 
@@ -381,6 +380,14 @@ export class MrInfoModel {
   }
 
   @computed
+  get isRefreshing() {
+    return (
+      this.isPreparingChanges ||
+      this.viewQueries.some((query) => query.isFetching)
+    );
+  }
+
+  @computed
   get showPreparingDiffs() {
     return (
       this.isPreparingChanges &&
@@ -420,7 +427,6 @@ export class MrInfoModel {
   @computed
   get isDetailReady() {
     return (
-      !this.isLoading &&
       !this.errorMessage &&
       this.mergeRequestDetail !== null &&
       this.gitDiff.isReady &&

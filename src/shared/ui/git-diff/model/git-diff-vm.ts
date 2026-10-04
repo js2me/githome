@@ -10,7 +10,7 @@ import { VM } from "@/shared/lib/view-models/vm";
 import { FileGitDiff } from "./file-git-diff";
 import type { FileGitDiffContent } from "./file-git-diff/content";
 
-const MAX_CONCURRENT_COLLAPSED_EXPANDS = 3;
+const MAX_CONCURRENT_COLLAPSED_EXPANDS = 2;
 
 export interface GitDiffPayload {
   changes: GitLabMergeRequestChangeDC[];
@@ -75,10 +75,13 @@ export class GitDiffVM extends VM<GitDiffPayload> {
       this.pendingCollapsedExpands.delete(content);
       this.activeCollapsedExpands += 1;
 
-      void content.expandCollapsedFile().finally(() => {
-        this.activeCollapsedExpands -= 1;
-        this.runCollapsedExpandQueue();
-      });
+      void content
+        .expandCollapsedFile()
+        .catch(() => undefined)
+        .finally(() => {
+          this.activeCollapsedExpands -= 1;
+          this.runCollapsedExpandQueue();
+        });
     }
   }
 

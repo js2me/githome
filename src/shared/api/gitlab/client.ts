@@ -184,6 +184,39 @@ export const buildGitlabRequestHeaders = (
   };
 };
 
+const getRetryAfterMs = (response: Response): number | null => {
+  const retryAfter = response.headers.get("retry-after")?.trim();
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.ceil(seconds * 1000);
+    }
+
+    const retryAt = Date.parse(retryAfter);
+    if (Number.isFinite(retryAt)) {
+      return Math.max(0, retryAt - Date.now());
+    }
+  }
+
+  const resetAt = Number(response.headers.get("ratelimit-reset"));
+  if (Number.isFinite(resetAt) && resetAt > 0) {
+    return Math.max(0, resetAt * 1000 - Date.now());
+  }
+
+  return null;
+};
+
+export class GitLabApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly retryAfterMs: number | null = null,
+  ) {
+    super(message);
+    this.name = "GitLabApiError";
+  }
+}
+
 export const gitlabGraphql = async <T>(
   connection: GitLabConnection,
   query: string,
@@ -256,7 +289,11 @@ export const gitlabFetch = async (
   );
 
   if (!response.ok) {
-    throw new Error(`GitLab API error: ${response.status}`);
+    throw new GitLabApiError(
+      `GitLab API error: ${response.status}`,
+      response.status,
+      response.status === 429 ? getRetryAfterMs(response) : null,
+    );
   }
 
   return response;

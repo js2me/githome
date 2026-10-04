@@ -158,6 +158,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
 
   const {
     isFileExpanded,
+    collapsedExpandError,
     isLoadingCollapsedExpand,
     isResolvingDiff,
     parsed,
@@ -264,8 +265,22 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
 
     if (isLazyCollapsed && !parsed) {
       return (
-        <div className="p-3.5 text-[13px] text-slate-500">
-          Загружаем diff...
+        <div className="flex items-center gap-3 p-3.5 text-[13px] text-slate-500">
+          <span>
+            {collapsedExpandError
+              ? `Не удалось загрузить diff: ${collapsedExpandError}`
+              : "Загружаем diff..."}
+          </span>
+          {collapsedExpandError && (
+            <button
+              type="button"
+              className="cursor-pointer rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              disabled={isLoadingCollapsedExpand}
+              onClick={() => void content.expandCollapsedFile()}
+            >
+              Повторить
+            </button>
+          )}
         </div>
       );
     }

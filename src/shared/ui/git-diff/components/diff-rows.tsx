@@ -901,22 +901,13 @@ export const DiffCommentFormRow = memo(
     onSubmit: (body: string) => void;
     formKey?: string;
   }) => {
+    const [body, setBody] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-    const submitButtonRef = useRef<HTMLButtonElement | null>(null);
-
-    const syncSubmitDisabled = useCallback(() => {
-      const button = submitButtonRef.current;
-      const textarea = textareaRef.current;
-      if (!button || !textarea) {
-        return;
-      }
-
-      button.disabled = isSubmitting || !textarea.value.trim();
-    }, [isSubmitting]);
 
     useEffect(() => {
-      syncSubmitDisabled();
-    }, [formKey, isSubmitting, syncSubmitDisabled]);
+      setBody("");
+      textareaRef.current?.focus();
+    }, [formKey]);
 
     return (
     <div className="w-full min-w-0 max-w-full overflow-hidden">
@@ -927,13 +918,12 @@ export const DiffCommentFormRow = memo(
           </div>
         )}
         <GitlabCommentEditor
-          key={formKey}
           inputRef={textareaRef}
           projectId={markdownScope?.projectId ?? null}
           editorClassName="border-orange-300 dark:border-orange-800"
           placeholder="Напишите комментарий..."
-          defaultValue=""
-          onInput={syncSubmitDisabled}
+          value={body}
+          onChange={setBody}
           rows={3}
           disabled={isSubmitting}
         />
@@ -946,11 +936,10 @@ export const DiffCommentFormRow = memo(
 
         <div className="mt-2.5 flex gap-2">
           <button
-            ref={submitButtonRef}
             className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 text-[13px] font-semibold text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             type="button"
-            disabled
-            onClick={() => onSubmit(textareaRef.current?.value ?? "")}
+            disabled={isSubmitting || !body.trim()}
+            onClick={() => onSubmit(body)}
           >
             {isSubmitting ? "Отправка..." : "Комментировать"}
           </button>
