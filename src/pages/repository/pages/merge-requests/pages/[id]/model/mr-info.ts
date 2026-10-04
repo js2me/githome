@@ -69,6 +69,9 @@ export class MrInfoModel {
   @observable accessor resolveDiscussionError = "";
   @observable accessor updatingNoteKey = "";
   @observable accessor updateNoteError = "";
+  @observable accessor deletingNoteKey = "";
+  @observable accessor deleteNoteErrorKey = "";
+  @observable accessor deleteNoteError = "";
   @observable accessor reviewActionInProgress = null as MrReviewAction | null;
   @observable accessor reviewActionError = "";
   @observable accessor locallyCreatedDiscussionsKey = "";
@@ -557,6 +560,12 @@ export class MrInfoModel {
     this.updateNoteError = "";
   }
 
+  @action.bound
+  clearDeleteNoteError() {
+    this.deleteNoteErrorKey = "";
+    this.deleteNoteError = "";
+  }
+
   @action
   clearReviewActionError() {
     this.reviewActionError = "";
@@ -770,6 +779,62 @@ export class MrInfoModel {
     } finally {
       runInAction(() => {
         this.updatingNoteKey = "";
+      });
+    }
+  }
+
+  @action.bound
+  async deleteDiscussionNote(discussionId: string, noteId: number) {
+    const connection = this.options.globals.stores.settings.activeConnection;
+    const mr = this.options.params();
+    const noteKey = `${discussionId}:${noteId}`;
+
+    this.deleteNoteErrorKey = noteKey;
+    this.deleteNoteError = "";
+
+    if (!connection || !mr) {
+      this.deleteNoteError = "Merge request не выбран";
+      return false;
+    }
+
+    this.deletingNoteKey = noteKey;
+
+    try {
+      await gitlabApi.deleteMergeRequestDiscussionNote(
+        connection,
+        mr.project,
+        mr.mergeRequestIid,
+        discussionId,
+        noteId,
+      );
+
+      runInAction(() => {
+        this.locallyCreatedDiscussions = this.locallyCreatedDiscussions.flatMap(
+          (discussion) => {
+            if (discussion.id !== discussionId) {
+              return [discussion];
+            }
+
+            const notes = discussion.notes.filter((note) => note.id !== noteId);
+            return notes.length > 0 ? [{ ...discussion, notes }] : [];
+          },
+        );
+      });
+
+      await this.refreshDiscussions();
+      this.clearDeleteNoteError();
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.deleteNoteError =
+          error instanceof Error
+            ? error.message
+            : "Не удалось удалить комментарий";
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.deletingNoteKey = "";
       });
     }
   }

@@ -65,9 +65,17 @@ type DiffThreadResolveProps = {
     noteId: number,
     body: string,
   ) => Promise<boolean>;
+  onDeleteDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+  ) => Promise<boolean>;
   updatingNoteKey?: string | null;
+  deletingNoteKey?: string | null;
   updateNoteError?: string | null;
+  deleteNoteErrorKey?: string | null;
+  deleteNoteError?: string | null;
   onClearUpdateNoteError?: () => void;
+  onClearDeleteNoteError?: () => void;
 };
 
 type DiffLineCommentFormProps = {
@@ -154,9 +162,14 @@ const VirtualDiffRowView = memo(
     resolvingDiscussionId,
     currentUserId,
     onUpdateDiscussionNote,
+    onDeleteDiscussionNote,
     updatingNoteKey,
+    deletingNoteKey,
     updateNoteError,
+    deleteNoteErrorKey,
+    deleteNoteError,
     onClearUpdateNoteError,
+    onClearDeleteNoteError,
     markdownScope,
     isThreadExpanded,
     onToggleThreadExpanded,
@@ -244,9 +257,14 @@ const VirtualDiffRowView = memo(
           onToggleExpand={() => onToggleThreadExpanded(row.thread.discussionId)}
           currentUserId={currentUserId}
           onUpdateNote={onUpdateDiscussionNote}
+          onDeleteNote={onDeleteDiscussionNote}
           updatingNoteKey={updatingNoteKey}
+          deletingNoteKey={deletingNoteKey}
           updateNoteError={updateNoteError}
+          deleteNoteErrorKey={deleteNoteErrorKey}
+          deleteNoteError={deleteNoteError}
           onClearUpdateNoteError={onClearUpdateNoteError}
+          onClearDeleteNoteError={onClearDeleteNoteError}
         />
       );
     }
@@ -288,9 +306,14 @@ const StaticDiffBody = memo(
     resolvingDiscussionId,
     currentUserId,
     onUpdateDiscussionNote,
+    onDeleteDiscussionNote,
     updatingNoteKey,
+    deletingNoteKey,
     updateNoteError,
+    deleteNoteErrorKey,
+    deleteNoteError,
     onClearUpdateNoteError,
+    onClearDeleteNoteError,
     markdownScope,
     isThreadExpanded,
     onToggleThreadExpanded,
@@ -370,9 +393,14 @@ const StaticDiffBody = memo(
               resolvingDiscussionId={resolvingDiscussionId}
               currentUserId={currentUserId}
               onUpdateDiscussionNote={onUpdateDiscussionNote}
+              onDeleteDiscussionNote={onDeleteDiscussionNote}
               updatingNoteKey={updatingNoteKey}
+              deletingNoteKey={deletingNoteKey}
               updateNoteError={updateNoteError}
+              deleteNoteErrorKey={deleteNoteErrorKey}
+              deleteNoteError={deleteNoteError}
               onClearUpdateNoteError={onClearUpdateNoteError}
+              onClearDeleteNoteError={onClearDeleteNoteError}
               markdownScope={markdownScope}
               isThreadExpanded={isThreadExpanded}
               onToggleThreadExpanded={onToggleThreadExpanded}
@@ -435,9 +463,14 @@ const VirtualizedDiffBody = memo(
     resolvingDiscussionId,
     currentUserId,
     onUpdateDiscussionNote,
+    onDeleteDiscussionNote,
     updatingNoteKey,
+    deletingNoteKey,
     updateNoteError,
+    deleteNoteErrorKey,
+    deleteNoteError,
     onClearUpdateNoteError,
+    onClearDeleteNoteError,
     markdownScope,
     isThreadExpanded,
     onToggleThreadExpanded,
@@ -569,9 +602,14 @@ const VirtualizedDiffBody = memo(
                   resolvingDiscussionId={resolvingDiscussionId}
                   currentUserId={currentUserId}
                   onUpdateDiscussionNote={onUpdateDiscussionNote}
+                  onDeleteDiscussionNote={onDeleteDiscussionNote}
                   updatingNoteKey={updatingNoteKey}
+                  deletingNoteKey={deletingNoteKey}
                   updateNoteError={updateNoteError}
+                  deleteNoteErrorKey={deleteNoteErrorKey}
+                  deleteNoteError={deleteNoteError}
                   onClearUpdateNoteError={onClearUpdateNoteError}
+                  onClearDeleteNoteError={onClearDeleteNoteError}
                   markdownScope={markdownScope}
                   isThreadExpanded={isThreadExpanded}
                   onToggleThreadExpanded={onToggleThreadExpanded}
@@ -594,9 +632,14 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
     resolvingDiscussionId,
     currentUserId,
     onUpdateDiscussionNote,
+    onDeleteDiscussionNote,
     updatingNoteKey,
+    deletingNoteKey,
     updateNoteError,
+    deleteNoteErrorKey,
+    deleteNoteError,
     onClearUpdateNoteError,
+    onClearDeleteNoteError,
     markdownScope,
     isSubmittingComment,
     submitCommentError,
@@ -677,9 +720,14 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
         resolvingDiscussionId={resolvingDiscussionId}
         currentUserId={currentUserId}
         onUpdateDiscussionNote={onUpdateDiscussionNote}
+        onDeleteDiscussionNote={onDeleteDiscussionNote}
         updatingNoteKey={updatingNoteKey}
+        deletingNoteKey={deletingNoteKey}
         updateNoteError={updateNoteError}
+        deleteNoteErrorKey={deleteNoteErrorKey}
+        deleteNoteError={deleteNoteError}
         onClearUpdateNoteError={onClearUpdateNoteError}
+        onClearDeleteNoteError={onClearDeleteNoteError}
         markdownScope={markdownScope}
         isThreadExpanded={isThreadExpanded}
         onToggleThreadExpanded={toggleThreadExpanded}
@@ -704,9 +752,14 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
       resolvingDiscussionId={resolvingDiscussionId}
       currentUserId={currentUserId}
       onUpdateDiscussionNote={onUpdateDiscussionNote}
+      onDeleteDiscussionNote={onDeleteDiscussionNote}
       updatingNoteKey={updatingNoteKey}
+      deletingNoteKey={deletingNoteKey}
       updateNoteError={updateNoteError}
+      deleteNoteErrorKey={deleteNoteErrorKey}
+      deleteNoteError={deleteNoteError}
       onClearUpdateNoteError={onClearUpdateNoteError}
+      onClearDeleteNoteError={onClearDeleteNoteError}
       markdownScope={markdownScope}
       isThreadExpanded={isThreadExpanded}
       onToggleThreadExpanded={toggleThreadExpanded}

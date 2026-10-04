@@ -32,9 +32,17 @@ export interface GitDiffPayload {
     noteId: number,
     body: string,
   ) => Promise<boolean>;
+  onDeleteDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+  ) => Promise<boolean>;
   updatingNoteKey?: string | null;
+  deletingNoteKey?: string | null;
   updateNoteError?: string | null;
+  deleteNoteErrorKey?: string | null;
+  deleteNoteError?: string | null;
   onClearUpdateNoteError?: () => void;
+  onClearDeleteNoteError?: () => void;
   activeFileKey?: string | null;
   onActiveFileChange?: (fileKey: string) => void;
   markdownScope?: GitlabMarkdownScope;

@@ -189,9 +189,14 @@ export const MergeRequestDetail = ({
   resolveDiscussionError,
   currentUserId,
   onUpdateDiscussionNote,
+  onDeleteDiscussionNote,
   updatingNoteKey,
+  deletingNoteKey,
   updateNoteError,
+  deleteNoteErrorKey,
+  deleteNoteError,
   onClearUpdateNoteError,
+  onClearDeleteNoteError,
   approvals,
   reviewActionInProgress,
   reviewActionError,
@@ -228,9 +233,17 @@ export const MergeRequestDetail = ({
     noteId: number,
     body: string,
   ) => Promise<boolean>;
+  onDeleteDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+  ) => Promise<boolean>;
   updatingNoteKey?: string | null;
+  deletingNoteKey?: string | null;
   updateNoteError?: string | null;
+  deleteNoteErrorKey?: string | null;
+  deleteNoteError?: string | null;
   onClearUpdateNoteError?: () => void;
+  onClearDeleteNoteError?: () => void;
   approvals: MergeRequestApprovalView;
   reviewActionInProgress: MrReviewAction | null;
   reviewActionError: string | null;
@@ -419,9 +432,14 @@ export const MergeRequestDetail = ({
             resolvingDiscussionId={resolvingDiscussionId}
             currentUserId={currentUserId}
             onUpdateDiscussionNote={onUpdateDiscussionNote}
+            onDeleteDiscussionNote={onDeleteDiscussionNote}
             updatingNoteKey={updatingNoteKey}
+            deletingNoteKey={deletingNoteKey}
             updateNoteError={updateNoteError}
+            deleteNoteErrorKey={deleteNoteErrorKey}
+            deleteNoteError={deleteNoteError}
             onClearUpdateNoteError={onClearUpdateNoteError}
+            onClearDeleteNoteError={onClearDeleteNoteError}
           />
         )}
       </section>
@@ -473,9 +491,14 @@ export const MergeRequestDetail = ({
           resolvingDiscussionId={resolvingDiscussionId}
           currentUserId={currentUserId}
           onUpdateDiscussionNote={onUpdateDiscussionNote}
+          onDeleteDiscussionNote={onDeleteDiscussionNote}
           updatingNoteKey={updatingNoteKey}
+          deletingNoteKey={deletingNoteKey}
           updateNoteError={updateNoteError}
+          deleteNoteErrorKey={deleteNoteErrorKey}
+          deleteNoteError={deleteNoteError}
           onClearUpdateNoteError={onClearUpdateNoteError}
+          onClearDeleteNoteError={onClearDeleteNoteError}
           activeFileKey={activeFileKey}
           onActiveFileChange={setActiveFileKey}
         />

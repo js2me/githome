@@ -1,5 +1,5 @@
 import type { GitLabDiscussionDC, GitLabNoteDC } from "@/shared/api/gitlab";
-import { Pencil } from "@gravity-ui/icons";
+import { Pencil, TrashBin } from "@gravity-ui/icons";
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import {
@@ -67,9 +67,14 @@ const DiscussionNote = ({
   isReply,
   currentUserId = null,
   onUpdateDiscussionNote,
+  onDeleteDiscussionNote,
   updatingNoteKey = null,
+  deletingNoteKey = null,
   updateNoteError = null,
+  deleteNoteErrorKey = null,
+  deleteNoteError = null,
   onClearUpdateNoteError,
+  onClearDeleteNoteError,
 }: {
   markdownScope: GitlabMarkdownScope;
   note: GitLabNoteDC;
@@ -81,9 +86,17 @@ const DiscussionNote = ({
     noteId: number,
     body: string,
   ) => Promise<boolean>;
+  onDeleteDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+  ) => Promise<boolean>;
   updatingNoteKey?: string | null;
+  deletingNoteKey?: string | null;
   updateNoteError?: string | null;
+  deleteNoteErrorKey?: string | null;
+  deleteNoteError?: string | null;
   onClearUpdateNoteError?: () => void;
+  onClearDeleteNoteError?: () => void;
 }) => {
   const position = formatPosition(note);
   const authorName = note.author?.name ?? "Unknown";
@@ -91,6 +104,8 @@ const DiscussionNote = ({
   const canEdit = canEditGitLabNote(note, currentUserId);
   const noteKey = getDiscussionNoteKey(discussionId, note.id);
   const isSaving = updatingNoteKey === noteKey;
+  const isDeleting = deletingNoteKey === noteKey;
+  const noteDeleteError = deleteNoteErrorKey === noteKey ? deleteNoteError : null;
   const [isEditing, setIsEditing] = useState(false);
   const [editBody, setEditBody] = useState(note.body);
 
@@ -123,6 +138,23 @@ const DiscussionNote = ({
     }
   }, [discussionId, editBody, note.id, onUpdateDiscussionNote]);
 
+  const handleDelete = useCallback(async () => {
+    if (
+      !onDeleteDiscussionNote ||
+      !window.confirm("Удалить комментарий? Это действие нельзя отменить.")
+    ) {
+      return;
+    }
+
+    onClearDeleteNoteError?.();
+    await onDeleteDiscussionNote(discussionId, note.id);
+  }, [
+    discussionId,
+    note.id,
+    onClearDeleteNoteError,
+    onDeleteDiscussionNote,
+  ]);
+
   return (
     <article
       className={cn(
@@ -152,17 +184,33 @@ const DiscussionNote = ({
             )}
           </div>
 
-          {canEdit && onUpdateDiscussionNote && !isEditing && (
-            <button
-              className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-              type="button"
-              title="Редактировать"
-              aria-label="Редактировать комментарий"
-              disabled={Boolean(updatingNoteKey)}
-              onClick={handleStartEdit}
-            >
-              <Pencil width={14} height={14} />
-            </button>
+          {canEdit && !isEditing && (
+            <div className="flex shrink-0 items-center gap-1">
+              {onUpdateDiscussionNote && (
+                <button
+                  className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                  type="button"
+                  title="Редактировать"
+                  aria-label="Редактировать комментарий"
+                  disabled={Boolean(updatingNoteKey || deletingNoteKey)}
+                  onClick={handleStartEdit}
+                >
+                  <Pencil width={14} height={14} />
+                </button>
+              )}
+              {onDeleteDiscussionNote && (
+                <button
+                  className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-300"
+                  type="button"
+                  title={isDeleting ? "Удаление..." : "Удалить"}
+                  aria-label="Удалить комментарий"
+                  disabled={Boolean(updatingNoteKey || deletingNoteKey)}
+                  onClick={() => void handleDelete()}
+                >
+                  <TrashBin width={14} height={14} />
+                </button>
+              )}
+            </div>
           )}
         </header>
 
@@ -226,6 +274,12 @@ const DiscussionNote = ({
             italic={note.system}
           />
         )}
+
+        {noteDeleteError && (
+          <div className="text-[13px] text-red-700 dark:text-red-300">
+            {noteDeleteError}
+          </div>
+        )}
       </div>
     </article>
   );
@@ -238,9 +292,14 @@ const DiscussionThread = ({
   resolvingDiscussionId,
   currentUserId,
   onUpdateDiscussionNote,
+  onDeleteDiscussionNote,
   updatingNoteKey,
+  deletingNoteKey,
   updateNoteError,
+  deleteNoteErrorKey,
+  deleteNoteError,
   onClearUpdateNoteError,
+  onClearDeleteNoteError,
 }: {
   markdownScope: GitlabMarkdownScope;
   discussion: GitLabDiscussionDC;
@@ -252,9 +311,17 @@ const DiscussionThread = ({
     noteId: number,
     body: string,
   ) => Promise<boolean>;
+  onDeleteDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+  ) => Promise<boolean>;
   updatingNoteKey?: string | null;
+  deletingNoteKey?: string | null;
   updateNoteError?: string | null;
+  deleteNoteErrorKey?: string | null;
+  deleteNoteError?: string | null;
   onClearUpdateNoteError?: () => void;
+  onClearDeleteNoteError?: () => void;
 }) => {
   const [firstNote, ...replies] = discussion.notes;
   const resolved = isDiscussionResolvedState(discussion);
@@ -299,9 +366,14 @@ const DiscussionThread = ({
             isReply={false}
             currentUserId={currentUserId}
             onUpdateDiscussionNote={onUpdateDiscussionNote}
+            onDeleteDiscussionNote={onDeleteDiscussionNote}
             updatingNoteKey={updatingNoteKey}
+            deletingNoteKey={deletingNoteKey}
             updateNoteError={updateNoteError}
+            deleteNoteErrorKey={deleteNoteErrorKey}
+            deleteNoteError={deleteNoteError}
             onClearUpdateNoteError={onClearUpdateNoteError}
+            onClearDeleteNoteError={onClearDeleteNoteError}
           />
 
           {replies.length > 0 && (
@@ -315,9 +387,14 @@ const DiscussionThread = ({
                   isReply
                   currentUserId={currentUserId}
                   onUpdateDiscussionNote={onUpdateDiscussionNote}
+                  onDeleteDiscussionNote={onDeleteDiscussionNote}
                   updatingNoteKey={updatingNoteKey}
+                  deletingNoteKey={deletingNoteKey}
                   updateNoteError={updateNoteError}
+                  deleteNoteErrorKey={deleteNoteErrorKey}
+                  deleteNoteError={deleteNoteError}
                   onClearUpdateNoteError={onClearUpdateNoteError}
+                  onClearDeleteNoteError={onClearDeleteNoteError}
                 />
               ))}
             </div>
@@ -344,9 +421,14 @@ export const MergeRequestDiscussions = ({
   resolvingDiscussionId,
   currentUserId,
   onUpdateDiscussionNote,
+  onDeleteDiscussionNote,
   updatingNoteKey,
+  deletingNoteKey,
   updateNoteError,
+  deleteNoteErrorKey,
+  deleteNoteError,
   onClearUpdateNoteError,
+  onClearDeleteNoteError,
 }: {
   markdownScope: GitlabMarkdownScope;
   discussions: GitLabDiscussionDC[];
@@ -358,9 +440,17 @@ export const MergeRequestDiscussions = ({
     noteId: number,
     body: string,
   ) => Promise<boolean>;
+  onDeleteDiscussionNote?: (
+    discussionId: string,
+    noteId: number,
+  ) => Promise<boolean>;
   updatingNoteKey?: string | null;
+  deletingNoteKey?: string | null;
   updateNoteError?: string | null;
+  deleteNoteErrorKey?: string | null;
+  deleteNoteError?: string | null;
   onClearUpdateNoteError?: () => void;
+  onClearDeleteNoteError?: () => void;
 }) => {
   if (discussions.length === 0) {
     return <StatusMessage>Комментариев пока нет.</StatusMessage>;
@@ -377,9 +467,14 @@ export const MergeRequestDiscussions = ({
           resolvingDiscussionId={resolvingDiscussionId}
           currentUserId={currentUserId}
           onUpdateDiscussionNote={onUpdateDiscussionNote}
+          onDeleteDiscussionNote={onDeleteDiscussionNote}
           updatingNoteKey={updatingNoteKey}
+          deletingNoteKey={deletingNoteKey}
           updateNoteError={updateNoteError}
+          deleteNoteErrorKey={deleteNoteErrorKey}
+          deleteNoteError={deleteNoteError}
           onClearUpdateNoteError={onClearUpdateNoteError}
+          onClearDeleteNoteError={onClearDeleteNoteError}
         />
       ))}
     </div>

@@ -391,6 +391,32 @@ export const gitlabPut = async <T>(
   return (await response.json()) as T;
 };
 
+export const gitlabDelete = async (
+  connection: GitLabConnection,
+  path: string,
+  signal?: AbortSignal,
+): Promise<void> => {
+  const response = await fetch(
+    resolveGitlabRequestUrl(connection.gitlabUrl, `/api/v4${path}`),
+    {
+      method: "DELETE",
+      headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
+        "PRIVATE-TOKEN": connection.gitToken,
+      }),
+      signal,
+    },
+  );
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      errorBody
+        ? `GitLab API error: ${response.status} — ${errorBody}`
+        : `GitLab API error: ${response.status}`,
+    );
+  }
+};
+
 export const fetchGitlabJson = async <T>(
   connection: GitLabConnection,
   path: string,

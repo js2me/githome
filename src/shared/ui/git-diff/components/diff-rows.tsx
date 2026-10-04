@@ -1,4 +1,9 @@
-import { ArrowDownToLine, ArrowUpToLine, Pencil } from "@gravity-ui/icons";
+import {
+  ArrowDownToLine,
+  ArrowUpToLine,
+  Pencil,
+  TrashBin,
+} from "@gravity-ui/icons";
 import {
   memo,
   useCallback,
@@ -572,9 +577,14 @@ const InlineThreadNote = memo(
     resolvedBy,
     currentUserId = null,
     onUpdateNote,
+    onDeleteNote,
     updatingNoteKey = null,
+    deletingNoteKey = null,
     updateNoteError = null,
+    deleteNoteErrorKey = null,
+    deleteNoteError = null,
     onClearUpdateNoteError,
+    onClearDeleteNoteError,
   }: {
     markdownScope?: GitlabMarkdownScope;
     note: GitLabNoteDC;
@@ -587,15 +597,25 @@ const InlineThreadNote = memo(
       noteId: number,
       body: string,
     ) => Promise<boolean>;
+    onDeleteNote?: (
+      discussionId: string,
+      noteId: number,
+    ) => Promise<boolean>;
     updatingNoteKey?: string | null;
+    deletingNoteKey?: string | null;
     updateNoteError?: string | null;
+    deleteNoteErrorKey?: string | null;
+    deleteNoteError?: string | null;
     onClearUpdateNoteError?: () => void;
+    onClearDeleteNoteError?: () => void;
   }) => {
     const authorName = note.author?.name ?? "Unknown";
     const authorUsername = note.author?.username ?? "";
     const canEdit = canEditGitLabNote(note, currentUserId);
     const noteKey = getDiscussionNoteKey(discussionId, note.id);
     const isSaving = updatingNoteKey === noteKey;
+    const isDeleting = deletingNoteKey === noteKey;
+    const noteDeleteError = deleteNoteErrorKey === noteKey ? deleteNoteError : null;
     const [isEditing, setIsEditing] = useState(false);
     const [editBody, setEditBody] = useState(note.body);
 
@@ -628,6 +648,18 @@ const InlineThreadNote = memo(
       }
     }, [discussionId, editBody, note.id, onUpdateNote]);
 
+    const handleDelete = useCallback(async () => {
+      if (
+        !onDeleteNote ||
+        !window.confirm("Удалить комментарий? Это действие нельзя отменить.")
+      ) {
+        return;
+      }
+
+      onClearDeleteNoteError?.();
+      await onDeleteNote(discussionId, note.id);
+    }, [discussionId, note.id, onClearDeleteNoteError, onDeleteNote]);
+
     return (
       <article className={cn("flex min-w-0 gap-3", isReply && "pl-11")}>
         <GitlabAvatar
@@ -652,17 +684,33 @@ const InlineThreadNote = memo(
               </time>
             </div>
 
-            {canEdit && onUpdateNote && !isEditing && (
-              <button
-                className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-                type="button"
-                title="Редактировать"
-                aria-label="Редактировать комментарий"
-                disabled={Boolean(updatingNoteKey)}
-                onClick={handleStartEdit}
-              >
-                <Pencil width={14} height={14} />
-              </button>
+            {canEdit && !isEditing && (
+              <div className="flex shrink-0 items-center gap-1">
+                {onUpdateNote && (
+                  <button
+                    className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                    type="button"
+                    title="Редактировать"
+                    aria-label="Редактировать комментарий"
+                    disabled={Boolean(updatingNoteKey || deletingNoteKey)}
+                    onClick={handleStartEdit}
+                  >
+                    <Pencil width={14} height={14} />
+                  </button>
+                )}
+                {onDeleteNote && (
+                  <button
+                    className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-300"
+                    type="button"
+                    title={isDeleting ? "Удаление..." : "Удалить"}
+                    aria-label="Удалить комментарий"
+                    disabled={Boolean(updatingNoteKey || deletingNoteKey)}
+                    onClick={() => void handleDelete()}
+                  >
+                    <TrashBin width={14} height={14} />
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
@@ -724,6 +772,12 @@ const InlineThreadNote = memo(
               className="min-w-0 max-w-full text-sm leading-normal text-slate-800 dark:text-slate-300"
             />
           )}
+
+          {noteDeleteError && (
+            <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
+              {noteDeleteError}
+            </div>
+          )}
         </div>
       </article>
     );
@@ -741,9 +795,14 @@ export const DiffThreadRow = memo(
     placement = "inline",
     currentUserId,
     onUpdateNote,
+    onDeleteNote,
     updatingNoteKey,
+    deletingNoteKey,
     updateNoteError,
+    deleteNoteErrorKey,
+    deleteNoteError,
     onClearUpdateNoteError,
+    onClearDeleteNoteError,
   }: {
     markdownScope?: GitlabMarkdownScope;
     thread: InlineDiffThread;
@@ -758,9 +817,17 @@ export const DiffThreadRow = memo(
       noteId: number,
       body: string,
     ) => Promise<boolean>;
+    onDeleteNote?: (
+      discussionId: string,
+      noteId: number,
+    ) => Promise<boolean>;
     updatingNoteKey?: string | null;
+    deletingNoteKey?: string | null;
     updateNoteError?: string | null;
+    deleteNoteErrorKey?: string | null;
+    deleteNoteError?: string | null;
     onClearUpdateNoteError?: () => void;
+    onClearDeleteNoteError?: () => void;
   }) => {
     const [internalExpanded, setInternalExpanded] = useState(() => !thread.resolved);
     const isControlled = expandedProp !== undefined;
@@ -819,9 +886,14 @@ export const DiffThreadRow = memo(
                 resolvedBy={resolvedBy}
                 currentUserId={currentUserId}
                 onUpdateNote={onUpdateNote}
+                onDeleteNote={onDeleteNote}
                 updatingNoteKey={updatingNoteKey}
+                deletingNoteKey={deletingNoteKey}
                 updateNoteError={updateNoteError}
+                deleteNoteErrorKey={deleteNoteErrorKey}
+                deleteNoteError={deleteNoteError}
                 onClearUpdateNoteError={onClearUpdateNoteError}
+                onClearDeleteNoteError={onClearDeleteNoteError}
               />
 
               {replies.length > 0 && (
@@ -835,9 +907,14 @@ export const DiffThreadRow = memo(
                       isReply
                       currentUserId={currentUserId}
                       onUpdateNote={onUpdateNote}
+                      onDeleteNote={onDeleteNote}
                       updatingNoteKey={updatingNoteKey}
+                      deletingNoteKey={deletingNoteKey}
                       updateNoteError={updateNoteError}
+                      deleteNoteErrorKey={deleteNoteErrorKey}
+                      deleteNoteError={deleteNoteError}
                       onClearUpdateNoteError={onClearUpdateNoteError}
+                      onClearDeleteNoteError={onClearDeleteNoteError}
                     />
                   ))}
                 </div>

@@ -5,6 +5,7 @@ import { approveMergeRequest } from "./endpoints/approve-merge-request";
 import { cancelMergeRequestRequestedChanges } from "./endpoints/cancel-merge-request-requested-changes";
 import { createMergeRequestDiffDiscussion } from "./endpoints/create-merge-request-diff-discussion";
 import { createMergeRequestDiscussion } from "./endpoints/create-merge-request-discussion";
+import { deleteMergeRequestDiscussionNote } from "./endpoints/delete-merge-request-discussion-note";
 import { getFrequentProjects } from "./endpoints/get-frequent-projects";
 import { getMergeRequestApprovalCounts } from "./endpoints/get-merge-request-approval-counts";
 import { getMergeRequestChanges } from "./endpoints/get-merge-request-changes";
@@ -73,6 +74,8 @@ export const gitlabApi = {
   createMergeRequestDiffDiscussion,
 
   createMergeRequestDiscussion,
+
+  deleteMergeRequestDiscussionNote,
 
   resolveMergeRequestDiscussion,
 

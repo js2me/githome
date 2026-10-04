@@ -52,9 +52,14 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
           resolveDiscussionError={model.mrInfo.resolveDiscussionError}
           currentUserId={model.mrInfo.currentUserId}
           onUpdateDiscussionNote={model.mrInfo.updateDiscussionNote}
+          onDeleteDiscussionNote={model.mrInfo.deleteDiscussionNote}
           updatingNoteKey={model.mrInfo.updatingNoteKey || null}
+          deletingNoteKey={model.mrInfo.deletingNoteKey || null}
           updateNoteError={model.mrInfo.updateNoteError || null}
+          deleteNoteErrorKey={model.mrInfo.deleteNoteErrorKey || null}
+          deleteNoteError={model.mrInfo.deleteNoteError || null}
           onClearUpdateNoteError={model.mrInfo.clearUpdateNoteError}
+          onClearDeleteNoteError={model.mrInfo.clearDeleteNoteError}
           reviewActionInProgress={model.mrInfo.reviewActionInProgress}
           reviewActionError={model.mrInfo.reviewActionError}
           onApprove={model.mrInfo.approve}

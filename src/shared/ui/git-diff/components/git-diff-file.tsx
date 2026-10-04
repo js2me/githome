@@ -178,9 +178,14 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     resolvingDiscussionId,
     currentUserId,
     onUpdateDiscussionNote,
+    onDeleteDiscussionNote,
     updatingNoteKey,
+    deletingNoteKey,
     updateNoteError,
+    deleteNoteErrorKey,
+    deleteNoteError,
     onClearUpdateNoteError,
+    onClearDeleteNoteError,
     markdownScope,
     headBranch,
     isSubmittingComment,
@@ -436,9 +441,14 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
               placement="file"
               currentUserId={currentUserId}
               onUpdateNote={onUpdateDiscussionNote}
+              onDeleteNote={onDeleteDiscussionNote}
               updatingNoteKey={updatingNoteKey}
+              deletingNoteKey={deletingNoteKey}
               updateNoteError={updateNoteError}
+              deleteNoteErrorKey={deleteNoteErrorKey}
+              deleteNoteError={deleteNoteError}
               onClearUpdateNoteError={onClearUpdateNoteError}
+              onClearDeleteNoteError={onClearDeleteNoteError}
               markdownScope={markdownScope}
             />
           ))}
