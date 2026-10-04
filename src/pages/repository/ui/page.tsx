@@ -17,6 +17,12 @@ const FilesPage = lazy(() =>
   })),
 );
 
+const PipelinesPage = lazy(() =>
+  import("@/pages/repository/pages/pipelines/ui/page").then((module) => ({
+    default: module.PipelinesPage,
+  })),
+);
+
 const MergeRequestPage = lazy(() =>
   import("@/pages/repository/pages/merge-requests/pages/[id]/ui/page").then(
     (module) => ({
@@ -35,6 +41,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
       <RouteView route={model.globals.routes.files} view={FilesPage} />
       <RouteView route={model.globals.routes.mergeRequests} view={MergeRequestsPage} />
       <RouteView route={model.globals.routes.mergeRequest} view={MergeRequestPage} />
+      <RouteView route={model.globals.routes.pipelines} view={PipelinesPage} />
       <section>
         {model.isLoading && !project && (
           <StatusMessage>Загружаем репозиторий...</StatusMessage>
@@ -64,6 +71,14 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
                 onClick={model.openMergeRequests}
               >
                 Merge requests
+              </button>
+
+              <button
+                className="cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
+                type="button"
+                onClick={model.openPipelines}
+              >
+                Pipelines
               </button>
             </div>
 

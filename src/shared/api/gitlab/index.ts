@@ -2,9 +2,12 @@ import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
 import { fetchGitlabJson } from "./client";
 import type { GitLabProjectDC } from "./data-contracts";
 import { approveMergeRequest } from "./endpoints/approve-merge-request";
+import { cancelPipeline } from "./endpoints/cancel-pipeline";
+import { cancelPipelineJob } from "./endpoints/cancel-pipeline-job";
 import { cancelMergeRequestRequestedChanges } from "./endpoints/cancel-merge-request-requested-changes";
 import { createMergeRequestDiffDiscussion } from "./endpoints/create-merge-request-diff-discussion";
 import { createMergeRequestDiscussion } from "./endpoints/create-merge-request-discussion";
+import { createPipeline } from "./endpoints/create-pipeline";
 import { deleteMergeRequestDiscussionNote } from "./endpoints/delete-merge-request-discussion-note";
 import { getFrequentProjects } from "./endpoints/get-frequent-projects";
 import { getMergeRequestApprovalCounts } from "./endpoints/get-merge-request-approval-counts";
@@ -23,6 +26,9 @@ import { getRepositoryTree } from "./endpoints/get-repository-tree";
 import { searchProjectBlobs } from "./endpoints/search-project-blobs";
 import { renderMarkdown } from "./endpoints/render-markdown";
 import { requestMergeRequestChanges } from "./endpoints/request-merge-request-changes";
+import { playPipelineJob } from "./endpoints/play-pipeline-job";
+import { retryPipeline } from "./endpoints/retry-pipeline";
+import { retryPipelineJob } from "./endpoints/retry-pipeline-job";
 import { resolveMergeRequestDiscussion } from "./endpoints/resolve-merge-request-discussion";
 import { unapproveMergeRequest } from "./endpoints/unapprove-merge-request";
 import { updateMergeRequestDiscussionNote } from "./endpoints/update-merge-request-discussion-note";
@@ -63,6 +69,18 @@ export const gitlabApi = {
   searchProjectBlobs,
 
   getProjectMergeRequests,
+
+  createPipeline,
+
+  cancelPipeline,
+
+  retryPipeline,
+
+  cancelPipelineJob,
+
+  playPipelineJob,
+
+  retryPipelineJob,
 
   getMergeRequestApprovalCounts,
 

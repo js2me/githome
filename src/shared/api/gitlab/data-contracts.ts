@@ -6,6 +6,10 @@ export interface GitLabProjectDC {
   avatar_url?: string | null;
   last_activity_at?: string | null;
   default_branch?: string | null;
+  permissions?: {
+    project_access?: { access_level?: number | null } | null;
+    group_access?: { access_level?: number | null } | null;
+  } | null;
 }
 
 export interface GitLabMergeRequestDC {
@@ -38,6 +42,53 @@ export interface GitLabMergeRequestDC {
     head_sha?: string;
     start_sha?: string;
   } | null;
+  head_pipeline?: {
+    id: number;
+    status: string;
+    web_url: string;
+  } | null;
+}
+
+export interface GitLabPipelineDC {
+  id: number;
+  iid: number;
+  project_id: number;
+  status: string;
+  source?: string;
+  ref: string;
+  sha: string;
+  web_url: string;
+  created_at: string;
+  updated_at?: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  duration?: number | null;
+  queued_duration?: number | null;
+  user?: {
+    name?: string;
+    username?: string;
+    avatar_url?: string | null;
+  } | null;
+}
+
+export interface GitLabJobDC {
+  id: number;
+  name: string;
+  stage: string;
+  status: string;
+  allow_failure?: boolean;
+  created_at?: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  duration?: number | null;
+  web_url?: string;
+  failure_reason?: string | null;
+}
+
+export interface GitLabPipelineVariableDC {
+  key: string;
+  value: string;
+  variable_type?: "env_var" | "file";
 }
 
 export interface GitLabMergeRequestChangeDC {

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GitHome</string>
+    <string name="title_activity_main">GitHome</string>
+    <string name="package_name">com.js2me.githome</string>
+    <string name="custom_url_scheme">com.js2me.githome</string>
+</resources>

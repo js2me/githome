@@ -46,11 +46,12 @@ export class LayoutVM extends VM {
 
   @computed
   get projectId(): number | null {
-    const { files, mergeRequest, mergeRequests, repository } = this.globals.routes;
+    const { files, mergeRequest, mergeRequests, pipelines, repository } = this.globals.routes;
 
     const projectId =
       mergeRequest.params?.projectId ??
       mergeRequests.params?.projectId ??
+      pipelines.params?.projectId ??
       files.params?.projectId ??
       repository.params?.projectId;
 
@@ -113,6 +114,11 @@ export class LayoutVM extends VM {
   @computed
   get isMergeRequestsNavActive() {
     return this.isMergeRequestsOpen && !this.isMergeRequestDetailOpen;
+  }
+
+  @computed
+  get isPipelinesOpen() {
+    return this.globals.routes.pipelines.isOpened;
   }
 
   @computed
@@ -276,5 +282,15 @@ export class LayoutVM extends VM {
     }
 
     void this.globals.routes.mergeRequests.open({ projectId });
+  }
+
+  @action.bound
+  openPipelines() {
+    const projectId = this.projectIdParam;
+    if (!projectId) {
+      return;
+    }
+
+    void this.globals.routes.pipelines.open({ projectId });
   }
 }

@@ -14,7 +14,7 @@ import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { cn } from "@/shared/lib/cn";
 import { filterDiscussionsForActivity } from "@/shared/lib/gitlab/diff-discussions";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { ChangesActiveFileLink } from "./changes-active-file-link";
 import { ChangesFileTree } from "./changes-file-tree";
 import { ChangesTreeLayout } from "./changes-tree-layout";
@@ -207,6 +207,7 @@ export const MergeRequestDetail = ({
   diffVersions = [],
   selectedDiffVersionId = null,
   onSelectDiffVersion,
+  pipelineCard,
 }: {
   markdownScope: GitlabMarkdownScope;
   mergeRequest: GitLabMergeRequestDC;
@@ -254,6 +255,7 @@ export const MergeRequestDetail = ({
   diffVersions?: GitLabMergeRequestVersionDC[];
   selectedDiffVersionId?: number | null;
   onSelectDiffVersion: (id: number | null) => void;
+  pipelineCard?: ReactNode;
 }) => {
   const authorName = getAuthorName(mergeRequest);
   const changesCount = getChangesCount(mergeRequest);
@@ -293,6 +295,8 @@ export const MergeRequestDetail = ({
             Открыть в GitLab
           </a>
         </div>
+
+        {pipelineCard}
 
         <div className="flex flex-wrap items-center gap-2 font-mono text-[13px] text-fg-muted">
           <BranchLabel branch={mergeRequest.source_branch} label="source branch" />

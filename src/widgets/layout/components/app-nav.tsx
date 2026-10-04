@@ -109,6 +109,25 @@ export const AppNav = observer(() => {
                 )}
               </>
             )}
+
+            {model.isPipelinesOpen && (
+              <>
+                <span className="select-none text-sm text-slate-300 dark:text-slate-600">
+                  /
+                </span>
+
+                <button
+                  className={cn(
+                    navLinkClassName,
+                    "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+                  )}
+                  type="button"
+                  onClick={model.openPipelines}
+                >
+                  Pipelines
+                </button>
+              </>
+            )}
           </>
         )}
       </nav>

@@ -3,6 +3,7 @@ import { LoadingState } from "@/shared/ui/loading-state";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { MergeRequestPageVM } from "../model";
 import { MergeRequestDetail } from "./components/merge-request-detail";
+import { PipelineCard } from "@/widgets/pipeline-card";
 
 export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) => {
   const detailView = model.mrInfo.detailView;
@@ -69,6 +70,16 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
           diffVersions={detailView.diffVersions}
           selectedDiffVersionId={detailView.selectedDiffVersionId}
           onSelectDiffVersion={model.mrInfo.selectDiffVersion}
+          pipelineCard={
+            detailView.mergeRequest.head_pipeline && markdownScope.projectId > 0 ? (
+              <PipelineCard
+                payload={{
+                  projectId: markdownScope.projectId,
+                  pipeline: detailView.mergeRequest.head_pipeline,
+                }}
+              />
+            ) : null
+          }
         />
       )}
 

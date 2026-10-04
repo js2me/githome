@@ -170,4 +170,14 @@ export class RepositoryPageVM extends VM {
 
     void this.globals.routes.mergeRequests.open({ projectId });
   }
+
+  @action.bound
+  openPipelines() {
+    const projectId = this.projectIdParam;
+    if (!projectId) {
+      return;
+    }
+
+    void this.globals.routes.pipelines.open({ projectId });
+  }
 }

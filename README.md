@@ -39,6 +39,26 @@ pnpm build:electron
 | macOS | `.dmg` |
 | Windows | `.exe` (NSIS installer) |
 
+## Сборка Android APK
+
+Для локальной сборки нужны Node.js LTS, pnpm, JDK 21 и Android SDK (API 36):
+
+```bash
+pnpm install
+pnpm build:android
+```
+
+Устанавливаемый debug APK появится в `android/app/build/outputs/apk/debug/app-debug.apk`.
+Сборка поддерживает Android 7.0 (API 24) и новее. В GitHub Actions APK также
+прикладывается к релизу.
+
+APK собирается с debug-подписью для установки и проверки вручную. Для публикации
+в Google Play понадобится отдельная release-подпись. GitHub Actions использует
+временную debug-подпись; APK из нового CI-запуска может не установиться поверх
+предыдущего. Удаление старой версии удалит и локальные данные приложения,
+включая сохранённые подключения. Для безопасных обновлений нужна постоянная
+release-подпись, хранящаяся в секретах GitHub Actions.
+
 ### Установка `.deb` на Ubuntu
 
 Пакет называется `git-home` (как у старой Tauri-сборки) — обновление через apt/dpkg должно проходить без конфликтов.

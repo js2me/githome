@@ -18,6 +18,7 @@ const defineRoutes = () => {
   const files = repository.extend("/files", { exact: true });
   const mergeRequests = repository.extend("/merge-requests", { exact: true });
   const mergeRequest = mergeRequests.extend("/:mergeRequestIid", { exact: true });
+  const pipelines = repository.extend("/pipelines", { exact: true });
 
   return {
     home: createRoute("/", { exact: true }),
@@ -25,6 +26,7 @@ const defineRoutes = () => {
     files,
     mergeRequests,
     mergeRequest,
+    pipelines,
     notFound: createVirtualRoute(),
   };
 };
