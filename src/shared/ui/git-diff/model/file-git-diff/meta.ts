@@ -119,8 +119,8 @@ export class FileGitDiffMeta {
     return (
       !change.too_large &&
       !change.generated_file &&
-      Boolean(change.collapsed) &&
-      !change.diff?.trim()
+      !change.diff?.trim() &&
+      this.canExpand
     );
   }
 
