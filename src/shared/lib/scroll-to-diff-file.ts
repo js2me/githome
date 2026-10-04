@@ -16,8 +16,11 @@ export const getDiffFileKeyFromElementId = (elementId: string) => {
 
 export const scrollToDiffFile = (change: GitLabMergeRequestChangeDC) => {
   const fileKey = getDiffFileKey(change.old_path, change.new_path);
-  document.getElementById(getDiffFileElementId(fileKey))?.scrollIntoView({
-    behavior: "instant",
-    block: "start",
-  });
+  const element = document.getElementById(getDiffFileElementId(fileKey));
+  if (!element) {
+    return;
+  }
+
+  const top = element.getBoundingClientRect().top + window.scrollY - 16;
+  window.scrollTo({ top, behavior: "smooth" });
 };
