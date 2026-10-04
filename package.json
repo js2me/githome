@@ -31,6 +31,7 @@
     "@tanstack/query-core": "^5.101.0",
     "@tanstack/react-virtual": "^3.14.3",
     "diff": "^9.0.0",
+    "gologen": "0.0.1",
     "mobx": "^6.16.0",
     "mobx-location-history": "^9.4.1",
     "mobx-react-lite": "^4.1.1",

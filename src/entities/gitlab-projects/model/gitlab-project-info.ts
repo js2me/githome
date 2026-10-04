@@ -8,11 +8,4 @@ export class GitlabProjectInfo {
   get name() {
     return this.data.name;
   }
-
-  @computed
-  get logoFallbackSymbol() {
-    const name = this.name.trim();
-
-    return name ? name.slice(0, 1).toUpperCase() : "?";
-  }
 }

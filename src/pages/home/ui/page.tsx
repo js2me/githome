@@ -1,9 +1,9 @@
 import { withViewModel } from "mobx-view-model-react";
 import { cn } from "@/shared/lib/cn";
 import { formatProjectCount } from "@/shared/lib/gitlab/format-project-count";
+import { ProjectAvatar } from "@/shared/ui/project-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { HomePageVM } from "../model";
-import { ProjectAvatar } from "./components/project-avatar";
 import { ProjectsLoadMoreSentinel } from "./components/projects-load-more-sentinel";
 
 export const HomePage = withViewModel(
@@ -80,7 +80,9 @@ export const HomePage = withViewModel(
                 >
                   <ProjectAvatar
                     className="h-7 w-7 shrink-0 rounded-md object-cover"
-                    project={project}
+                    id={project.data.id}
+                    avatarUrl={project.data.avatar_url}
+                    name={project.name}
                   />
 
                   <span className="flex min-w-0 flex-col gap-0.5">
