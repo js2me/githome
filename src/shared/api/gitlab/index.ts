@@ -18,6 +18,7 @@ import { getProjectBranches } from "./endpoints/get-project-branches";
 import { getProjectMergeRequests } from "./endpoints/get-project-merge-requests";
 import { getProjectReadme } from "./endpoints/get-project-readme";
 import { getRepositoryFileContent } from "./endpoints/get-repository-file-content";
+import { getRepositoryFileBlob } from "./endpoints/get-repository-file-blob";
 import { getRepositoryTree } from "./endpoints/get-repository-tree";
 import { searchProjectBlobs } from "./endpoints/search-project-blobs";
 import { renderMarkdown } from "./endpoints/render-markdown";
@@ -54,6 +55,8 @@ export const gitlabApi = {
   getProjectReadme,
 
   getRepositoryFileContent,
+
+  getRepositoryFileBlob,
 
   getRepositoryTree,
 

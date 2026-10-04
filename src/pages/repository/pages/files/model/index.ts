@@ -6,7 +6,7 @@ import type { Globals } from "@/globals";
 import { RepositoryPageVM } from "@/pages/repository/model/page-vm";
 import { createGitlabApiQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
-import { isMarkdownPath } from "../lib/repository-tree-utils";
+import { isImagePath, isMarkdownPath } from "../lib/repository-tree-utils";
 import { FilesPageQuerySync, type FilesQueryData } from "./files-page-query-sync";
 import { RepositoryCommitsModel } from "./repository-commits";
 import { RepositoryFilesSearchModel } from "./repository-files-search";
@@ -75,7 +75,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
     });
 
     this.fileContentQuery = createGitlabApiQuery<
-      string,
+      string | Awaited<ReturnType<typeof gitlabApi.getRepositoryFileBlob>>,
       { projectId: number; ref: string; filePath: string }
     >({
       globals,
@@ -100,13 +100,21 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
           filePath,
         ] as const,
       queryFn: ({ connection, projectId, ref, filePath, signal }) =>
-        gitlabApi.getRepositoryFileContent(
-          connection,
-          projectId,
-          filePath,
-          ref,
-          signal,
-        ),
+        isImagePath(filePath)
+          ? gitlabApi.getRepositoryFileBlob(
+              connection,
+              projectId,
+              filePath,
+              ref,
+              signal,
+            )
+          : gitlabApi.getRepositoryFileContent(
+              connection,
+              projectId,
+              filePath,
+              ref,
+              signal,
+            ),
     });
 
     this.querySync = new FilesPageQuerySync(
@@ -251,7 +259,20 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
 
   @computed
   get fileContent() {
-    return this.fileContentQuery.data ?? null;
+    const content = this.fileContentQuery.data;
+    return typeof content === "string" ? content : (content?.content ?? null);
+  }
+
+  @computed
+  get fileImage() {
+    const content = this.fileContentQuery.data;
+    return typeof content === "string" ? null : (content?.blob ?? null);
+  }
+
+  @computed
+  get isImageFile() {
+    const path = this.selectedFilePath;
+    return path ? isImagePath(path) : false;
   }
 
   @computed

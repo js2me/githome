@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import { StatusMessage } from "@/shared/ui/status-message";
@@ -5,6 +6,20 @@ import type { FilesPageVM } from "../../model";
 import { HighlightedSourceCode } from "./highlighted-source-code";
 
 export const FileViewer = observer(({ model }: { model: FilesPageVM }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const image = model.fileImage;
+
+  useEffect(() => {
+    if (!image) {
+      setImageUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(image);
+    setImageUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [image]);
+
   if (!model.selectedFilePath) {
     return (
       <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-gray-900">
@@ -38,6 +53,16 @@ export const FileViewer = observer(({ model }: { model: FilesPageVM }) => {
             text={model.fileContent}
             className="text-sm leading-normal text-slate-800 dark:text-slate-300"
           />
+        )}
+
+        {image && !model.isFileContentLoading && model.isImageFile && imageUrl && (
+          <div className="flex justify-center">
+            <img
+              src={imageUrl}
+              alt={model.selectedFileName ?? "Предпросмотр изображения"}
+              className="h-64 w-64 rounded-lg border border-slate-200 bg-slate-50 object-contain dark:border-slate-700 dark:bg-gray-950"
+            />
+          </div>
         )}
 
         {model.fileContent && !model.isFileContentLoading && !model.isMarkdownFile && (

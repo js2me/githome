@@ -13,3 +13,6 @@ export const sortRepositoryTreeItems = (
 
 export const isMarkdownPath = (path: string) =>
   /\.(md|markdown)$/i.test(path);
+
+export const isImagePath = (path: string) =>
+  /\.(apng|avif|bmp|gif|ico|jfif|jpe?g|png|svg|tiff?|webp)$/i.test(path);
