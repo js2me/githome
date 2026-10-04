@@ -13,8 +13,8 @@ export const AppNav = observer(() => {
   const model = useViewModel<LayoutVM>();
 
   return (
-    <header className="flex items-center gap-4 border-b border-slate-200 bg-white px-5 py-3 dark:border-slate-800 dark:bg-gray-900">
-      <div className="flex shrink-0 items-center gap-2.5">
+    <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-200 bg-white px-3 py-2.5 dark:border-slate-800 dark:bg-gray-900 sm:px-4 lg:flex-nowrap lg:gap-4 lg:px-5 lg:py-3">
+      <div className="order-1 flex shrink-0 items-center gap-2.5 lg:order-none">
         <div
           className="grid h-[25px] w-[25px] place-items-center rounded-[10px] bg-gradient-to-br from-brand to-brand-gradient-to text-xs font-bold text-white"
           aria-hidden
@@ -25,11 +25,11 @@ export const AppNav = observer(() => {
       </div>
 
       <div
-        className="h-6 w-px shrink-0 bg-slate-200 dark:bg-slate-700"
+        className="hidden h-6 w-px shrink-0 bg-slate-200 dark:bg-slate-700 lg:block"
         aria-hidden
       />
 
-      <nav className="flex min-w-0 flex-1 items-center gap-1">
+      <nav className="order-3 flex basis-full min-w-0 flex-wrap items-center gap-1 lg:order-none lg:basis-auto lg:flex-1 lg:flex-nowrap">
         <ConnectionPicker />
 
         {model.repositoryBreadcrumb && (
@@ -128,11 +128,32 @@ export const AppNav = observer(() => {
                 </button>
               </>
             )}
+
+            {model.isAnalyticsOpen && (
+              <>
+                <span className="select-none text-sm text-slate-300 dark:text-slate-600">
+                  /
+                </span>
+
+                <button
+                  className={cn(
+                    navLinkClassName,
+                    "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+                  )}
+                  type="button"
+                  onClick={model.openAnalytics}
+                >
+                  Аналитика
+                </button>
+              </>
+            )}
           </>
         )}
       </nav>
 
-      <SettingsPopup />
+      <div className="order-2 ml-auto lg:order-none lg:ml-0">
+        <SettingsPopup />
+      </div>
     </header>
   );
 });

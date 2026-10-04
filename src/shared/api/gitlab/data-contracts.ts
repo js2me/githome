@@ -34,6 +34,7 @@ export interface GitLabMergeRequestDC {
   changes_count?: string;
   author?: {
     name?: string;
+    username?: string;
     avatar_url?: string | null;
   };
   assignees?: Array<{ name?: string }>;
@@ -216,6 +217,11 @@ export interface GitLabCommitDC {
   committed_date: string;
   created_at: string;
   message: string;
+}
+
+export interface GitLabProjectAnalyticsDC {
+  commits: GitLabCommitDC[];
+  mergedMergeRequests: GitLabMergeRequestDC[];
 }
 
 export interface GitLabBranchDC {

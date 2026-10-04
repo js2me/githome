@@ -87,7 +87,7 @@ const TreeNode = observer(
 export const FileTree = observer(
   ({ treeModel }: { treeModel: RepositoryTreeModel }) => {
     return (
-      <aside className="flex max-h-[calc(100vh-2rem)] w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-gray-900">
+      <aside className="flex max-h-[min(40vh,320px)] w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-gray-900 lg:max-h-[calc(100vh-2rem)]">
         <div className="border-b border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 dark:border-slate-800 dark:text-slate-300">
           Files
         </div>

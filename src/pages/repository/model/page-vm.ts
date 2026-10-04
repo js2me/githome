@@ -180,4 +180,14 @@ export class RepositoryPageVM extends VM {
 
     void this.globals.routes.pipelines.open({ projectId });
   }
+
+  @action.bound
+  openAnalytics() {
+    const projectId = this.projectIdParam;
+    if (!projectId) {
+      return;
+    }
+
+    void this.globals.routes.analytics.open({ projectId });
+  }
 }

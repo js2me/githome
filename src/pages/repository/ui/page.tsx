@@ -23,6 +23,12 @@ const PipelinesPage = lazy(() =>
   })),
 );
 
+const AnalyticsPage = lazy(() =>
+  import("@/pages/repository/pages/analytics/ui/page").then((module) => ({
+    default: module.AnalyticsPage,
+  })),
+);
+
 const MergeRequestPage = lazy(() =>
   import("@/pages/repository/pages/merge-requests/pages/[id]/ui/page").then(
     (module) => ({
@@ -42,6 +48,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
       <RouteView route={model.globals.routes.mergeRequests} view={MergeRequestsPage} />
       <RouteView route={model.globals.routes.mergeRequest} view={MergeRequestPage} />
       <RouteView route={model.globals.routes.pipelines} view={PipelinesPage} />
+      <RouteView route={model.globals.routes.analytics} view={AnalyticsPage} />
       <section>
         {model.isLoading && !project && (
           <StatusMessage>Загружаем репозиторий...</StatusMessage>
@@ -54,9 +61,9 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
         {project && (
           <>
             <h2 className="mb-4 text-[22px] font-semibold">{project.name}</h2>
-            <p className="mb-4 text-sm text-slate-500">{project.path_with_namespace}</p>
+            <p className="mb-4 break-all text-sm text-slate-500 sm:break-normal">{project.path_with_namespace}</p>
 
-            <div className="mb-4 flex gap-2">
+            <div className="mb-4 flex flex-wrap gap-2">
               <button
                 className="cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
                 type="button"
@@ -79,6 +86,14 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
                 onClick={model.openPipelines}
               >
                 Pipelines
+              </button>
+
+              <button
+                className="cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
+                type="button"
+                onClick={model.openAnalytics}
+              >
+                Аналитика
               </button>
             </div>
 

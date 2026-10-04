@@ -33,9 +33,9 @@ export const FilesPage = withViewModel(FilesPageVM, ({ model }) => {
         <FilesSearch model={model} />
       </div>
 
-      <div className="flex gap-4">
-        <div className="w-[min(100%,320px)] shrink-0 self-start">
-          <div className="sticky top-4">
+      <div className="flex min-w-0 flex-col gap-4 lg:flex-row">
+        <div className="w-full min-w-0 shrink-0 self-start lg:w-[min(100%,320px)]">
+          <div className="lg:sticky lg:top-4">
             <FileTree treeModel={model.treeModel} />
           </div>
         </div>

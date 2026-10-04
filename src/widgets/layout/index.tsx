@@ -13,9 +13,9 @@ export const Layout = withViewModel(LayoutVM, ({ model, children }: LayoutProps)
 
   return (
     <GitLabConnectionProvider connection={connection}>
-      <div className="flex min-h-screen flex-col bg-canvas-default">
+      <div className="flex min-h-screen min-w-0 flex-col bg-canvas-default">
         <AppNav />
-        <main className="flex-1 p-6">
+        <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6">
           <Suspense fallback={null}>{children}</Suspense>
         </main>
       </div>
