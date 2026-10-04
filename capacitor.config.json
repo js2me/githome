@@ -1,5 +1,10 @@
 {
   "appId": "com.js2me.githome",
   "appName": "GitHome",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
 }
