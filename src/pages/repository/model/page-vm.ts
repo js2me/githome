@@ -8,6 +8,7 @@ import type {
 import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
 import { ProjectReadmeModel } from "./project-readme";
+import { MaybePromise } from "yummies/types";
 
 export class RepositoryPageVM extends VM {
   projectQuery;
@@ -15,6 +16,7 @@ export class RepositoryPageVM extends VM {
 
   constructor(globals: Globals, params: ViewModelParams) {
     super(globals, params);
+    console.log("KEK RepositoryPageVM create");
 
     this.projectQuery = createGitlabQuery<GitLabProjectDC>({
       globals,
@@ -58,6 +60,10 @@ export class RepositoryPageVM extends VM {
 
     const iid = Number(mergeRequestIid);
     return Number.isNaN(iid) ? null : iid;
+  }
+
+  protected willMount(): MaybePromise<void> {
+    console.log("KEK RepositoryPageVM willMount");
   }
 
   @computed

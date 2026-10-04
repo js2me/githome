@@ -1,5 +1,5 @@
 import { action, computed, observable, reaction } from "mobx";
-import { InferViewModelParams } from "mobx-view-model";
+import type { ViewModelParams } from "mobx-view-model";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabBranchDC } from "@/shared/api/gitlab";
 import type { Globals } from "@/globals";
@@ -26,7 +26,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
 
   private lastProjectId: number | null = null;
 
-  constructor(globals: Globals, params: InferViewModelParams<FilesPageVM>) {
+  constructor(globals: Globals, params: ViewModelParams<{}, RepositoryPageVM>) {
     super(globals, params);
 
     this.commitsModel = new RepositoryCommitsModel({

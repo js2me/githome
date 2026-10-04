@@ -34,16 +34,16 @@ importers:
         version: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-route:
         specifier: ^2.1.0
-        version: 2.1.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@file:../mobx-vm-entities/packages/core/dist(mobx@6.16.1)(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 2.1.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.0(mobx@6.16.1)(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-tanstack-query:
         specifier: ^7.2.1
         version: 7.2.1(@tanstack/query-core@5.101.0)(mobx@6.16.1)(react@18.3.1)
       mobx-view-model:
-        specifier: file:../mobx-vm-entities/packages/core/dist
-        version: file:../mobx-vm-entities/packages/core/dist(mobx@6.16.1)(react@18.3.1)
+        specifier: ^11.0.0
+        version: 11.0.0(mobx@6.16.1)(react@18.3.1)
       mobx-view-model-react:
-        specifier: file:../mobx-vm-entities/packages/react/dist
-        version: file:../mobx-vm-entities/packages/react/dist(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^11.0.0
+        version: 11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-web-api:
         specifier: ^1.14.1
         version: 1.14.1(mobx@6.16.1)(react@18.3.1)
@@ -88,8 +88,8 @@ importers:
         specifier: ^26.0.12
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)
       mobx-view-model-vite-plugin:
-        specifier: ^1.4.4
-        version: 1.4.4(mobx-view-model-react@file:../mobx-vm-entities/packages/react/dist(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@file:../mobx-vm-entities/packages/core/dist(mobx@6.16.1)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0))
+        specifier: ^2.0.0
+        version: 2.0.0(mobx-view-model-react@11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.0(mobx@6.16.1)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0))
       puppeteer-core:
         specifier: ^25.4.0
         version: 25.4.0(yauzl@2.10.0)
@@ -816,6 +816,7 @@ packages:
   '@xmldom/xmldom@0.8.13':
     resolution: {integrity: sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   abbrev@4.0.0:
     resolution: {integrity: sha512-a1wflyaL0tHtJSmLSOVybYhy22vRih4eduhhrkcjgrWGnRfrZtovJ2FRjxuTtkkj47O/baf0R86QU5OuYpz8fA==}
@@ -1619,7 +1620,6 @@ packages:
 
   mobx-route@2.1.0:
     resolution: {integrity: sha512-ejd6gh1Gt32aMw5edF+zifizkDQ3NnhHlNxuLZS1wqBbNCUoAOwtIBlNHD3fqr38ow0O5D2r89OgkbCl/jZkXw==}
-    version: 2.1.0
     peerDependencies:
       mobx: ^6.12.4
       mobx-react-lite: ^4.0.7
@@ -1647,44 +1647,26 @@ packages:
       '@tanstack/query-core': ^5.90.2
       mobx: ^6.12.4
 
-  mobx-view-model-devtools@0.1.4:
-    resolution: {integrity: sha512-yWZbL0nD3mi+ZqTBJRt4Sm8cxpBIvgaa5hM9IjjRF4ZYWZ3sv6uDGNuVOf5RLjrPOYKol92i2Ewjkm+vjj4I2w==}
+  mobx-view-model-devtools@0.1.5:
+    resolution: {integrity: sha512-WaKq8Ja6QZOh5oWJl0Yp/271jQVFhSSmQ/yUjDwhItZDKes6sDwob9DGrWnGkULdzxwAppGD77jUJi1ipm79qg==}
 
-  mobx-view-model-react@10.3.1:
-    resolution: {integrity: sha512-RD9IrA2J+tjdIpL+xq0PJWizfHPRVjFv26PLVSPF1Y5fOZHUz9l0KGoXhrr0IsxRXbFJJPezeuv+iALQmFKhcQ==}
+  mobx-view-model-react@11.0.0:
+    resolution: {integrity: sha512-rPOEAOGDbrNOLpG1sisW537PlPfMWhpQdfUR92jxTszikWlgjNXrPCrowXeP8ny663/IAN0U3umZWCU/pH0YrA==}
     peerDependencies:
       mobx: ^6.12.4
       mobx-react-lite: ^4.0.7
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
 
-  mobx-view-model-react@file:../mobx-vm-entities/packages/react/dist:
-    resolution: {directory: ../mobx-vm-entities/packages/react/dist, type: directory}
+  mobx-view-model-vite-plugin@2.0.0:
+    resolution: {integrity: sha512-i81rbVlBJUJvUyoIzmd3Nw6FJODB872n9OL4OyLnxKo+HIgMGaTZxiJExiV4NIiaZz1yvmc35hwpvUYPIvZe7Q==}
     peerDependencies:
-      mobx: ^6.12.4
-      mobx-react-lite: ^4.0.7
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
-
-  mobx-view-model-vite-plugin@1.4.4:
-    resolution: {integrity: sha512-Pn7pRQwtRlPTCqElIBOWc+P8Jv3Vfuc1GeyQZneH4kcn5xqkj83PN1FgGfMdpkoTTRmu8qgRRym9Q4QsUHEJIA==}
-    version: 1.4.4
-    peerDependencies:
-      mobx-view-model: ^10.2.2
-      mobx-view-model-react: ^10.2.2
+      mobx-view-model: ^11.0.0
+      mobx-view-model-react: ^11.0.0
       vite: ^6.0.0 || ^7.0.0 || ^8.0.0
 
-  mobx-view-model@10.2.4:
-    resolution: {integrity: sha512-jb2vD+X3Mf5PrjqBc5SwIQIDLjQLKuhkfYCpE9rZgBGv8T52z6rfFtbEkk/Itqx6WxHRidkWP7C7rjynjnbtXQ==}
-    peerDependencies:
-      mobx: ^6.12.4
-      react: ^18.0.0 || ^19.0.0
-    peerDependenciesMeta:
-      react:
-        optional: true
-
-  mobx-view-model@file:../mobx-vm-entities/packages/core/dist:
-    resolution: {directory: ../mobx-vm-entities/packages/core/dist, type: directory}
+  mobx-view-model@11.0.0:
+    resolution: {integrity: sha512-rq/Z4FjXm/k9g43OMiIh35Z4HXkMS0u0rFCW+M32rSqISesqOw2HG02OOTGDcetS48AtXojV5wNsPbaiOVcmSw==}
     peerDependencies:
       mobx: ^6.12.4
 
@@ -3814,7 +3796,7 @@ snapshots:
     optionalDependencies:
       react-dom: 18.3.1(react@18.3.1)
 
-  mobx-route@2.1.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@file:../mobx-vm-entities/packages/core/dist(mobx@6.16.1)(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  mobx-route@2.1.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.0(mobx@6.16.1)(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       mobx: 6.16.1
       mobx-location-history: 9.4.1(mobx@6.16.1)(react@18.3.1)
@@ -3822,7 +3804,7 @@ snapshots:
       yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
     optionalDependencies:
       mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-view-model: file:../mobx-vm-entities/packages/core/dist(mobx@6.16.1)(react@18.3.1)
+      mobx-view-model: 11.0.0(mobx@6.16.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
@@ -3846,13 +3828,14 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  mobx-view-model-devtools@0.1.4:
+  mobx-view-model-devtools@0.1.5:
     dependencies:
       '@gravity-ui/icons': 2.18.0(react@18.3.1)
       mobx: 6.16.1
       mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-swiss-knife: 1.15.1(mobx@6.16.1)(react@18.3.1)
-      mobx-view-model: 10.2.4(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      mobx-view-model: 11.0.0(mobx@6.16.1)(react@18.3.1)
+      mobx-view-model-react: 11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-web-api: 1.14.1(mobx@6.16.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
@@ -3865,28 +3848,20 @@ snapshots:
       - svelte
       - vue
 
-  mobx-view-model-react@10.3.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  mobx-view-model-react@11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       mobx: 6.16.1
       mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-view-model: 10.2.4(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      mobx-view-model: 11.0.0(mobx@6.16.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  mobx-view-model-react@file:../mobx-vm-entities/packages/react/dist(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      mobx: 6.16.1
-      mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-view-model: 10.2.4(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-
-  mobx-view-model-vite-plugin@1.4.4(mobx-view-model-react@file:../mobx-vm-entities/packages/react/dist(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@file:../mobx-vm-entities/packages/core/dist(mobx@6.16.1)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)):
+  mobx-view-model-vite-plugin@2.0.0(mobx-view-model-react@11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.0(mobx@6.16.1)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)):
     dependencies:
       magic-string: 0.30.21
-      mobx-view-model: file:../mobx-vm-entities/packages/core/dist(mobx@6.16.1)(react@18.3.1)
-      mobx-view-model-devtools: 0.1.4
-      mobx-view-model-react: file:../mobx-vm-entities/packages/react/dist(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      mobx-view-model: 11.0.0(mobx@6.16.1)(react@18.3.1)
+      mobx-view-model-devtools: 0.1.5
+      mobx-view-model-react: 11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       vite: 7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)
     transitivePeerDependencies:
       - react-native
@@ -3894,18 +3869,7 @@ snapshots:
       - svelte
       - vue
 
-  mobx-view-model@10.2.4(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      mobx: 6.16.1
-      mobx-view-model-react: 10.3.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
-    optionalDependencies:
-      react: 18.3.1
-    transitivePeerDependencies:
-      - mobx-react-lite
-      - react-dom
-
-  mobx-view-model@file:../mobx-vm-entities/packages/core/dist(mobx@6.16.1)(react@18.3.1):
+  mobx-view-model@11.0.0(mobx@6.16.1)(react@18.3.1):
     dependencies:
       mobx: 6.16.1
       yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)

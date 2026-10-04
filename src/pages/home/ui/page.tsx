@@ -108,7 +108,6 @@ export const HomePage = withViewModel(
     );
   },
   {
-    vmConfig: { useReactIds: false },
-    generateId: () => "home",
+    id: "home",
   },
 );

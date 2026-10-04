@@ -1,5 +1,7 @@
 import {
   type AnyViewModel,
+  type AnyViewModelSimple,
+  isViewModelSimpleClass,
   mergeVMConfigs,
   type ViewModelCreateConfig,
   ViewModelStoreBase,
@@ -23,14 +25,26 @@ export class VMStore extends ViewModelStoreBase {
       },
     });
 
-    reaction(() => [...this.viewModels.values()].filter(it => it.constructor.name === 'RepositoryPageVM').length,(count)=>{
-      console.log(">>>>>>>>> RepositoryPageVM COUNT: ", count);
+    reaction(() => [...this.viewModels.entries()],(vms)=>{
+      console.log(">>>>>>>>> vms!!!!!!: ", ...vms.filter(it => !it[0].includes('GitlabAvatarVM')).flat());
     })
   }
 
-  create<VMType extends AnyViewModel>(
+  create<VMType extends AnyViewModel | AnyViewModelSimple>(
     config: ViewModelCreateConfig<VMType>,
   ): VMType {
+    const vmConfig = mergeVMConfigs(this.vmConfig, config.vmConfig);
+    const vmParams = { ...config, vmConfig };
+    const customVM = config.factory?.(config);
+
+    if (customVM !== undefined) {
+      return customVM as VMType;
+    }
+
+    if (isViewModelSimpleClass(config.VM)) {
+      return vmConfig.factory(vmParams) as VMType;
+    }
+
     const VMClass = config.VM as unknown as Class<
       VM,
       ConstructorParameters<typeof VM>
@@ -38,7 +52,7 @@ export class VMStore extends ViewModelStoreBase {
 
     const vm = new VMClass(this.globals, {
       ...config,
-      vmConfig: mergeVMConfigs(this.vmConfig, config.vmConfig),
+      vmConfig,
     });
 
     return vm as unknown as VMType;

@@ -1,4 +1,4 @@
-import { InferViewModelParams } from "mobx-view-model";
+import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import { RepositoryPageVM } from "@/pages/repository/model/page-vm";
 import { VM } from "@/shared/lib/view-models/vm";
@@ -23,7 +23,7 @@ export class MergeRequestPageVM extends VM<{}, RepositoryPageVM> {
     return this.parentViewModel.project;
   }
 
-  constructor(globals: Globals, params: InferViewModelParams<MergeRequestPageVM>) {
+  constructor(globals: Globals, params: ViewModelParams<{}, RepositoryPageVM>) {
     super(globals, params);
 
     this.mrInfo = new MrInfoModel({
