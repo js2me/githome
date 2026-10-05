@@ -1,6 +1,9 @@
 import { withViewModel } from "mobx-view-model-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabJobDC, GitLabPipelineDC } from "@/shared/api/gitlab";
 import { StatusMessage } from "@/shared/ui/status-message";
+import { getPipelineMergeRequestIid } from "@/entities/gitlab-pipelines/model/pipeline-list";
 import { PipelinesPageVM } from "../model";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -63,6 +66,21 @@ const formatDuration = (duration?: number | null) => {
   return minutes > 0 ? `${minutes} мин ${seconds} с` : `${seconds} с`;
 };
 
+const groupJobsByStage = (jobs: GitLabJobDC[]) => {
+  const stageMap = new Map<string, GitLabJobDC[]>();
+
+  for (const job of [...jobs].reverse()) {
+    const stageJobs = stageMap.get(job.stage) ?? [];
+    stageJobs.push(job);
+    stageMap.set(job.stage, stageJobs);
+  }
+
+  return [...stageMap].map(([name, stageJobs]) => ({
+    name,
+    jobs: stageJobs,
+  }));
+};
+
 const StatusBadge = ({ status }: { status: string }) => (
   <span
     className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
@@ -77,9 +95,21 @@ const StatusBadge = ({ status }: { status: string }) => (
 const JobRow = ({
   job,
   model,
+  isTraceOpen,
+  jobTrace,
+  isJobTraceLoading,
+  jobTraceError,
+  onToggleTrace,
+  onRunJob,
 }: {
   job: GitLabJobDC;
   model: PipelinesPageVM["pipelineList"];
+  isTraceOpen: boolean;
+  jobTrace: string;
+  isJobTraceLoading: boolean;
+  jobTraceError: string | null;
+  onToggleTrace: () => void;
+  onRunJob: (job: GitLabJobDC) => void;
 }) => {
   const canPlay = job.status === "manual" && model.canRunJob(job);
   const canRetry =
@@ -87,7 +117,6 @@ const JobRow = ({
     model.canRunJob(job);
   const canCancel = model.isJobCancelable(job);
   const isBusy = model.busyJobId === job.id;
-  const isTraceOpen = model.selectedJobTraceId === job.id;
 
   return (
     <li className="rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-950">
@@ -120,7 +149,7 @@ const JobRow = ({
             className={BUTTON_CLASS}
             type="button"
             disabled={model.busyJobId !== null || model.busyPipelineId !== null}
-            onClick={() => void model.runJobAction(job)}
+            onClick={() => onRunJob(job)}
           >
             {isBusy
               ? canCancel
@@ -137,7 +166,7 @@ const JobRow = ({
         <button
           className={BUTTON_CLASS}
           type="button"
-          onClick={() => model.toggleJobTrace(job)}
+          onClick={onToggleTrace}
         >
           {isTraceOpen ? "Скрыть лог" : "Лог"}
         </button>
@@ -145,17 +174,17 @@ const JobRow = ({
 
       {isTraceOpen && (
         <div className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-800">
-          {model.isJobTraceLoading && (
+          {isJobTraceLoading && (
             <p className="m-0 text-sm text-slate-500">Загружаем лог...</p>
           )}
-          {model.jobTraceError && !model.isJobTraceLoading && (
+          {jobTraceError && !isJobTraceLoading && (
             <p className="m-0 text-sm text-red-600 dark:text-red-300">
-              {model.jobTraceError}
+              {jobTraceError}
             </p>
           )}
-          {!model.isJobTraceLoading && !model.jobTraceError && (
+          {!isJobTraceLoading && !jobTraceError && (
             <pre className="m-0 max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg bg-slate-950 p-3 font-mono text-xs leading-relaxed text-slate-200">
-              {model.jobTrace || "Лог пока пуст."}
+              {jobTrace || "Лог пока пуст."}
             </pre>
           )}
         </div>
@@ -167,15 +196,40 @@ const JobRow = ({
 const PipelineRow = ({
   pipeline,
   model,
+  isExpanded,
+  onToggle,
+  jobs,
+  isJobsLoading,
+  jobsErrorMessage,
+  selectedJobTraceId,
+  jobTrace,
+  isJobTraceLoading,
+  jobTraceError,
+  onToggleJobTrace,
+  onRunJob,
+  onPipelineAction,
 }: {
   pipeline: GitLabPipelineDC;
   model: PipelinesPageVM["pipelineList"];
+  isExpanded: boolean;
+  onToggle: () => void;
+  jobs: GitLabJobDC[];
+  isJobsLoading: boolean;
+  jobsErrorMessage: string | null;
+  selectedJobTraceId: number | null;
+  jobTrace: string;
+  isJobTraceLoading: boolean;
+  jobTraceError: string | null;
+  onToggleJobTrace: (job: GitLabJobDC) => void;
+  onRunJob: (job: GitLabJobDC) => void;
+  onPipelineAction: (pipeline: GitLabPipelineDC, action: "cancel" | "retry") => void;
 }) => {
-  const isExpanded = model.selectedPipelineId === pipeline.id;
   const duration = formatDuration(pipeline.duration);
   const canCancel = model.isPipelineCancelable(pipeline);
   const canRetry = model.isPipelineRetryable(pipeline);
   const isBusy = model.busyPipelineId === pipeline.id;
+  const mergeRequestIid = getPipelineMergeRequestIid(pipeline);
+  const mergeRequest = model.mergeRequestForPipeline(pipeline);
 
   return (
     <li className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-gray-900">
@@ -184,12 +238,18 @@ const PipelineRow = ({
           aria-expanded={isExpanded}
           className="flex min-w-0 flex-1 cursor-pointer flex-col gap-2 border-0 bg-transparent p-0 text-left"
           type="button"
-          onClick={() => model.togglePipeline(pipeline)}
+          onClick={onToggle}
         >
           <span className="flex w-full flex-wrap items-center gap-2">
-            <span className="text-[13px] font-bold text-slate-500">#{pipeline.id}</span>
+            <span className="text-[13px] font-bold text-slate-500">Pipeline</span>
             <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-slate-900 dark:text-slate-200">
-              <span className="font-mono">{pipeline.ref}</span>
+              {mergeRequest ? (
+                <span>{mergeRequest.title}</span>
+              ) : mergeRequestIid !== null ? (
+                <span>Merge request !{mergeRequestIid}</span>
+              ) : (
+                <span className="font-mono">{pipeline.ref}</span>
+              )}
             </span>
             <StatusBadge status={pipeline.status} />
             <span className="ml-1 text-slate-400" aria-hidden="true">
@@ -198,7 +258,9 @@ const PipelineRow = ({
           </span>
 
           <span className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+            <span className="font-semibold">#{pipeline.id}</span>
             <span className="font-mono">{pipeline.sha.slice(0, 8)}</span>
+            <span className="font-mono">{pipeline.ref}</span>
             <span>{formatDate(pipeline.updated_at ?? pipeline.created_at)}</span>
             {duration && <span>{duration}</span>}
             {pipeline.user?.name && <span>{pipeline.user.name}</span>}
@@ -206,12 +268,31 @@ const PipelineRow = ({
           </span>
         </button>
 
+        <a
+          className="text-xs font-semibold text-brand hover:underline"
+          href={pipeline.web_url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitLab ↗
+        </a>
+
+        {mergeRequestIid !== null && (
+          <button
+            className={BUTTON_CLASS}
+            type="button"
+            onClick={() => model.openMergeRequest(mergeRequestIid)}
+          >
+            Открыть MR !{mergeRequestIid}
+          </button>
+        )}
+
         {canCancel && (
           <button
             className={BUTTON_CLASS}
             type="button"
             disabled={model.busyPipelineId !== null || model.busyJobId !== null}
-            onClick={() => void model.runPipelineAction(pipeline, "cancel")}
+            onClick={() => onPipelineAction(pipeline, "cancel")}
           >
             {isBusy ? "Останавливаем..." : "Остановить"}
           </button>
@@ -221,7 +302,7 @@ const PipelineRow = ({
             className={BUTTON_CLASS}
             type="button"
             disabled={model.busyPipelineId !== null || model.busyJobId !== null}
-            onClick={() => void model.runPipelineAction(pipeline, "retry")}
+            onClick={() => onPipelineAction(pipeline, "retry")}
           >
             {isBusy ? "Перезапускаем..." : "Повторить pipeline"}
           </button>
@@ -244,32 +325,42 @@ const PipelineRow = ({
             </a>
           </div>
 
-          {model.isJobsLoading && (
+          {isJobsLoading && (
             <p className="m-0 text-sm text-slate-500">Загружаем jobs...</p>
           )}
 
-          {model.jobsErrorMessage && !model.isJobsLoading && (
+          {jobsErrorMessage && !isJobsLoading && (
             <p className="m-0 text-sm text-red-600 dark:text-red-300">
-              {model.jobsErrorMessage}
+              {jobsErrorMessage}
             </p>
           )}
 
-          {!model.isJobsLoading && !model.jobsErrorMessage && model.jobs.length === 0 && (
+          {!isJobsLoading && !jobsErrorMessage && jobs.length === 0 && (
             <p className="m-0 text-sm text-slate-500">В pipeline нет jobs.</p>
           )}
 
-          {!model.isJobsLoading &&
-            !model.jobsErrorMessage &&
-            model.stages.length > 0 && (
+          {!isJobsLoading &&
+            !jobsErrorMessage &&
+            jobs.length > 0 && (
             <div className="flex flex-col gap-4">
-              {model.stages.map((stage) => (
+              {groupJobsByStage(jobs).map((stage) => (
                 <section key={stage.name}>
                   <h4 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
                     {stage.name}
                   </h4>
                   <ul className="m-0 flex list-none flex-col gap-2 p-0">
                     {stage.jobs.map((job) => (
-                      <JobRow key={job.id} job={job} model={model} />
+                      <JobRow
+                        key={job.id}
+                        job={job}
+                        model={model}
+                        isTraceOpen={selectedJobTraceId === job.id}
+                        jobTrace={jobTrace}
+                        isJobTraceLoading={isJobTraceLoading}
+                        jobTraceError={jobTraceError}
+                        onToggleTrace={() => onToggleJobTrace(job)}
+                        onRunJob={onRunJob}
+                      />
                     ))}
                   </ul>
                 </section>
@@ -290,6 +381,177 @@ const PipelineRow = ({
 
 export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
   const { pipelineList } = model;
+  const [expandedPipelineId, setExpandedPipelineId] =
+    useState<number | null>(null);
+  const [jobsByPipeline, setJobsByPipeline] = useState<
+    Record<number, GitLabJobDC[]>
+  >({});
+  const [jobsLoadingIds, setJobsLoadingIds] = useState<number[]>([]);
+  const [jobsErrors, setJobsErrors] = useState<Record<number, string>>({});
+  const [selectedJobTraceId, setSelectedJobTraceId] = useState<number | null>(
+    null,
+  );
+  const [jobTrace, setJobTrace] = useState("");
+  const [jobTraceLoading, setJobTraceLoading] = useState(false);
+  const [jobTraceError, setJobTraceError] = useState<string | null>(null);
+  const jobLoadsInFlight = useRef(new Set<number>());
+  const jobTraceRequestId = useRef(0);
+  const connection = model.globals.stores.settings.activeConnection;
+
+  const loadPipelineJobs = useCallback(
+    async (pipeline: GitLabPipelineDC) => {
+      if (!connection || jobLoadsInFlight.current.has(pipeline.id)) {
+        return;
+      }
+
+      jobLoadsInFlight.current.add(pipeline.id);
+      setJobsLoadingIds((ids) =>
+        ids.includes(pipeline.id) ? ids : [...ids, pipeline.id],
+      );
+      setJobsErrors((errors) => {
+        const next = { ...errors };
+        delete next[pipeline.id];
+        return next;
+      });
+
+      try {
+        const jobs = await gitlabApi.fetch<GitLabJobDC[]>(
+          connection,
+          `/projects/${pipeline.project_id}/pipelines/${pipeline.id}/jobs`,
+          {
+            query: { per_page: 100, include_retried: false },
+            signal: model.unmountSignal,
+          },
+        );
+        setJobsByPipeline((current) => ({ ...current, [pipeline.id]: jobs }));
+      } catch (error) {
+        setJobsErrors((current) => ({
+          ...current,
+          [pipeline.id]:
+            error instanceof Error ? error.message : "Не удалось загрузить jobs",
+        }));
+      } finally {
+        jobLoadsInFlight.current.delete(pipeline.id);
+        setJobsLoadingIds((ids) => ids.filter((id) => id !== pipeline.id));
+      }
+    },
+    [connection, model],
+  );
+
+  useEffect(() => {
+    if (expandedPipelineId === null) {
+      return;
+    }
+
+    const pipeline = pipelineList.pipelines.find(
+      (item) => item.id === expandedPipelineId,
+    );
+    if (!pipeline) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      void loadPipelineJobs(pipeline);
+    }, 5000);
+    return () => clearInterval(intervalId);
+  }, [expandedPipelineId, loadPipelineJobs, pipelineList]);
+
+  useEffect(
+    () => () => {
+      jobTraceRequestId.current += 1;
+    },
+    [],
+  );
+
+  const togglePipeline = (pipeline: GitLabPipelineDC) => {
+    const willExpand = expandedPipelineId !== pipeline.id;
+    setExpandedPipelineId(willExpand ? pipeline.id : null);
+    pipelineList.togglePipeline(pipeline);
+    setSelectedJobTraceId(null);
+    setJobTrace("");
+    setJobTraceError(null);
+    setJobTraceLoading(false);
+    jobTraceRequestId.current += 1;
+    if (willExpand) {
+      void loadPipelineJobs(pipeline);
+    }
+  };
+
+  const toggleJobTrace = async (job: GitLabJobDC) => {
+    if (selectedJobTraceId === job.id) {
+      jobTraceRequestId.current += 1;
+      setSelectedJobTraceId(null);
+      setJobTrace("");
+      setJobTraceError(null);
+      setJobTraceLoading(false);
+      return;
+    }
+
+    const selectedPipeline = pipelineList.pipelines.find(
+      (pipeline) => pipeline.id === expandedPipelineId,
+    );
+    if (!connection || !selectedPipeline) {
+      return;
+    }
+
+    const requestId = ++jobTraceRequestId.current;
+    setSelectedJobTraceId(job.id);
+    setJobTrace("");
+    setJobTraceError(null);
+    setJobTraceLoading(true);
+
+    try {
+      const trace = await gitlabApi.getPipelineJobTrace(
+        connection,
+        selectedPipeline.project_id,
+        job.id,
+        model.unmountSignal,
+      );
+      if (jobTraceRequestId.current === requestId) {
+        setJobTrace(trace);
+      }
+    } catch (error) {
+      if (jobTraceRequestId.current === requestId) {
+        setJobTraceError(
+          error instanceof Error ? error.message : "Не удалось загрузить лог",
+        );
+      }
+    } finally {
+      if (jobTraceRequestId.current === requestId) {
+        setJobTraceLoading(false);
+      }
+    }
+  };
+
+  const runJob = async (job: GitLabJobDC) => {
+    await pipelineList.runJobAction(job);
+    const pipeline = pipelineList.pipelines.find(
+      (item) => item.id === expandedPipelineId,
+    );
+    if (pipeline) {
+      await loadPipelineJobs(pipeline);
+    }
+  };
+
+  const runPipelineAction = async (
+    pipeline: GitLabPipelineDC,
+    action: "cancel" | "retry",
+  ) => {
+    await pipelineList.runPipelineAction(pipeline, action);
+    if (pipeline.id === expandedPipelineId) {
+      await loadPipelineJobs(pipeline);
+    }
+  };
+
+  const refresh = () => {
+    pipelineList.refresh();
+    const pipeline = pipelineList.pipelines.find(
+      (item) => item.id === expandedPipelineId,
+    );
+    if (pipeline) {
+      void loadPipelineJobs(pipeline);
+    }
+  };
 
   return (
     <section>
@@ -299,7 +561,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
           <button
             className={BUTTON_CLASS}
             type="button"
-            onClick={pipelineList.refresh}
+            onClick={refresh}
           >
             Обновить
           </button>
@@ -441,7 +703,26 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
       {pipelineList.pipelines.length > 0 && (
         <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
           {pipelineList.pipelines.map((pipeline) => (
-            <PipelineRow key={pipeline.id} pipeline={pipeline} model={pipelineList} />
+            <PipelineRow
+              key={pipeline.id}
+              pipeline={pipeline}
+              model={pipelineList}
+              isExpanded={expandedPipelineId === pipeline.id}
+              onToggle={() => togglePipeline(pipeline)}
+              jobs={jobsByPipeline[pipeline.id] ?? []}
+              isJobsLoading={
+                jobsLoadingIds.includes(pipeline.id) &&
+                (jobsByPipeline[pipeline.id]?.length ?? 0) === 0
+              }
+              jobsErrorMessage={jobsErrors[pipeline.id] ?? null}
+              selectedJobTraceId={selectedJobTraceId}
+              jobTrace={jobTrace}
+              isJobTraceLoading={jobTraceLoading}
+              jobTraceError={jobTraceError}
+              onToggleJobTrace={toggleJobTrace}
+              onRunJob={runJob}
+              onPipelineAction={runPipelineAction}
+            />
           ))}
         </ul>
       )}

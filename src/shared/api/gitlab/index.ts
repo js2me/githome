@@ -19,6 +19,7 @@ import { getMergeRequestView } from "./endpoints/get-merge-request-view";
 import { getProject } from "./endpoints/get-project";
 import { getProjectAnalytics } from "./endpoints/get-project-analytics";
 import { getProjectBranches } from "./endpoints/get-project-branches";
+import { getPipelineJobTrace } from "./endpoints/get-pipeline-job-trace";
 import { getProjectMergeRequests } from "./endpoints/get-project-merge-requests";
 import { getProjectReadme } from "./endpoints/get-project-readme";
 import { getRepositoryFileContent } from "./endpoints/get-repository-file-content";
@@ -60,6 +61,8 @@ export const gitlabApi = {
   getProjectAnalytics,
 
   getProjectBranches,
+
+  getPipelineJobTrace,
 
   getProjectReadme,
 

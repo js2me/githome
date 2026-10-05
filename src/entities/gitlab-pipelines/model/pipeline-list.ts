@@ -3,10 +3,14 @@ import type { Globals } from "@/globals";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type {
   GitLabJobDC,
+  GitLabMergeRequestDC,
   GitLabPipelineDC,
   GitLabPipelineVariableDC,
 } from "@/shared/api/gitlab";
-import { createInfiniteGitlabQuery, createGitlabQuery } from "@/shared/lib/gitlab/create-query";
+import {
+  createGitlabApiQuery,
+  createInfiniteGitlabQuery,
+} from "@/shared/lib/gitlab/create-query";
 
 export interface PipelineListParams {
   globals: Globals;
@@ -51,16 +55,20 @@ const isPipelineActive = (status: string) =>
     "scheduled",
   ].includes(status);
 
+export const getPipelineMergeRequestIid = (
+  pipeline: GitLabPipelineDC,
+): number | null => {
+  const match = pipeline.ref.match(/(?:^|\/)merge-requests\/(\d+)\/head$/);
+  return match?.[1] ? Number(match[1]) : null;
+};
+
 export class PipelineList {
   readonly pipelinesQuery;
-  readonly jobsQuery;
-  readonly jobTraceQuery;
-
+  readonly mergeRequestDetailsQuery;
   @observable accessor statusFilter = "";
   @observable accessor refSearch = "";
   @observable accessor refFilter = "";
   @observable accessor selectedPipelineId: number | null = null;
-  @observable accessor selectedJobTraceId: number | null = null;
   @observable accessor busyPipelineId: number | null = null;
   @observable accessor busyJobId: number | null = null;
   @observable accessor actionError: string | null = null;
@@ -96,45 +104,41 @@ export class PipelineList {
       }),
     });
 
-    this.jobsQuery = createGitlabQuery<GitLabJobDC[]>({
+    this.mergeRequestDetailsQuery = createGitlabApiQuery<
+      Record<number, GitLabMergeRequestDC | null>,
+      { projectId: number; iids: number[] }
+    >({
       globals: params.globals,
       abortSignal: params.abortSignal,
       params: () => {
         const projectId = params.projectId();
-        const pipelineId = this.selectedPipelineId;
-        if (projectId === null || pipelineId === null) {
-          return false;
-        }
-
-        return {
-          path: `/projects/${projectId}/pipelines/${pipelineId}/jobs`,
-          query: {
-            per_page: 100,
-            include_retried: false,
-          },
-        };
+        const iids = this.mergeRequestIids;
+        return projectId === null || iids.length === 0
+          ? false
+          : { projectId, iids };
       },
-      queryOptions: {
-        refetchInterval: 5000,
-      },
-    });
+      queryKey: ({ connection, projectId, iids }) =>
+        ["pipeline-merge-request-details", connection.gitlabUrl, projectId, iids] as const,
+      queryFn: async ({ connection, projectId, iids, signal }) => {
+        const results = await Promise.all(
+          iids.map(async (iid) => {
+            try {
+              const mergeRequest = await gitlabApi.fetch<GitLabMergeRequestDC>(
+                connection,
+                `/projects/${projectId}/merge_requests/${iid}`,
+                { signal },
+              );
+              return [iid, mergeRequest] as const;
+            } catch {
+              return [iid, null] as const;
+            }
+          }),
+        );
 
-    this.jobTraceQuery = createGitlabQuery<string>({
-      globals: params.globals,
-      abortSignal: params.abortSignal,
-      params: () => {
-        const projectId = params.projectId();
-        const jobId = this.selectedJobTraceId;
-        if (projectId === null || jobId === null) {
-          return false;
-        }
-
-        return {
-          path: `/projects/${projectId}/jobs/${jobId}/trace`,
-          responseType: "text",
-        };
+        return Object.fromEntries(results);
       },
     });
+
   }
 
   @computed
@@ -143,16 +147,15 @@ export class PipelineList {
   }
 
   @computed
-  get stages(): Array<{ name: string; jobs: GitLabJobDC[] }> {
-    const stageMap = new Map<string, GitLabJobDC[]>();
+  get mergeRequestIids(): number[] {
+    return [...new Set(this.pipelines
+      .map(getPipelineMergeRequestIid)
+      .filter((iid): iid is number => iid !== null))];
+  }
 
-    for (const job of [...this.jobs].reverse()) {
-      const stageJobs = stageMap.get(job.stage) ?? [];
-      stageJobs.push(job);
-      stageMap.set(job.stage, stageJobs);
-    }
-
-    return [...stageMap].map(([name, jobs]) => ({ name, jobs }));
+  @computed
+  get mergeRequestDetails(): Record<number, GitLabMergeRequestDC | null> {
+    return this.mergeRequestDetailsQuery.data ?? {};
   }
 
   @computed
@@ -196,45 +199,6 @@ export class PipelineList {
   }
 
   @computed
-  get jobs(): GitLabJobDC[] {
-    return this.jobsQuery.data ?? [];
-  }
-
-  @computed
-  get isJobsLoading() {
-    return (
-      this.selectedPipelineId !== null &&
-      (this.jobsQuery.isLoading || this.jobsQuery.isFetching)
-    );
-  }
-
-  @computed
-  get jobsErrorMessage() {
-    const error = this.jobsQuery.error;
-    return error instanceof Error
-      ? error.message
-      : error
-        ? "Не удалось загрузить jobs"
-        : null;
-  }
-
-  @computed
-  get jobTrace() {
-    return this.jobTraceQuery.data ?? "";
-  }
-
-  @computed
-  get isJobTraceLoading() {
-    return this.jobTraceQuery.isLoading || this.jobTraceQuery.isFetching;
-  }
-
-  @computed
-  get jobTraceError() {
-    const error = this.jobTraceQuery.error;
-    return error instanceof Error ? error.message : error ? "Не удалось загрузить лог" : null;
-  }
-
-  @computed
   get canManagePipelines() {
     return this.params.canManagePipelines();
   }
@@ -246,6 +210,11 @@ export class PipelineList {
     return total === null || total === undefined
       ? `Загрузить ещё (${loadedCount})`
       : `Загрузить ещё (${loadedCount} из ${total})`;
+  }
+
+  mergeRequestForPipeline(pipeline: GitLabPipelineDC) {
+    const iid = getPipelineMergeRequestIid(pipeline);
+    return iid === null ? null : this.mergeRequestDetails[iid] ?? null;
   }
 
   isPipelineCancelable(pipeline: GitLabPipelineDC) {
@@ -308,26 +277,26 @@ export class PipelineList {
   @action.bound
   refresh() {
     void this.pipelinesQuery.refetch();
-    if (this.selectedPipelineId !== null) {
-      void this.jobsQuery.refetch();
-    }
-    if (this.selectedJobTraceId !== null) {
-      void this.jobTraceQuery.refetch();
-    }
   }
 
   @action.bound
   togglePipeline(pipeline: GitLabPipelineDC) {
-    this.selectedPipelineId =
-      this.selectedPipelineId === pipeline.id ? null : pipeline.id;
-    this.selectedJobTraceId = null;
+    const isSamePipeline = this.selectedPipelineId === pipeline.id;
+    this.selectedPipelineId = isSamePipeline ? null : pipeline.id;
     this.actionError = null;
   }
 
   @action.bound
-  toggleJobTrace(job: GitLabJobDC) {
-    this.selectedJobTraceId =
-      this.selectedJobTraceId === job.id ? null : job.id;
+  openMergeRequest(iid: number) {
+    const projectId = this.params.projectId();
+    if (projectId === null) {
+      return;
+    }
+
+    void this.params.globals.routes.mergeRequest.open({
+      projectId: String(projectId),
+      mergeRequestIid: String(iid),
+    });
   }
 
   @action.bound
@@ -368,9 +337,6 @@ export class PipelineList {
       }
 
       await this.pipelinesQuery.refetch();
-      if (this.selectedPipelineId === pipeline.id) {
-        await this.jobsQuery.refetch();
-      }
     } catch (error) {
       runInAction(() => {
         this.actionError = error instanceof Error ? error.message : "Не удалось выполнить действие";
@@ -429,7 +395,7 @@ export class PipelineList {
         return;
       }
 
-      await Promise.all([this.jobsQuery.refetch(), this.pipelinesQuery.refetch()]);
+      await this.pipelinesQuery.refetch();
     } catch (error) {
       runInAction(() => {
         this.actionError = error instanceof Error ? error.message : "Не удалось выполнить действие";
