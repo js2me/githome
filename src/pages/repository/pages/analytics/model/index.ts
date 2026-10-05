@@ -31,6 +31,14 @@ type AnalyticsPeriod = 30 | 90 | 180;
 
 export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
   @observable accessor period: AnalyticsPeriod = 90;
+  @observable.ref accessor analyticsProgress: GitLabProjectAnalyticsDC = {
+    commits: [],
+    mergedMergeRequests: [],
+  };
+  @observable accessor hasAnalyticsProgress = false;
+  @observable accessor analyticsProgressKey: string | null = null;
+
+  private analyticsRequestId = 0;
 
   readonly analyticsQuery;
 
@@ -74,15 +82,32 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
           since,
           until,
         ] as const,
-      queryFn: ({ connection, projectId, defaultBranch, since, until, signal }) =>
-        gitlabApi.getProjectAnalytics(
+      queryFn: async ({
+        connection,
+        projectId,
+        defaultBranch,
+        since,
+        until,
+        signal,
+      }) => {
+        const progressKey = JSON.stringify([
+          connection.gitlabUrl,
+          projectId,
+          defaultBranch,
+          since,
+          until,
+        ]);
+        const requestId = this.beginAnalyticsProgress(progressKey);
+        return gitlabApi.getProjectAnalytics(
           connection,
           projectId,
           defaultBranch,
           since,
           until,
           signal,
-        ),
+          (analytics) => this.updateAnalyticsProgress(requestId, analytics),
+        );
+      },
     });
   }
 
@@ -103,11 +128,40 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
   }
 
   @computed
+  private get currentAnalyticsKey() {
+    const connection = this.globals.stores.settings.activeConnection;
+    const projectId = this.parentViewModel.projectId;
+    if (!connection || projectId === null) {
+      return null;
+    }
+
+    return JSON.stringify([
+      connection.gitlabUrl,
+      projectId,
+      this.parentViewModel.project?.default_branch?.trim() || null,
+      this.range.since,
+      this.range.until,
+    ]);
+  }
+
+  @computed
   get analytics(): GitLabProjectAnalyticsDC {
-    return this.analyticsQuery.data ?? {
-      commits: [],
-      mergedMergeRequests: [],
-    };
+    return this.hasAnalyticsProgress &&
+      this.analyticsProgressKey === this.currentAnalyticsKey
+      ? this.analyticsProgress
+      : this.analyticsQuery.data ?? {
+          commits: [],
+          mergedMergeRequests: [],
+        };
+  }
+
+  @computed
+  get hasAnalyticsData() {
+    return (
+      (this.hasAnalyticsProgress &&
+        this.analyticsProgressKey === this.currentAnalyticsKey) ||
+      this.analyticsQuery.data !== undefined
+    );
   }
 
   @computed
@@ -211,6 +265,28 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
   @computed
   get isLoading() {
     return this.analyticsQuery.isLoading || this.analyticsQuery.isFetching;
+  }
+
+  @action.bound
+  private beginAnalyticsProgress(progressKey: string) {
+    this.analyticsRequestId += 1;
+    this.analyticsProgress = { commits: [], mergedMergeRequests: [] };
+    this.hasAnalyticsProgress = false;
+    this.analyticsProgressKey = progressKey;
+    return this.analyticsRequestId;
+  }
+
+  @action.bound
+  private updateAnalyticsProgress(
+    requestId: number,
+    analytics: GitLabProjectAnalyticsDC,
+  ) {
+    if (requestId !== this.analyticsRequestId) {
+      return;
+    }
+
+    this.analyticsProgress = analytics;
+    this.hasAnalyticsProgress = true;
   }
 
   @computed

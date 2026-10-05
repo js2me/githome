@@ -75,7 +75,7 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
               <PipelineCard
                 payload={{
                   projectId: markdownScope.projectId,
-                  pipeline: detailView.mergeRequest.head_pipeline,
+                  pipelineId: detailView.mergeRequest.head_pipeline.id,
                 }}
               />
             ) : null

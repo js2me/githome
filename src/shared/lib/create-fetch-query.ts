@@ -1,6 +1,10 @@
 import { createQuery } from "mobx-tanstack-query/preset";
 import type { DefaultError } from "@tanstack/query-core";
 
+type RefetchIntervalQuery = {
+  state: { data: unknown };
+};
+
 export type MaybeFalsy<T> = T | false | null | undefined;
 
 export type FetchQueryParams = {
@@ -25,7 +29,10 @@ export type FetchQueryKey = readonly (
 )[];
 
 export type FetchQueryDynamicOptions<TData = unknown> = {
-  refetchInterval?: number | false;
+  refetchInterval?:
+    | number
+    | false
+    | ((query: RefetchIntervalQuery) => number | false | undefined);
   select?: (data: unknown) => TData;
   staleTime?: number;
   gcTime?: number;

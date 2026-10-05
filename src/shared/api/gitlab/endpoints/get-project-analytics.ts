@@ -15,6 +15,7 @@ const getAllPages = async <TItem>(
   path: string,
   query: Record<string, string | number | boolean | null | undefined>,
   signal: AbortSignal,
+  onPage?: (items: TItem[]) => void,
 ): Promise<TItem[]> => {
   const items: TItem[] = [];
 
@@ -26,6 +27,7 @@ const getAllPages = async <TItem>(
     );
     const pageItems = (await response.json()) as TItem[];
     items.push(...pageItems);
+    onPage?.(items);
 
     const nextPage = response.headers.get("X-Next-Page");
     if (nextPage) {
@@ -78,6 +80,7 @@ const enrichMergeRequestsWithChangeCounts = async (
   projectId: number,
   mergeRequests: GitLabMergeRequestDC[],
   signal: AbortSignal,
+  onBatch?: (mergeRequests: GitLabMergeRequestDC[]) => void,
 ) => {
   const enriched: GitLabMergeRequestDC[] = [];
 
@@ -103,6 +106,7 @@ const enrichMergeRequestsWithChangeCounts = async (
         })),
       )),
     );
+    onBatch?.([...enriched, ...mergeRequests.slice(enriched.length)]);
   }
 
   return enriched;
@@ -115,8 +119,17 @@ export const getProjectAnalytics = async (
   since: string,
   until: string,
   signal: AbortSignal,
+  onProgress?: (analytics: GitLabProjectAnalyticsDC) => void,
 ): Promise<GitLabProjectAnalyticsDC> => {
-  const [commits, mergedMergeRequests] = await Promise.all([
+  let commits: GitLabCommitDC[] = [];
+  let mergedMergeRequests: GitLabMergeRequestDC[] = [];
+  const publishProgress = () =>
+    onProgress?.({
+      commits: [...commits],
+      mergedMergeRequests: [...mergedMergeRequests],
+    });
+
+  const [loadedCommits, loadedMergeRequests] = await Promise.all([
     getAllPages<GitLabCommitDC>(
       connection,
       `/projects/${projectId}/repository/commits`,
@@ -127,6 +140,10 @@ export const getProjectAnalytics = async (
         per_page: PER_PAGE,
       },
       signal,
+      (items) => {
+        commits = items;
+        publishProgress();
+      },
     ),
     getAllPages<GitLabMergeRequestDC>(
       connection,
@@ -140,8 +157,16 @@ export const getProjectAnalytics = async (
         per_page: PER_PAGE,
       },
       signal,
+      (items) => {
+        mergedMergeRequests = items;
+        publishProgress();
+      },
     ),
   ]);
+
+  commits = loadedCommits;
+  mergedMergeRequests = loadedMergeRequests;
+  publishProgress();
 
   return {
     commits,
@@ -150,6 +175,10 @@ export const getProjectAnalytics = async (
       projectId,
       mergedMergeRequests,
       signal,
+      (items) => {
+        mergedMergeRequests = items;
+        publishProgress();
+      },
     ),
   };
 };

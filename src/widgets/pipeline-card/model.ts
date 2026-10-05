@@ -2,22 +2,30 @@ import { action, computed, observable, runInAction } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import { gitlabApi } from "@/shared/api/gitlab";
-import type { GitLabJobDC, GitLabProjectDC } from "@/shared/api/gitlab";
+import type {
+  GitLabJobDC,
+  GitLabPipelineDC,
+  GitLabProjectDC,
+} from "@/shared/api/gitlab";
 import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
 
 export interface PipelineCardPayload {
   projectId: number;
-  pipeline: {
-    id: number;
-    status: string;
-    web_url: string;
-  };
+  pipelineId: number;
 }
 
 const ACTIVE_JOB_STATUSES = new Set(["created", "pending", "running"]);
+const ACTIVE_PIPELINE_STATUSES = new Set([
+  "created",
+  "waiting_for_resource",
+  "preparing",
+  "pending",
+  "running",
+]);
 
 export class PipelineCardVM extends VM<PipelineCardPayload> {
+  readonly pipelineQuery;
   readonly projectQuery;
   readonly jobsQuery;
 
@@ -26,6 +34,22 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
 
   constructor(globals: Globals, params: ViewModelParams<PipelineCardPayload>) {
     super(globals, params);
+
+    this.pipelineQuery = createGitlabQuery<GitLabPipelineDC>({
+      globals: this.globals,
+      abortSignal: this.unmountSignal,
+      params: () => ({
+        path: `/projects/${this.payload.projectId}/pipelines/${this.payload.pipelineId}`,
+      }),
+      queryOptions: () => ({
+        refetchInterval: (query) => {
+          const pipeline = query.state.data as GitLabPipelineDC | undefined;
+          return ACTIVE_PIPELINE_STATUSES.has(pipeline?.status ?? "")
+            ? 5000
+            : false;
+        },
+      }),
+    });
 
     this.projectQuery = createGitlabQuery<GitLabProjectDC>({
       globals: this.globals,
@@ -37,14 +61,20 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
       globals: this.globals,
       abortSignal: this.unmountSignal,
       params: () => ({
-        path: `/projects/${this.payload.projectId}/pipelines/${this.payload.pipeline.id}/jobs`,
+        path: `/projects/${this.payload.projectId}/pipelines/${this.payload.pipelineId}/jobs`,
         query: {
           per_page: 100,
           include_retried: false,
         },
       }),
       queryOptions: () => ({
-        refetchInterval: this.shouldPollJobs ? 5000 : false,
+        refetchInterval: (query) => {
+          const jobs = query.state.data as GitLabJobDC[] | undefined;
+          const hasActiveJob =
+            jobs?.some((job) => ACTIVE_JOB_STATUSES.has(job.status)) ?? false;
+
+          return this.shouldPollPipeline || hasActiveJob ? 5000 : false;
+        },
       }),
     });
   }
@@ -52,6 +82,11 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
   @computed
   get jobs(): GitLabJobDC[] {
     return this.jobsQuery.data ?? [];
+  }
+
+  @computed
+  get pipeline(): GitLabPipelineDC | undefined {
+    return this.pipelineQuery.data;
   }
 
   @computed
@@ -83,6 +118,16 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
   }
 
   @computed
+  get pipelineErrorMessage() {
+    const error = this.pipelineQuery.error;
+    return error instanceof Error
+      ? error.message
+      : error
+        ? "Не удалось загрузить pipeline"
+        : null;
+  }
+
+  @computed
   get canRunJobs() {
     const permissions = this.projectQuery.data?.permissions;
     return Math.max(
@@ -92,12 +137,8 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
   }
 
   @computed
-  get shouldPollJobs() {
-    return (
-      ["created", "waiting_for_resource", "preparing", "pending", "running"].includes(
-        this.payload.pipeline.status,
-      ) || this.jobs.some((job) => ACTIVE_JOB_STATUSES.has(job.status))
-    );
+  get shouldPollPipeline() {
+    return ACTIVE_PIPELINE_STATUSES.has(this.pipeline?.status ?? "");
   }
 
   canRun(job: GitLabJobDC) {

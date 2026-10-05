@@ -75,22 +75,37 @@ const JobRow = ({
 export const PipelineCard = withViewModel(
   PipelineCardVM,
   ({ model }) => {
-    const { pipeline } = model.payload;
+    const { pipelineId } = model.payload;
+    const pipeline = model.pipeline;
 
     return (
       <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/50">
         <div className="flex flex-wrap items-center gap-2 text-[13px]">
           <span className="text-fg-muted">Последний pipeline:</span>
-          <a
-            className="font-semibold text-fg-default no-underline hover:underline"
-            href={pipeline.web_url}
-            target="_blank"
-            rel="noreferrer"
-          >
-            #{pipeline.id}
-          </a>
-          <StatusBadge status={pipeline.status} />
+          {pipeline?.web_url ? (
+            <a
+              className="font-semibold text-fg-default no-underline hover:underline"
+              href={pipeline.web_url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              #{pipelineId}
+            </a>
+          ) : (
+            <span className="font-semibold text-fg-default">#{pipelineId}</span>
+          )}
+          {pipeline ? (
+            <StatusBadge status={pipeline.status} />
+          ) : model.pipelineQuery.isLoading ? (
+            <span className="text-slate-500">Загружаем статус...</span>
+          ) : null}
         </div>
+
+        {model.pipelineErrorMessage && (
+          <p className="m-0 text-sm text-red-600 dark:text-red-300">
+            {model.pipelineErrorMessage}
+          </p>
+        )}
 
         {model.isLoading && (
           <p className="m-0 text-sm text-slate-500">Загружаем jobs...</p>

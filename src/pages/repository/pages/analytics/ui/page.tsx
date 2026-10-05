@@ -211,15 +211,21 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
         <StatusMessage>Подключите GitLab, чтобы загрузить аналитику.</StatusMessage>
       )}
 
-      {model.isLoading && (
+      {model.isLoading && !model.hasAnalyticsData && (
         <StatusMessage>Загружаем аналитику репозитория...</StatusMessage>
+      )}
+
+      {model.isLoading && model.hasAnalyticsData && (
+        <p className="mb-4 text-sm text-slate-500" role="status">
+          Загружаем оставшиеся данные аналитики...
+        </p>
       )}
 
       {model.errorMessage && !model.isLoading && (
         <StatusMessage error>{model.errorMessage}</StatusMessage>
       )}
 
-      {hasConnection && !model.isLoading && !model.errorMessage && (
+      {hasConnection && model.hasAnalyticsData && (
         <>
           <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <article className={METRIC_CARD_CLASS}>
