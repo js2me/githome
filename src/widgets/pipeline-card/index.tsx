@@ -39,7 +39,6 @@ const JobRow = ({
         <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
           {job.name}
         </span>
-        <span className="text-xs text-slate-500">{job.stage}</span>
       </span>
 
       {job.web_url && (
@@ -107,12 +106,24 @@ export const PipelineCard = withViewModel(
           <p className="m-0 text-sm text-slate-500">В pipeline нет jobs.</p>
         )}
 
-        {model.jobs.length > 0 && (
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {model.jobs.map((job) => (
-              <JobRow key={job.id} job={job} model={model} />
+        {model.stages.length > 0 && (
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] items-start gap-3">
+            {model.stages.map((stage) => (
+              <section
+                key={stage.name}
+                className="min-w-0 rounded-lg border border-slate-200 bg-white p-2.5 dark:border-slate-800 dark:bg-gray-900"
+              >
+                <h3 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+                  {stage.name}
+                </h3>
+                <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                  {stage.jobs.map((job) => (
+                    <JobRow key={job.id} job={job} model={model} />
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
         )}
 
         {model.actionError && (

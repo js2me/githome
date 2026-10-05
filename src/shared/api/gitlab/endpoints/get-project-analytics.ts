@@ -8,6 +8,7 @@ import type {
 
 const PER_PAGE = 100;
 const MAX_PAGES = 100;
+const MERGE_REQUEST_STATS_CONCURRENCY = 6;
 
 const getAllPages = async <TItem>(
   connection: GitLabConnection,
@@ -37,6 +38,74 @@ const getAllPages = async <TItem>(
   }
 
   return items;
+};
+
+const getMergeRequestChangedFileCount = async (
+  connection: GitLabConnection,
+  projectId: number,
+  mergeRequest: GitLabMergeRequestDC,
+  signal: AbortSignal,
+) => {
+  const mergeRequestPath = `/projects/${projectId}/merge_requests/${mergeRequest.iid}`;
+  const detailResponse = await gitlabFetch(
+    connection,
+    buildGitlabPath(mergeRequestPath, { with_stats: true }),
+    signal,
+  );
+  const detail = (await detailResponse.json()) as GitLabMergeRequestDC;
+
+  if (detail.changes_count != null) {
+    return detail.changes_count;
+  }
+
+  const diffsResponse = await gitlabFetch(
+    connection,
+    buildGitlabPath(`${mergeRequestPath}/diffs`, { per_page: 1 }),
+    signal,
+  );
+  const total = diffsResponse.headers.get("X-Total");
+
+  if (total !== null) {
+    return total;
+  }
+
+  const firstDiffPage = (await diffsResponse.json()) as unknown[];
+  return String(firstDiffPage.length);
+};
+
+const enrichMergeRequestsWithChangeCounts = async (
+  connection: GitLabConnection,
+  projectId: number,
+  mergeRequests: GitLabMergeRequestDC[],
+  signal: AbortSignal,
+) => {
+  const enriched: GitLabMergeRequestDC[] = [];
+
+  for (
+    let offset = 0;
+    offset < mergeRequests.length;
+    offset += MERGE_REQUEST_STATS_CONCURRENCY
+  ) {
+    const batch = mergeRequests.slice(
+      offset,
+      offset + MERGE_REQUEST_STATS_CONCURRENCY,
+    );
+    enriched.push(
+      ...(await Promise.all(
+        batch.map(async (mergeRequest) => ({
+          ...mergeRequest,
+          changes_count: await getMergeRequestChangedFileCount(
+            connection,
+            projectId,
+            mergeRequest,
+            signal,
+          ),
+        })),
+      )),
+    );
+  }
+
+  return enriched;
 };
 
 export const getProjectAnalytics = async (
@@ -69,11 +138,18 @@ export const getProjectAnalytics = async (
         order_by: "merged_at",
         sort: "asc",
         per_page: PER_PAGE,
-        with_stats: true,
       },
       signal,
     ),
   ]);
 
-  return { commits, mergedMergeRequests };
+  return {
+    commits,
+    mergedMergeRequests: await enrichMergeRequestsWithChangeCounts(
+      connection,
+      projectId,
+      mergedMergeRequests,
+      signal,
+    ),
+  };
 };

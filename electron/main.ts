@@ -3,15 +3,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { startAppServer } from "./app-server";
 
-const isWaylandSession =
-  process.platform === "linux" &&
-  (process.env.XDG_SESSION_TYPE?.toLowerCase() === "wayland" ||
-    Boolean(process.env.WAYLAND_DISPLAY));
-
-if (isWaylandSession && !app.commandLine.hasSwitch("ozone-platform")) {
-  app.commandLine.appendSwitch("ozone-platform", "wayland");
-}
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const getDistPath = () =>

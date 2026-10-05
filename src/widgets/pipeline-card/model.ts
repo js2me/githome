@@ -55,6 +55,19 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
   }
 
   @computed
+  get stages(): Array<{ name: string; jobs: GitLabJobDC[] }> {
+    const stageMap = new Map<string, GitLabJobDC[]>();
+
+    for (const job of [...this.jobs].reverse()) {
+      const stageJobs = stageMap.get(job.stage) ?? [];
+      stageJobs.push(job);
+      stageMap.set(job.stage, stageJobs);
+    }
+
+    return [...stageMap].map(([name, jobs]) => ({ name, jobs }));
+  }
+
+  @computed
   get isLoading() {
     return this.jobsQuery.isLoading;
   }
