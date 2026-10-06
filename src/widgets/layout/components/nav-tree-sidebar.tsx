@@ -52,14 +52,18 @@ export const NavTreeSidebar = observer(
         data-expanded={store.isExpanded}
         className={cn(
           "fixed left-0 top-0 z-50 flex h-screen w-64 max-w-[calc(100vw-1rem)] flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-300 ease-in-out dark:border-slate-800 dark:bg-gray-900",
-          store.isExpanded ? "translate-x-0" : "-translate-x-[95%]",
         )}
+        style={{
+          transform: store.isExpanded
+            ? "translateX(0)"
+            : "translateX(calc(-100% + 16px))",
+        }}
         onMouseEnter={store.expand}
         onMouseLeave={store.collapse}
       >
         {!store.isExpanded && (
           <button
-            className="absolute inset-y-0 right-0 z-10 grid w-3 cursor-pointer place-items-center border-0 border-l border-slate-300 bg-slate-100/90 p-0 hover:bg-orange-100 dark:border-slate-700 dark:bg-slate-800/90 dark:hover:bg-orange-950"
+            className="absolute inset-y-0 right-0 z-10 grid w-4 cursor-pointer place-items-center border-0 border-l border-slate-300 bg-slate-100/90 p-0 hover:bg-orange-100 dark:border-slate-700 dark:bg-slate-800/90 dark:hover:bg-orange-950"
             type="button"
             aria-label="Раскрыть рабочую область"
             title="Раскрыть рабочую область"

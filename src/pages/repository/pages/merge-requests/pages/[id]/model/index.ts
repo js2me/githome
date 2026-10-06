@@ -8,6 +8,7 @@ import { MrInfoModel } from "./mr-info";
 export class MergeRequestPageVM extends VM<{}, RepositoryPageVM> {
   mrInfo;
   private disposeTabDetailsReaction: IReactionDisposer | null = null;
+  private disposeReviewActionReaction: IReactionDisposer | null = null;
 
   get projectId() {
     return this.parentViewModel.projectId;
@@ -43,6 +44,24 @@ export class MergeRequestPageVM extends VM<{}, RepositoryPageVM> {
       },
     });
 
+    this.disposeReviewActionReaction = reaction(
+      () => ({
+        connectionId: this.globals.stores.settings.activeId,
+        projectId: this.projectId,
+        mergeRequestIid: this.mergeRequestIid,
+      }),
+      (current, previous) => {
+        if (
+          current.connectionId !== previous.connectionId ||
+          current.projectId !== previous.projectId ||
+          current.mergeRequestIid !== previous.mergeRequestIid
+        ) {
+          this.mrInfo.clearReviewActionError();
+          this.mrInfo.reviewActionInProgress = null;
+        }
+      },
+    );
+
     this.disposeTabDetailsReaction = reaction(
       () => ({
         connectionId: this.globals.stores.settings.activeId,
@@ -77,5 +96,7 @@ export class MergeRequestPageVM extends VM<{}, RepositoryPageVM> {
   willUnmount() {
     this.disposeTabDetailsReaction?.();
     this.disposeTabDetailsReaction = null;
+    this.disposeReviewActionReaction?.();
+    this.disposeReviewActionReaction = null;
   }
 }

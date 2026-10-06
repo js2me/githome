@@ -508,24 +508,34 @@ export class MrInfoModel {
       return false;
     }
 
+    const actionMergeRequestKey = `${mr.project.id}:${mr.mergeRequestIid}`;
     this.reviewActionInProgress = action;
     this.reviewActionError = "";
 
     try {
       await runner();
+
+      if (this.mergeRequestKey !== actionMergeRequestKey) {
+        return true;
+      }
+
       await this.invalidateMergeRequestView();
       return true;
     } catch (error) {
       runInAction(() => {
-        this.reviewActionError =
-          error instanceof Error
-            ? error.message
-            : "Не удалось выполнить действие";
+        if (this.mergeRequestKey === actionMergeRequestKey) {
+          this.reviewActionError =
+            error instanceof Error
+              ? error.message
+              : "Не удалось выполнить действие";
+        }
       });
       return false;
     } finally {
       runInAction(() => {
-        this.reviewActionInProgress = null;
+        if (this.mergeRequestKey === actionMergeRequestKey) {
+          this.reviewActionInProgress = null;
+        }
       });
     }
   }
