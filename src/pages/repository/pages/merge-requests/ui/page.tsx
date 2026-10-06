@@ -30,6 +30,17 @@ export const MergeRequestsPage = withViewModel(MergeRequestsPageVM, ({ model }) 
           onSelect={mrList.openMergeRequest}
         />
       )}
+
+      {mrList.canLoadMore && (
+        <button
+          className="mt-4 cursor-pointer rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:border-brand disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-200"
+          type="button"
+          disabled={mrList.isFetching}
+          onClick={mrList.loadMore}
+        >
+          {mrList.isFetchingNextPage ? "Загружаем..." : mrList.canLoadMoreLabel}
+        </button>
+      )}
     </section>
   );
 });

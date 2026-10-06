@@ -1,7 +1,7 @@
 import { action, computed } from "mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabMergeRequestDC, GitLabProjectDC } from "@/shared/api/gitlab";
-import { createGitlabApiQuery, createGitlabQuery } from "@/shared/lib/gitlab/create-query";
+import { createGitlabApiQuery, createInfiniteGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import { Globals } from "@/globals";
 
 export interface MrListParams {
@@ -18,7 +18,7 @@ export class MrList {
   mergeRequestApprovalCountsQuery;
 
   constructor(private params: MrListParams) {
-    this.mergeRequestsQuery = createGitlabQuery<GitLabMergeRequestDC[]>({
+    this.mergeRequestsQuery = createInfiniteGitlabQuery<GitLabMergeRequestDC>({
       globals: params.globals,
       abortSignal: params.abortSignal,
       params: () => {
@@ -76,14 +76,36 @@ export class MrList {
 
   @computed
   get mergeRequests(): GitLabMergeRequestDC[] {
-    return this.mergeRequestsQuery.data ?? [];
+    return (this.mergeRequestsQuery.data?.pages ?? []).flatMap((page) => page.items);
   }
 
   @computed
   get isLoading() {
-    return (
-      this.mergeRequestsQuery.isLoading || this.mergeRequestsQuery.isFetching
-    );
+    return this.mergeRequestsQuery.isLoading;
+  }
+
+  @computed
+  get isFetchingNextPage() {
+    return this.mergeRequestsQuery.isFetchingNextPage;
+  }
+
+  @computed
+  get isFetching() {
+    return this.mergeRequestsQuery.isFetching;
+  }
+
+  @computed
+  get canLoadMore() {
+    return this.mergeRequestsQuery.hasNextPage && !this.isLoading;
+  }
+
+  @computed
+  get canLoadMoreLabel() {
+    const loadedCount = this.mergeRequests.length;
+    const total = this.mergeRequestsQuery.data?.pages[0]?.total;
+    return total === null || total === undefined
+      ? `Загрузить ещё (${loadedCount})`
+      : `Загрузить ещё (${loadedCount} из ${total})`;
   }
 
   @computed
@@ -125,6 +147,13 @@ export class MrList {
   @computed
   get approvalCounts(): Record<number, number> {
     return this.mergeRequestApprovalCountsQuery.data ?? {};
+  }
+
+  @action.bound
+  loadMore() {
+    if (this.canLoadMore && !this.isFetching) {
+      void this.mergeRequestsQuery.fetchNextPage();
+    }
   }
 
   @action.bound
