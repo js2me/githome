@@ -5,6 +5,7 @@ import type {
   GitLabJobDC,
   GitLabMergeRequestDC,
   GitLabPipelineDC,
+  GitLabProjectDC,
   GitLabPipelineVariableDC,
 } from "@/shared/api/gitlab";
 import {
@@ -16,6 +17,7 @@ export interface PipelineListParams {
   globals: Globals;
   abortSignal: AbortSignal;
   projectId: () => number | null;
+  project: () => GitLabProjectDC | null;
   defaultBranch: () => string | null;
   canManagePipelines: () => boolean;
 }
@@ -289,14 +291,18 @@ export class PipelineList {
   @action.bound
   openMergeRequest(iid: number) {
     const projectId = this.params.projectId();
-    if (projectId === null) {
+    const project = this.params.project();
+    const connectionId = this.params.globals.stores.settings.activeId;
+    if (projectId === null || !project || !connectionId) {
       return;
     }
 
-    void this.params.globals.routes.mergeRequest.open({
-      projectId: String(projectId),
-      mergeRequestIid: String(iid),
-    });
+    this.params.globals.navigation.mergeRequests.open(
+      connectionId,
+      project,
+      iid,
+      this.mergeRequestDetails[iid]?.title ?? "Merge Request",
+    );
   }
 
   @action.bound

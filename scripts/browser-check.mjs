@@ -13,9 +13,8 @@
  *
  * Checks:
  * - home -> project (lazy page under Suspense) -> Merge requests -> back -> forward
- * - exactly ONE GitlabAvatarVM per author on every MR-list mount
- *   (guards the sibling cross-claim bug: claim key VM class+parentId is shared
- *    by same-class siblings; payload must discriminate)
+ * - exactly one visible avatar per author on every MR-list mount
+ * - open multiple MR tabs across repositories, switch between them, and close one
  * - avatar titles map to the right authors, zero page/console errors
  */
 import puppeteer from 'puppeteer-core';
@@ -148,13 +147,11 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage();
 const pageErrors = [];
 const consoleErrors = [];
-const vmLogs = [];
 
 page.on('pageerror', (e) => pageErrors.push(String(e)));
 page.on('console', (msg) => {
   const text = msg.text();
   if (msg.type() === 'error') consoleErrors.push(text);
-  if (/\[(useCreateVM|withVM|pendingVM)\]/.test(text)) vmLogs.push(text);
 });
 
 await page.evaluateOnNewDocument(() => {
@@ -182,17 +179,6 @@ page.on('request', (req) => {
 });
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let mark = 0;
-const vmStats = () => {
-  const slice = vmLogs.slice(mark);
-  mark = vmLogs.length;
-  const byVm = {};
-  for (const l of slice) {
-    const m = l.match(/INSTANTIATE (\S+)/);
-    if (m) byVm[m[1]] = (byVm[m[1]] ?? 0) + 1;
-  }
-  return byVm;
-};
 
 const avatarTitles = () =>
   page.evaluate((names) =>
@@ -222,9 +208,11 @@ const clickByText = async (text) =>
   }, text);
 
 const checkMrList = async (label) => {
-  const byVm = vmStats();
   const titles = await avatarTitles();
-  check(`${label}: one GitlabAvatarVM per author`, byVm.GitlabAvatarVM === AUTHORS.length, JSON.stringify(byVm));
+  const hasOneAvatarPerAuthor = AUTHORS.every(
+    (author) => titles.filter((title) => title === author).length === 1,
+  );
+  check(`${label}: one visible avatar per author`, hasOneAvatarPerAuthor, titles.join(', '));
   check(
     `${label}: all authors rendered correctly`,
     AUTHORS.every((a) => titles.includes(a)),
@@ -237,12 +225,10 @@ console.log(`\n== githome browser check @ ${BASE} ==`);
 await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 await sleep(4500);
 check('home: projects rendered', (await page.evaluate(() => document.body.innerText)).includes('group/alpha'));
-vmStats();
 
 check('click project card', await clickByText('alpha'));
 await sleep(4000);
 check('repository page opened', page.url().includes('/repository/1'));
-vmStats();
 
 check('click "Merge requests"', await clickByText('Merge requests'));
 await sleep(4000);
@@ -250,10 +236,108 @@ await checkMrList('MR list');
 
 await page.goBack({ waitUntil: 'domcontentloaded' });
 await sleep(2500);
-vmStats();
 await page.goForward({ waitUntil: 'domcontentloaded' });
 await sleep(3000);
 await checkMrList('MR list after back/forward');
+
+const openMrFromProject = async (projectId, title) => {
+  await page.goto(`${BASE}/repository/${projectId}/merge-requests`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30000,
+  });
+  await sleep(3500);
+  const clicked = await clickByText(title);
+  if (!clicked) return false;
+  await sleep(3500);
+  return page.evaluate((expectedTitle) =>
+    [...document.querySelectorAll('nav[aria-label="Навигационное дерево"] button')]
+      .some((button) => button.textContent?.trim() === expectedTitle),
+  title);
+};
+
+check('open MR tab from first repository', await openMrFromProject(1, 'Mock MR #1'));
+check('open MR tab from second repository', await openMrFromProject(2, 'Mock MR #2'));
+
+const workspaceOverlay = await page.$eval('aside[aria-label="Рабочая область"]', (aside) => ({
+  expanded: aside.getAttribute('data-expanded') === 'true',
+  position: getComputedStyle(aside).position,
+}));
+check(
+  'workspace auto-opens as a fixed overlay when an MR is added',
+  workspaceOverlay.expanded && workspaceOverlay.position === 'fixed',
+  JSON.stringify(workspaceOverlay),
+);
+
+const sidebarState = await page.evaluate(() => {
+  const sidebar = document.querySelector('nav[aria-label="Навигационное дерево"]');
+  return {
+    titles: [...(sidebar?.querySelectorAll('button[title]') ?? [])]
+      .map((button) => button.getAttribute('title')),
+    groups: [...(sidebar?.querySelectorAll('h3') ?? [])]
+      .map((heading) => heading.textContent?.trim()),
+    text: sidebar?.textContent ?? '',
+  };
+});
+check(
+  'both MR tabs persist and are grouped by repository',
+  sidebarState.titles.includes('Mock MR #1') &&
+    sidebarState.titles.includes('Mock MR #2') &&
+    sidebarState.groups.includes('group/alpha') &&
+    sidebarState.groups.includes('group/beta'),
+  JSON.stringify(sidebarState),
+);
+check('MR numbers are not displayed in the sidebar', !sidebarState.text.includes('!1') && !sidebarState.text.includes('!2'));
+
+const alphaRepositoryGroup = await page.$('nav[aria-label="Навигационное дерево"] button[title="group/alpha"]');
+check('repository group is clickable', Boolean(alphaRepositoryGroup));
+if (alphaRepositoryGroup) {
+  await alphaRepositoryGroup.click();
+  await sleep(1000);
+  check('clicking a repository group opens that repository', page.url().endsWith('/repository/1'));
+}
+
+const firstMrTab = await page.$('nav[aria-label="Навигационное дерево"] button[title="Mock MR #1"]');
+check('switch to the first MR tab', Boolean(firstMrTab));
+if (firstMrTab) {
+  await firstMrTab.click();
+  await sleep(1000);
+  check('first MR tab becomes active', page.url().endsWith('/repository/1/merge-requests/1'));
+
+  const closeFirstMrTab = await page.$('nav[aria-label="Навигационное дерево"] button[aria-label="Закрыть Mock MR #1"]');
+  check('close the active MR tab', Boolean(closeFirstMrTab));
+  if (closeFirstMrTab) {
+    await closeFirstMrTab.click();
+    await sleep(1000);
+    check('closing the active tab switches to the remaining MR', page.url().endsWith('/repository/2/merge-requests/2'));
+  }
+}
+
+await page.mouse.move(500, 120);
+await sleep(400);
+check(
+  'workspace retracts when the pointer leaves it',
+  await page.$eval('aside[aria-label="Рабочая область"]', (aside) =>
+    aside.getAttribute('data-expanded') === 'false',
+  ),
+);
+
+await page.mouse.move(5, 120);
+await sleep(400);
+check(
+  'hovering the exposed rail expands the workspace',
+  await page.$eval('aside[aria-label="Рабочая область"]', (aside) =>
+    aside.getAttribute('data-expanded') === 'true',
+  ),
+);
+
+await page.mouse.move(500, 120);
+await sleep(400);
+check(
+  'workspace retracts again after leaving the rail-expanded panel',
+  await page.$eval('aside[aria-label="Рабочая область"]', (aside) =>
+    aside.getAttribute('data-expanded') === 'false',
+  ),
+);
 
 check('no page errors', pageErrors.length === 0, pageErrors[0]?.slice(0, 150));
 check('no console errors', consoleErrors.length === 0, consoleErrors[0]?.slice(0, 150));

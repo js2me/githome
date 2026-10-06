@@ -14,6 +14,7 @@ export class PipelinesPageVM extends VM<{}, RepositoryPageVM> {
       globals,
       abortSignal: this.unmountSignal,
       projectId: () => this.parentViewModel.projectId,
+      project: () => this.parentViewModel.project,
       defaultBranch: () =>
         this.parentViewModel.project?.default_branch?.trim() ?? null,
       canManagePipelines: () => {

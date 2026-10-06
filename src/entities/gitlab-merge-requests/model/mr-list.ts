@@ -130,13 +130,17 @@ export class MrList {
   @action.bound
   openMergeRequest(mergeRequest: GitLabMergeRequestDC) {
     const projectId = this.params.projectId;
-    if (projectId === null) {
+    const project = this.params.selectedProject;
+    const connectionId = this.params.globals.stores.settings.activeId;
+    if (projectId === null || !project || !connectionId) {
       return;
     }
 
-    void this.params.globals.routes.mergeRequest.open({
-      projectId: String(projectId),
-      mergeRequestIid: String(mergeRequest.iid),
-    });
+    this.params.globals.navigation.mergeRequests.open(
+      connectionId,
+      project,
+      mergeRequest.iid,
+      mergeRequest.title,
+    );
   }
 }

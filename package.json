@@ -22,6 +22,7 @@
     "build:full": "pnpm build:app && electron-builder --publish never --linux --win --mac",
     "build:android": "pnpm build && cap sync android && cd android && ./gradlew assembleDebug",
     "preview": "vite preview",
+    "test": "vitest run",
     "check:browser": "node scripts/browser-check.mjs",
     "postinstall": "node node_modules/electron/install.js",
     "link:debug:packages": "npx --yes packalink"
@@ -65,7 +66,8 @@
     "tailwindcss": "^4.3.1",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
-    "vite-plugin-electron": "^0.29.0"
+    "vite-plugin-electron": "^0.29.0",
+    "vitest": "^5.0.3"
   },
   "packageManager": "pnpm@10.12.1",
   "pnpm": {
