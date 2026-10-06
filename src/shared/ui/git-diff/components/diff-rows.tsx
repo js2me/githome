@@ -790,6 +790,11 @@ export const DiffThreadRow = memo(
     thread,
     onResolveThread,
     resolvingDiscussionId,
+    onReplyThread,
+    replyingDiscussionId,
+    replyErrorDiscussionId,
+    replyError,
+    onClearReplyError,
     expanded: expandedProp,
     onToggleExpand,
     placement = "inline",
@@ -808,6 +813,11 @@ export const DiffThreadRow = memo(
     thread: InlineDiffThread;
     onResolveThread?: (discussionId: string, resolved: boolean) => void;
     resolvingDiscussionId?: string | null;
+    onReplyThread?: (discussionId: string, body: string) => Promise<boolean>;
+    replyingDiscussionId?: string | null;
+    replyErrorDiscussionId?: string | null;
+    replyError?: string | null;
+    onClearReplyError?: () => void;
     expanded?: boolean;
     onToggleExpand?: () => void;
     placement?: "inline" | "file";
@@ -832,6 +842,8 @@ export const DiffThreadRow = memo(
     const [internalExpanded, setInternalExpanded] = useState(() => !thread.resolved);
     const isControlled = expandedProp !== undefined;
     const expanded = isControlled ? expandedProp : internalExpanded;
+    const [isReplying, setIsReplying] = useState(false);
+    const [replyBody, setReplyBody] = useState("");
 
     useEffect(() => {
       if (!isControlled) {
@@ -869,6 +881,22 @@ export const DiffThreadRow = memo(
     if (!firstNote) {
       return null;
     }
+
+    const isSubmittingReply = replyingDiscussionId === thread.discussionId;
+    const threadReplyError =
+      replyErrorDiscussionId === thread.discussionId ? replyError : null;
+
+    const handleSubmitReply = async () => {
+      if (!onReplyThread || !replyBody.trim()) {
+        return;
+      }
+
+      const success = await onReplyThread(thread.discussionId, replyBody);
+      if (success) {
+        setReplyBody("");
+        setIsReplying(false);
+      }
+    };
 
     const resolvedBy = thread.resolved
       ? (firstNote.author?.name ?? "Unknown")
@@ -917,6 +945,67 @@ export const DiffThreadRow = memo(
                       onClearDeleteNoteError={onClearDeleteNoteError}
                     />
                   ))}
+                </div>
+              )}
+
+              {onReplyThread && (
+                <div className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-700">
+                  {isReplying ? (
+                    <div>
+                      <GitlabCommentEditor
+                        projectId={markdownScope?.projectId ?? null}
+                        className="text-sm"
+                        placeholder="Напишите ответ в тред..."
+                        value={replyBody}
+                        onChange={(value) => {
+                          setReplyBody(value);
+                          if (threadReplyError) {
+                            onClearReplyError?.();
+                          }
+                        }}
+                        rows={3}
+                        disabled={isSubmittingReply}
+                      />
+                      {threadReplyError && (
+                        <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
+                          {threadReplyError}
+                        </div>
+                      )}
+                      <div className="mt-2.5 flex gap-2">
+                        <button
+                          className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 text-[13px] font-semibold text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          type="button"
+                          disabled={isSubmittingReply || !replyBody.trim()}
+                          onClick={() => void handleSubmitReply()}
+                        >
+                          {isSubmittingReply ? "Отправка..." : "Ответить"}
+                        </button>
+                        <button
+                          className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
+                          type="button"
+                          disabled={isSubmittingReply}
+                          onClick={() => {
+                            setIsReplying(false);
+                            setReplyBody("");
+                            onClearReplyError?.();
+                          }}
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="cursor-pointer rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+                      type="button"
+                      onClick={() => {
+                        setIsReplying(true);
+                        onClearReplyError?.();
+                      }}
+                    >
+                      Ответить
+                    </button>
+                  )}
                 </div>
               )}
             </div>

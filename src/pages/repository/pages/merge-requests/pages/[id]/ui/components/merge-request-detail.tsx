@@ -187,6 +187,11 @@ export const MergeRequestDetail = ({
   onResolveDiscussion,
   resolvingDiscussionId,
   resolveDiscussionError,
+  onReplyDiscussion,
+  replyingDiscussionId,
+  replyDiscussionErrorKey,
+  replyDiscussionError,
+  onClearReplyDiscussionError,
   currentUserId,
   onUpdateDiscussionNote,
   onDeleteDiscussionNote,
@@ -228,6 +233,11 @@ export const MergeRequestDetail = ({
   onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId: string | null;
   resolveDiscussionError?: string | null;
+  onReplyDiscussion: (discussionId: string, body: string) => Promise<boolean>;
+  replyingDiscussionId: string | null;
+  replyDiscussionErrorKey: string | null;
+  replyDiscussionError: string | null;
+  onClearReplyDiscussionError: () => void;
   currentUserId?: number | null;
   onUpdateDiscussionNote?: (
     discussionId: string,
@@ -493,6 +503,11 @@ export const MergeRequestDetail = ({
           loadFileContent={loadFileContent}
           onResolveThread={onResolveDiscussion}
           resolvingDiscussionId={resolvingDiscussionId}
+          onReplyThread={onReplyDiscussion}
+          replyingDiscussionId={replyingDiscussionId}
+          replyErrorDiscussionId={replyDiscussionErrorKey}
+          replyError={replyDiscussionError}
+          onClearReplyError={onClearReplyDiscussionError}
           currentUserId={currentUserId}
           onUpdateDiscussionNote={onUpdateDiscussionNote}
           onDeleteDiscussionNote={onDeleteDiscussionNote}

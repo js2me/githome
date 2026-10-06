@@ -1,4 +1,5 @@
 import { withViewModel } from "mobx-view-model-react";
+import { LoadMoreSentinel } from "@/shared/ui/load-more-sentinel";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { MergeRequestsPageVM } from "../model";
 import { MergeRequestList } from "./components/merge-request-list";
@@ -31,15 +32,17 @@ export const MergeRequestsPage = withViewModel(MergeRequestsPageVM, ({ model }) 
         />
       )}
 
-      {mrList.canLoadMore && (
-        <button
-          className="mt-4 cursor-pointer rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:border-brand disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-200"
-          type="button"
-          disabled={mrList.isFetching}
-          onClick={mrList.loadMore}
-        >
-          {mrList.isFetchingNextPage ? "Загружаем..." : mrList.canLoadMoreLabel}
-        </button>
+      {mrList.showList && mrList.canLoadMore && (
+        <LoadMoreSentinel
+          disabled={mrList.isFetching || !mrList.canLoadMore}
+          onLoadMore={mrList.loadMore}
+        />
+      )}
+
+      {mrList.isFetchingNextPage && (
+        <StatusMessage className="mt-2">
+          Загружаем ещё merge requests...
+        </StatusMessage>
       )}
     </section>
   );

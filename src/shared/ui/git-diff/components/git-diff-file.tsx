@@ -176,6 +176,11 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     canComment,
     onResolveThread,
     resolvingDiscussionId,
+    onReplyThread,
+    replyingDiscussionId,
+    replyErrorDiscussionId,
+    replyError,
+    onClearReplyError,
     currentUserId,
     onUpdateDiscussionNote,
     onDeleteDiscussionNote,
@@ -438,6 +443,11 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
               thread={thread}
               onResolveThread={onResolveThread}
               resolvingDiscussionId={resolvingDiscussionId}
+              onReplyThread={onReplyThread}
+              replyingDiscussionId={replyingDiscussionId}
+              replyErrorDiscussionId={replyErrorDiscussionId}
+              replyError={replyError}
+              onClearReplyError={onClearReplyError}
               placement="file"
               currentUserId={currentUserId}
               onUpdateNote={onUpdateDiscussionNote}

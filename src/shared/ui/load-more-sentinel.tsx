@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export const ProjectsLoadMoreSentinel = ({
+export const LoadMoreSentinel = ({
   disabled,
   onLoadMore,
 }: {

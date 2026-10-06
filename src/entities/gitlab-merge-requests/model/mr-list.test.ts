@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Globals } from "@/globals";
 import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
-import { createGitlabApiQuery, createInfiniteGitlabQuery } from "@/shared/lib/gitlab/create-query";
+import {
+  createGitlabApiQuery,
+  createInfiniteGitlabQuery,
+} from "@/shared/lib/gitlab/create-query";
 import { MrList } from "./mr-list";
 
 vi.mock("@/shared/lib/gitlab/create-query", () => ({
@@ -48,19 +51,19 @@ describe("MrList pagination", () => {
     );
   });
 
-  const createList = () => new MrList({
-    globals: {} as Globals,
-    abortSignal: new AbortController().signal,
-    projectId: 1,
-    selectedProject: null,
-    mergeRequestIid: null,
-  });
+  const createList = () =>
+    new MrList({
+      globals: {} as Globals,
+      abortSignal: new AbortController().signal,
+      projectId: 1,
+      selectedProject: null,
+      mergeRequestIid: null,
+    });
 
   it("keeps the first page while loading more and combines subsequent pages", () => {
     const list = createList();
 
     expect(list.mergeRequests).toHaveLength(20);
-    expect(list.canLoadMoreLabel).toBe("Загрузить ещё (20 из 23)");
     list.loadMore();
     expect(query.fetchNextPage).toHaveBeenCalledOnce();
 

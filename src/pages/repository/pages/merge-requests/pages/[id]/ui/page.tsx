@@ -51,6 +51,11 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
           onResolveDiscussion={model.mrInfo.resolveDiscussion}
           resolvingDiscussionId={model.mrInfo.resolvingDiscussionId}
           resolveDiscussionError={model.mrInfo.resolveDiscussionError}
+          onReplyDiscussion={model.mrInfo.replyToDiscussion}
+          replyingDiscussionId={model.mrInfo.replyingDiscussionId || null}
+          replyDiscussionErrorKey={model.mrInfo.replyDiscussionErrorKey || null}
+          replyDiscussionError={model.mrInfo.replyDiscussionError || null}
+          onClearReplyDiscussionError={model.mrInfo.clearReplyDiscussionError}
           currentUserId={model.mrInfo.currentUserId}
           onUpdateDiscussionNote={model.mrInfo.updateDiscussionNote}
           onDeleteDiscussionNote={model.mrInfo.deleteDiscussionNote}

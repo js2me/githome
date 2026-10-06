@@ -1,7 +1,10 @@
 import { action, computed } from "mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabMergeRequestDC, GitLabProjectDC } from "@/shared/api/gitlab";
-import { createGitlabApiQuery, createInfiniteGitlabQuery } from "@/shared/lib/gitlab/create-query";
+import {
+  createGitlabApiQuery,
+  createInfiniteGitlabQuery,
+} from "@/shared/lib/gitlab/create-query";
 import { Globals } from "@/globals";
 
 export interface MrListParams {
@@ -76,7 +79,9 @@ export class MrList {
 
   @computed
   get mergeRequests(): GitLabMergeRequestDC[] {
-    return (this.mergeRequestsQuery.data?.pages ?? []).flatMap((page) => page.items);
+    return (this.mergeRequestsQuery.data?.pages ?? []).flatMap(
+      (page) => page.items,
+    );
   }
 
   @computed
@@ -97,15 +102,6 @@ export class MrList {
   @computed
   get canLoadMore() {
     return this.mergeRequestsQuery.hasNextPage && !this.isLoading;
-  }
-
-  @computed
-  get canLoadMoreLabel() {
-    const loadedCount = this.mergeRequests.length;
-    const total = this.mergeRequestsQuery.data?.pages[0]?.total;
-    return total === null || total === undefined
-      ? `Загрузить ещё (${loadedCount})`
-      : `Загрузить ещё (${loadedCount} из ${total})`;
   }
 
   @computed

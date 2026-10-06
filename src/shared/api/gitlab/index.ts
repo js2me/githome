@@ -6,6 +6,7 @@ import { cancelPipeline } from "./endpoints/cancel-pipeline";
 import { cancelPipelineJob } from "./endpoints/cancel-pipeline-job";
 import { cancelMergeRequestRequestedChanges } from "./endpoints/cancel-merge-request-requested-changes";
 import { createMergeRequestDiffDiscussion } from "./endpoints/create-merge-request-diff-discussion";
+import { createMergeRequestDiscussionNote } from "./endpoints/create-merge-request-discussion-note";
 import { createMergeRequestDiscussion } from "./endpoints/create-merge-request-discussion";
 import { createPipeline } from "./endpoints/create-pipeline";
 import { deleteMergeRequestDiscussionNote } from "./endpoints/delete-merge-request-discussion-note";
@@ -99,6 +100,8 @@ export const gitlabApi = {
   getMergeRequestDiscussions,
 
   createMergeRequestDiffDiscussion,
+
+  createMergeRequestDiscussionNote,
 
   createMergeRequestDiscussion,
 

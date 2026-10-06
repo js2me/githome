@@ -66,6 +66,9 @@ export class MrInfoModel {
   @observable accessor submitMrCommentError = "";
   @observable accessor resolvingDiscussionId = "";
   @observable accessor resolveDiscussionError = "";
+  @observable accessor replyingDiscussionId = "";
+  @observable accessor replyDiscussionErrorKey = "";
+  @observable accessor replyDiscussionError = "";
   @observable accessor updatingNoteKey = "";
   @observable accessor updateNoteError = "";
   @observable accessor deletingNoteKey = "";
@@ -463,6 +466,58 @@ export class MrInfoModel {
   @action
   clearResolveDiscussionError() {
     this.resolveDiscussionError = "";
+  }
+
+  @action.bound
+  clearReplyDiscussionError() {
+    this.replyDiscussionErrorKey = "";
+    this.replyDiscussionError = "";
+  }
+
+  @action.bound
+  async replyToDiscussion(discussionId: string, body: string) {
+    const connection = this.options.globals.stores.settings.activeConnection;
+    const mr = this.options.params();
+    const trimmedBody = body.trim();
+
+    this.replyDiscussionErrorKey = discussionId;
+    this.replyDiscussionError = "";
+
+    if (!connection || !mr) {
+      this.replyDiscussionError = "Merge request не выбран";
+      return false;
+    }
+
+    if (!trimmedBody) {
+      this.replyDiscussionError = "Введите текст ответа";
+      return false;
+    }
+
+    this.replyingDiscussionId = discussionId;
+
+    try {
+      await gitlabApi.createMergeRequestDiscussionNote(
+        connection,
+        mr.project,
+        mr.mergeRequestIid,
+        discussionId,
+        trimmedBody,
+      );
+
+      await this.refreshDiscussions();
+      this.clearReplyDiscussionError();
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.replyDiscussionError =
+          error instanceof Error ? error.message : "Не удалось отправить ответ";
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.replyingDiscussionId = "";
+      });
+    }
   }
 
   @action

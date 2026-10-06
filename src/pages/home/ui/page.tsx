@@ -1,10 +1,10 @@
 import { withViewModel } from "mobx-view-model-react";
 import { cn } from "@/shared/lib/cn";
 import { formatProjectCount } from "@/shared/lib/gitlab/format-project-count";
+import { LoadMoreSentinel } from "@/shared/ui/load-more-sentinel";
 import { ProjectAvatar } from "@/shared/ui/project-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { HomePageVM } from "../model";
-import { ProjectsLoadMoreSentinel } from "./components/projects-load-more-sentinel";
 
 export const HomePage = withViewModel(
   HomePageVM,
@@ -96,7 +96,7 @@ export const HomePage = withViewModel(
                 </button>
               </li>
             ))}
-            <ProjectsLoadMoreSentinel
+            <LoadMoreSentinel
               disabled={!model.canLoadMoreProjects}
               onLoadMore={() => model.loadMoreProjects()}
             />

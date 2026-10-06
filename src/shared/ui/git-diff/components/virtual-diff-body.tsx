@@ -59,6 +59,11 @@ type DiffThreadResolveProps = {
   markdownScope?: GitlabMarkdownScope;
   onResolveThread?: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId?: string | null;
+  onReplyThread?: (discussionId: string, body: string) => Promise<boolean>;
+  replyingDiscussionId?: string | null;
+  replyErrorDiscussionId?: string | null;
+  replyError?: string | null;
+  onClearReplyError?: () => void;
   currentUserId?: number | null;
   onUpdateDiscussionNote?: (
     discussionId: string,
@@ -160,6 +165,11 @@ const VirtualDiffRowView = memo(
     onExpandGap,
     onResolveThread,
     resolvingDiscussionId,
+    onReplyThread,
+    replyingDiscussionId,
+    replyErrorDiscussionId,
+    replyError,
+    onClearReplyError,
     currentUserId,
     onUpdateDiscussionNote,
     onDeleteDiscussionNote,
@@ -253,6 +263,11 @@ const VirtualDiffRowView = memo(
           thread={row.thread}
           onResolveThread={onResolveThread}
           resolvingDiscussionId={resolvingDiscussionId}
+          onReplyThread={onReplyThread}
+          replyingDiscussionId={replyingDiscussionId}
+          replyErrorDiscussionId={replyErrorDiscussionId}
+          replyError={replyError}
+          onClearReplyError={onClearReplyError}
           expanded={isThreadExpanded(row.thread)}
           onToggleExpand={() => onToggleThreadExpanded(row.thread.discussionId)}
           currentUserId={currentUserId}
@@ -304,6 +319,11 @@ const StaticDiffBody = memo(
     onRegisterScrollToRow,
     onResolveThread,
     resolvingDiscussionId,
+    onReplyThread,
+    replyingDiscussionId,
+    replyErrorDiscussionId,
+    replyError,
+    onClearReplyError,
     currentUserId,
     onUpdateDiscussionNote,
     onDeleteDiscussionNote,
@@ -391,6 +411,11 @@ const StaticDiffBody = memo(
               onExpandGap={onExpandGap}
               onResolveThread={onResolveThread}
               resolvingDiscussionId={resolvingDiscussionId}
+              onReplyThread={onReplyThread}
+              replyingDiscussionId={replyingDiscussionId}
+              replyErrorDiscussionId={replyErrorDiscussionId}
+              replyError={replyError}
+              onClearReplyError={onClearReplyError}
               currentUserId={currentUserId}
               onUpdateDiscussionNote={onUpdateDiscussionNote}
               onDeleteDiscussionNote={onDeleteDiscussionNote}
@@ -461,6 +486,11 @@ const VirtualizedDiffBody = memo(
     onRegisterScrollToRow,
     onResolveThread,
     resolvingDiscussionId,
+    onReplyThread,
+    replyingDiscussionId,
+    replyErrorDiscussionId,
+    replyError,
+    onClearReplyError,
     currentUserId,
     onUpdateDiscussionNote,
     onDeleteDiscussionNote,
@@ -600,6 +630,11 @@ const VirtualizedDiffBody = memo(
                   onExpandGap={onExpandGap}
                   onResolveThread={onResolveThread}
                   resolvingDiscussionId={resolvingDiscussionId}
+                  onReplyThread={onReplyThread}
+                  replyingDiscussionId={replyingDiscussionId}
+                  replyErrorDiscussionId={replyErrorDiscussionId}
+                  replyError={replyError}
+                  onClearReplyError={onClearReplyError}
                   currentUserId={currentUserId}
                   onUpdateDiscussionNote={onUpdateDiscussionNote}
                   onDeleteDiscussionNote={onDeleteDiscussionNote}
@@ -630,6 +665,11 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
     canComment,
     onResolveThread,
     resolvingDiscussionId,
+    onReplyThread,
+    replyingDiscussionId,
+    replyErrorDiscussionId,
+    replyError,
+    onClearReplyError,
     currentUserId,
     onUpdateDiscussionNote,
     onDeleteDiscussionNote,
@@ -718,6 +758,11 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
         onRegisterScrollToRow={navigation.registerScrollToRow}
         onResolveThread={onResolveThread}
         resolvingDiscussionId={resolvingDiscussionId}
+        onReplyThread={onReplyThread}
+        replyingDiscussionId={replyingDiscussionId}
+        replyErrorDiscussionId={replyErrorDiscussionId}
+        replyError={replyError}
+        onClearReplyError={onClearReplyError}
         currentUserId={currentUserId}
         onUpdateDiscussionNote={onUpdateDiscussionNote}
         onDeleteDiscussionNote={onDeleteDiscussionNote}
@@ -750,6 +795,11 @@ export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff })
       onRegisterScrollToRow={navigation.registerScrollToRow}
       onResolveThread={onResolveThread}
       resolvingDiscussionId={resolvingDiscussionId}
+      onReplyThread={onReplyThread}
+      replyingDiscussionId={replyingDiscussionId}
+      replyErrorDiscussionId={replyErrorDiscussionId}
+      replyError={replyError}
+      onClearReplyError={onClearReplyError}
       currentUserId={currentUserId}
       onUpdateDiscussionNote={onUpdateDiscussionNote}
       onDeleteDiscussionNote={onDeleteDiscussionNote}
