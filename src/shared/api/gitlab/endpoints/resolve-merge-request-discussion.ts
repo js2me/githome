@@ -1,5 +1,5 @@
 import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabPut } from "../client";
+import { buildGitlabPath, gitlabPut } from "../client";
 import type { GitLabDiscussionDC, GitLabProjectDC } from "../data-contracts";
 
 export const resolveMergeRequestDiscussion = async (
@@ -12,7 +12,10 @@ export const resolveMergeRequestDiscussion = async (
 ): Promise<GitLabDiscussionDC> => {
   return gitlabPut<GitLabDiscussionDC>(
     connection,
-    `/projects/${project.id}/merge_requests/${mergeRequestIid}/discussions/${encodeURIComponent(discussionId)}`,
+    buildGitlabPath(
+      `/projects/${project.id}/merge_requests/${mergeRequestIid}/discussions/${encodeURIComponent(discussionId)}`,
+      { resolved },
+    ),
     { resolved },
     signal,
   );

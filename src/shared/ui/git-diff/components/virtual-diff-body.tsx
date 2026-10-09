@@ -557,20 +557,7 @@ const VirtualizedDiffBody = memo(
       getItemKey: (index) => rows[index]?.id ?? index,
       overscan: 24,
       scrollMargin,
-      measureElement: (element) => {
-        const index = Number(element.getAttribute("data-index"));
-        const row = rows[index];
-
-        if (
-          row?.type === "line" ||
-          row?.type === "hunk" ||
-          row?.type === "expand"
-        ) {
-          return row.estimatedHeight;
-        }
-
-        return element.getBoundingClientRect().height;
-      },
+      measureElement: (element) => element.getBoundingClientRect().height,
     });
 
     useLayoutEffect(() => {
