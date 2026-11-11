@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, dialog, shell } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { setupAppUpdater } from "./app-updater";
 import { startAppServer } from "./app-server";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -100,6 +101,7 @@ if (gotSingleInstanceLock) {
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
+    setupAppUpdater();
     void createWindow();
 
     app.on("activate", () => {

@@ -52,7 +52,7 @@ export default defineConfig(({ mode, command }) => {
                 build: {
                   outDir: "dist-electron",
                   rollupOptions: {
-                    external: ["electron"],
+                    external: ["electron", "electron-updater"],
                   },
                 },
               },

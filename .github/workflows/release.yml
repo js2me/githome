@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  GITHOME_RELEASE_VERSION: 0.1.${{ github.run_number }}
+
 concurrency:
   group: release-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -34,6 +37,10 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Set desktop release version
+        shell: bash
+        run: node -e 'const fs = require("node:fs"); const p = JSON.parse(fs.readFileSync("package.json", "utf8")); p.version = process.env.GITHOME_RELEASE_VERSION; fs.writeFileSync("package.json", JSON.stringify(p, null, 2) + "\n");'
 
       - name: Build frontend and Electron bundles
         run: pnpm build:app
@@ -92,6 +99,10 @@ jobs:
       - name: Ensure Electron binary is installed
         run: node node_modules/electron/install.js
 
+      - name: Set desktop release version
+        shell: bash
+        run: node -e 'const fs = require("node:fs"); const p = JSON.parse(fs.readFileSync("package.json", "utf8")); p.version = process.env.GITHOME_RELEASE_VERSION; fs.writeFileSync("package.json", JSON.stringify(p, null, 2) + "\n");'
+
       - name: Package desktop app
         run: pnpm package:${{ matrix.platform }}
 
@@ -104,6 +115,8 @@ jobs:
             release/*.AppImage
             release/*.deb
             release/*.exe
+            release/latest*.yml
+            release/*.blockmap
 
   android:
     permissions:
@@ -161,15 +174,11 @@ jobs:
           merge-multiple: true
           path: release-artifacts
 
-      - name: Resolve release tag
-        id: vars
-        run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.vars.outputs.short_sha }}
-          name: ${{ steps.vars.outputs.short_sha }}
+          tag_name: v${{ env.GITHOME_RELEASE_VERSION }}
+          name: GitHome ${{ env.GITHOME_RELEASE_VERSION }}
           generate_release_notes: false
           body: |
             **Commit:** [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
@@ -180,5 +189,7 @@ jobs:
             release-artifacts/*.deb
             release-artifacts/*.exe
             release-artifacts/*.apk
+            release-artifacts/latest*.yml
+            release-artifacts/*.blockmap
           draft: false
           prerelease: false

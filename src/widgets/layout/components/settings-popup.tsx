@@ -4,6 +4,7 @@ import { useViewModel } from "mobx-view-model-react";
 import { cva } from "yummies/css";
 import { cn } from "@/shared/lib/cn";
 import { Popup } from "@/shared/ui/popup";
+import { AppUpdateButton } from "./app-update-button";
 import { LayoutVM } from "../model/layout-vm";
 
 const settingsTriggerButtonVariants = cva(
@@ -71,6 +72,7 @@ export const SettingsPopup = observer(() => {
             </button>
           ))}
         </div>
+        <AppUpdateButton />
       </Popup.Panel>
     </Popup>
   );

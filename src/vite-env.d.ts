@@ -10,6 +10,7 @@ interface ImportMeta {
 
 interface GithomeDesktopApi {
   platform: NodeJS.Platform;
+  updates: import("./shared/lib/app-update/types").AppUpdateApi;
 }
 
 interface Window {

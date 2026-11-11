@@ -29,6 +29,9 @@ importers:
       echarts:
         specifier: ^6.1.0
         version: 6.1.0
+      electron-updater:
+        specifier: ^6.8.11
+        version: 6.8.11
       gologen:
         specifier: 0.0.1
         version: 0.0.1
@@ -36,26 +39,26 @@ importers:
         specifier: ^6.16.0
         version: 6.16.1
       mobx-location-history:
-        specifier: ^9.4.1
-        version: 9.4.1(mobx@6.16.1)(react@18.3.1)
+        specifier: ^9.4.3
+        version: 9.4.3(mobx@6.16.1)(react@18.3.1)
       mobx-react-lite:
         specifier: ^4.1.1
         version: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-route:
         specifier: ^2.1.3
-        version: 2.1.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.0(mobx@6.16.1)(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 2.1.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.1(mobx@6.16.1)(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-tanstack-query:
         specifier: ^7.3.0
         version: 7.3.0(@tanstack/query-core@5.101.0)(mobx@6.16.1)(react@18.3.1)
       mobx-view-model:
-        specifier: ^11.0.0
-        version: 11.0.0(mobx@6.16.1)(react@18.3.1)
+        specifier: ^11.0.1
+        version: 11.0.1(mobx@6.16.1)(react@18.3.1)
       mobx-view-model-react:
-        specifier: ^11.0.0
-        version: 11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^11.0.1
+        version: 11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-web-api:
-        specifier: ^1.14.1
-        version: 1.14.1(mobx@6.16.1)(react@18.3.1)
+        specifier: ^1.18.0
+        version: 1.18.0(mobx@6.16.1)(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -103,8 +106,8 @@ importers:
         specifier: ^26.0.12
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)
       mobx-view-model-vite-plugin:
-        specifier: ^2.0.0
-        version: 2.0.0(mobx-view-model-react@11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.0(mobx@6.16.1)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0))
+        specifier: ^2.0.6
+        version: 2.0.6(mobx-view-model-react@11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.1(mobx@6.16.1)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0))
       puppeteer-core:
         specifier: ^25.4.0
         version: 25.4.0(yauzl@2.10.0)
@@ -126,8 +129,8 @@ importers:
 
 packages:
 
-  '@babel/runtime@7.29.7':
-    resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
+  '@babel/runtime@7.29.13':
+    resolution: {integrity: sha512-v+oN26xP4YIlQsbQ/CbTH1WG5m/l/DjKKZNy/Kp3f/AFvbgt7Em/D0FeMM3O2hX0YzeN2M16W8lOpyhIkfCBcQ==}
     engines: {node: '>=6.9.0'}
 
   '@capacitor/android@8.5.2':
@@ -396,9 +399,6 @@ packages:
   '@jridgewell/resolve-uri@3.1.2':
     resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
     engines: {node: '>=6.0.0'}
-
-  '@jridgewell/sourcemap-codec@1.5.5':
-    resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
   '@jridgewell/sourcemap-codec@1.6.0':
     resolution: {integrity: sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw==}
@@ -838,8 +838,8 @@ packages:
   '@types/lodash-es@4.17.12':
     resolution: {integrity: sha512-0NgftHUcV4v34VhXm8QBSftKVXtbkBG3ViCjs6+eJ5a6y6Mi/jiFGPc1sC7QK+9BFhWrURE3EOggmWaSxL9OzQ==}
 
-  '@types/lodash@4.17.24':
-    resolution: {integrity: sha512-gIW7lQLZbue7lRSWEFql49QJJWThrTFFeIMJdp3eH4tKoxm1OvEPg02rm4wCCSHS0cL3/Fizimb35b7k8atwsQ==}
+  '@types/lodash@4.17.27':
+    resolution: {integrity: sha512-VenMRv/eKNrspX9v3H4dbmjsrnCOYdYBG3kxXKk3dG6X+urBGcj2Prww3xw1U5K4FV/mE4h5GbWd0szEKf+9ew==}
 
   '@types/mdast@4.0.4':
     resolution: {integrity: sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==}
@@ -1263,6 +1263,9 @@ packages:
   electron-publish@26.15.3:
     resolution: {integrity: sha512-g/2bn8YTavY4cuS5F+jOS7zmZbXXBV8KZ8yHKfJjFPoKtzBqrpCdNPxBd3tqdBwP7BVd0lGzf7Bk2s0KesWZ4Q==}
 
+  electron-updater@6.8.11:
+    resolution: {integrity: sha512-12U/mbzaIKQS3Q543aQ7DjyAZMXeVJy1Wpu0qdq5ne4RXpIQDpWYm25zRjgXngAoo6swMrm4C4owGyiIipelsg==}
+
   electron-winstaller@5.4.0:
     resolution: {integrity: sha512-bO3y10YikuUwUuDUQRM4KfwNkKhnpVO7IPdbsrejwN9/AABJzzTQ4GeHwyzNSrVO+tEH3/Np255a3sVZpZDjvg==}
     engines: {node: '>=8.0.0'}
@@ -1377,6 +1380,10 @@ packages:
 
   fs-extra@11.3.5:
     resolution: {integrity: sha512-eKpRKAovdpZtR1WopLHxlBWvAgPny3c4gX1G5Jhwmmw4XJj0ifSD5qB5TOo8hmA0wlRKDAOAhEE1yVPgs6Fgcg==}
+    engines: {node: '>=14.14'}
+
+  fs-extra@11.4.1:
+    resolution: {integrity: sha512-KYAb4c9BJQI6QqGKthV68OHe0badztdXJWKo0WtBA9IuCFPTKvE5ZdUBglP833aMjhaSPNO4A5j/EkzZtGlKjA==}
     engines: {node: '>=14.14'}
 
   fs-extra@7.0.1:
@@ -1675,6 +1682,13 @@ packages:
   lodash-es@4.18.1:
     resolution: {integrity: sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A==}
 
+  lodash.escaperegexp@4.1.2:
+    resolution: {integrity: sha512-TM9YBvyC84ZxE3rgfefxUWiQKLilstD6k7PTGt6wfbtXF8ixIJLOL3VYyV/z+ZiPLsVxAsKAFVwWlWeb2Y8Yyw==}
+
+  lodash.isequal@4.5.0:
+    resolution: {integrity: sha512-pDo3lu8Jhfjqls6GkMgpahsF9kCyayhgykjyLMNFTKWrpVdAQtYyB4muAMWozBB4ig/dtWAmsMxLEI8wuz+DYQ==}
+    deprecated: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+
   lodash@4.18.1:
     resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
 
@@ -1780,13 +1794,8 @@ packages:
     resolution: {integrity: sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw==}
     hasBin: true
 
-  mobx-location-history@9.4.1:
-    resolution: {integrity: sha512-oazIIkaPi1g0mXnHevqCwYTo2igwqnhCAaQroY0fV6fUCdAnSn++fzs07PSsBrLMSTKfS+N6c0mHW/V9ptAwsQ==}
-    peerDependencies:
-      mobx: ^6.13.3
-
-  mobx-location-history@9.4.2:
-    resolution: {integrity: sha512-+nsXSCP0wfC/zrZOrQjmO0nfS7NoF6QRnXSTSPJYxr5aEYM6rXv+TYwg78pwK52jvbxCzUgsXKz8VZ3LzVMHoQ==}
+  mobx-location-history@9.4.3:
+    resolution: {integrity: sha512-tbQsKwU5LDInW59y481ghW1oNVJL7m6ln/Ry1UsBFr20vZE0dnsxFsEaY6xXUUKSk6RCk3GSYckWGv6W+A7vIg==}
     peerDependencies:
       mobx: ^6.13.3
 
@@ -1821,8 +1830,8 @@ packages:
       react-dom:
         optional: true
 
-  mobx-swiss-knife@1.15.1:
-    resolution: {integrity: sha512-7yotsnAqcBawsEWcKUu77VHrzmhLnbOFzkC1phwBI6K3P7wbt7pxfYPRdcGFzZQhQV58laSui7tnWzvcDKAfqg==}
+  mobx-swiss-knife@1.15.2:
+    resolution: {integrity: sha512-EgdY+Y//F4Nz2eSQ7+aBOXEjlYu1yuOGcXzu062gqOGFmXiRHL6VEqADImSm+SAhqs83JcRg7uS+GpNOq7AQPw==}
     peerDependencies:
       mobx: ^6.12.4
 
@@ -1832,31 +1841,31 @@ packages:
       '@tanstack/query-core': ^5.90.2
       mobx: ^6.12.4
 
-  mobx-view-model-devtools@0.1.5:
-    resolution: {integrity: sha512-WaKq8Ja6QZOh5oWJl0Yp/271jQVFhSSmQ/yUjDwhItZDKes6sDwob9DGrWnGkULdzxwAppGD77jUJi1ipm79qg==}
+  mobx-view-model-devtools@0.4.1:
+    resolution: {integrity: sha512-PjxIkfC00Max9DHVvfKj5T+HNp+oQJdfWTI9pFfqn2LTMZd3ABVkz3YH6DPyr//lopmLKpnNYR6TDkt5YaCYwA==}
 
-  mobx-view-model-react@11.0.0:
-    resolution: {integrity: sha512-rPOEAOGDbrNOLpG1sisW537PlPfMWhpQdfUR92jxTszikWlgjNXrPCrowXeP8ny663/IAN0U3umZWCU/pH0YrA==}
+  mobx-view-model-react@11.0.1:
+    resolution: {integrity: sha512-A4uVKgqoUEqSo+hKKnXHLPDCHkfr2q/ExZKMjYuEvTEjx1qWmGCCz9ipWXYoeJ2lVmWGIs1G313zT+beHPzLIg==}
     peerDependencies:
       mobx: ^6.12.4
       mobx-react-lite: ^4.0.7
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
 
-  mobx-view-model-vite-plugin@2.0.0:
-    resolution: {integrity: sha512-i81rbVlBJUJvUyoIzmd3Nw6FJODB872n9OL4OyLnxKo+HIgMGaTZxiJExiV4NIiaZz1yvmc35hwpvUYPIvZe7Q==}
+  mobx-view-model-vite-plugin@2.0.6:
+    resolution: {integrity: sha512-fDsvAKIZGetg8q4C/BKyDEsOVb8Q3YOpXGHwfaOP+TJD90Si9n1KN7Tsd9NDOmg9hhQaILGRaa1Ujug0KAHaYQ==}
     peerDependencies:
       mobx-view-model: ^11.0.0
       mobx-view-model-react: ^11.0.0
       vite: ^6.0.0 || ^7.0.0 || ^8.0.0
 
-  mobx-view-model@11.0.0:
-    resolution: {integrity: sha512-rq/Z4FjXm/k9g43OMiIh35Z4HXkMS0u0rFCW+M32rSqISesqOw2HG02OOTGDcetS48AtXojV5wNsPbaiOVcmSw==}
+  mobx-view-model@11.0.1:
+    resolution: {integrity: sha512-j0FRaGphS9coMLKRt6sG+zGlr0S30xKbRewrgC22gT2kQ8g+c2vZSnbUlqLQJwAfc4hVPUlhKDz8IakcDNiLfg==}
     peerDependencies:
       mobx: ^6.12.4
 
-  mobx-web-api@1.14.1:
-    resolution: {integrity: sha512-JcWKaFhFGZr56mjxzE1U9KKy7WBWu3ct63HNtEz/GqQsbQWC98xObXf5lxJBvWelaWooz0AyqW+GnaWYKf8YpQ==}
+  mobx-web-api@1.18.0:
+    resolution: {integrity: sha512-6nUjQNzZ7++0lIjQ1FXHhfjI8clZgakMK5HLOvTx8LLT99p/OEt33mVZexDzPTy9cqXobM9UpPBg3PsVbW4C/g==}
     peerDependencies:
       mobx: ^6.13.6
 
@@ -2034,8 +2043,8 @@ packages:
     resolution: {integrity: sha512-KTqnxsgGiQ6ZAzZCVlJH5eOjSnvlyEgx1m8bkRJfOhmGRqfo5KLvmAlACQkrjEtOQ4B7wF9TdSLIs9O90MX9xA==}
     engines: {node: '>=16.0.0'}
 
-  qs@6.15.2:
-    resolution: {integrity: sha512-Rzq0KEyX/w/tEybncDgdkZrJgVUsUMk3xjh3t5bv3S1HTAtg+uOYt72+ZfwiQwKdysThkTBdL/rTi6HDmX9Ddw==}
+  qs@6.17.1:
+    resolution: {integrity: sha512-jd3COkaKVgGUW+ZHyEHCG9bH7RoaaiWuMgzsIBjUMVjLAaWGWpoUAVwljVvBHxRu/2qEHnadLGZrkutYUBPQJA==}
     engines: {node: '>=0.6'}
 
   quick-lru@5.1.1:
@@ -2194,9 +2203,6 @@ packages:
   simplebar-core@1.3.2:
     resolution: {integrity: sha512-qKgTTuTqapjsFGkNhCjyPhysnbZGpQqNmjk0nOYjFN5ordC/Wjvg+RbYCyMSnW60l/Z0ZS82GbNltly6PMUH1w==}
 
-  simplebar@6.3.3:
-    resolution: {integrity: sha512-ni9cIiA8GRitiaenV7A/gh8nTStiVqO3gLxrfCMmq6CSy/pB+fz+QxqvJLo142QHb2Tvgvr8ILwZxf3qzAq7pg==}
-
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
 
@@ -2297,6 +2303,9 @@ packages:
   tiny-async-pool@1.3.0:
     resolution: {integrity: sha512-01EAw5EDrcVrdgyCLgoSPvqznC0sVxDSVeiOz09FUpjh71G79VCqneOr+xvt7T1r76CF6ZZfPjHorN2+d+3mqA==}
 
+  tiny-typed-emitter@2.1.0:
+    resolution: {integrity: sha512-qVtvMxeXbVej0cQWKqVSSAHmKZEHAvxdF8HEUBFWts8h+xEo5m/lEiPakuyZ3BnCBjOD8i24kzNOiOLLgsSxhA==}
+
   tinybench@6.2.0:
     resolution: {integrity: sha512-78U2TlB2CnVenajOFzf3BKSm0J6oz5L0NV7g32LCPccvYc0lbWvys4d3uUUCS2B1N8PAf2+aekR8i1KbC3HO7Q==}
     engines: {node: '>=20.0.0'}
@@ -2341,6 +2350,11 @@ packages:
 
   typescript@5.8.3:
     resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -2405,26 +2419,6 @@ packages:
 
   vfile@6.0.3:
     resolution: {integrity: sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q==}
-
-  virtua@0.49.1:
-    resolution: {integrity: sha512-6f79msqg3jzNFdqJiS0FSzhRN1EHlDhR7EvW7emp6z5qQ22VdsReiDHflkpMEMhoAyUuYr69nwT0aagiM7NrUg==}
-    peerDependencies:
-      react: '>=16.14.0'
-      react-dom: '>=16.14.0'
-      solid-js: '>=1.0'
-      svelte: '>=5.0'
-      vue: '>=3.2'
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-dom:
-        optional: true
-      solid-js:
-        optional: true
-      svelte:
-        optional: true
-      vue:
-        optional: true
 
   vite-plugin-electron@0.29.1:
     resolution: {integrity: sha512-AejNed5BgHFnuw8h5puTa61C6vdP4ydbsbo/uVjH1fTdHAlCDz1+o6pDQ/scQj1udDrGvH01+vTbzQh/vMnR9w==}
@@ -2636,7 +2630,7 @@ packages:
 
 snapshots:
 
-  '@babel/runtime@7.29.7': {}
+  '@babel/runtime@7.29.13': {}
 
   '@capacitor/android@8.5.2(@capacitor/core@8.5.2)':
     dependencies:
@@ -2745,7 +2739,7 @@ snapshots:
       '@malept/cross-spawn-promise': 2.0.0
       debug: 4.4.3
       dir-compare: 4.2.0
-      fs-extra: 11.3.5
+      fs-extra: 11.4.1
       minimatch: 9.0.9
       plist: 3.1.0
     transitivePeerDependencies:
@@ -2755,7 +2749,7 @@ snapshots:
     dependencies:
       cross-dirname: 0.1.0
       debug: 4.4.3
-      fs-extra: 11.3.5
+      fs-extra: 11.4.1
       minimist: 1.2.8
       postject: 1.0.0-alpha.6
     transitivePeerDependencies:
@@ -2930,7 +2924,7 @@ snapshots:
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
-      '@jridgewell/sourcemap-codec': 1.5.5
+      '@jridgewell/sourcemap-codec': 1.6.0
       '@jridgewell/trace-mapping': 0.3.31
 
   '@jridgewell/remapping@2.3.5':
@@ -2940,14 +2934,12 @@ snapshots:
 
   '@jridgewell/resolve-uri@3.1.2': {}
 
-  '@jridgewell/sourcemap-codec@1.5.5': {}
-
   '@jridgewell/sourcemap-codec@1.6.0': {}
 
   '@jridgewell/trace-mapping@0.3.31':
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
-      '@jridgewell/sourcemap-codec': 1.5.5
+      '@jridgewell/sourcemap-codec': 1.6.0
 
   '@malept/cross-spawn-promise@2.0.0':
     dependencies:
@@ -3296,9 +3288,9 @@ snapshots:
 
   '@types/lodash-es@4.17.12':
     dependencies:
-      '@types/lodash': 4.17.24
+      '@types/lodash': 4.17.27
 
-  '@types/lodash@4.17.24': {}
+  '@types/lodash@4.17.27': {}
 
   '@types/mdast@4.0.4':
     dependencies:
@@ -3768,6 +3760,19 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  electron-updater@6.8.11:
+    dependencies:
+      builder-util-runtime: 9.7.0
+      fs-extra: 10.1.0
+      js-yaml: 4.2.0
+      lazy-val: 1.0.5
+      lodash.escaperegexp: 4.1.2
+      lodash.isequal: 4.5.0
+      semver: 7.7.4
+      tiny-typed-emitter: 2.1.0
+    transitivePeerDependencies:
+      - supports-color
+
   electron-winstaller@5.4.0:
     dependencies:
       '@electron/asar': 3.4.1
@@ -3921,6 +3926,12 @@ snapshots:
       jsonfile: 6.2.1
       universalify: 2.0.1
 
+  fs-extra@11.4.1:
+    dependencies:
+      graceful-fs: 4.2.11
+      jsonfile: 6.2.1
+      universalify: 2.0.1
+
   fs-extra@7.0.1:
     dependencies:
       graceful-fs: 4.2.11
@@ -4061,7 +4072,7 @@ snapshots:
 
   history@5.3.0:
     dependencies:
-      '@babel/runtime': 7.29.7
+      '@babel/runtime': 7.29.13
 
   hosted-git-info@4.1.0:
     dependencies:
@@ -4215,6 +4226,10 @@ snapshots:
 
   lodash-es@4.18.1: {}
 
+  lodash.escaperegexp@4.1.2: {}
+
+  lodash.isequal@4.5.0: {}
+
   lodash@4.18.1: {}
 
   loose-envify@1.4.0:
@@ -4231,7 +4246,7 @@ snapshots:
 
   magic-string@0.30.21:
     dependencies:
-      '@jridgewell/sourcemap-codec': 1.5.5
+      '@jridgewell/sourcemap-codec': 1.6.0
 
   magic-string@1.4.3:
     dependencies:
@@ -4315,23 +4330,12 @@ snapshots:
     dependencies:
       minimist: 1.2.8
 
-  mobx-location-history@9.4.1(mobx@6.16.1)(react@18.3.1):
-    dependencies:
-      '@types/qs': 6.15.1
-      history: 5.3.0
-      linked-abort-controller: 1.1.1
-      mobx: 6.16.1
-      qs: 6.15.2
-      yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - react
-
-  mobx-location-history@9.4.2(mobx@6.16.1)(react@18.3.1):
+  mobx-location-history@9.4.3(mobx@6.16.1)(react@18.3.1):
     dependencies:
       '@types/qs': 6.15.1
       history: 5.3.0
       mobx: 6.16.1
-      qs: 6.15.2
+      qs: 6.17.1
       yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
     transitivePeerDependencies:
       - react
@@ -4344,19 +4348,19 @@ snapshots:
     optionalDependencies:
       react-dom: 18.3.1(react@18.3.1)
 
-  mobx-route@2.1.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.0(mobx@6.16.1)(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  mobx-route@2.1.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.1(mobx@6.16.1)(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       mobx: 6.16.1
-      mobx-location-history: 9.4.2(mobx@6.16.1)(react@18.3.1)
+      mobx-location-history: 9.4.3(mobx@6.16.1)(react@18.3.1)
       path-to-regexp: 8.4.2
       yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
     optionalDependencies:
       mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-view-model: 11.0.0(mobx@6.16.1)(react@18.3.1)
+      mobx-view-model: 11.0.1(mobx@6.16.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  mobx-swiss-knife@1.15.1(mobx@6.16.1)(react@18.3.1):
+  mobx-swiss-knife@1.15.2(mobx@6.16.1)(react@18.3.1):
     dependencies:
       '@faker-js/faker': 9.9.0
       '@types/lodash-es': 4.17.12
@@ -4376,55 +4380,49 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  mobx-view-model-devtools@0.1.5:
+  mobx-view-model-devtools@0.4.1:
     dependencies:
       '@gravity-ui/icons': 2.18.0(react@18.3.1)
       mobx: 6.16.1
       mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-swiss-knife: 1.15.1(mobx@6.16.1)(react@18.3.1)
-      mobx-view-model: 11.0.0(mobx@6.16.1)(react@18.3.1)
-      mobx-view-model-react: 11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-web-api: 1.14.1(mobx@6.16.1)(react@18.3.1)
+      mobx-swiss-knife: 1.15.2(mobx@6.16.1)(react@18.3.1)
+      mobx-view-model: 11.0.1(mobx@6.16.1)(react@18.3.1)
+      mobx-view-model-react: 11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      mobx-web-api: 1.18.0(mobx@6.16.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      simplebar: 6.3.3
-      virtua: 0.49.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      simplebar-core: 1.3.2
       yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
     transitivePeerDependencies:
       - react-native
-      - solid-js
-      - svelte
-      - vue
 
-  mobx-view-model-react@11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  mobx-view-model-react@11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       mobx: 6.16.1
       mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-view-model: 11.0.0(mobx@6.16.1)(react@18.3.1)
+      mobx-view-model: 11.0.1(mobx@6.16.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  mobx-view-model-vite-plugin@2.0.0(mobx-view-model-react@11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.0(mobx@6.16.1)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)):
+  mobx-view-model-vite-plugin@2.0.6(mobx-view-model-react@11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.1(mobx@6.16.1)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)):
     dependencies:
       magic-string: 0.30.21
-      mobx-view-model: 11.0.0(mobx@6.16.1)(react@18.3.1)
-      mobx-view-model-devtools: 0.1.5
-      mobx-view-model-react: 11.0.0(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      mobx-view-model: 11.0.1(mobx@6.16.1)(react@18.3.1)
+      mobx-view-model-devtools: 0.4.1
+      mobx-view-model-react: 11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      typescript: 6.0.3
       vite: 7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)
     transitivePeerDependencies:
       - react-native
-      - solid-js
-      - svelte
-      - vue
 
-  mobx-view-model@11.0.0(mobx@6.16.1)(react@18.3.1):
+  mobx-view-model@11.0.1(mobx@6.16.1)(react@18.3.1):
     dependencies:
       mobx: 6.16.1
       yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
     transitivePeerDependencies:
       - react
 
-  mobx-web-api@1.14.1(mobx@6.16.1)(react@18.3.1):
+  mobx-web-api@1.18.0(mobx@6.16.1)(react@18.3.1):
     dependencies:
       mobx: 6.16.1
       yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
@@ -4459,11 +4457,11 @@ snapshots:
 
   node-abi@4.31.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.5
 
   node-api-version@0.2.1:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.5
 
   node-gyp@12.4.0:
     dependencies:
@@ -4472,7 +4470,7 @@ snapshots:
       graceful-fs: 4.2.11
       nopt: 9.0.0
       proc-log: 6.1.0
-      semver: 7.7.4
+      semver: 7.8.5
       tar: 7.5.16
       tinyglobby: 0.2.17
       undici: 6.27.0
@@ -4615,8 +4613,9 @@ snapshots:
 
   pvutils@1.1.5: {}
 
-  qs@6.15.2:
+  qs@6.17.1:
     dependencies:
+      es-define-property: 1.0.1
       side-channel: 1.1.1
 
   quick-lru@5.1.1: {}
@@ -4821,10 +4820,6 @@ snapshots:
       lodash: 4.18.1
       lodash-es: 4.18.1
 
-  simplebar@6.3.3:
-    dependencies:
-      simplebar-core: 1.3.2
-
   sisteransi@1.0.5: {}
 
   slice-ansi@4.0.0:
@@ -4931,6 +4926,8 @@ snapshots:
     dependencies:
       semver: 5.7.2
 
+  tiny-typed-emitter@2.1.0: {}
+
   tinybench@6.2.0: {}
 
   tinyexec@1.3.1: {}
@@ -4964,6 +4961,8 @@ snapshots:
   typed-query-selector@2.12.2: {}
 
   typescript@5.8.3: {}
+
+  typescript@6.0.3: {}
 
   undici-types@6.21.0: {}
 
@@ -5004,7 +5003,7 @@ snapshots:
     dependencies:
       bluebird: 3.7.2
       duplexer2: 0.1.4
-      fs-extra: 11.3.5
+      fs-extra: 11.4.1
       graceful-fs: 4.2.11
       node-int64: 0.4.0
 
@@ -5027,11 +5026,6 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
-
-  virtua@0.49.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    optionalDependencies:
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
 
   vite-plugin-electron@0.29.1: {}
 
