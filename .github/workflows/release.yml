@@ -71,7 +71,7 @@ jobs:
           - os: windows-latest
             artifact: windows
             platform: win
-          - os: macos-15
+          - os: macos-15-intel
             artifact: macos
             platform: mac
 
