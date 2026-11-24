@@ -1,11 +1,8 @@
-import { memo, useLayoutEffect, useState } from "react";
-import { getDiffFileElementId } from "@/shared/lib/diff-search";
-import { findChangesTreeFileItem } from "@/shared/lib/scroll-into-container";
+import type { IObservableValue } from "mobx";
+import { observer } from "mobx-react-lite";
+import { useLayoutEffect, useState } from "react";
+import { getChangesTreeFileDataId, getDiffFileElementId } from "@/shared/lib/diff-search";
 import "./changes-active-file-link.css";
-
-interface ConnectorPath {
-  d: string;
-}
 
 const buildConnectorPath = (
   x1: number,
@@ -24,41 +21,37 @@ const buildConnectorPath = (
   return `M ${x1} ${y1} H ${midX} V ${endY} H ${x2}`;
 };
 
-const getConnectorPath = (activeFileKey: string): ConnectorPath | null => {
-  const nav = document.querySelector<HTMLElement>(".changes-file-tree__nav");
-  if (!nav) {
-    return null;
-  }
-
-  const treeItem = findChangesTreeFileItem(nav, activeFileKey);
-  if (!treeItem) {
-    return null;
-  }
-
-  const diffCard = document.getElementById(getDiffFileElementId(activeFileKey));
-  if (!diffCard) {
-    return null;
-  }
+const getConnectorPath = (
+  nav: HTMLElement,
+  diffCard: HTMLElement,
+  treeFileId: string,
+) => {
+  const treeItem = nav.querySelector(`[data-changes-file-id="${treeFileId}"]`);
+  if (!treeItem) return null;
 
   const treeRect = treeItem.getBoundingClientRect();
-  const cardRect = diffCard.getBoundingClientRect();
-
-  if (treeRect.height === 0 || cardRect.height === 0) {
+  const navRect = nav.getBoundingClientRect();
+  const rowCenter = treeRect.top + treeRect.height / 2;
+  if (
+    !treeRect.height ||
+    rowCenter < Math.max(navRect.top, 0) ||
+    rowCenter > Math.min(navRect.bottom, window.innerHeight)
+  ) {
     return null;
   }
 
-  return {
-    d: buildConnectorPath(
-      treeRect.right,
-      treeRect.top + treeRect.height / 2,
-      cardRect,
-    ),
-  };
+  const cardRect = diffCard.getBoundingClientRect();
+  if (!cardRect.height || cardRect.bottom < 0 || cardRect.top > window.innerHeight) {
+    return null;
+  }
+
+  return buildConnectorPath(treeRect.right, rowCenter, cardRect);
 };
 
-export const ChangesActiveFileLink = memo(
-  ({ activeFileKey }: { activeFileKey: string | null }) => {
-    const [path, setPath] = useState<ConnectorPath | null>(null);
+export const ChangesActiveFileLink = observer(
+  ({ activeFile }: { activeFile: IObservableValue<string | null> }) => {
+    const activeFileKey = activeFile.get();
+    const [path, setPath] = useState<string | null>(null);
 
     useLayoutEffect(() => {
       if (!activeFileKey) {
@@ -70,71 +63,44 @@ export const ChangesActiveFileLink = memo(
       let cancelled = false;
       let teardown: (() => void) | null = null;
 
-      const update = () => {
-        if (cancelled) {
-          return;
-        }
-
-        setPath(getConnectorPath(activeFileKey));
-      };
-
-      const scheduleUpdate = () => {
-        if (rafId !== null) {
-          return;
-        }
-
-        rafId = requestAnimationFrame(() => {
-          rafId = null;
-          update();
-        });
-      };
+      const treeFileId = getChangesTreeFileDataId(activeFileKey);
 
       const attach = () => {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
-        const diffCard = document.getElementById(
-          getDiffFileElementId(activeFileKey),
-        );
+        const diffCard = document.getElementById(getDiffFileElementId(activeFileKey));
+        const nav = document.querySelector<HTMLElement>(".changes-file-tree__nav");
 
-        if (!diffCard) {
+        if (!diffCard || !nav) {
           rafId = requestAnimationFrame(attach);
           return;
         }
 
+        const update = () => {
+          rafId = null;
+          if (!cancelled) setPath(getConnectorPath(nav, diffCard, treeFileId));
+        };
+        const scheduleUpdate = () => {
+          rafId ??= requestAnimationFrame(update);
+        };
+
         update();
-
-        const nav = document.querySelector<HTMLElement>(
-          ".changes-file-tree__nav",
-        );
-        const tree = document.querySelector<HTMLElement>(".changes-file-tree");
-
         window.addEventListener("scroll", scheduleUpdate, { passive: true });
         window.addEventListener("resize", scheduleUpdate, { passive: true });
-        document.addEventListener("scroll", scheduleUpdate, {
-          passive: true,
-          capture: true,
-        });
-        nav?.addEventListener("scroll", scheduleUpdate, { passive: true });
+        nav.addEventListener("scroll", scheduleUpdate, { passive: true });
 
         const resizeObserver = new ResizeObserver(scheduleUpdate);
         resizeObserver.observe(diffCard);
-        if (nav) {
-          resizeObserver.observe(nav);
-        }
-        if (tree) {
-          resizeObserver.observe(tree);
-        }
+        resizeObserver.observe(nav);
+        const rowObserver = new MutationObserver(scheduleUpdate);
+        rowObserver.observe(nav, { childList: true, subtree: true });
 
         teardown = () => {
           resizeObserver.disconnect();
+          rowObserver.disconnect();
           window.removeEventListener("scroll", scheduleUpdate);
           window.removeEventListener("resize", scheduleUpdate);
-          document.removeEventListener("scroll", scheduleUpdate, {
-            capture: true,
-          });
-          nav?.removeEventListener("scroll", scheduleUpdate);
+          nav.removeEventListener("scroll", scheduleUpdate);
         };
       };
 
@@ -155,7 +121,7 @@ export const ChangesActiveFileLink = memo(
 
     return (
       <svg className="changes-active-file-link" aria-hidden="true">
-        <path className="changes-active-file-link__line" d={path.d} fill="none" />
+        <path className="changes-active-file-link__line" d={path} fill="none" />
       </svg>
     );
   },

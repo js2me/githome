@@ -94,7 +94,7 @@ export class FileGitDiffMeta {
 
   @computed
   get isActive() {
-    return this.file.parent.payload.activeFileKey === this.fileKey;
+    return this.file.parent.payload.activeFile?.get() === this.fileKey;
   }
 
   @computed

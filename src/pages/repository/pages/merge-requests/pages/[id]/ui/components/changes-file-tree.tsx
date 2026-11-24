@@ -1,5 +1,8 @@
 import { Comment, FileCode, Folder, FolderOpen, Magnifier } from "@gravity-ui/icons";
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import type { IObservableValue } from "mobx";
+import { observer } from "mobx-react-lite";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type {
   GitLabDiscussionDC,
   GitLabMergeRequestChangeDC,
@@ -12,8 +15,6 @@ import {
 } from "@/shared/lib/build-changes-tree";
 import { cn } from "@/shared/lib/cn";
 import { getChangesTreeFileDataId } from "@/shared/lib/diff-search";
-import { scrollChangesTreeToFile } from "@/shared/lib/scroll-into-container";
-import { scrollToDiffFile } from "@/shared/lib/scroll-to-diff-file";
 import "./changes-file-tree.css";
 
 const matchesSearchPattern = (path: string, query: string) => {
@@ -94,16 +95,27 @@ const findFolderPathsToFile = (
   return null;
 };
 
-const collectFolderPaths = (nodes: ChangesTreeNode[]): string[] => {
-  const paths: string[] = [];
+const FILE_ROW_HEIGHT = 32;
 
+interface ChangesTreeRow {
+  key: string;
+  node: ChangesTreeNode;
+  depth: number;
+}
+
+const flattenVisibleRows = (
+  nodes: ChangesTreeNode[],
+  collapsedPaths: ReadonlySet<string>,
+  depth = 0,
+  rows: ChangesTreeRow[] = [],
+): ChangesTreeRow[] => {
   for (const node of nodes) {
-    if (node.type === "folder") {
-      paths.push(node.path, ...collectFolderPaths(node.children));
+    rows.push({ key: node.type === "folder" ? `folder:${node.path}` : node.id, node, depth });
+    if (node.type === "folder" && !collapsedPaths.has(node.path)) {
+      flattenVisibleRows(node.children, collapsedPaths, depth + 1, rows);
     }
   }
-
-  return paths;
+  return rows;
 };
 
 const FileTypeIcon = ({ fileName }: { fileName: string }) => {
@@ -191,94 +203,53 @@ const TreeNodeView = memo(
   ({
     node,
     depth,
-    activeFileKey,
-    expandedPaths,
-    fileKeysWithDiscussions,
+    isActive,
+    expanded,
+    hasDiscussions,
     onToggleFolder,
     onSelectFile,
-    onActiveFileChange,
   }: {
     node: ChangesTreeNode;
     depth: number;
-    activeFileKey: string | null;
-    expandedPaths: Set<string>;
-    fileKeysWithDiscussions: ReadonlySet<string>;
+    isActive: boolean;
+    expanded: boolean;
+    hasDiscussions: boolean;
     onToggleFolder: (path: string) => void;
-    onSelectFile: (change: GitLabMergeRequestChangeDC) => void;
-    onActiveFileChange?: (fileKey: string) => void;
+    onSelectFile: (fileKey: string) => void;
   }) => {
+    const className = cn(
+      "changes-file-tree__row",
+      depth > 0 && "changes-file-tree__row--branch",
+      isActive && "changes-file-tree__row--active",
+    );
+    const style = { "--tree-depth": depth } as CSSProperties;
+
     if (node.type === "folder") {
-      const expanded = expandedPaths.has(node.path);
-
       return (
-        <div>
-          <button
-            className={cn(
-              "changes-file-tree__row",
-              depth > 0 && "changes-file-tree__row--branch",
-            )}
-            type="button"
-            style={
-              {
-                paddingLeft: `${depth * 16 + 8}px`,
-                ...(depth > 0 ? { "--tree-depth": depth } : {}),
-              } as CSSProperties
-            }
-            onClick={() => onToggleFolder(node.path)}
-          >
-            <span className="changes-file-tree__row-icon">
-              {expanded ? <FolderOpen /> : <Folder />}
-            </span>
-            <span className="changes-file-tree__row-label">{node.name}</span>
-          </button>
-
-          {expanded && (
-            <div
-              className="changes-file-tree__children"
-              style={{ "--tree-level": depth + 1 } as CSSProperties}
-            >
-              {node.children.map((child) => (
-                <TreeNodeView
-                  key={child.type === "folder" ? `folder:${child.path}` : child.id}
-                  node={child}
-                  depth={depth + 1}
-                  activeFileKey={activeFileKey}
-                  expandedPaths={expandedPaths}
-                  fileKeysWithDiscussions={fileKeysWithDiscussions}
-                  onToggleFolder={onToggleFolder}
-                  onSelectFile={onSelectFile}
-                  onActiveFileChange={onActiveFileChange}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        <button
+          className={className}
+          type="button"
+          style={style}
+          aria-expanded={expanded}
+          onClick={() => onToggleFolder(node.path)}
+        >
+          <span className="changes-file-tree__row-icon">
+            {expanded ? <FolderOpen /> : <Folder />}
+          </span>
+          <span className="changes-file-tree__row-label">{node.name}</span>
+        </button>
       );
     }
 
-    const isActive = activeFileKey === node.id;
-    const hasDiscussions = fileKeysWithDiscussions.has(node.id);
-
     return (
       <button
-        className={cn(
-          "changes-file-tree__row",
-          depth > 0 && "changes-file-tree__row--branch",
-          isActive && "changes-file-tree__row--active",
-        )}
+        className={className}
         type="button"
         data-changes-file-id={getChangesTreeFileDataId(node.id)}
-        style={
-          {
-            paddingLeft: `${depth * 16 + 8}px`,
-            ...(depth > 0 ? { "--tree-depth": depth } : {}),
-          } as CSSProperties
-        }
+        aria-current={isActive || undefined}
+        style={style}
         title={node.path}
-        onClick={() => {
-          onActiveFileChange?.(node.id);
-          onSelectFile(node.change);
-        }}
+        onClick={() => onSelectFile(node.id)}
       >
         <FileTypeIcon fileName={node.name} />
         <span className="changes-file-tree__row-label">{node.name}</span>
@@ -305,18 +276,19 @@ const TreeNodeView = memo(
   },
 );
 
-export const ChangesFileTree = memo(
+export const ChangesFileTree = observer(
   ({
     changes,
     discussions,
-    activeFileKey,
-    onActiveFileChange,
+    activeFile,
+    onSelectFile,
   }: {
     changes: GitLabMergeRequestChangeDC[];
     discussions: GitLabDiscussionDC[];
-    activeFileKey: string | null;
-    onActiveFileChange?: (fileKey: string) => void;
+    activeFile: IObservableValue<string | null>;
+    onSelectFile: (fileKey: string) => void;
   }) => {
+    const activeFileKey = activeFile.get();
     const tree = useMemo(() => buildChangesTree(changes), [changes]);
     const fileKeysWithDiscussions = useMemo(
       () => buildChangeFileKeysWithDiscussions(discussions, changes),
@@ -328,64 +300,63 @@ export const ChangesFileTree = memo(
       () => filterTreeNodes(tree, searchQuery),
       [searchQuery, tree],
     );
-    const folderPaths = useMemo(() => collectFolderPaths(tree), [tree]);
-    const [expandedPaths, setExpandedPaths] = useState(
-      () => new Set(folderPaths),
+    const [collapsedPaths, setCollapsedPaths] = useState(() => new Set<string>());
+    const rows = useMemo(
+      () => flattenVisibleRows(filteredTree, collapsedPaths),
+      [filteredTree, collapsedPaths],
     );
+    const getItemKey = useCallback((index: number) => rows[index].key, [rows]);
+    const virtualizer = useVirtualizer({
+      count: rows.length,
+      getScrollElement: () => navRef.current,
+      estimateSize: () => FILE_ROW_HEIGHT,
+      getItemKey,
+      paddingStart: 4,
+      paddingEnd: 4,
+      overscan: 8,
+    });
 
     useEffect(() => {
-      setExpandedPaths(new Set(folderPaths));
-    }, [folderPaths]);
+      setCollapsedPaths((current) => current.size > 0 ? new Set() : current);
+    }, [tree]);
 
     useLayoutEffect(() => {
-      if (!activeFileKey) {
-        return;
-      }
-
-      const folderPathsToFile = findFolderPathsToFile(tree, activeFileKey) ?? [];
-      const needsExpand = folderPathsToFile.some(
-        (path) => !expandedPaths.has(path),
-      );
-
-      if (needsExpand) {
-        setExpandedPaths((current) => {
-          const next = new Set(current);
-          for (const path of folderPathsToFile) {
-            next.add(path);
-          }
-          return next;
-        });
-        return;
-      }
-
-      const nav = navRef.current;
-      if (!nav) {
-        return;
-      }
-
-      scrollChangesTreeToFile(nav, activeFileKey);
-    }, [activeFileKey, expandedPaths, filteredTree, tree]);
-
-    const handleToggleFolder = (path: string) => {
-      setExpandedPaths((current) => {
+      if (!activeFileKey) return;
+      const ancestors = findFolderPathsToFile(tree, activeFileKey) ?? [];
+      setCollapsedPaths((current) => {
+        if (!ancestors.some((path) => current.has(path))) return current;
         const next = new Set(current);
-
-        if (next.has(path)) {
-          next.delete(path);
-        } else {
-          next.add(path);
-        }
-
+        for (const path of ancestors) next.delete(path);
         return next;
       });
-    };
+    }, [activeFileKey, tree]);
+
+    const activeIndex = useMemo(
+      () => rows.findIndex(({ key }) => key === activeFileKey),
+      [activeFileKey, rows],
+    );
+
+    useLayoutEffect(() => {
+      if (activeIndex >= 0) virtualizer.scrollToIndex(activeIndex, { align: "auto" });
+    }, [activeIndex, activeFileKey, virtualizer]);
+
+    const handleToggleFolder = useCallback((path: string) => {
+      setCollapsedPaths((current) => {
+        const next = new Set(current);
+        if (!next.delete(path)) next.add(path);
+        return next;
+      });
+    }, []);
 
     if (changes.length === 0) {
       return null;
     }
 
     return (
-      <aside className="changes-file-tree flex max-h-[calc(100vh-2rem)] w-full min-w-0 flex-col overflow-hidden rounded-lg border border-[var(--file-tree-border)] bg-[var(--file-tree-bg)]">
+      <aside
+        className="changes-file-tree flex max-h-[calc(100vh-2rem)] w-full min-w-0 flex-col overflow-hidden rounded-lg border border-[var(--file-tree-border)] bg-[var(--file-tree-bg)]"
+        style={{ "--file-row-height": `${FILE_ROW_HEIGHT}px` } as CSSProperties}
+      >
         <div className="changes-file-tree__header">
           <span>Files</span>
           <span className="changes-file-tree__count">{changes.length}</span>
@@ -403,19 +374,28 @@ export const ChangesFileTree = memo(
         </label>
 
         <nav ref={navRef} className="changes-file-tree__nav">
-          {filteredTree.map((node) => (
-            <TreeNodeView
-              key={node.type === "folder" ? `folder:${node.path}` : node.id}
-              node={node}
-              depth={0}
-              activeFileKey={activeFileKey}
-              expandedPaths={expandedPaths}
-              fileKeysWithDiscussions={fileKeysWithDiscussions}
-              onToggleFolder={handleToggleFolder}
-              onSelectFile={scrollToDiffFile}
-              onActiveFileChange={onActiveFileChange}
-            />
-          ))}
+          <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
+            {virtualizer.getVirtualItems().map((item) => {
+              const { node, depth } = rows[item.index];
+              return (
+                <div
+                  key={item.key}
+                  className="absolute inset-x-0 top-0"
+                  style={{ transform: `translateY(${item.start}px)` }}
+                >
+                  <TreeNodeView
+                    node={node}
+                    depth={depth}
+                    expanded={!collapsedPaths.has(node.path)}
+                    isActive={item.index === activeIndex}
+                    hasDiscussions={node.type === "file" && fileKeysWithDiscussions.has(node.id)}
+                    onToggleFolder={handleToggleFolder}
+                    onSelectFile={onSelectFile}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </nav>
       </aside>
     );

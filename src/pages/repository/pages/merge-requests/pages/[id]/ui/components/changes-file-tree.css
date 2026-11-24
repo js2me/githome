@@ -1,6 +1,5 @@
 .changes-file-tree {
   width: 100%;
-  --file-row-height: 32px;
   --file-row-level-padding: 16px;
 }
 
@@ -57,7 +56,7 @@
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 4px 0;
+  overflow-anchor: none;
 }
 
 .changes-file-tree__row {
@@ -73,6 +72,7 @@
   border: 0;
   background: transparent;
   padding-right: 8px;
+  padding-left: calc(var(--tree-depth) * var(--file-row-level-padding) + 8px);
   text-align: left;
   font-size: 13px;
   color: var(--file-tree-text);
@@ -85,6 +85,20 @@
 
 .changes-file-tree__row--active {
   background: var(--file-tree-active);
+}
+
+.changes-file-tree__row--branch::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 14px;
+  width: calc((var(--tree-depth) - 1) * var(--file-row-level-padding) + 1px);
+  background: repeating-linear-gradient(
+    to right,
+    var(--file-tree-border) 0 1px,
+    transparent 1px var(--file-row-level-padding)
+  );
+  pointer-events: none;
 }
 
 .changes-file-tree__row--branch::after {
@@ -199,27 +213,6 @@
 
 .changes-file-tree__status-icon--modified {
   color: var(--color-file-modified);
-}
-
-.changes-file-tree__children {
-  position: relative;
-}
-
-.changes-file-tree__children::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  bottom: 0;
-  left: calc(var(--tree-level) * var(--file-row-level-padding) - 2px);
-  width: calc(var(--file-row-level-padding));
-  pointer-events: none;
-  background: linear-gradient(
-      to right,
-      var(--file-tree-border) 1px,
-      transparent 1px
-    )
-    repeat-x 0 / var(--file-row-level-padding) 100%;
 }
 
 @media (max-width: 1023px) {

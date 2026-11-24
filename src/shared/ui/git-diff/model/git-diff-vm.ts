@@ -1,4 +1,4 @@
-import { computed } from "mobx";
+import { computed, type IObservableValue } from "mobx";
 import { GitLabDiscussionDC, GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
 import { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
 import { getDiffFileKey } from "@/shared/lib/diff-search";
@@ -48,7 +48,7 @@ export interface GitDiffPayload {
   deleteNoteError?: string | null;
   onClearUpdateNoteError?: () => void;
   onClearDeleteNoteError?: () => void;
-  activeFileKey?: string | null;
+  activeFile?: IObservableValue<string | null>;
   onActiveFileChange?: (fileKey: string) => void;
   markdownScope?: GitlabMarkdownScope;
 }

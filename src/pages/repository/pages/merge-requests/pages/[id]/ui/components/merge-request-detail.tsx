@@ -273,7 +273,7 @@ export const MergeRequestDetail = ({
   const userNotesCount = mergeRequest.user_notes_count ?? 0;
   const labels = mergeRequest.labels ?? [];
   const description = mergeRequest.description ?? "";
-  const { activeFileKey, setActiveFileKey } = useActiveDiffFile(changes);
+  const { activeFile, selectActiveFile, jumpToFile } = useActiveDiffFile(changes);
   const showChangesTree = changes.length > 0;
   const activityDiscussions = useMemo(
     () => filterDiscussionsForActivity(discussions),
@@ -518,8 +518,8 @@ export const MergeRequestDetail = ({
           deleteNoteError={deleteNoteError}
           onClearUpdateNoteError={onClearUpdateNoteError}
           onClearDeleteNoteError={onClearDeleteNoteError}
-          activeFileKey={activeFileKey}
-          onActiveFileChange={setActiveFileKey}
+          activeFile={activeFile}
+          onActiveFileChange={selectActiveFile}
         />
       </section>
     </div>
@@ -538,11 +538,11 @@ export const MergeRequestDetail = ({
             <ChangesFileTree
               changes={changes}
               discussions={discussions}
-              activeFileKey={activeFileKey}
-              onActiveFileChange={setActiveFileKey}
+              activeFile={activeFile}
+              onSelectFile={jumpToFile}
             />
           }
-          connector={<ChangesActiveFileLink activeFileKey={activeFileKey} />}
+          connector={<ChangesActiveFileLink activeFile={activeFile} />}
         >
           {mainContent}
         </ChangesTreeLayout>

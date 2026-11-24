@@ -15,6 +15,7 @@
  * - home -> project (lazy page under Suspense) -> Merge requests -> back -> forward
  * - exactly one visible avatar per author on every MR-list mount
  * - open multiple MR tabs across repositories, switch between them, and close one
+ * - scroll and select files in a 255-file merge request
  * - avatar titles map to the right authors, zero page/console errors
  */
 import puppeteer from 'puppeteer-core';
@@ -93,6 +94,16 @@ const mr = (iid, title, authorName) => ({
 const projects = [project(1, 'alpha'), project(2, 'beta'), project(3, 'gamma')];
 const mrs = AUTHORS.map((name, i) => mr(i + 1, `Mock MR #${i + 1}`, name));
 
+const largeMrChanges = Array.from({ length: 255 }, (_, index) => {
+  const directory = String(Math.floor(index / 17)).padStart(2, '0');
+  const path = `packages/feature-${directory}/file-${String(index).padStart(3, '0')}.ts`;
+  return {
+    old_path: path,
+    new_path: path,
+    diff: `@@ -1 +1 @@\n-const value = 0;\n+const value = ${index + 1};\n`,
+  };
+});
+
 const route = (url) => {
   const p = new URL(url).pathname.replace('/git-proxy/gitlab.mock', '');
   if (p === '/api/v4/user') return user(1, 'Test User');
@@ -100,6 +111,12 @@ const route = (url) => {
     const id = Number(p.split('/').pop());
     return projects.find((pr) => pr.id === id) ?? projects[0];
   }
+  if (p.endsWith('/diffs_batch.json')) {
+    return { diff_files: p.includes('/155/') ? largeMrChanges : [] };
+  }
+  if (p.endsWith('/merge_requests/155')) return mr(155, 'Large MR', AUTHORS[0]);
+  if (/merge_requests\/\d+\/(versions|discussions|reviewers)$/.test(p)) return [];
+  if (/merge_requests\/\d+\/approvals$/.test(p)) return { approved_by: [] };
   if (/merge_requests\/\d+/.test(p)) {
     const iid = Number(p.match(/merge_requests\/(\d+)/)[1]);
     return mrs.find((m) => m.iid === iid) ?? mrs[0];
@@ -338,6 +355,80 @@ check(
     aside.getAttribute('data-expanded') === 'false',
   ),
 );
+
+// Use a real wheel event and pointer click so scroll capture and hit testing
+// run exactly as they do in the application.
+try {
+  await page.setViewport({ width: 1280, height: 800 });
+  await page.goto(`${BASE}/repository/1/merge-requests/155`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.querySelectorAll('.git-diff > article').length === 255);
+  const tree = '.changes-file-tree__nav';
+  await page.waitForSelector(`${tree} [data-changes-file-id]`);
+  const mountedRows = await page.$$eval(`${tree} .changes-file-tree__row`, rows => rows.length);
+  check('large MR mounts only nearby tree rows', mountedRows < 60, `${mountedRows} rows in the DOM`);
+
+  // Move the pointer out of the workspace overlay opened by MR navigation.
+  await page.mouse.move(80, 120);
+  await page.mouse.move(900, 120);
+  await page.waitForFunction(() =>
+    document.querySelector('aside[aria-label="Рабочая область"]')?.dataset.expanded === 'false',
+  );
+  await sleep(350);
+
+  // Start where the sticky tree and diff cards are visible together.
+  await page.$eval('.git-diff', diff => window.scrollTo(0, diff.getBoundingClientRect().top + window.scrollY));
+  const point = await page.$eval(tree, nav => {
+    const rect = nav.getBoundingClientRect();
+    return { x: rect.left + 35, y: rect.top + 70 };
+  });
+  await sleep(200);
+  const pageOffset = await page.evaluate(() => window.scrollY);
+  await page.mouse.move(point.x, point.y);
+  await page.mouse.wheel({ deltaY: 4900 });
+  await page.waitForFunction(selector => (document.querySelector(selector)?.scrollTop ?? 0) > 1000, {}, tree);
+  await sleep(100);
+  check('scrolling the files tree leaves the diff fixed', (await page.evaluate(() => window.scrollY)) === pageOffset);
+
+  const selectedPath = await page.$eval(tree, nav => {
+    const rect = nav.getBoundingClientRect();
+    return document.elementFromPoint(rect.left + 90, rect.top + 140)
+      ?.closest('[data-changes-file-id]')?.title;
+  });
+  if (!selectedPath) throw new Error('No visible file at the click position');
+  const row = `${tree} [title="${selectedPath}"]`;
+  await page.click(row);
+  const cardId = `diff-file-${encodeURIComponent(`${selectedPath}\0${selectedPath}`)}`;
+  await page.waitForFunction((id, rowSelector) => {
+    const card = document.getElementById(id);
+    return card && Math.abs(card.getBoundingClientRect().top - 16) < 2 &&
+      document.querySelector(rowSelector)?.getAttribute('aria-current') === 'true';
+  }, { timeout: 6000 }, cardId, row);
+  await sleep(200);
+  check('click jumps to the exact diff and retains selection', await page.$eval(
+    row, button => button.getAttribute('aria-current') === 'true',
+  ));
+
+  await page.mouse.move(1150, 420);
+  await page.mouse.wheel({ deltaY: 900 });
+  await page.waitForFunction(selector => {
+    const current = document.querySelector('.changes-file-tree__nav [aria-current="true"]');
+    return current && current !== document.querySelector(selector);
+  }, { timeout: 6000 }, row);
+  check('scrolling the diff updates the active tree row', true);
+
+  const lastPath = largeMrChanges.at(-1).new_path;
+  await page.type('.changes-file-tree__search-input', lastPath.split('/').at(-1));
+  const lastRow = `${tree} [title="${lastPath}"]`;
+  await page.waitForSelector(lastRow);
+  await page.click(lastRow);
+  await sleep(200);
+  check('search and click preserve the last file selection at the bottom', await page.$eval(
+    lastRow, button => button.getAttribute('aria-current') === 'true' &&
+      document.documentElement.scrollHeight - window.innerHeight - window.scrollY < 2,
+  ));
+} catch (error) {
+  check('large MR tree navigation', false, String(error));
+}
 
 check('no page errors', pageErrors.length === 0, pageErrors[0]?.slice(0, 150));
 check('no console errors', consoleErrors.length === 0, consoleErrors[0]?.slice(0, 150));
