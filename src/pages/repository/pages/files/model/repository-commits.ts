@@ -1,4 +1,4 @@
-import { action, computed, observable } from "mobx";
+import { actionBound, computed, observable } from "mobx";
 import type { GitLabCommitDC } from "@/shared/api/gitlab";
 import type { Globals } from "@/globals";
 import { createInfiniteGitlabQuery } from "@/shared/lib/gitlab/create-query";
@@ -111,7 +111,7 @@ export class RepositoryCommitsModel {
     return this.commits[0]?.id === commit.id;
   }
 
-  @action.bound
+  @actionBound
   selectCommit(commit: GitLabCommitDC) {
     if (!this.selectedCommitSha && this.commits[0]?.id === commit.id) {
       this.selectedCommitSha = null;
@@ -121,12 +121,12 @@ export class RepositoryCommitsModel {
     this.selectedCommitSha = commit.id;
   }
 
-  @action.bound
+  @actionBound
   reset() {
     this.selectedCommitSha = null;
   }
 
-  @action.bound
+  @actionBound
   loadMore() {
     if (!this.canLoadMore) {
       return;

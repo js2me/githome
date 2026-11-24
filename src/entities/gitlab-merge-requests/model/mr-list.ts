@@ -1,4 +1,4 @@
-import { action, computed } from "mobx";
+import { actionBound, computed } from "mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabMergeRequestDC, GitLabProjectDC } from "@/shared/api/gitlab";
 import {
@@ -145,14 +145,14 @@ export class MrList {
     return this.mergeRequestApprovalCountsQuery.data ?? {};
   }
 
-  @action.bound
+  @actionBound
   loadMore() {
     if (this.canLoadMore && !this.isFetching) {
       void this.mergeRequestsQuery.fetchNextPage();
     }
   }
 
-  @action.bound
+  @actionBound
   openMergeRequest(mergeRequest: GitLabMergeRequestDC) {
     const projectId = this.params.projectId;
     const project = this.params.selectedProject;

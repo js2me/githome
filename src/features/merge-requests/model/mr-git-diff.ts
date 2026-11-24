@@ -1,4 +1,4 @@
-import { action, computed, observable, reaction, runInAction } from "mobx";
+import { actionBound, computed, observable, reaction, runInAction } from "mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type {
   GitLabMergeRequestChangeDC,
@@ -153,12 +153,12 @@ export class MergeRequestGitDiff {
       : "Не удалось загрузить изменения";
   }
 
-  @action.bound
+  @actionBound
   selectVersion(id: number | null) {
     this.selectedVersionId = id;
   }
 
-  @action.bound
+  @actionBound
   async loadFileContent(filePath: string, ref: string) {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();

@@ -1,4 +1,4 @@
-import { action, computed, observable, runInAction } from "mobx";
+import { actionBound, computed, observable, runInAction } from "mobx";
 import type { Globals } from "@/globals";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type {
@@ -254,41 +254,41 @@ export class PipelineList {
     );
   }
 
-  @action.bound
+  @actionBound
   setStatusFilter(status: string) {
     this.statusFilter = status;
   }
 
-  @action.bound
+  @actionBound
   setRefSearch(ref: string) {
     this.refSearch = ref;
   }
 
-  @action.bound
+  @actionBound
   applyRefFilter() {
     this.refFilter = this.refSearch.trim();
   }
 
-  @action.bound
+  @actionBound
   loadMore() {
     if (this.canLoadMore) {
       void this.pipelinesQuery.fetchNextPage();
     }
   }
 
-  @action.bound
+  @actionBound
   refresh() {
     void this.pipelinesQuery.refetch();
   }
 
-  @action.bound
+  @actionBound
   togglePipeline(pipeline: GitLabPipelineDC) {
     const isSamePipeline = this.selectedPipelineId === pipeline.id;
     this.selectedPipelineId = isSamePipeline ? null : pipeline.id;
     this.actionError = null;
   }
 
-  @action.bound
+  @actionBound
   openMergeRequest(iid: number) {
     const projectId = this.params.projectId();
     const project = this.params.project();
@@ -305,7 +305,7 @@ export class PipelineList {
     );
   }
 
-  @action.bound
+  @actionBound
   async runPipelineAction(
     pipeline: GitLabPipelineDC,
     actionType: PipelineAction,
@@ -354,7 +354,7 @@ export class PipelineList {
     }
   }
 
-  @action.bound
+  @actionBound
   async runJobAction(job: GitLabJobDC) {
     const projectId = this.params.projectId();
     const connection = this.params.globals.stores.settings.activeConnection;
@@ -413,7 +413,7 @@ export class PipelineList {
     }
   }
 
-  @action.bound
+  @actionBound
   toggleCreateForm() {
     this.isCreateFormOpen = !this.isCreateFormOpen;
     this.createPipelineError = null;
@@ -422,17 +422,17 @@ export class PipelineList {
     }
   }
 
-  @action.bound
+  @actionBound
   setPipelineRef(ref: string) {
     this.pipelineRef = ref;
   }
 
-  @action.bound
+  @actionBound
   setVariablesText(value: string) {
     this.variablesText = value;
   }
 
-  @action.bound
+  @actionBound
   async createPipeline() {
     const projectId = this.params.projectId();
     const connection = this.params.globals.stores.settings.activeConnection;

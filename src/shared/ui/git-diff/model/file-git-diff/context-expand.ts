@@ -1,4 +1,4 @@
-import { action, computed, observable, reaction } from "mobx";
+import { actionBound, computed, observable, reaction } from "mobx";
 import {
   buildContextLines,
   getDiffExpandGaps,
@@ -148,13 +148,13 @@ export class FileGitDiffContextExpand extends DisposableModel {
     return result;
   }
 
-  @action.bound
+  @actionBound
   resetOnPathChange() {
     this.expandState = {};
     this.loadingGapId = null;
   }
 
-  @action.bound
+  @actionBound
   async loadFileLines() {
     const { meta, parent } = this.file;
     const loadFileContent = parent.payload.loadFileContent;
@@ -181,7 +181,7 @@ export class FileGitDiffContextExpand extends DisposableModel {
     return lines;
   }
 
-  @action.bound
+  @actionBound
   async expandGap(gapId: string, mode: DiffExpandMode) {
     const { meta } = this.file;
 

@@ -1,5 +1,5 @@
 import {
-  action,
+  actionBound,
   computed,
   observable,
   reaction,
@@ -282,17 +282,17 @@ export class RepositoryFilesSearchModel {
     return trimmed.length > 0 && trimmed.length < MIN_QUERY_LENGTH;
   }
 
-  @action.bound
+  @actionBound
   open() {
     this.isOpen = true;
   }
 
-  @action.bound
+  @actionBound
   close() {
     this.isOpen = false;
   }
 
-  @action.bound
+  @actionBound
   setSearchQuery(query: string) {
     this.searchQuery = query;
     if (query.trim()) {
@@ -300,12 +300,12 @@ export class RepositoryFilesSearchModel {
     }
   }
 
-  @action.bound
+  @actionBound
   setSearchMode(mode: FilesSearchMode) {
     this.searchMode = mode;
   }
 
-  @action.bound
+  @actionBound
   selectFile(path: string) {
     this.params.onSelectFile(path);
     this.searchQuery = "";
@@ -313,7 +313,7 @@ export class RepositoryFilesSearchModel {
     this.isOpen = false;
   }
 
-  @action.bound
+  @actionBound
   selectContentResult(result: GitLabSearchBlobDC) {
     this.selectFile(result.path);
   }

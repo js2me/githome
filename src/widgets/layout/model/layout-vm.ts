@@ -1,4 +1,4 @@
-import { action, computed, observable, reaction } from "mobx";
+import { action, actionBound, computed, observable, reaction } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import type { GitLabProjectDC } from "@/shared/api/gitlab";
@@ -176,7 +176,7 @@ export class LayoutVM extends VM {
     this.isConnectionPopupOpen = false;
   }
 
-  @action.bound
+  @actionBound
   toggleConnectionPopup() {
     this.isConnectionPopupOpen = !this.isConnectionPopupOpen;
   }
@@ -191,12 +191,12 @@ export class LayoutVM extends VM {
     this.isSettingsPopupOpen = false;
   }
 
-  @action.bound
+  @actionBound
   toggleSettingsPopup() {
     this.isSettingsPopupOpen = !this.isSettingsPopupOpen;
   }
 
-  @action.bound
+  @actionBound
   selectConnection(id: string) {
     if (!id) {
       this.globals.stores.settings.setActiveConnection(null);
@@ -206,12 +206,12 @@ export class LayoutVM extends VM {
     this.globals.stores.settings.setActiveConnection(id);
   }
 
-  @action.bound
+  @actionBound
   selectNewConnection() {
     this.selectConnection("");
   }
 
-  @action.bound
+  @actionBound
   addConnection() {
     if (!this.canAdd) {
       return;
@@ -223,7 +223,7 @@ export class LayoutVM extends VM {
     );
   }
 
-  @action.bound
+  @actionBound
   saveConnection() {
     const activeId = this.globals.stores.settings.activeId;
 
@@ -238,7 +238,7 @@ export class LayoutVM extends VM {
     );
   }
 
-  @action.bound
+  @actionBound
   removeConnection() {
     const activeId = this.globals.stores.settings.activeId;
 
@@ -255,12 +255,12 @@ export class LayoutVM extends VM {
     this.draftGitToken = "";
   }
 
-  @action.bound
+  @actionBound
   openHome() {
     void this.globals.routes.home.open();
   }
 
-  @action.bound
+  @actionBound
   openRepository() {
     const projectId = this.projectIdParam;
     if (!projectId) {
@@ -270,7 +270,7 @@ export class LayoutVM extends VM {
     void this.globals.routes.repository.open({ projectId });
   }
 
-  @action.bound
+  @actionBound
   openFiles() {
     const projectId = this.projectIdParam;
     if (!projectId) {
@@ -280,7 +280,7 @@ export class LayoutVM extends VM {
     void this.globals.routes.files.open({ projectId });
   }
 
-  @action.bound
+  @actionBound
   openMergeRequests() {
     const projectId = this.projectIdParam;
     if (!projectId) {
@@ -290,7 +290,7 @@ export class LayoutVM extends VM {
     void this.globals.routes.mergeRequests.open({ projectId });
   }
 
-  @action.bound
+  @actionBound
   openPipelines() {
     const projectId = this.projectIdParam;
     if (!projectId) {
@@ -300,7 +300,7 @@ export class LayoutVM extends VM {
     void this.globals.routes.pipelines.open({ projectId });
   }
 
-  @action.bound
+  @actionBound
   openAnalytics() {
     const projectId = this.projectIdParam;
     if (!projectId) {

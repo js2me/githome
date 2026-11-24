@@ -43,7 +43,7 @@ feature-or-component/
 - `class XVM extends VM<Payload>` (или `VM<{}, ParentVM>` для вложенных страниц)
 - Глобальное состояние — через `this.globals.stores.*`, **не** дублировать в props/payload
 - `@observable accessor` — мутабельное; `@computed` — производное
-- `@action.bound` — мутации и обработчики
+- `@actionBound` — мутации и обработчики
 - Payload в VM: `this.payload.*` напрямую. **Не делать геттеры-обёртки** (`get text() { return this.payload.text }`) — только `@computed` / геттеры с реальной логикой (`hasScope`, `cacheKey`)
 - View: props для разметки — из `model.payload`, состояние и actions — из `model`
 - Побочные эффекты: `reaction()` в `willMount()` или конструкторе с `{ fireImmediately: true }` — **не** `mount()` / `payloadChanged()`

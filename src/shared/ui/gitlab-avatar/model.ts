@@ -1,4 +1,4 @@
-import { action, computed, observable, reaction, runInAction } from "mobx";
+import { actionBound, computed, observable, reaction, runInAction } from "mobx";
 import {
   fetchGitlabAssetBlob,
   isGitlabProxiedAssetUrl,
@@ -40,19 +40,19 @@ export class GitlabAvatarVM extends VM<GitlabAvatarPayload> {
     return Boolean(this.displaySrc && !this.hasError);
   }
 
-  @action.bound
+  @actionBound
   handleImageError() {
     this.hasError = true;
   }
 
-  @action.bound
+  @actionBound
   private resetState() {
     this.revokeObjectUrl();
     this.displaySrc = null;
     this.hasError = false;
   }
 
-  @action.bound
+  @actionBound
   private applyDisplaySrc(
     src: string | null,
     avatarUrl: string | null | undefined,

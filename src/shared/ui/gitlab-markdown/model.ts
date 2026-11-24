@@ -1,4 +1,4 @@
-import { action, observable, reaction, runInAction } from "mobx";
+import { actionBound, observable, reaction, runInAction } from "mobx";
 import { createRef } from "yummies/mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
@@ -119,7 +119,7 @@ export class GitlabMarkdownVM extends VM<GitlabMarkdownPayload> {
     );
   }
 
-  @action.bound
+  @actionBound
   private syncFromCacheOrFetch() {
     const text = this.payload.text;
 

@@ -1,4 +1,4 @@
-import { action, computed, observable } from "mobx";
+import { actionBound, computed, observable, observableRef } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import type {
@@ -31,7 +31,7 @@ type AnalyticsPeriod = 30 | 90 | 180;
 
 export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
   @observable accessor period: AnalyticsPeriod = 90;
-  @observable.ref accessor analyticsProgress: GitLabProjectAnalyticsDC = {
+  @observableRef accessor analyticsProgress: GitLabProjectAnalyticsDC = {
     commits: [],
     mergedMergeRequests: [],
   };
@@ -267,7 +267,7 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
     return this.analyticsQuery.isLoading || this.analyticsQuery.isFetching;
   }
 
-  @action.bound
+  @actionBound
   private beginAnalyticsProgress(progressKey: string) {
     this.analyticsRequestId += 1;
     this.analyticsProgress = { commits: [], mergedMergeRequests: [] };
@@ -276,7 +276,7 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
     return this.analyticsRequestId;
   }
 
-  @action.bound
+  @actionBound
   private updateAnalyticsProgress(
     requestId: number,
     analytics: GitLabProjectAnalyticsDC,
@@ -299,7 +299,7 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
         : null;
   }
 
-  @action.bound
+  @actionBound
   setPeriod(value: string) {
     const period = Number(value);
     if (period === 30 || period === 90 || period === 180) {

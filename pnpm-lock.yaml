@@ -36,29 +36,29 @@ importers:
         specifier: 0.0.1
         version: 0.0.1
       mobx:
-        specifier: ^6.16.0
-        version: 6.16.1
+        specifier: ^7.1.7
+        version: 7.1.7
       mobx-location-history:
-        specifier: ^9.4.3
-        version: 9.4.3(mobx@6.16.1)(react@18.3.1)
+        specifier: ^9.5.1
+        version: 9.5.1(mobx@7.1.7)(react@18.3.1)
       mobx-react-lite:
-        specifier: ^4.1.1
-        version: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^5.1.4
+        version: 5.1.4(mobx@7.1.7)(react@18.3.1)
       mobx-route:
-        specifier: ^2.1.3
-        version: 2.1.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.1(mobx@6.16.1)(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^2.2.0
+        version: 2.2.0(mobx-react-lite@5.1.4(mobx@7.1.7)(react@18.3.1))(mobx-view-model@11.1.0(mobx@7.1.7)(react@18.3.1))(mobx@7.1.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-tanstack-query:
-        specifier: ^7.3.0
-        version: 7.3.0(@tanstack/query-core@5.101.0)(mobx@6.16.1)(react@18.3.1)
+        specifier: ^8.0.0
+        version: 8.0.0(@tanstack/query-core@5.101.0)(mobx@7.1.7)(react@18.3.1)
       mobx-view-model:
-        specifier: ^11.0.1
-        version: 11.0.1(mobx@6.16.1)(react@18.3.1)
+        specifier: ^11.1.0
+        version: 11.1.0(mobx@7.1.7)(react@18.3.1)
       mobx-view-model-react:
-        specifier: ^11.0.1
-        version: 11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^11.1.0
+        version: 11.1.0(mobx-react-lite@5.1.4(mobx@7.1.7)(react@18.3.1))(mobx@7.1.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mobx-web-api:
-        specifier: ^1.18.0
-        version: 1.18.0(mobx@6.16.1)(react@18.3.1)
+        specifier: ^1.19.2
+        version: 1.19.2(mobx@7.1.7)(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -69,8 +69,8 @@ importers:
         specifier: ^4.2.0
         version: 4.2.0
       yummies:
-        specifier: ^7.20.1
-        version: 7.20.1(mobx@6.16.1)(react@18.3.1)
+        specifier: ^7.23.2
+        version: 7.23.2(mobx@7.1.7)(react@18.3.1)
     devDependencies:
       '@capacitor/android':
         specifier: ^8.5.2
@@ -106,8 +106,8 @@ importers:
         specifier: ^26.0.12
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)
       mobx-view-model-vite-plugin:
-        specifier: ^2.0.6
-        version: 2.0.6(mobx-view-model-react@11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.1(mobx@6.16.1)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0))
+        specifier: ^2.0.7
+        version: 2.0.7(mobx-view-model-react@11.1.0(mobx-react-lite@5.1.4(mobx@7.1.7)(react@18.3.1))(mobx@7.1.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.1.0(mobx@7.1.7)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0))
       puppeteer-core:
         specifier: ^25.4.0
         version: 25.4.0(yauzl@2.10.0)
@@ -129,8 +129,8 @@ importers:
 
 packages:
 
-  '@babel/runtime@7.29.13':
-    resolution: {integrity: sha512-v+oN26xP4YIlQsbQ/CbTH1WG5m/l/DjKKZNy/Kp3f/AFvbgt7Em/D0FeMM3O2hX0YzeN2M16W8lOpyhIkfCBcQ==}
+  '@babel/runtime@7.29.15':
+    resolution: {integrity: sha512-304gsbbGVmQc+cNGHzwHBlqepYdWLKj3VXCQBGt/EGcV7PUPfKI7kAUNW1FZEOCwlQiLvQjg1JEaAlRQ616h+Q==}
     engines: {node: '>=6.9.0'}
 
   '@capacitor/android@8.5.2':
@@ -1159,8 +1159,8 @@ packages:
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
-  dayjs@1.11.21:
-    resolution: {integrity: sha512-98IT+HOahAisibz/yjKbzuOBwYcjJ7BCLPzARyHiyEBmRz4fatF+KPJszEHXsGYjUG234aH/cOjW1wwTbKUZlA==}
+  dayjs@1.11.23:
+    resolution: {integrity: sha512-QDTCU0M0MxR3hQfnlDJfwekQiaanm1ubOD231u73WBckQ/fsamwRLiE2GBz6D3a/xF1NgfiDLJjXBa1hYOYTtQ==}
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -1222,8 +1222,8 @@ packages:
   dmg-builder@26.15.3:
     resolution: {integrity: sha512-O3zJUFUYHJKgzPqioHxfxzBzlSC1eXCSr79gMSBKBP5AgjjpmrydMsMLotEg9fAJF36vdUncb+4ndRNxoPdlSQ==}
 
-  dompurify@3.4.11:
-    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
+  dompurify@3.5.0:
+    resolution: {integrity: sha512-LYC0ZkE8P1V42JsRYTwMdme/2ET8SpOc5AA2eOFjP/IadvRd2fwiT4TVz5vkfy0XUx12aS2UaRkTnfVPNOv9vw==}
 
   dotenv-expand@11.0.7:
     resolution: {integrity: sha512-zIHwmZPRshsCdpMDyVsqGmgyP0yT8GAgXUnkdAoJisxvf33k7yO6OuoKmcTGuXPWSsm8Oh88nZicRLA9Y0rUeA==}
@@ -1794,29 +1794,22 @@ packages:
     resolution: {integrity: sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw==}
     hasBin: true
 
-  mobx-location-history@9.4.3:
-    resolution: {integrity: sha512-tbQsKwU5LDInW59y481ghW1oNVJL7m6ln/Ry1UsBFr20vZE0dnsxFsEaY6xXUUKSk6RCk3GSYckWGv6W+A7vIg==}
+  mobx-location-history@9.5.1:
+    resolution: {integrity: sha512-wW+B9+vg0atMccbBRBXrYDMsy06gw7Y1DAGgdSbSadlBnpPiXTS4lpV80aQ6GOvVH+rC0TSXeIpUdn+RZYgNOg==}
     peerDependencies:
-      mobx: ^6.13.3
+      mobx: ^6.13.3 || ^7.0.0
 
-  mobx-react-lite@4.1.1:
-    resolution: {integrity: sha512-iUxiMpsvNraCKXU+yPotsOncNNmyeS2B5DKL+TL6Tar/xm+wwNJAubJmtRSeAoYawdZqwv8Z/+5nPRHeQxTiXg==}
+  mobx-react-lite@5.1.4:
+    resolution: {integrity: sha512-05czVT1a+xN/ngy1zxhKH5dhXh3F/9ER6Ioh2ysZYzIm/mPDXWVj8AkiPsjnXtDYLNdn/etxCB0cX2bRZGOKsw==}
     peerDependencies:
-      mobx: ^6.9.0
-      react: ^16.8.0 || ^17 || ^18 || ^19
-      react-dom: '*'
-      react-native: '*'
-    peerDependenciesMeta:
-      react-dom:
-        optional: true
-      react-native:
-        optional: true
+      mobx: ^7.0.0
+      react: ^18 || ^19
 
-  mobx-route@2.1.3:
-    resolution: {integrity: sha512-/z414cz2J1Q/TeBd6/LMnQPh5zbGwNi/UfPlNSH2BXQPc4Lay/8fsXH4TkisAniFy6k6vdLWFB5YVE3SSOCrFw==}
+  mobx-route@2.2.0:
+    resolution: {integrity: sha512-/hH4kdCiTNTJrC7EekHwxoPECqqdtqynwc66VM8SpHp5THBxvKebHyEEFYLpr7mW7Vg5Arjki2gdePaLeGIkog==}
     peerDependencies:
-      mobx: ^6.12.4
-      mobx-react-lite: ^4.0.7
+      mobx: ^6.13.3 || ^7.0.0
+      mobx-react-lite: ^4.0.7 || ^5.0.0
       mobx-view-model: ^8.10.0 || ^9.0.0 || ^10.0.0 || ^11.0.0
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -1830,47 +1823,47 @@ packages:
       react-dom:
         optional: true
 
-  mobx-swiss-knife@1.15.2:
-    resolution: {integrity: sha512-EgdY+Y//F4Nz2eSQ7+aBOXEjlYu1yuOGcXzu062gqOGFmXiRHL6VEqADImSm+SAhqs83JcRg7uS+GpNOq7AQPw==}
+  mobx-swiss-knife@1.16.2:
+    resolution: {integrity: sha512-9Gu8BbSbgwmQHxIjy2N72v8gZHb1vjkK0tvnycbC2E6Zuw84E8mzO2NGrAhieVe++3tv5KKFVsVNkAF7y0BvCw==}
     peerDependencies:
-      mobx: ^6.12.4
+      mobx: ^6.12.4 || ^7.0.0
 
-  mobx-tanstack-query@7.3.0:
-    resolution: {integrity: sha512-VDTmcrfKkYuGZaBd6rR/X54lN/2OMRuKq/MsOpC5FCxmEGJbex0MsLqb90qaifhUDF7glbMqhC0twfXLZAleIg==}
+  mobx-tanstack-query@8.0.0:
+    resolution: {integrity: sha512-UultEituZMgYIzdprg0KO217wynnG2pwHLnSSTVUigBs8iYTDCF00D+0pz7/Tm0vbuJRHsuocjBDFkIuxqeJug==}
     peerDependencies:
       '@tanstack/query-core': ^5.90.2
-      mobx: ^6.12.4
+      mobx: ^6.12.4 || ^7.0.0
 
-  mobx-view-model-devtools@0.4.1:
-    resolution: {integrity: sha512-PjxIkfC00Max9DHVvfKj5T+HNp+oQJdfWTI9pFfqn2LTMZd3ABVkz3YH6DPyr//lopmLKpnNYR6TDkt5YaCYwA==}
+  mobx-view-model-devtools@0.5.0:
+    resolution: {integrity: sha512-yrh/10O4H2UHsib7flDLEwh+Qdpd8bB9nw4F+yli0TWitzxt++CbdeudXFFGCDXIYGITYhVxzd7sE3TanmpsXw==}
 
-  mobx-view-model-react@11.0.1:
-    resolution: {integrity: sha512-A4uVKgqoUEqSo+hKKnXHLPDCHkfr2q/ExZKMjYuEvTEjx1qWmGCCz9ipWXYoeJ2lVmWGIs1G313zT+beHPzLIg==}
+  mobx-view-model-react@11.1.0:
+    resolution: {integrity: sha512-5Bwm2igMBJ5J5uQMneRGAB8kglUU9kWYBVdWwKgY5gotajIu4U8KGvNGUpl81+EaaWh+wgBKQ04NK8cVHkvKlg==}
     peerDependencies:
-      mobx: ^6.12.4
-      mobx-react-lite: ^4.0.7
+      mobx: ^6.12.4 || ^7.0.0
+      mobx-react-lite: ^4.0.7 || ^5.0.0
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
 
-  mobx-view-model-vite-plugin@2.0.6:
-    resolution: {integrity: sha512-fDsvAKIZGetg8q4C/BKyDEsOVb8Q3YOpXGHwfaOP+TJD90Si9n1KN7Tsd9NDOmg9hhQaILGRaa1Ujug0KAHaYQ==}
+  mobx-view-model-vite-plugin@2.0.7:
+    resolution: {integrity: sha512-qi47AwOoaOfq6clcTG86rQ8rj4mmwBHusHncrfTf1o17fflt+/KOFvCnyoom5lBQngdidixnQB2EmZj1RmOY4A==}
     peerDependencies:
       mobx-view-model: ^11.0.0
       mobx-view-model-react: ^11.0.0
       vite: ^6.0.0 || ^7.0.0 || ^8.0.0
 
-  mobx-view-model@11.0.1:
-    resolution: {integrity: sha512-j0FRaGphS9coMLKRt6sG+zGlr0S30xKbRewrgC22gT2kQ8g+c2vZSnbUlqLQJwAfc4hVPUlhKDz8IakcDNiLfg==}
+  mobx-view-model@11.1.0:
+    resolution: {integrity: sha512-Z8iFKxVm7nyYF++nL55NltCgpzEHFdYOVYmEQZMB4oLUeg+s73AKi87kWKySNDaTH+kRYSYabVgg66pYlK0qrg==}
     peerDependencies:
-      mobx: ^6.12.4
+      mobx: ^6.12.4 || ^7.0.0
 
-  mobx-web-api@1.18.0:
-    resolution: {integrity: sha512-6nUjQNzZ7++0lIjQ1FXHhfjI8clZgakMK5HLOvTx8LLT99p/OEt33mVZexDzPTy9cqXobM9UpPBg3PsVbW4C/g==}
+  mobx-web-api@1.19.2:
+    resolution: {integrity: sha512-NowFHBmxEho71dESNc8W+jdtghPFMu0qUug44yMrvgB0FyU+QfKHY240xgIpkPSWVjohWLdk/+z2XVGNwt2oTA==}
     peerDependencies:
-      mobx: ^6.13.6
+      mobx: ^6.13.6 || ^7.0.0
 
-  mobx@6.16.1:
-    resolution: {integrity: sha512-syNcDdX3KT+Jq3je6eGjBhuc24Z68td2VG0zNFqRswaE433D9SNH5VRy/xrGbJsUixfppLLccXhAW9JSf6n+SQ==}
+  mobx@7.1.7:
+    resolution: {integrity: sha512-fzFPm0u0xHxrAyjFsjfA/a99JgyvLh8R/bnTe7uD37cwbO5O7OUrv/e6Q4rlYdBGCf3rR/pVvh1OVMPF10ghng==}
 
   modern-tar@0.7.7:
     resolution: {integrity: sha512-t9VmxaqrmANnEOBhpSDI6HD192Ge48k8vmWqQQL7hSFEqHEYwZbbsu49+aKLWZeRvFs3j1pMhXOqqF4kPlvjkQ==}
@@ -1918,8 +1911,8 @@ packages:
     resolution: {integrity: sha512-DlL+XwOy3NxAQ8xuC0okPgK46iuVNAK01YN7RueYBqqFeGsBjV9XmCAzAdgt+667bCl5kPh9EqKKDwnaPG1I7A==}
     engines: {node: '>=10'}
 
-  object-inspect@1.13.4:
-    resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
+  object-inspect@1.14.0:
+    resolution: {integrity: sha512-IVgHNlp/jwQX271+Xzoq9LZNTWXxZK+cEOrGBOBxXNbn7fapnZ+Ts6TVMgNOuAezwG2wdtnMX97tTPK6VEnuOQ==}
     engines: {node: '>= 0.4'}
 
   object-keys@1.1.1:
@@ -2276,8 +2269,8 @@ packages:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
 
-  tailwind-merge@3.6.0:
-    resolution: {integrity: sha512-uxL7qAVQriqRQPAyK3pj66VqskWqoZ37PW94jwOTwNfq/z9oyu1V+eqrZqtR2+fCiXdYOZe/Modt8GtvqNzu+w==}
+  tailwind-merge@3.7.1:
+    resolution: {integrity: sha512-v7y4BV4FUlO8exj/4M5UXKeoowDiuugVUg3tkMNIyOUCOHy5xp8+5aWQeXCtZ2491sUV1YPsVeM9EveZ6/xuZQ==}
 
   tailwindcss@4.3.1:
     resolution: {integrity: sha512-hk+TB1m+K8CYNrP6rjQaq/Y+4Zylwpa87mLYBKCunwnnQ9p+fHb7kmSfGqyEJoxF/O6CDyABWVFEafNSYKll+Q==}
@@ -2397,11 +2390,6 @@ packages:
 
   unzipper@0.12.3:
     resolution: {integrity: sha512-PZ8hTS+AqcGxsaQntl3IRBw65QrBI6lxzqDEL7IAo/XCEqRTKGfOX56Vea5TH9SZczRVxuzk1re04z/YjuYCJA==}
-
-  use-sync-external-store@1.6.0:
-    resolution: {integrity: sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   utf8-byte-length@1.0.5:
     resolution: {integrity: sha512-Xn0w3MtiQ6zoz2vFyUVruaCL53O/DwUvkEeOvj+uulMm0BkUGYWmBYVyElqZaSLhY6ZD0ulfU3aBra2aVT4xfA==}
@@ -2608,10 +2596,10 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  yummies@7.20.1:
-    resolution: {integrity: sha512-H/AxRy+SjVlfpeI0TkiVkU/M2n+XpR1XGt5yS5r7GsP9Iz3mr17dbq9DLW18PmMlyKO78+yvH/9Z9VAnVuV3og==}
+  yummies@7.23.2:
+    resolution: {integrity: sha512-LX/xoBgTSqP6NtUt3EfQ8/7s4MgLwYMLF1vcky4a4oqSkjLPACWR9gAlbHQ9ckI9k1lNZSfm1DT35mv35/U2MQ==}
     peerDependencies:
-      mobx: ^6.12.4
+      mobx: ^6.12.4 || ^7.0.0
       react: ^18 || ^19
     peerDependenciesMeta:
       mobx:
@@ -2630,7 +2618,7 @@ packages:
 
 snapshots:
 
-  '@babel/runtime@7.29.13': {}
+  '@babel/runtime@7.29.15': {}
 
   '@capacitor/android@8.5.2(@capacitor/core@8.5.2)':
     dependencies:
@@ -3630,7 +3618,7 @@ snapshots:
 
   csstype@3.2.3: {}
 
-  dayjs@1.11.21: {}
+  dayjs@1.11.23: {}
 
   debug@4.4.3:
     dependencies:
@@ -3690,7 +3678,7 @@ snapshots:
       - electron-builder-squirrel-windows
       - supports-color
 
-  dompurify@3.4.11:
+  dompurify@3.5.0:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -4072,7 +4060,7 @@ snapshots:
 
   history@5.3.0:
     dependencies:
-      '@babel/runtime': 7.29.13
+      '@babel/runtime': 7.29.15
 
   hosted-git-info@4.1.0:
     dependencies:
@@ -4330,106 +4318,99 @@ snapshots:
     dependencies:
       minimist: 1.2.8
 
-  mobx-location-history@9.4.3(mobx@6.16.1)(react@18.3.1):
+  mobx-location-history@9.5.1(mobx@7.1.7)(react@18.3.1):
     dependencies:
       '@types/qs': 6.15.1
       history: 5.3.0
-      mobx: 6.16.1
+      mobx: 7.1.7
       qs: 6.17.1
-      yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
+      yummies: 7.23.2(mobx@7.1.7)(react@18.3.1)
     transitivePeerDependencies:
       - react
 
-  mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  mobx-react-lite@5.1.4(mobx@7.1.7)(react@18.3.1):
     dependencies:
-      mobx: 6.16.1
+      mobx: 7.1.7
       react: 18.3.1
-      use-sync-external-store: 1.6.0(react@18.3.1)
-    optionalDependencies:
-      react-dom: 18.3.1(react@18.3.1)
 
-  mobx-route@2.1.3(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.1(mobx@6.16.1)(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  mobx-route@2.2.0(mobx-react-lite@5.1.4(mobx@7.1.7)(react@18.3.1))(mobx-view-model@11.1.0(mobx@7.1.7)(react@18.3.1))(mobx@7.1.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
-      mobx: 6.16.1
-      mobx-location-history: 9.4.3(mobx@6.16.1)(react@18.3.1)
+      mobx: 7.1.7
+      mobx-location-history: 9.5.1(mobx@7.1.7)(react@18.3.1)
       path-to-regexp: 8.4.2
-      yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
+      yummies: 7.23.2(mobx@7.1.7)(react@18.3.1)
     optionalDependencies:
-      mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-view-model: 11.0.1(mobx@6.16.1)(react@18.3.1)
+      mobx-react-lite: 5.1.4(mobx@7.1.7)(react@18.3.1)
+      mobx-view-model: 11.1.0(mobx@7.1.7)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  mobx-swiss-knife@1.15.2(mobx@6.16.1)(react@18.3.1):
+  mobx-swiss-knife@1.16.2(mobx@7.1.7)(react@18.3.1):
     dependencies:
       '@faker-js/faker': 9.9.0
       '@types/lodash-es': 4.17.12
       linked-abort-controller: 1.1.1
       lodash-es: 4.18.1
-      mobx: 6.16.1
-      yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
+      mobx: 7.1.7
+      yummies: 7.23.2(mobx@7.1.7)(react@18.3.1)
     transitivePeerDependencies:
       - react
 
-  mobx-tanstack-query@7.3.0(@tanstack/query-core@5.101.0)(mobx@6.16.1)(react@18.3.1):
+  mobx-tanstack-query@8.0.0(@tanstack/query-core@5.101.0)(mobx@7.1.7)(react@18.3.1):
     dependencies:
       '@tanstack/query-core': 5.101.0
       linked-abort-controller: 1.1.1
-      mobx: 6.16.1
-      yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
+      mobx: 7.1.7
+      yummies: 7.23.2(mobx@7.1.7)(react@18.3.1)
     transitivePeerDependencies:
       - react
 
-  mobx-view-model-devtools@0.4.1:
+  mobx-view-model-devtools@0.5.0:
     dependencies:
       '@gravity-ui/icons': 2.18.0(react@18.3.1)
-      mobx: 6.16.1
-      mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-swiss-knife: 1.15.2(mobx@6.16.1)(react@18.3.1)
-      mobx-view-model: 11.0.1(mobx@6.16.1)(react@18.3.1)
-      mobx-view-model-react: 11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-web-api: 1.18.0(mobx@6.16.1)(react@18.3.1)
+      mobx: 7.1.7
+      mobx-react-lite: 5.1.4(mobx@7.1.7)(react@18.3.1)
+      mobx-swiss-knife: 1.16.2(mobx@7.1.7)(react@18.3.1)
+      mobx-view-model: 11.1.0(mobx@7.1.7)(react@18.3.1)
+      mobx-view-model-react: 11.1.0(mobx-react-lite@5.1.4(mobx@7.1.7)(react@18.3.1))(mobx@7.1.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      mobx-web-api: 1.19.2(mobx@7.1.7)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
       simplebar-core: 1.3.2
-      yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - react-native
+      yummies: 7.23.2(mobx@7.1.7)(react@18.3.1)
 
-  mobx-view-model-react@11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  mobx-view-model-react@11.1.0(mobx-react-lite@5.1.4(mobx@7.1.7)(react@18.3.1))(mobx@7.1.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
-      mobx: 6.16.1
-      mobx-react-lite: 4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      mobx-view-model: 11.0.1(mobx@6.16.1)(react@18.3.1)
+      mobx: 7.1.7
+      mobx-react-lite: 5.1.4(mobx@7.1.7)(react@18.3.1)
+      mobx-view-model: 11.1.0(mobx@7.1.7)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  mobx-view-model-vite-plugin@2.0.6(mobx-view-model-react@11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.0.1(mobx@6.16.1)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)):
+  mobx-view-model-vite-plugin@2.0.7(mobx-view-model-react@11.1.0(mobx-react-lite@5.1.4(mobx@7.1.7)(react@18.3.1))(mobx@7.1.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx-view-model@11.1.0(mobx@7.1.7)(react@18.3.1))(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)):
     dependencies:
       magic-string: 0.30.21
-      mobx-view-model: 11.0.1(mobx@6.16.1)(react@18.3.1)
-      mobx-view-model-devtools: 0.4.1
-      mobx-view-model-react: 11.0.1(mobx-react-lite@4.1.1(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(mobx@6.16.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      mobx-view-model: 11.1.0(mobx@7.1.7)(react@18.3.1)
+      mobx-view-model-devtools: 0.5.0
+      mobx-view-model-react: 11.1.0(mobx-react-lite@5.1.4(mobx@7.1.7)(react@18.3.1))(mobx@7.1.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       typescript: 6.0.3
       vite: 7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)
-    transitivePeerDependencies:
-      - react-native
 
-  mobx-view-model@11.0.1(mobx@6.16.1)(react@18.3.1):
+  mobx-view-model@11.1.0(mobx@7.1.7)(react@18.3.1):
     dependencies:
-      mobx: 6.16.1
-      yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
+      mobx: 7.1.7
+      yummies: 7.23.2(mobx@7.1.7)(react@18.3.1)
     transitivePeerDependencies:
       - react
 
-  mobx-web-api@1.18.0(mobx@6.16.1)(react@18.3.1):
+  mobx-web-api@1.19.2(mobx@7.1.7)(react@18.3.1):
     dependencies:
-      mobx: 6.16.1
-      yummies: 7.20.1(mobx@6.16.1)(react@18.3.1)
+      mobx: 7.1.7
+      yummies: 7.23.2(mobx@7.1.7)(react@18.3.1)
     transitivePeerDependencies:
       - react
 
-  mobx@6.16.1: {}
+  mobx@7.1.7: {}
 
   modern-tar@0.7.7: {}
 
@@ -4484,7 +4465,7 @@ snapshots:
 
   normalize-url@6.1.0: {}
 
-  object-inspect@1.13.4: {}
+  object-inspect@1.14.0: {}
 
   object-keys@1.1.1:
     optional: true
@@ -4778,27 +4759,27 @@ snapshots:
   side-channel-list@1.0.1:
     dependencies:
       es-errors: 1.3.0
-      object-inspect: 1.13.4
+      object-inspect: 1.14.0
 
   side-channel-map@1.0.1:
     dependencies:
       call-bound: 1.0.4
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
-      object-inspect: 1.13.4
+      object-inspect: 1.14.0
 
   side-channel-weakmap@1.0.2:
     dependencies:
       call-bound: 1.0.4
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
-      object-inspect: 1.13.4
+      object-inspect: 1.14.0
       side-channel-map: 1.0.1
 
   side-channel@1.1.1:
     dependencies:
       es-errors: 1.3.0
-      object-inspect: 1.13.4
+      object-inspect: 1.14.0
       side-channel-list: 1.0.1
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
@@ -4894,7 +4875,7 @@ snapshots:
     dependencies:
       has-flag: 4.0.0
 
-  tailwind-merge@3.6.0: {}
+  tailwind-merge@3.7.1: {}
 
   tailwindcss@4.3.1: {}
 
@@ -5006,10 +4987,6 @@ snapshots:
       fs-extra: 11.4.1
       graceful-fs: 4.2.11
       node-int64: 0.4.0
-
-  use-sync-external-store@1.6.0(react@18.3.1):
-    dependencies:
-      react: 18.3.1
 
   utf8-byte-length@1.0.5: {}
 
@@ -5154,16 +5131,16 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  yummies@7.20.1(mobx@6.16.1)(react@18.3.1):
+  yummies@7.23.2(mobx@7.1.7)(react@18.3.1):
     dependencies:
       class-variance-authority: 0.7.1
       clsx: 2.1.1
-      dayjs: 1.11.21
-      dompurify: 3.4.11
+      dayjs: 1.11.23
+      dompurify: 3.5.0
       nanoid: 5.1.16
-      tailwind-merge: 3.6.0
+      tailwind-merge: 3.7.1
     optionalDependencies:
-      mobx: 6.16.1
+      mobx: 7.1.7
       react: 18.3.1
 
   zod@3.25.76: {}

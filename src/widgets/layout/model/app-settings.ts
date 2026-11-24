@@ -1,5 +1,5 @@
 import { Display, Moon, Sun } from "@gravity-ui/icons";
-import { action, computed } from "mobx";
+import { actionBound, computed } from "mobx";
 import type { Globals } from "@/globals";
 import type { ThemePreference } from "@/globals/stores/theme-manager";
 
@@ -21,7 +21,7 @@ export class AppSettings {
     return this.globals.stores.theme.preference;
   }
 
-  @action.bound
+  @actionBound
   setThemePreference(id: ThemePreference) {
     this.globals.stores.theme.setPreference(id);
   }

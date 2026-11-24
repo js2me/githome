@@ -1,4 +1,4 @@
-import { action, computed, observable } from "mobx";
+import { actionBound, computed, observable } from "mobx";
 import type { Globals } from "@/globals";
 import { GitlabProjectInfo } from "@/entities/gitlab-projects/model/gitlab-project-info";
 import type { GitLabProjectDC, GitLabUserDC } from "@/shared/api/gitlab";
@@ -133,12 +133,12 @@ export class GitlabProjectsList {
     );
   }
 
-  @action.bound
+  @actionBound
   setActiveTab(tab: ProjectListTab) {
     this.activeTab = tab;
   }
 
-  @action.bound
+  @actionBound
   loadMore() {
     if (!this.canLoadMore) {
       return;

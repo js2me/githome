@@ -1,4 +1,11 @@
-import { action, computed, observable, reaction, runInAction } from "mobx";
+import {
+  actionBound,
+  computed,
+  observable,
+  observableShallow,
+  reaction,
+  runInAction,
+} from "mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabRepositoryTreeItemDC } from "@/shared/api/gitlab";
 import type { Globals } from "@/globals";
@@ -12,13 +19,13 @@ export interface RepositoryTreeParams {
 }
 
 export class RepositoryTreeModel {
-  @observable.shallow accessor folderContents = new Map<
+  @observableShallow accessor folderContents = new Map<
     string,
     GitLabRepositoryTreeItemDC[]
   >();
-  @observable.shallow accessor expandedPaths = new Set<string>();
-  @observable.shallow accessor loadingFolders = new Set<string>();
-  @observable.shallow accessor folderErrors = new Map<string, string>();
+  @observableShallow accessor expandedPaths = new Set<string>();
+  @observableShallow accessor loadingFolders = new Set<string>();
+  @observableShallow accessor folderErrors = new Map<string, string>();
   @observable accessor selectedFilePath: string | null = null;
 
   constructor(private readonly params: RepositoryTreeParams) {
@@ -87,7 +94,7 @@ export class RepositoryTreeModel {
     return this.folderErrors.get(path) ?? null;
   }
 
-  @action.bound
+  @actionBound
   reset() {
     this.folderContents.clear();
     this.expandedPaths.clear();
@@ -95,17 +102,17 @@ export class RepositoryTreeModel {
     this.folderErrors.clear();
   }
 
-  @action.bound
+  @actionBound
   selectFile(path: string) {
     this.selectedFilePath = path;
   }
 
-  @action.bound
+  @actionBound
   clearSelectedFile() {
     this.selectedFilePath = null;
   }
 
-  @action.bound
+  @actionBound
   async revealFile(path: string) {
     this.selectedFilePath = path;
 
@@ -122,7 +129,7 @@ export class RepositoryTreeModel {
     }
   }
 
-  @action.bound
+  @actionBound
   async toggleFolder(path: string) {
     if (this.expandedPaths.has(path)) {
       this.expandedPaths.delete(path);
@@ -133,7 +140,7 @@ export class RepositoryTreeModel {
     await this.loadFolder(path);
   }
 
-  @action.bound
+  @actionBound
   async loadFolder(path: string) {
     if (this.folderContents.has(path) || this.loadingFolders.has(path)) {
       return;

@@ -1,4 +1,4 @@
-import { action, computed, reaction } from "mobx";
+import { actionBound, computed, reaction } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import type {
@@ -151,7 +151,7 @@ export class RepositoryPageVM extends VM {
     );
   }
 
-  @action.bound
+  @actionBound
   openFiles() {
     const projectId = this.projectIdParam;
     if (!projectId) {
@@ -161,7 +161,7 @@ export class RepositoryPageVM extends VM {
     void this.globals.routes.files.open({ projectId });
   }
 
-  @action.bound
+  @actionBound
   openMergeRequests() {
     const projectId = this.projectIdParam;
     if (!projectId) {
@@ -171,7 +171,7 @@ export class RepositoryPageVM extends VM {
     void this.globals.routes.mergeRequests.open({ projectId });
   }
 
-  @action.bound
+  @actionBound
   openPipelines() {
     const projectId = this.projectIdParam;
     if (!projectId) {
@@ -181,7 +181,7 @@ export class RepositoryPageVM extends VM {
     void this.globals.routes.pipelines.open({ projectId });
   }
 
-  @action.bound
+  @actionBound
   openAnalytics() {
     const projectId = this.projectIdParam;
     if (!projectId) {

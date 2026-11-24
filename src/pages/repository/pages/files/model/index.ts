@@ -1,4 +1,4 @@
-import { action, computed, observable, reaction } from "mobx";
+import { actionBound, computed, observable, reaction } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabBranchDC } from "@/shared/api/gitlab";
@@ -144,7 +144,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
     );
   }
 
-  @action.bound
+  @actionBound
   applyQueryState(data: FilesQueryData) {
     const branch = data.branch || this.defaultBranch;
 
@@ -291,7 +291,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
     return path.split("/").pop() ?? path;
   }
 
-  @action.bound
+  @actionBound
   toggleBranchPicker() {
     this.isBranchPickerOpen = !this.isBranchPickerOpen;
     if (this.isBranchPickerOpen) {
@@ -299,12 +299,12 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
     }
   }
 
-  @action.bound
+  @actionBound
   closeBranchPicker() {
     this.isBranchPickerOpen = false;
   }
 
-  @action.bound
+  @actionBound
   selectBranch(branch: string) {
     this.selectedBranch = branch;
     this.isBranchPickerOpen = false;
@@ -312,7 +312,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
     this.commitsModel.reset();
   }
 
-  @action.bound
+  @actionBound
   toggleCommitPicker() {
     this.isCommitPickerOpen = !this.isCommitPickerOpen;
     if (this.isCommitPickerOpen) {
@@ -320,7 +320,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
     }
   }
 
-  @action.bound
+  @actionBound
   closeCommitPicker() {
     this.isCommitPickerOpen = false;
   }

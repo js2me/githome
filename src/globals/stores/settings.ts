@@ -1,4 +1,4 @@
-import { action, computed } from "mobx";
+import { action, computed, computedStruct } from "mobx";
 import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
 import { getConnectionLabel } from "@/shared/lib/gitlab/connection";
 import {
@@ -46,7 +46,7 @@ const createConnectionItem = (
 });
 
 export class SettingsStore {
-  @computed.struct
+  @computedStruct
   get snapshot(): ConnectionsStorage {
     return connectionsKey.value;
   }
@@ -78,7 +78,7 @@ export class SettingsStore {
     return toActiveConnection(this.snapshot);
   }
 
-  @computed.struct
+  @computedStruct
   get connectionOptions() {
     return this.connections.map((connection) => ({
       id: connection.id,

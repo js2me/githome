@@ -1,4 +1,4 @@
-import { action, observable, reaction, runInAction } from "mobx";
+import { actionBound, observable, reaction, runInAction } from "mobx";
 import { VM } from "@/shared/lib/view-models/vm";
 import { getLanguageFromPath } from "@/shared/lib/syntax-highlight/language-from-path";
 import { renderSyntaxTokensToHtml } from "@/shared/lib/syntax-highlight/render-syntax-html";
@@ -30,7 +30,7 @@ export class HighlightedSourceCodeVM extends VM<HighlightedSourceCodePayload> {
     );
   }
 
-  @action.bound
+  @actionBound
   private async highlight() {
     const generation = ++this.highlightGeneration;
     const { content, filePath } = this.payload;

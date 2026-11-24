@@ -1,4 +1,4 @@
-import { action, computed, observable, runInAction } from "mobx";
+import { actionBound, computed, observable, runInAction } from "mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type {
   GitLabDiscussionDC,
@@ -31,12 +31,12 @@ export class CreateMrComment {
     return this.options.getMergeRequestDetail()?.diff_refs != null;
   }
 
-  @action.bound
+  @actionBound
   clearSubmitError() {
     this.submitError = "";
   }
 
-  @action.bound
+  @actionBound
   async submit(input: CreateDiffCommentInput) {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();

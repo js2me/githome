@@ -1,4 +1,4 @@
-import { action, computed, observable } from "mobx";
+import { actionBound, computed, observable } from "mobx";
 import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
 import {
   getFileLevelThreadsForChange,
@@ -34,7 +34,7 @@ export class FileGitDiffMeta {
     return this.isAutoCollapsed || this.isLazyCollapsed;
   }
 
-  @action.bound
+  @actionBound
   syncChange(change: GitLabMergeRequestChangeDC) {
     const prev = this.change;
 

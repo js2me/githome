@@ -1,4 +1,4 @@
-import { action, computed, observable, reaction, runInAction } from "mobx";
+import { actionBound, computed, observable, reaction, runInAction } from "mobx";
 import {
   buildDeletedFileUnifiedDiff,
   buildModifiedFileUnifiedDiff,
@@ -54,7 +54,7 @@ export class FileGitDiffContent extends DisposableModel {
     );
   }
 
-  @action.bound
+  @actionBound
   async copyFileContent() {
     const { meta, parent } = this.file;
     const loadFileContent = parent.payload.loadFileContent;
@@ -66,7 +66,7 @@ export class FileGitDiffContent extends DisposableModel {
     return loadFileContent(meta.filePath, meta.fileRef);
   }
 
-  @action.bound
+  @actionBound
   async expandCollapsedFile() {
     const { change } = this.file.meta;
     const { headRef, baseRef, loadFileContent } = this.file.parent.payload;
@@ -122,12 +122,12 @@ export class FileGitDiffContent extends DisposableModel {
     }
   }
 
-  @action.bound
+  @actionBound
   collapseFile() {
     this.isFileExpanded = false;
   }
 
-  @action.bound
+  @actionBound
   toggleFileExpanded() {
     if (this.isFileExpanded) {
       this.collapseFile();
@@ -137,7 +137,7 @@ export class FileGitDiffContent extends DisposableModel {
     void this.expandCollapsedFile();
   }
 
-  @action.bound
+  @actionBound
   resetOnPathChange() {
     this.isFileExpanded = shouldStartExpanded(this.file);
     this.expandedDiff = null;

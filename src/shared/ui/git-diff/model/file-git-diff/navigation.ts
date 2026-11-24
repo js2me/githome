@@ -1,4 +1,4 @@
-import { action } from "mobx";
+import { actionBound } from "mobx";
 import type { FileGitDiff } from ".";
 
 export class FileGitDiffNavigation {
@@ -6,12 +6,12 @@ export class FileGitDiffNavigation {
 
   constructor(private readonly file: FileGitDiff) {}
 
-  @action.bound
+  @actionBound
   setActive() {
     this.file.parent.payload.onActiveFileChange?.(this.file.meta.fileKey);
   }
 
-  @action.bound
+  @actionBound
   registerScrollToRow(scrollToRow: (rowId: string) => void) {
     this.scrollToRowHandler = scrollToRow;
   }

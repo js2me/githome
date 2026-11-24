@@ -1,4 +1,4 @@
-import { action, computed, observable, reaction, runInAction } from "mobx";
+import { action, actionBound, computed, observable, reaction, runInAction } from "mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type {
   GitLabDiscussionDC,
@@ -378,7 +378,7 @@ export class MrInfoModel {
     return `${mr.project.id}:${mr.mergeRequestIid}`;
   }
 
-  @action.bound
+  @actionBound
   private addLocalDiscussion(discussion: GitLabDiscussionDC) {
     const localDiscussionsKey = this.mergeRequestKey;
     if (!localDiscussionsKey) {
@@ -397,17 +397,17 @@ export class MrInfoModel {
     ]);
   }
 
-  @action.bound
+  @actionBound
   submitDiffComment(input: CreateDiffCommentInput) {
     return this.diffComment.submit(input);
   }
 
-  @action.bound
+  @actionBound
   clearSubmitDiffCommentError() {
     this.diffComment.clearSubmitError();
   }
 
-  @action.bound
+  @actionBound
   async submitMrComment(body: string) {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();
@@ -453,12 +453,12 @@ export class MrInfoModel {
     }
   }
 
-  @action.bound
+  @actionBound
   clearSubmitMrCommentError() {
     this.submitMrCommentError = "";
   }
 
-  @action.bound
+  @actionBound
   selectDiffVersion(id: number | null) {
     this.gitDiff.selectVersion(id);
   }
@@ -468,13 +468,13 @@ export class MrInfoModel {
     this.resolveDiscussionError = "";
   }
 
-  @action.bound
+  @actionBound
   clearReplyDiscussionError() {
     this.replyDiscussionErrorKey = "";
     this.replyDiscussionError = "";
   }
 
-  @action.bound
+  @actionBound
   async replyToDiscussion(discussionId: string, body: string) {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();
@@ -525,7 +525,7 @@ export class MrInfoModel {
     this.updateNoteError = "";
   }
 
-  @action.bound
+  @actionBound
   clearDeleteNoteError() {
     this.deleteNoteErrorKey = "";
     this.deleteNoteError = "";
@@ -595,7 +595,7 @@ export class MrInfoModel {
     }
   }
 
-  @action.bound
+  @actionBound
   async approve() {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();
@@ -613,7 +613,7 @@ export class MrInfoModel {
     );
   }
 
-  @action.bound
+  @actionBound
   async unapprove() {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();
@@ -628,7 +628,7 @@ export class MrInfoModel {
     );
   }
 
-  @action.bound
+  @actionBound
   async requestChanges() {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();
@@ -647,7 +647,7 @@ export class MrInfoModel {
     );
   }
 
-  @action.bound
+  @actionBound
   async cancelRequestChanges() {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();
@@ -666,7 +666,7 @@ export class MrInfoModel {
     );
   }
 
-  @action.bound
+  @actionBound
   async resolveDiscussion(discussionId: string, resolved: boolean) {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();
@@ -706,7 +706,7 @@ export class MrInfoModel {
     }
   }
 
-  @action.bound
+  @actionBound
   async updateDiscussionNote(
     discussionId: string,
     noteId: number,
@@ -758,7 +758,7 @@ export class MrInfoModel {
     }
   }
 
-  @action.bound
+  @actionBound
   async deleteDiscussionNote(discussionId: string, noteId: number) {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();
@@ -814,7 +814,7 @@ export class MrInfoModel {
     }
   }
 
-  @action.bound
+  @actionBound
   loadDiffFileContent(filePath: string, ref: string) {
     return this.gitDiff.loadFileContent(filePath, ref);
   }

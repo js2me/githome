@@ -1,4 +1,4 @@
-import { action, computed, observable, runInAction } from "mobx";
+import { actionBound, computed, observable, runInAction } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import { gitlabApi } from "@/shared/api/gitlab";
@@ -150,7 +150,7 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
     );
   }
 
-  @action.bound
+  @actionBound
   async runJob(job: GitLabJobDC) {
     const connection = this.globals.stores.settings.activeConnection;
     if (!connection || !this.canRun(job) || this.busyJobId !== null) {

@@ -1,4 +1,4 @@
-import { action, observable } from "mobx";
+import { actionBound, observable } from "mobx";
 import type { FileGitDiff } from ".";
 
 export class FileGitDiffComments {
@@ -6,20 +6,20 @@ export class FileGitDiffComments {
 
   constructor(private readonly file: FileGitDiff) {}
 
-  @action.bound
+  @actionBound
   toggleFileCommentOpen() {
     this.isFileCommentOpen = !this.isFileCommentOpen;
     this.file.selection.lineSelection = null;
     this.file.selection.selectionAnchorKey = null;
   }
 
-  @action.bound
+  @actionBound
   cancelFileComment() {
     this.isFileCommentOpen = false;
     this.file.parent.payload.onClearSubmitError();
   }
 
-  @action.bound
+  @actionBound
   async submitFileComment(body: string) {
     const trimmedBody = body.trim();
     if (!trimmedBody) {

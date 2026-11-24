@@ -1,4 +1,4 @@
-import { action, computed } from "mobx";
+import { actionBound, computed } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import type { GitlabProjectInfo } from "@/entities/gitlab-projects/model/gitlab-project-info";
@@ -68,7 +68,7 @@ export class HomePageVM extends VM {
     return this.gitlabProjectsList.projects.length > 0;
   }
 
-  @action.bound
+  @actionBound
   setActiveTab(tab: ProjectListTab) {
     this.gitlabProjectsList.setActiveTab(tab);
   }
@@ -83,12 +83,12 @@ export class HomePageVM extends VM {
     return this.gitlabProjectsList.isFetchingNextPage;
   }
 
-  @action.bound
+  @actionBound
   loadMoreProjects() {
     this.gitlabProjectsList.loadMore();
   }
 
-  @action.bound
+  @actionBound
   openProject(project: GitlabProjectInfo) {
     this.globals.stores.repository.setProject(project.data);
     void this.globals.routes.repository.open({

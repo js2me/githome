@@ -1,4 +1,4 @@
-import { action, computed, observable } from "mobx";
+import { actionBound, computed, computedStruct, observable } from "mobx";
 import { appStorage } from "@/shared/lib/storage";
 
 export interface NavTreeGroup<Kind extends string = string, Payload = unknown> {
@@ -29,7 +29,7 @@ const navTreeKey = appStorage.key<NavTreeSnapshot>("nav-tree", {
 export class NavTreeStore {
   @observable accessor isExpanded = false;
 
-  @computed.struct
+  @computedStruct
   get snapshot(): NavTreeSnapshot {
     return navTreeKey.value;
   }
@@ -44,7 +44,7 @@ export class NavTreeStore {
     return this.snapshot.items;
   }
 
-  @action.bound
+  @actionBound
   upsertGroup<Kind extends string, Payload>(
     group: NavTreeGroup<Kind, Payload>,
   ) {
@@ -57,7 +57,7 @@ export class NavTreeStore {
     };
   }
 
-  @action.bound
+  @actionBound
   upsertItem<Kind extends string, Payload>(
     item: NavTreeItem<Kind, Payload>,
   ) {
@@ -76,7 +76,7 @@ export class NavTreeStore {
     };
   }
 
-  @action.bound
+  @actionBound
   removeItem(itemId: string) {
     navTreeKey.value = {
       ...this.snapshot,
@@ -84,7 +84,7 @@ export class NavTreeStore {
     };
   }
 
-  @action.bound
+  @actionBound
   removeGroup(groupId: string) {
     navTreeKey.value = {
       groups: this.groups.filter((group) => group.id !== groupId),
@@ -92,7 +92,7 @@ export class NavTreeStore {
     };
   }
 
-  @action.bound
+  @actionBound
   clear() {
     navTreeKey.value = {
       groups: [],
@@ -101,12 +101,12 @@ export class NavTreeStore {
     this.isExpanded = false;
   }
 
-  @action.bound
+  @actionBound
   expand() {
     this.isExpanded = true;
   }
 
-  @action.bound
+  @actionBound
   collapse() {
     this.isExpanded = false;
   }

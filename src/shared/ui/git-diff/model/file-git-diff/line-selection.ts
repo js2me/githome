@@ -1,4 +1,4 @@
-import { action, observable, reaction, runInAction } from "mobx";
+import { actionBound, observable, reaction, runInAction } from "mobx";
 import type { DiffLineSelection } from "@/shared/lib/diff-line-selection";
 import {
   getLineFromVirtualRows,
@@ -22,14 +22,14 @@ export class FileGitDiffLineSelection extends DisposableModel {
     this.setupReactions();
   }
 
-  @action.bound
+  @actionBound
   clearSelection() {
     this.lineSelection = null;
     this.selectionAnchorKey = null;
     this.file.parent.payload.onClearSubmitError();
   }
 
-  @action.bound
+  @actionBound
   applyLineSelection(lineKey: string, shiftKey: boolean) {
     if (!this.file.parent.payload.canComment) {
       return;
@@ -60,7 +60,7 @@ export class FileGitDiffLineSelection extends DisposableModel {
     this.file.parent.payload.onClearSubmitError();
   }
 
-  @action.bound
+  @actionBound
   handleLineClick(lineKey: string, shiftKey: boolean) {
     if (this.dragMoved) {
       this.dragMoved = false;
@@ -70,7 +70,7 @@ export class FileGitDiffLineSelection extends DisposableModel {
     this.applyLineSelection(lineKey, shiftKey);
   }
 
-  @action.bound
+  @actionBound
   handleLineMouseDown(lineKey: string) {
     if (!this.file.parent.payload.canComment) {
       return;
@@ -83,7 +83,7 @@ export class FileGitDiffLineSelection extends DisposableModel {
     this.file.parent.payload.onClearSubmitError();
   }
 
-  @action.bound
+  @actionBound
   handleLineMouseEnter(lineKey: string) {
     if (!this.isDraggingSelection || !this.selectionAnchorKey) {
       return;
@@ -97,7 +97,7 @@ export class FileGitDiffLineSelection extends DisposableModel {
     );
   }
 
-  @action.bound
+  @actionBound
   async submitLineComment(body: string) {
     if (!this.lineSelection) {
       return;
