@@ -184,6 +184,7 @@ export const MergeRequestDetail = ({
   onSubmitMrComment,
   onClearSubmitMrCommentError,
   loadFileContent,
+  loadFileImage,
   onResolveDiscussion,
   resolvingDiscussionId,
   resolveDiscussionError,
@@ -230,6 +231,7 @@ export const MergeRequestDetail = ({
   onSubmitMrComment: (body: string) => Promise<boolean>;
   onClearSubmitMrCommentError: () => void;
   loadFileContent?: (filePath: string, ref: string) => Promise<string>;
+  loadFileImage?: (filePath: string, ref: string, signal: AbortSignal) => Promise<Blob>;
   onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId: string | null;
   resolveDiscussionError?: string | null;
@@ -274,6 +276,7 @@ export const MergeRequestDetail = ({
   const labels = mergeRequest.labels ?? [];
   const description = mergeRequest.description ?? "";
   const { activeFile, selectActiveFile, jumpToFile } = useActiveDiffFile(changes);
+  const selectedDiffVersion = diffVersions.find(({ id }) => id === selectedDiffVersionId);
   const showChangesTree = changes.length > 0;
   const activityDiscussions = useMemo(
     () => filterDiscussionsForActivity(discussions),
@@ -494,13 +497,16 @@ export const MergeRequestDetail = ({
           onAddComment={onAddComment}
           onClearSubmitError={onClearSubmitError}
           headBranch={mergeRequest.source_branch ?? null}
-          headRef={mergeRequest.diff_refs?.head_sha ?? null}
+          headRef={selectedDiffVersion?.head_commit_sha || mergeRequest.diff_refs?.head_sha || null}
           baseRef={
-            mergeRequest.diff_refs?.start_sha ??
-            mergeRequest.diff_refs?.base_sha ??
+            selectedDiffVersion?.base_commit_sha ||
+            selectedDiffVersion?.start_commit_sha ||
+            mergeRequest.diff_refs?.base_sha ||
+            mergeRequest.diff_refs?.start_sha ||
             null
           }
           loadFileContent={loadFileContent}
+          loadFileImage={loadFileImage}
           onResolveThread={onResolveDiscussion}
           resolvingDiscussionId={resolvingDiscussionId}
           onReplyThread={onReplyDiscussion}

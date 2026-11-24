@@ -176,6 +176,24 @@ export class MergeRequestGitDiff {
     );
   }
 
+  @actionBound
+  async loadFileImage(filePath: string, ref: string, signal: AbortSignal) {
+    const connection = this.options.globals.stores.settings.activeConnection;
+    const mr = this.options.params();
+
+    if (!connection || !mr) {
+      throw new Error("Repository is not selected");
+    }
+
+    return gitlabApi.getRepositoryFileImage(
+      connection,
+      mr.project.id,
+      filePath,
+      ref,
+      AbortSignal.any([signal, this.options.abortSignal]),
+    );
+  }
+
   invalidate() {
     return Promise.all([
       this.changesQuery.invalidate(),

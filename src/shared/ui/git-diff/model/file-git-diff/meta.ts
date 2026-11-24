@@ -5,6 +5,7 @@ import {
   indexDiffDiscussionsForChange,
 } from "@/shared/lib/gitlab/diff-discussions";
 import { getDiffFileKey } from "@/shared/lib/diff-search";
+import { isImageChange } from "@/shared/lib/gitlab/is-image-change";
 import type { FileGitDiff } from ".";
 import {
   getChangeBadge,
@@ -32,6 +33,11 @@ export class FileGitDiffMeta {
   @computed
   get isCollapsible() {
     return this.isAutoCollapsed || this.isLazyCollapsed;
+  }
+
+  @computed
+  get isImage() {
+    return isImageChange(this.change);
   }
 
   @actionBound
@@ -84,7 +90,7 @@ export class FileGitDiffMeta {
   get isAutoCollapsed() {
     const change = this.change;
 
-    return !change.too_large && Boolean(change.generated_file);
+    return !this.isImage && !change.too_large && Boolean(change.generated_file);
   }
 
   @computed
@@ -117,7 +123,7 @@ export class FileGitDiffMeta {
     const change = this.change;
 
     return (
-      !change.too_large &&
+      !this.isImage && !change.too_large &&
       !change.generated_file &&
       !change.diff?.trim() &&
       this.canExpand
@@ -201,6 +207,8 @@ export class FileGitDiffMeta {
 
   @computed
   get reservedBodyMinHeight(): string | undefined {
+    if (this.isImage) return undefined;
+
     const { content } = this.file;
 
     if (content.parsed) {

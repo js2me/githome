@@ -21,14 +21,14 @@ export class FileGitDiffContent extends DisposableModel {
   constructor(private readonly file: FileGitDiff) {
     super();
     this.isFileExpanded = shouldStartExpanded(this.file);
-    this.setupReactions();
+    if (!this.file.meta.isImage) this.setupReactions();
   }
 
   @computed
   get effectiveDiff() {
     const { meta } = this.file;
 
-    if (meta.isDiffContentHidden) {
+    if (meta.isImage || meta.isDiffContentHidden) {
       return "";
     }
 

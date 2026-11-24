@@ -9,6 +9,7 @@ import type { Globals } from "@/globals";
 import { VM } from "@/shared/lib/view-models/vm";
 import { FileGitDiff } from "./file-git-diff";
 import type { FileGitDiffContent } from "./file-git-diff/content";
+import type { DiffImageLoader } from "./file-git-diff/images";
 
 const MAX_CONCURRENT_COLLAPSED_EXPANDS = 2;
 
@@ -24,6 +25,7 @@ export interface GitDiffPayload {
   headRef?: string | null;
   baseRef?: string | null;
   loadFileContent?: DiffFileContentLoader;
+  loadFileImage?: DiffImageLoader;
   onResolveThread?: (discussionId: string, resolved: boolean) => void;
   resolvingDiscussionId?: string | null;
   onReplyThread?: (discussionId: string, body: string) => Promise<boolean>;

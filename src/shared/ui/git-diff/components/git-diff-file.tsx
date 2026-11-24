@@ -6,6 +6,7 @@ import { cva } from "yummies/css";
 import { GitlabCommentEditor } from "@/shared/ui/gitlab-comment-editor";
 import type { FileGitDiff } from "../model/file-git-diff";
 import { DiffFileCollapseBanner } from "./diff-file-collapse-banner";
+import { DiffImages } from "./diff-images";
 import { DiffThreadRow } from "./diff-rows";
 import {
   SearchHighlightedText,
@@ -400,11 +401,13 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         )}
 
         <div className="ml-2 flex shrink-0 items-center">
-          <DiffFileCopyButton
-            label="копировать содержимое"
-            icon={<CopyContentIcon />}
-            getValue={content.copyFileContent}
-          />
+          {!model.images && (
+            <DiffFileCopyButton
+              label="копировать содержимое"
+              icon={<CopyContentIcon />}
+              getValue={content.copyFileContent}
+            />
+          )}
           {openInFilesHref && (
             <a
               className={cn(diffFileHeaderTextButtonVariants(), "ml-2 no-underline")}
@@ -465,14 +468,18 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         </div>
       )}
 
-      <div className="git-diff-body-scroll">
-        <div
-          className="w-max min-w-full"
-          style={reservedBodyMinHeight ? { minHeight: reservedBodyMinHeight } : undefined}
-        >
-          {renderDiffContent()}
+      {model.images ? (
+        <DiffImages images={model.images} />
+      ) : (
+        <div className="git-diff-body-scroll">
+          <div
+            className="w-max min-w-full"
+            style={reservedBodyMinHeight ? { minHeight: reservedBodyMinHeight } : undefined}
+          >
+            {renderDiffContent()}
+          </div>
         </div>
-      </div>
+      )}
     </article>
   );
 });

@@ -1,49 +1,42 @@
 import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
+import { getImageMimeType } from "@/shared/lib/image-path";
 import { gitlabFetch, normalizeGitlabBaseUrl } from "../client";
 import { enqueueGitLabFileContentRequest } from "../file-content-request-queue";
 
-const IMAGE_MIME_TYPES: Record<string, string> = {
-  apng: "image/apng",
-  avif: "image/avif",
-  bmp: "image/bmp",
-  gif: "image/gif",
-  ico: "image/x-icon",
-  jfif: "image/jpeg",
-  jpeg: "image/jpeg",
-  jpg: "image/jpeg",
-  png: "image/png",
-  svg: "image/svg+xml",
-  tif: "image/tiff",
-  tiff: "image/tiff",
-  webp: "image/webp",
-};
-
-export const getRepositoryFileBlob = (
+export const getRepositoryFileImage = (
   connection: GitLabConnection,
   projectId: number,
   filePath: string,
   ref: string,
   signal?: AbortSignal,
-): Promise<{ blob: Blob; content: string }> =>
+): Promise<Blob> =>
   enqueueGitLabFileContentRequest(
     `${connection.id}\0${normalizeGitlabBaseUrl(connection.gitlabUrl)}`,
     async () => {
       const encodedPath = encodeURIComponent(filePath);
+      const params = new URLSearchParams({ ref, lfs: "true" });
       const response = await gitlabFetch(
         connection,
-        `/projects/${projectId}/repository/files/${encodedPath}/raw?ref=${encodeURIComponent(ref)}`,
+        `/projects/${projectId}/repository/files/${encodedPath}/raw?${params}`,
         signal,
       );
       const blob = await response.blob();
-      const content = await blob.text();
-      const mimeType = blob.type.startsWith("image/")
-        ? blob.type
-        : IMAGE_MIME_TYPES[filePath.split(".").pop()?.toLowerCase() ?? ""];
+      const mimeType = getImageMimeType(filePath);
 
-      return {
-        blob: mimeType ? new Blob([blob], { type: mimeType }) : blob,
-        content,
-      };
+      return !blob.type.startsWith("image/") && mimeType
+        ? new Blob([blob], { type: mimeType })
+        : blob;
     },
     signal,
   );
+
+export const getRepositoryFileBlob = async (
+  connection: GitLabConnection,
+  projectId: number,
+  filePath: string,
+  ref: string,
+  signal?: AbortSignal,
+): Promise<{ blob: Blob; content: string }> => {
+  const blob = await getRepositoryFileImage(connection, projectId, filePath, ref, signal);
+  return { blob, content: await blob.text() };
+};

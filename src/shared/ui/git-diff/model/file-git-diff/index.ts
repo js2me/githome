@@ -3,6 +3,7 @@ import type { GitDiffVM } from "../git-diff-vm";
 import { FileGitDiffComments } from "./comments";
 import { FileGitDiffContent } from "./content";
 import { FileGitDiffContextExpand } from "./context-expand";
+import { FileGitDiffImages } from "./images";
 import { FileGitDiffLineSelection } from "./line-selection";
 import { FileGitDiffMeta } from "./meta";
 import { FileGitDiffNavigation } from "./navigation";
@@ -11,6 +12,7 @@ import { FileGitDiffRows } from "./rows";
 export class FileGitDiff {
   readonly meta: FileGitDiffMeta;
   readonly content: FileGitDiffContent;
+  readonly images?: FileGitDiffImages;
   readonly expand: FileGitDiffContextExpand;
   readonly rows: FileGitDiffRows;
   readonly selection: FileGitDiffLineSelection;
@@ -23,6 +25,7 @@ export class FileGitDiff {
   ) {
     this.meta = new FileGitDiffMeta(this, change);
     this.content = new FileGitDiffContent(this);
+    if (this.meta.isImage) this.images = new FileGitDiffImages(this);
     this.expand = new FileGitDiffContextExpand(this);
     this.rows = new FileGitDiffRows(this);
     this.selection = new FileGitDiffLineSelection(this);
@@ -45,6 +48,7 @@ export class FileGitDiff {
   dispose() {
     this.parent.cancelCollapsedExpand(this.content);
     this.content.dispose();
+    this.images?.dispose();
     this.expand.dispose();
     this.selection.dispose();
     this.navigation.dispose();

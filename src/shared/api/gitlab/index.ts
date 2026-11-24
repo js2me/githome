@@ -24,7 +24,7 @@ import { getPipelineJobTrace } from "./endpoints/get-pipeline-job-trace";
 import { getProjectMergeRequests } from "./endpoints/get-project-merge-requests";
 import { getProjectReadme } from "./endpoints/get-project-readme";
 import { getRepositoryFileContent } from "./endpoints/get-repository-file-content";
-import { getRepositoryFileBlob } from "./endpoints/get-repository-file-blob";
+import { getRepositoryFileBlob, getRepositoryFileImage } from "./endpoints/get-repository-file-blob";
 import { getRepositoryTree } from "./endpoints/get-repository-tree";
 import { searchProjectBlobs } from "./endpoints/search-project-blobs";
 import { renderMarkdown } from "./endpoints/render-markdown";
@@ -70,6 +70,8 @@ export const gitlabApi = {
   getRepositoryFileContent,
 
   getRepositoryFileBlob,
+
+  getRepositoryFileImage,
 
   getRepositoryTree,
 

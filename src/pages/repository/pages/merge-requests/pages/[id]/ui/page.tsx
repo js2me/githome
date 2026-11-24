@@ -48,6 +48,7 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
           onSubmitMrComment={model.mrInfo.submitMrComment}
           onClearSubmitMrCommentError={model.mrInfo.clearSubmitMrCommentError}
           loadFileContent={model.mrInfo.loadDiffFileContent}
+          loadFileImage={model.mrInfo.gitDiff.loadFileImage}
           onResolveDiscussion={model.mrInfo.resolveDiscussion}
           resolvingDiscussionId={model.mrInfo.resolvingDiscussionId}
           resolveDiscussionError={model.mrInfo.resolveDiscussionError}

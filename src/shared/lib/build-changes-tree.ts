@@ -1,5 +1,6 @@
 import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
 import { getDiffFileKey } from "@/shared/lib/diff-search";
+import { isImageChange } from "@/shared/lib/gitlab/is-image-change";
 import { parseUnifiedDiff } from "@/shared/lib/parse-unified-diff";
 
 export type ChangeFileStatus = "added" | "deleted" | "renamed" | "modified";
@@ -51,6 +52,8 @@ export const getChangeFileStatus = (
 };
 
 const getChangeDiffStats = (change: GitLabMergeRequestChangeDC) => {
+  if (isImageChange(change)) return { additions: 0, deletions: 0 };
+
   const parsed = change.diff?.trim()
     ? parseUnifiedDiff(change.diff)
     : null;

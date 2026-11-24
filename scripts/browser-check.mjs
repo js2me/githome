@@ -16,6 +16,7 @@
  * - exactly one visible avatar per author on every MR-list mount
  * - open multiple MR tabs across repositories, switch between them, and close one
  * - scroll and select files in a 255-file merge request
+ * - compare PNG and JPEG revisions in a merge request
  * - avatar titles map to the right authors, zero page/console errors
  */
 import puppeteer from 'puppeteer-core';
@@ -104,6 +105,36 @@ const largeMrChanges = Array.from({ length: 255 }, (_, index) => {
   };
 });
 
+const imageMrChanges = [
+  {
+    old_path: 'assets/old screenshot.PNG',
+    new_path: 'assets/new screenshot.png',
+    renamed_file: true,
+    diff: '@@ -1 +1 @@\n-binary old data\n+binary new data\n',
+  },
+  { old_path: 'assets/added.JPG', new_path: 'assets/added.JPG', new_file: true },
+  { old_path: 'assets/deleted.png', new_path: 'assets/deleted.png', deleted_file: true },
+];
+const pngBefore = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAIAAAA7ljmRAAAAEElEQVR42mP8z4AATAy4OAAmdgEFDPIXWgAAAABJRU5ErkJggg==', 'base64',
+);
+const pngAfter = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAFCAIAAAD38zoCAAAAE0lEQVR42mNkaGDACpgYGGguAQBAbgCKK+jhvAAAAABJRU5ErkJggg==', 'base64',
+);
+const jpeg = Buffer.from(
+  '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/' +
+  '2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAGAAcDASIAAhEBAxEB/' +
+  '8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABQf/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCOALiMf//Z',
+  'base64',
+);
+const imageResponses = new Map([
+  ['base-sha:assets/old screenshot.PNG', pngBefore],
+  ['head-sha:assets/new screenshot.png', pngAfter],
+  ['head-sha:assets/added.JPG', jpeg],
+  ['base-sha:assets/deleted.png', pngBefore],
+]);
+const imageRequests = [];
+
 const route = (url) => {
   const p = new URL(url).pathname.replace('/git-proxy/gitlab.mock', '');
   if (p === '/api/v4/user') return user(1, 'Test User');
@@ -112,9 +143,16 @@ const route = (url) => {
     return projects.find((pr) => pr.id === id) ?? projects[0];
   }
   if (p.endsWith('/diffs_batch.json')) {
-    return { diff_files: p.includes('/155/') ? largeMrChanges : [] };
+    if (p.includes('/155/')) return { diff_files: largeMrChanges };
+    return { diff_files: p.includes('/156/') ? imageMrChanges : [] };
   }
   if (p.endsWith('/merge_requests/155')) return mr(155, 'Large MR', AUTHORS[0]);
+  if (p.endsWith('/merge_requests/156')) {
+    return {
+      ...mr(156, 'Image MR', AUTHORS[0]),
+      diff_refs: { base_sha: 'base-sha', start_sha: 'incorrect-parent', head_sha: 'head-sha' },
+    };
+  }
   if (/merge_requests\/\d+\/(versions|discussions|reviewers)$/.test(p)) return [];
   if (/merge_requests\/\d+\/approvals$/.test(p)) return { approved_by: [] };
   if (/merge_requests\/\d+/.test(p)) {
@@ -185,6 +223,15 @@ await page.setRequestInterception(true);
 page.on('request', (req) => {
   const url = req.url();
   if (url.includes('/git-proxy/')) {
+    const requestUrl = new URL(url);
+    const imagePath = requestUrl.pathname.match(/\/repository\/files\/([^/]+)\/raw$/)?.[1];
+    if (imagePath && decodeURIComponent(imagePath).startsWith('assets/')) {
+      const key = `${requestUrl.searchParams.get('ref')}:${decodeURIComponent(imagePath)}`;
+      imageRequests.push(key);
+      const body = imageResponses.get(key);
+      req.respond({ status: body ? 200 : 404, contentType: 'application/octet-stream', body });
+      return;
+    }
     req.respond({
       status: 200,
       contentType: 'application/json',
@@ -428,6 +475,32 @@ try {
   ));
 } catch (error) {
   check('large MR tree navigation', false, String(error));
+}
+
+try {
+  await page.goto(`${BASE}/repository/1/merge-requests/156`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.querySelectorAll('.git-diff > article').length === 3);
+  const getImagePanels = async (index, widths) => {
+    const selector = `.git-diff > article:nth-child(${index + 1})`;
+    await page.$eval(selector, card => card.scrollIntoView({ block: 'center' }));
+    await page.waitForFunction((selector, widths) => {
+      const figures = [...document.querySelectorAll(`${selector} figure`)];
+      const labels = figures.map(figure => figure.querySelector('figcaption')?.textContent);
+      if (labels.join(',') !== 'Было,Стало') return false;
+      return figures.every((figure, side) => widths[side]
+        ? figure.querySelector('img')?.naturalWidth === widths[side]
+        : figure.textContent.includes('Файл отсутствует'));
+    }, { timeout: 6000 }, selector, widths);
+    return page.$eval(selector, card => !card.querySelector('[data-diff-row-id]'));
+  };
+
+  check('renamed PNG compares both GitLab snapshots with no binary diff lines', await getImagePanels(0, [4, 8]));
+  check('added JPEG shows only the new snapshot', await getImagePanels(1, [null, 7]));
+  check('deleted PNG shows only the old snapshot', await getImagePanels(2, [4, null]));
+  check('image diff fetches only existing paths at the correct SHAs', imageRequests.length === 4 &&
+    imageRequests.every(key => imageResponses.has(key)), imageRequests.join(', '));
+} catch (error) {
+  check('image diff previews', false, String(error));
 }
 
 check('no page errors', pageErrors.length === 0, pageErrors[0]?.slice(0, 150));
