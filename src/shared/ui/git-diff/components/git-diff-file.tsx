@@ -317,7 +317,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       onClickCapture={(event) => {
         const target = event.target as HTMLElement;
         if (
-          target.closest("button, a, input, textarea, select, label")
+          target.closest("button, a, input, textarea, select, label, dialog")
         ) {
           return;
         }

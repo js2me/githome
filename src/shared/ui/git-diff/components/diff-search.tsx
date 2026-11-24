@@ -764,10 +764,12 @@ export const DiffSearchProvider = memo(
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" && event.key !== "F3") return;
+
       const findBarVisible =
         findBarVisibility === "always" || isOpen;
 
-      if (!findBarVisible) {
+      if (!findBarVisible || document.querySelector("dialog:modal")) {
         return;
       }
 

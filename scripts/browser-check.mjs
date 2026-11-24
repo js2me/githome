@@ -16,7 +16,7 @@
  * - exactly one visible avatar per author on every MR-list mount
  * - open multiple MR tabs across repositories, switch between them, and close one
  * - scroll and select files in a 255-file merge request
- * - compare PNG and JPEG revisions in a merge request
+ * - compare PNG and JPEG revisions and open either side in the zoom viewer
  * - avatar titles map to the right authors, zero page/console errors
  */
 import puppeteer from 'puppeteer-core';
@@ -499,6 +499,50 @@ try {
   check('deleted PNG shows only the old snapshot', await getImagePanels(2, [4, null]));
   check('image diff fetches only existing paths at the correct SHAs', imageRequests.length === 4 &&
     imageRequests.every(key => imageResponses.has(key)), imageRequests.join(', '));
+
+  const firstImageDiff = '.git-diff > article:first-child';
+  const beforeButton = `${firstImageDiff} button[aria-label="Открыть изображение «Было»"]`;
+  const afterButton = `${firstImageDiff} button[aria-label="Открыть изображение «Стало»"]`;
+  const viewer = 'dialog[open][aria-label^="Было"]';
+  await page.$eval(firstImageDiff, card => card.scrollIntoView({ block: 'center' }));
+  await page.mouse.move(80, 120);
+  await page.mouse.move(720, 120);
+  await page.waitForFunction(() =>
+    document.querySelector('aside[aria-label="Рабочая область"]')?.dataset.expanded === 'false',
+  );
+  await sleep(350);
+  await page.click(`${beforeButton} img`);
+  await page.waitForSelector(`${viewer} button[aria-label="Приблизить"]:enabled`);
+  const viewedImage = () => page.$eval(`${viewer} img`, image => ({
+    url: image.src, width: image.getBoundingClientRect().width,
+  }));
+  const initial = await viewedImage();
+  check('click opens the original before image', initial.url === await page.$eval(`${beforeButton} img`, image => image.src));
+  await page.click(`${viewer} button[aria-label="Приблизить"]`);
+  await page.waitForFunction(selector => document.querySelector(`${selector} output`)?.textContent === '125%', {}, viewer);
+  check('zoom button enlarges the image itself', (await viewedImage()).width > initial.width);
+  const center = await page.$eval(`${viewer} [role="region"]`, region => {
+    const rect = region.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  });
+  await page.mouse.move(center.x, center.y);
+  await page.mouse.wheel({ deltaY: -120 });
+  await page.waitForFunction(selector => document.querySelector(`${selector} output`)?.textContent === '156%', {}, viewer);
+  await page.click(`${viewer} button[aria-label="Исходный размер"]`);
+  await page.waitForFunction(selector => document.querySelector(`${selector} output`)?.textContent === '100%', {}, viewer);
+  check('wheel zoom and original image scale work', true);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector(viewer, { hidden: true });
+  check('Escape closes the viewer and returns focus to the preview', await page.$eval(
+    beforeButton, button => button === document.activeElement,
+  ));
+  await page.click(`${afterButton} img`);
+  const afterViewer = 'dialog[open][aria-label^="Стало"]';
+  await page.waitForSelector(afterViewer);
+  check('the other side opens the after image', await page.$eval(`${afterViewer} img`, image => image.src) ===
+    await page.$eval(`${afterButton} img`, image => image.src));
+  await page.click(`${afterViewer} button[aria-label="Закрыть изображение"]`);
+  await page.waitForSelector(afterViewer, { hidden: true });
 } catch (error) {
   check('image diff previews', false, String(error));
 }
