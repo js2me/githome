@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_ELECTRON: boolean;
+  readonly VITE_APP_VERSION: string;
 }
 
 interface ImportMeta {

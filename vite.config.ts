@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
@@ -22,6 +23,8 @@ const gitlabProxyPlugin = (): Plugin => ({
     });
   },
 });
+
+const { version } = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
 
 export default defineConfig(({ mode, command }) => {
   const isDev = mode === "development";
@@ -62,6 +65,9 @@ export default defineConfig(({ mode, command }) => {
               vite: {
                 build: {
                   outDir: "dist-electron",
+                  rollupOptions: {
+                    output: { entryFileNames: "preload.cjs" },
+                  },
                 },
               },
             },
@@ -71,6 +77,7 @@ export default defineConfig(({ mode, command }) => {
     ],
     define: {
       "import.meta.env.VITE_ELECTRON": JSON.stringify(isElectron),
+      "import.meta.env.VITE_APP_VERSION": JSON.stringify(process.env.GITHOME_RELEASE_VERSION ?? version),
     },
     resolve: {
       alias: {

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("githomeDesktop", {
   updates: {
     getState: () => ipcRenderer.invoke("app-update:get-state"),
     check: () => ipcRenderer.invoke("app-update:check"),
+    download: () => ipcRenderer.invoke("app-update:download"),
     install: () => ipcRenderer.invoke("app-update:install"),
     subscribe: (listener: (state: AppUpdateState) => void) => {
       const handler = (_event: Electron.IpcRendererEvent, state: AppUpdateState) => listener(state);

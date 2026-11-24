@@ -21,6 +21,7 @@
     "build:electron": "pnpm build:app && electron-builder --publish never",
     "build:full": "pnpm build:app && electron-builder --publish never --linux --win --mac",
     "build:android": "pnpm build && cap sync android && cd android && ./gradlew assembleDebug",
+    "build:android:release": "pnpm build && cap sync android && cd android && ./gradlew assembleRelease",
     "preview": "vite preview",
     "test": "vitest run",
     "check:browser": "node scripts/browser-check.mjs",
@@ -116,7 +117,8 @@
     },
     "mac": {
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "category": "public.app-category.developer-tools"
     },

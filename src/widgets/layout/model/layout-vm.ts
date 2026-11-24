@@ -12,7 +12,6 @@ export class LayoutVM extends VM {
   @observable accessor draftGitlabUrl = "";
   @observable accessor draftGitToken = "";
   @observable accessor isConnectionPopupOpen = false;
-  @observable accessor isSettingsPopupOpen = false;
 
   constructor(globals: Globals, params: ViewModelParams) {
     super(globals, params);
@@ -27,6 +26,10 @@ export class LayoutVM extends VM {
       },
       { fireImmediately: true },
     );
+  }
+
+  willMount() {
+    void this.appSettings.updates.connect(this.unmountSignal);
   }
 
   @computed
@@ -179,21 +182,6 @@ export class LayoutVM extends VM {
   @actionBound
   toggleConnectionPopup() {
     this.isConnectionPopupOpen = !this.isConnectionPopupOpen;
-  }
-
-  @action
-  openSettingsPopup() {
-    this.isSettingsPopupOpen = true;
-  }
-
-  @action
-  closeSettingsPopup() {
-    this.isSettingsPopupOpen = false;
-  }
-
-  @actionBound
-  toggleSettingsPopup() {
-    this.isSettingsPopupOpen = !this.isSettingsPopupOpen;
   }
 
   @actionBound

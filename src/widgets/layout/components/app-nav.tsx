@@ -4,7 +4,7 @@ import { cn } from "@/shared/lib/cn";
 import { ProjectAvatar } from "@/shared/ui/project-avatar";
 import { LayoutVM } from "../model/layout-vm";
 import { ConnectionPicker } from "./connection-picker";
-import { SettingsPopup } from "./settings-popup";
+import { SettingsDialog } from "./settings-dialog";
 
 const navLinkClassName =
   "cursor-pointer rounded-lg border-none bg-transparent px-3 py-2 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200";
@@ -152,7 +152,7 @@ export const AppNav = observer(() => {
       </nav>
 
       <div className="order-2 ml-auto lg:order-none lg:ml-0">
-        <SettingsPopup />
+        <SettingsDialog />
       </div>
     </header>
   );

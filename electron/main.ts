@@ -12,10 +12,11 @@ const getDistPath = () =>
     "dist",
   );
 
-const preloadPath = path.join(__dirname, "preload.mjs");
+const preloadPath = path.join(__dirname, "preload.cjs");
 
 let mainWindow: BrowserWindow | null = null;
 let appServer: Awaited<ReturnType<typeof startAppServer>> | null = null;
+let appOrigin: string | undefined;
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
@@ -52,6 +53,7 @@ const createWindow = async () => {
     return;
   }
 
+  appOrigin = new URL(pageUrl).origin;
   mainWindow = new BrowserWindow({
     title: "GitHome",
     width: 1024,
@@ -62,7 +64,6 @@ const createWindow = async () => {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
     },
   });
 
@@ -101,7 +102,7 @@ if (gotSingleInstanceLock) {
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
-    setupAppUpdater();
+    setupAppUpdater(() => appOrigin);
     void createWindow();
 
     app.on("activate", () => {

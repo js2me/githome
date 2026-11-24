@@ -1,4 +1,6 @@
-export type AppUpdateStatus = "idle" | "checking" | "downloading" | "ready" | "current" | "error" | "manual";
+export type AppUpdateStatus =
+  | "idle" | "checking" | "available" | "downloading" | "ready"
+  | "installing" | "current" | "error" | "manual";
 
 export interface AppUpdateState {
   status: AppUpdateStatus;
@@ -11,6 +13,7 @@ export interface AppUpdateState {
 export interface AppUpdateApi {
   getState(): Promise<AppUpdateState>;
   check(): Promise<void>;
+  download(): Promise<void>;
   install(): Promise<void>;
   subscribe(listener: (state: AppUpdateState) => void): () => void;
 }
