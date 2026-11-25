@@ -11,11 +11,12 @@ import { createMergeRequestDiscussion } from "./endpoints/create-merge-request-d
 import { createPipeline } from "./endpoints/create-pipeline";
 import { deleteMergeRequestDiscussionNote } from "./endpoints/delete-merge-request-discussion-note";
 import { getFrequentProjects } from "./endpoints/get-frequent-projects";
-import { getMergeRequestApprovalCounts } from "./endpoints/get-merge-request-approval-counts";
+import { getMergeRequestApprovalSummaries } from "./endpoints/get-merge-request-approval-summaries";
 import { getMergeRequestChanges } from "./endpoints/get-merge-request-changes";
 import { getMergeRequestVersions } from "./endpoints/get-merge-request-versions";
 import { getMergeRequestDetail } from "./endpoints/get-merge-request-detail";
 import { getMergeRequestDiscussions } from "./endpoints/get-merge-request-discussions";
+import { getMergeRequestDiscussionSummaries } from "./endpoints/get-merge-request-discussion-summaries";
 import { getMergeRequestView } from "./endpoints/get-merge-request-view";
 import { getProject } from "./endpoints/get-project";
 import { getProjectAnalytics } from "./endpoints/get-project-analytics";
@@ -91,7 +92,7 @@ export const gitlabApi = {
 
   retryPipelineJob,
 
-  getMergeRequestApprovalCounts,
+  getMergeRequestApprovalSummaries,
 
   getMergeRequestDetail,
 
@@ -100,6 +101,8 @@ export const gitlabApi = {
   getMergeRequestVersions,
 
   getMergeRequestDiscussions,
+
+  getMergeRequestDiscussionSummaries,
 
   createMergeRequestDiffDiscussion,
 

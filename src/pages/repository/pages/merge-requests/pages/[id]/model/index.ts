@@ -1,12 +1,16 @@
-import { reaction, type IReactionDisposer } from "mobx";
+import { computed, reaction, type IReactionDisposer } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import { RepositoryPageVM } from "@/pages/repository/model/page-vm";
+import { gitlabApi } from "@/shared/api/gitlab";
+import { createGitlabApiQuery } from "@/shared/lib/gitlab/create-query";
+import { extractJiraLinks, findJiraKeys } from "@/shared/lib/gitlab/jira-links";
 import { VM } from "@/shared/lib/view-models/vm";
 import { MrInfoModel } from "./mr-info";
 
 export class MergeRequestPageVM extends VM<{}, RepositoryPageVM> {
   mrInfo;
+  private readonly jiraLinksQuery;
   private disposeTabDetailsReaction: IReactionDisposer | null = null;
   private disposeReviewActionReaction: IReactionDisposer | null = null;
 
@@ -26,6 +30,30 @@ export class MergeRequestPageVM extends VM<{}, RepositoryPageVM> {
     return this.parentViewModel.project;
   }
 
+  @computed
+  private get jiraKeys() {
+    const mr = this.mrInfo.mergeRequestDetail;
+    return mr ? findJiraKeys([mr.title, mr.source_branch].join("\n")) : [];
+  }
+
+  @computed
+  private get titleJiraLinks(): Record<string, string> {
+    const html = this.mrInfo.mergeRequestDetail?.title_html;
+    return html && this.jiraKeys.length ? extractJiraLinks(html, this.jiraKeys) : {};
+  }
+
+  @computed
+  get jiraLinks(): Record<string, string> {
+    const jiraUrl = this.globals.stores.settings.activeConnection?.jiraUrl;
+    const links: Record<string, string> = {};
+    for (const key of this.jiraKeys) {
+      const url = this.titleJiraLinks[key] ?? this.jiraLinksQuery.data?.[key]
+        ?? (jiraUrl && `${jiraUrl}/browse/${key}`);
+      if (url) links[key] = url;
+    }
+    return links;
+  }
+
   constructor(globals: Globals, params: ViewModelParams<{}, RepositoryPageVM>) {
     super(globals, params);
 
@@ -42,6 +70,23 @@ export class MergeRequestPageVM extends VM<{}, RepositoryPageVM> {
 
         return { project, mergeRequestIid };
       },
+    });
+
+    this.jiraLinksQuery = createGitlabApiQuery<Record<string, string>, { projectPath: string; keys: string[] }>({
+      globals,
+      abortSignal: this.unmountSignal,
+      params: () => {
+        const projectPath = this.project?.path_with_namespace;
+        const keys = this.jiraKeys.filter((key) => !this.titleJiraLinks[key]);
+        return projectPath && keys.length ? { projectPath, keys } : null;
+      },
+      queryKey: ({ connection, projectPath, keys }) =>
+        ["mr-jira-links", connection.id, connection.gitlabUrl, projectPath, keys],
+      queryFn: async ({ connection, projectPath, keys, signal }) => {
+        const html = await gitlabApi.renderMarkdown(connection, { text: keys.join("\n\n"), projectPath, signal });
+        return extractJiraLinks(html, keys);
+      },
+      queryOptions: { staleTime: 300_000, retry: false },
     });
 
     this.disposeReviewActionReaction = reaction(

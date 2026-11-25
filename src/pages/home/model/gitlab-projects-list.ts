@@ -1,10 +1,10 @@
 import { actionBound, computed, observable } from "mobx";
 import type { Globals } from "@/globals";
 import { GitlabProjectInfo } from "@/entities/gitlab-projects/model/gitlab-project-info";
-import type { GitLabProjectDC, GitLabUserDC } from "@/shared/api/gitlab";
+import type { GitLabProjectDC } from "@/shared/api/gitlab";
+import { createConnectionUserIdQuery } from "@/shared/lib/gitlab/connection-profile-query";
 import {
   createGitlabListQuery,
-  createGitlabQuery,
   createInfiniteGitlabQuery,
 } from "@/shared/lib/gitlab/create-query";
 import {
@@ -34,15 +34,10 @@ export class GitlabProjectsList {
   >;
 
   constructor(params: GitlabProjectsListParams) {
-    this.currentUserQuery = createGitlabQuery<number>({
-      globals: params.globals,
-      abortSignal: params.abortSignal,
-      params: () => ({ path: "/user" }),
-      queryOptions: {
-        ...PROJECT_LIST_QUERY_OPTIONS,
-        select: (data) => (data as GitLabUserDC).id,
-      },
-    });
+    this.currentUserQuery = createConnectionUserIdQuery(
+      () => params.globals.stores.settings.activeConnection,
+      params.abortSignal,
+    );
 
     this.countQueries = Object.fromEntries(
       PROJECT_LIST_TABS.map(({ id }) => [

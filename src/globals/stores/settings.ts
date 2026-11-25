@@ -1,6 +1,9 @@
 import { action, computed, computedStruct } from "mobx";
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { getConnectionLabel } from "@/shared/lib/gitlab/connection";
+import {
+  type GitLabConnection,
+  normalizeJiraBaseUrl,
+  parseConnectionDraft,
+} from "@/shared/lib/gitlab/connection";
 import {
   connectionsKey,
   type ConnectionsStorage,
@@ -33,17 +36,10 @@ const toActiveConnection = (
     id: item.id,
     gitlabUrl,
     gitToken,
+    credentialsRevision: item.credentialsRevision,
+    jiraUrl: normalizeJiraBaseUrl(item.jiraUrl),
   };
 };
-
-const createConnectionItem = (
-  gitlabUrl: string,
-  gitToken: string,
-): GitLabConnectionItem => ({
-  id: crypto.randomUUID(),
-  gitlabUrl: gitlabUrl.trim(),
-  gitToken: gitToken.trim(),
-});
 
 export class SettingsStore {
   @computedStruct
@@ -78,14 +74,6 @@ export class SettingsStore {
     return toActiveConnection(this.snapshot);
   }
 
-  @computedStruct
-  get connectionOptions() {
-    return this.connections.map((connection) => ({
-      id: connection.id,
-      label: getConnectionLabel(connection),
-    }));
-  }
-
   @computed
   get isConfigured() {
     return Boolean(this.activeConnection);
@@ -100,13 +88,11 @@ export class SettingsStore {
   }
 
   @action
-  addConnection(gitlabUrl: string, gitToken: string): string | null {
-    const item = createConnectionItem(gitlabUrl, gitToken);
+  addConnection(gitlabUrl: string, gitToken: string, jiraUrl?: string): string | null {
+    const draft = parseConnectionDraft(gitlabUrl, gitToken, jiraUrl);
+    if (!draft) return null;
 
-    if (!item.gitlabUrl || !item.gitToken) {
-      return null;
-    }
-
+    const item = { id: crypto.randomUUID(), ...draft };
     connectionsKey.value = {
       activeId: item.id,
       items: [...this.connections, item],
@@ -120,18 +106,17 @@ export class SettingsStore {
     id: string,
     gitlabUrl: string,
     gitToken: string,
+    jiraUrl?: string,
   ): boolean {
-    const url = gitlabUrl.trim();
-    const token = gitToken.trim();
+    const connection = this.connections.find((item) => item.id === id);
+    if (!connection) return false;
 
-    if (!url || !token) {
-      return false;
-    }
-
-    const items = this.connections.map((connection) =>
-      connection.id === id
-        ? { ...connection, gitlabUrl: url, gitToken: token }
-        : connection,
+    const draft = parseConnectionDraft(gitlabUrl, gitToken, jiraUrl ?? connection.jiraUrl);
+    if (!draft) return false;
+    const credentialsChanged = draft.gitlabUrl !== connection.gitlabUrl || draft.gitToken !== connection.gitToken;
+    const credentialsRevision = credentialsChanged ? crypto.randomUUID() : connection.credentialsRevision;
+    const items = this.connections.map((item) =>
+      item.id === id ? { ...item, ...draft, credentialsRevision } : item,
     );
 
     connectionsKey.value = {

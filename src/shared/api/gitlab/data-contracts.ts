@@ -17,6 +17,7 @@ export interface GitLabMergeRequestDC {
   id: number;
   iid: number;
   title: string;
+  title_html?: string | null;
   web_url: string;
   state: string;
   draft?: boolean;
@@ -188,6 +189,11 @@ export interface GitLabDiscussionDC {
   notes: GitLabNoteDC[];
 }
 
+export interface GitLabMergeRequestDiscussionSummary {
+  readonly total: number;
+  readonly resolved: number;
+}
+
 export interface GitLabUserDC {
   id: number;
   name: string;
@@ -203,6 +209,12 @@ export interface GitLabMergeRequestApprovalsDC {
     user: GitLabUserDC;
     approved_at: string;
   }>;
+}
+
+export interface GitLabMergeRequestApprovalSummary {
+  readonly count: number;
+  /** Null when GitLab returns voters without the status of the approval rules. */
+  readonly approved: boolean | null;
 }
 
 export interface GitLabMergeRequestReviewerDC {

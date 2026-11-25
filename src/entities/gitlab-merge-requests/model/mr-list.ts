@@ -1,19 +1,16 @@
 import { actionBound, computed, observable } from "mobx";
-import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabMergeRequestDC, GitLabProjectDC } from "@/shared/api/gitlab";
-import {
-  createGitlabApiQuery,
-  createInfiniteGitlabQuery,
-} from "@/shared/lib/gitlab/create-query";
+import { createInfiniteGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import type { Globals } from "@/globals";
 
-export const MR_STATES = [
+export const MR_FILTERS = [
   { id: "opened", label: "Открытые", empty: "Открытых merge requests пока нет" },
+  { id: "mine", label: "Мои", empty: "Вы ещё не создавали merge requests в этом проекте" },
   { id: "merged", label: "Слитые", empty: "Слитых merge requests пока нет" },
   { id: "closed", label: "Закрытые", empty: "Закрытых merge requests пока нет" },
 ] as const;
 
-type MrState = (typeof MR_STATES)[number];
+type MrFilterId = (typeof MR_FILTERS)[number]["id"];
 
 export interface MrListParams {
   globals: Globals;
@@ -25,7 +22,6 @@ export interface MrListParams {
 
 export class MrList {
   mergeRequestsQuery;
-  mergeRequestApprovalCountsQuery;
   @observable accessor searchText: string;
   private searchTimer?: ReturnType<typeof setTimeout>;
 
@@ -45,10 +41,11 @@ export class MrList {
         const search = this.appliedSearch;
         const iid = search.match(/^!?(\d+)$/)?.[1];
         const title = iid ? undefined : search || undefined;
+        const filter = this.activeFilter.id;
         return {
           path: `/projects/${projectId}/merge_requests`,
           query: {
-            state: this.activeState.id,
+            ...(filter === "mine" ? { scope: "created_by_me" } : { state: filter }),
             "iids[]": iid,
             search: title,
             in: title ? "title" : undefined,
@@ -59,40 +56,6 @@ export class MrList {
         };
       },
     });
-
-    this.mergeRequestApprovalCountsQuery = createGitlabApiQuery<
-      Record<number, number>,
-      { project: GitLabProjectDC; mergeRequestIids: number[] }
-    >({
-      globals: params.globals,
-      abortSignal: params.unmountSignal,
-      params: () => {
-        const project = params.selectedProject;
-        const mergeRequestIids = this.mergeRequests.map(
-          (mergeRequest) => mergeRequest.iid,
-        );
-
-        if (!project || mergeRequestIids.length === 0) {
-          return false;
-        }
-
-        return { project, mergeRequestIids };
-      },
-      queryKey: ({ connection, project, mergeRequestIids }) =>
-        [
-          "merge-request-list-approval-counts",
-          connection.gitlabUrl,
-          project.id,
-          mergeRequestIids,
-        ] as const,
-      queryFn: ({ connection, project, mergeRequestIids, signal }) =>
-        gitlabApi.getMergeRequestApprovalCounts(
-          connection,
-          project,
-          mergeRequestIids,
-          signal,
-        ),
-    });
   }
 
   @computed
@@ -102,9 +65,9 @@ export class MrList {
   }
 
   @computed
-  get activeState() {
-    const state = this.params.globals.query.data.state;
-    return MR_STATES.find(({ id }) => id === state) ?? MR_STATES[0];
+  get activeFilter() {
+    const filter = this.params.globals.query.data.state;
+    return MR_FILTERS.find(({ id }) => id === filter) ?? MR_FILTERS[0];
   }
 
   @computed
@@ -116,10 +79,13 @@ export class MrList {
   }
 
   @computed
+  get pages() {
+    return this.mergeRequestsQuery.data?.pages ?? [];
+  }
+
+  @computed
   get mergeRequests(): GitLabMergeRequestDC[] {
-    return (this.mergeRequestsQuery.data?.pages ?? []).flatMap(
-      (page) => page.items,
-    );
+    return this.pages.flatMap((page) => page.items);
   }
 
   @computed
@@ -178,11 +144,6 @@ export class MrList {
     return this.mergeRequests.length > 0;
   }
 
-  @computed
-  get approvalCounts(): Record<number, number> {
-    return this.mergeRequestApprovalCountsQuery.data ?? {};
-  }
-
   @actionBound
   setSearchText(value: string) {
     this.searchText = value;
@@ -197,16 +158,16 @@ export class MrList {
   @actionBound
   applySearch() {
     if (this.searchText.trim() !== this.appliedSearch) {
-      this.setState(this.activeState);
+      this.setFilter(this.activeFilter.id);
     }
   }
 
   @actionBound
-  setState(state: MrState) {
+  setFilter(id: MrFilterId) {
     clearTimeout(this.searchTimer);
     if (!this.params.globals.routes.mergeRequests.isOpened) return;
     this.params.globals.query.update({
-      state: state.id === "opened" ? null : state.id,
+      state: id === "opened" ? null : id,
       q: this.searchText.trim() || null,
     }, true);
   }

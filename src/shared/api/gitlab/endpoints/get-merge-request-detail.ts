@@ -10,7 +10,7 @@ export const getMergeRequestDetail = async (
 ): Promise<GitLabMergeRequestDC> => {
   const response = await gitlabFetch(
     connection,
-    `/projects/${typeof project === "string" ? encodeURIComponent(project) : project.id}/merge_requests/${mergeRequestIid}`,
+    `/projects/${typeof project === "string" ? encodeURIComponent(project) : project.id}/merge_requests/${mergeRequestIid}?render_html=true`,
     signal,
     { cache: "no-store" },
   );

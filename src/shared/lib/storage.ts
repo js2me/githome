@@ -4,6 +4,8 @@ export interface GitLabConnectionItem {
   id: string;
   gitlabUrl: string;
   gitToken: string;
+  credentialsRevision?: string;
+  jiraUrl?: string;
 }
 
 export interface ConnectionsStorage {

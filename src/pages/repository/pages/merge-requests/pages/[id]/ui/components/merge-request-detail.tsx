@@ -28,6 +28,7 @@ import { GitDiff } from "@/shared/ui/git-diff";
 export const MergeRequestDetail = ({
   markdownScope,
   mergeRequest,
+  jiraLinks,
   changes,
   changesError = null,
   isPreparingDiffs,
@@ -78,6 +79,7 @@ export const MergeRequestDetail = ({
 }: {
   markdownScope: GitlabMarkdownScope;
   mergeRequest: GitLabMergeRequestDC;
+  jiraLinks: Record<string, string>;
   changes: GitLabMergeRequestChangeDC[];
   changesError?: string | null;
   isPreparingDiffs: boolean;
@@ -159,6 +161,7 @@ export const MergeRequestDetail = ({
       )}
       <MergeRequestOverview
         mergeRequest={mergeRequest}
+        jiraLinks={jiraLinks}
         projectPath={markdownScope.projectPath}
         loadedFiles={changes.length}
         onShowFiles={() => {

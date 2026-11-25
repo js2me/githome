@@ -29,6 +29,7 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
         <MergeRequestDetail
           markdownScope={markdownScope}
           mergeRequest={detailView.mergeRequest}
+          jiraLinks={model.jiraLinks}
           changes={detailView.changes}
           changesError={detailView.changesError}
           isPreparingDiffs={detailView.isPreparingDiffs}

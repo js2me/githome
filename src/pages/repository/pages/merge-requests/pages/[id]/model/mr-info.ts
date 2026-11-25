@@ -7,9 +7,9 @@ import type {
   GitLabMergeRequestDC,
   GitLabMergeRequestReviewerDC,
   GitLabMergeRequestVersionDC,
-  GitLabUserDC,
 } from "@/shared/api/gitlab";
 import type { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
+import { createConnectionUserIdQuery } from "@/shared/lib/gitlab/connection-profile-query";
 import {
   createGitlabApiQuery,
   createGitlabQuery,
@@ -151,20 +151,10 @@ export class MrInfoModel {
       },
     );
 
-    this.currentUserQuery = createGitlabQuery<number | null>({
-      globals: options.globals,
-      abortSignal: options.abortSignal,
-      params: () => {
-        if (!options.params()) {
-          return false;
-        }
-
-        return { path: "/user" };
-      },
-      queryOptions: {
-        select: (data) => (data as GitLabUserDC).id ?? null,
-      },
-    });
+    this.currentUserQuery = createConnectionUserIdQuery(
+      () => options.params() ? options.globals.stores.settings.activeConnection : null,
+      options.abortSignal,
+    );
 
     this.mergeRequestApprovalsQuery = createGitlabQuery<GitLabMergeRequestApprovalsDC>({
       globals: options.globals,

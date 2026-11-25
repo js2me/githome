@@ -3,7 +3,7 @@ import type { ViewModelParams } from "mobx-view-model";
 import { createRef } from "yummies/mobx";
 import type { Globals } from "@/globals";
 import type { GitLabProjectDC } from "@/shared/api/gitlab";
-import { isConnectionDraftValid } from "@/shared/lib/gitlab/connection";
+import { normalizeJiraBaseUrl, parseConnectionDraft } from "@/shared/lib/gitlab/connection";
 import type { GitLabConnectionItem } from "@/shared/lib/storage";
 import { VM } from "@/shared/lib/view-models/vm";
 import { AppSettings } from "./app-settings";
@@ -13,9 +13,11 @@ export class LayoutVM extends VM {
   readonly connectionDialog = createRef<HTMLDialogElement>();
   readonly connectionUrlInput = createRef<HTMLInputElement>();
 
+  @observable accessor isConnectionDialogOpen = false;
   @observable accessor draftConnectionId: string | null = null;
   @observable accessor draftGitlabUrl = "";
   @observable accessor draftGitToken = "";
+  @observable accessor draftJiraUrl = "";
 
   constructor(globals: Globals, params: ViewModelParams) {
     super(globals, params);
@@ -29,7 +31,14 @@ export class LayoutVM extends VM {
 
   @computed
   get canSubmitConnection() {
-    return isConnectionDraftValid(this.draftGitlabUrl, this.draftGitToken);
+    return Boolean(
+      parseConnectionDraft(this.draftGitlabUrl, this.draftGitToken, this.draftJiraUrl),
+    );
+  }
+
+  @computed
+  get isDraftJiraUrlInvalid() {
+    return Boolean(this.draftJiraUrl.trim() && !normalizeJiraBaseUrl(this.draftJiraUrl));
   }
 
   @computed
@@ -133,11 +142,24 @@ export class LayoutVM extends VM {
     this.draftGitToken = value;
   }
 
+  @action
+  setDraftJiraUrl(value: string) {
+    this.draftJiraUrl = value;
+  }
+
   @actionBound
   openConnectionPopup() {
+    const dialog = this.connectionDialog.current;
+    if (!dialog) return;
     this.setConnectionDraft(this.globals.stores.settings.activeItem);
-    this.connectionDialog.current?.showModal();
+    dialog.showModal();
+    this.isConnectionDialogOpen = true;
     if (!this.draftConnectionId) this.connectionUrlInput.current?.focus();
+  }
+
+  @actionBound
+  onConnectionDialogClosed() {
+    this.isConnectionDialogOpen = Boolean(this.connectionDialog.current?.open);
   }
 
   @actionBound
@@ -162,12 +184,12 @@ export class LayoutVM extends VM {
   saveConnection() {
     if (!this.canSubmitConnection) return;
     const settings = this.globals.stores.settings;
-    if (this.draftConnectionId) {
-      settings.updateConnection(this.draftConnectionId, this.draftGitlabUrl, this.draftGitToken);
-    } else {
-      settings.addConnection(this.draftGitlabUrl, this.draftGitToken);
-    }
-    this.closeConnectionPopup();
+    const saved = this.draftConnectionId
+      ? settings.updateConnection(
+          this.draftConnectionId, this.draftGitlabUrl, this.draftGitToken, this.draftJiraUrl,
+        )
+      : settings.addConnection(this.draftGitlabUrl, this.draftGitToken, this.draftJiraUrl);
+    if (saved) this.closeConnectionPopup();
   }
 
   @actionBound
@@ -183,6 +205,7 @@ export class LayoutVM extends VM {
     this.draftConnectionId = item?.id ?? null;
     this.draftGitlabUrl = item?.gitlabUrl ?? "";
     this.draftGitToken = item?.gitToken ?? "";
+    this.draftJiraUrl = item?.jiraUrl ?? "";
   }
 
   @actionBound

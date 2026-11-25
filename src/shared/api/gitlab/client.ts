@@ -2,7 +2,17 @@ import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
 
 interface GraphQLResponse<T> {
   data?: T;
-  errors?: Array<{ message: string }>;
+  errors?: Array<{
+    message: string;
+    extensions?: { code?: string; typeName?: string; fieldName?: string };
+  }>;
+}
+
+export class GitLabGraphqlError extends Error {
+  constructor(readonly errors: NonNullable<GraphQLResponse<unknown>["errors"]>) {
+    super(errors.map((error) => error.message).join("; "));
+    this.name = "GitLabGraphqlError";
+  }
 }
 
 export const GIT_PROXY_PREFIX = "/git-proxy";
@@ -145,6 +155,9 @@ export const fetchGitlabAssetBlob = async (
     headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
       "PRIVATE-TOKEN": connection.gitToken,
     }),
+    // An avatar redirect may point to a third-party CDN. The avatar component
+    // retries it as a regular image without sending the account's request headers.
+    redirect: "error",
     signal,
   });
 
@@ -237,13 +250,19 @@ export const gitlabGraphql = async <T>(
   );
 
   if (!response.ok) {
+    if (response.status === 400) {
+      const payload = await response.json().catch(() => null) as GraphQLResponse<T> | null;
+      if (Array.isArray(payload?.errors) && payload.errors.length) {
+        throw new GitLabGraphqlError(payload.errors);
+      }
+    }
     throw new Error(`GitLab GraphQL error: ${response.status}`);
   }
 
   const payload = (await response.json()) as GraphQLResponse<T>;
 
   if (payload.errors?.length) {
-    throw new Error(payload.errors.map((error) => error.message).join("; "));
+    throw new GitLabGraphqlError(payload.errors);
   }
 
   if (!payload.data) {

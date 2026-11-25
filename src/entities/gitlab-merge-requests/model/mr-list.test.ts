@@ -2,14 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMemoryHistory, createQueryParams } from "mobx-location-history";
 import type { Globals } from "@/globals";
 import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
-import {
-  createGitlabApiQuery,
-  createInfiniteGitlabQuery,
-} from "@/shared/lib/gitlab/create-query";
-import { MR_STATES, MrList } from "./mr-list";
+import { createInfiniteGitlabQuery } from "@/shared/lib/gitlab/create-query";
+import { MrList } from "./mr-list";
 
 vi.mock("@/shared/lib/gitlab/create-query", () => ({
-  createGitlabApiQuery: vi.fn(),
   createInfiniteGitlabQuery: vi.fn(),
 }));
 
@@ -47,9 +43,6 @@ describe("MrList pagination", () => {
     vi.mocked(createInfiniteGitlabQuery).mockReturnValue(
       query as unknown as ReturnType<typeof createInfiniteGitlabQuery>,
     );
-    vi.mocked(createGitlabApiQuery).mockReturnValue(
-      { data: {} } as unknown as ReturnType<typeof createGitlabApiQuery>,
-    );
   });
 
   const createList = (url = "/repository/1/merge-requests") => {
@@ -73,11 +66,27 @@ describe("MrList pagination", () => {
     expect(getParams()).toMatchObject({ query: { state: "closed", "iids[]": "42", search: undefined } });
 
     list.setSearchText("fix menu");
-    list.setState(MR_STATES[1]);
+    list.setFilter("merged");
     expect(getParams()).toMatchObject({ query: { state: "merged", search: "fix menu", in: "title", "iids[]": undefined } });
     list.setSearchText("");
-    list.setState(MR_STATES[0]);
+    list.setFilter("opened");
     expect(getParams()).toMatchObject({ query: { state: "opened", search: undefined, "iids[]": undefined } });
+  });
+
+  it("restores the author's filter across states and clears the scope when leaving it", () => {
+    const list = createList("/repository/1/merge-requests?state=mine&q=!42");
+    const getParams = vi.mocked(createInfiniteGitlabQuery).mock.lastCall![0].params;
+
+    expect(list.activeFilter.id).toBe("mine");
+    expect(getParams()).toMatchObject({
+      path: "/projects/1/merge_requests",
+      query: { scope: "created_by_me", "iids[]": "42" },
+    });
+    expect(getParams()).not.toHaveProperty("query.state");
+
+    list.setFilter("closed");
+    expect(getParams()).toMatchObject({ query: { state: "closed", "iids[]": "42" } });
+    expect(getParams()).not.toHaveProperty("query.scope");
   });
 
   it("keeps the first page while loading more and combines subsequent pages", () => {

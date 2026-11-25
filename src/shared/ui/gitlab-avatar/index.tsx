@@ -2,12 +2,11 @@ import { withPropsViewModel } from "mobx-view-model-react";
 import { cn } from "@/shared/lib/cn";
 import { GitlabAvatarVM } from "./model";
 
-
 export const GitlabAvatar = withPropsViewModel(GitlabAvatarVM, ({ model }) => {
-  const { showImage, displaySrc, handleImageError } = model;
+  const { displaySrc, handleImageError } = model;
   const { className, name } = model.payload;
 
-  if (showImage && displaySrc) {
+  if (displaySrc) {
     return (
       <img
         className={className}
@@ -15,18 +14,20 @@ export const GitlabAvatar = withPropsViewModel(GitlabAvatarVM, ({ model }) => {
         alt=""
         title={name}
         onError={handleImageError}
+        referrerPolicy="no-referrer"
       />
     );
   }
 
-  return <div
-    className={cn(
-      "grid place-items-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-      className,
-    )}
-    title={name}
-  >
-    {name.slice(0, 1).toUpperCase()}
-  </div>;
-}
-);
+  return (
+    <span
+      className={cn(
+        "inline-grid shrink-0 place-items-center rounded-full bg-[var(--glass-hover)] text-[11px] font-bold leading-none text-fg-muted",
+        className,
+      )}
+      title={name}
+    >
+      {Array.from(name.trim())[0]?.toUpperCase()}
+    </span>
+  );
+});

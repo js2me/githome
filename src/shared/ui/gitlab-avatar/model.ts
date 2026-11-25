@@ -1,7 +1,8 @@
-import { actionBound, computed, observable, reaction, runInAction } from "mobx";
+import { actionBound, computedStruct, observable, reaction, runInAction } from "mobx";
 import {
   fetchGitlabAssetBlob,
   isGitlabProxiedAssetUrl,
+  normalizeGitlabBaseUrl,
   resolveGitlabAssetUrl,
 } from "@/shared/api/gitlab";
 import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
@@ -11,139 +12,112 @@ export interface GitlabAvatarPayload {
   avatarUrl: string | null | undefined;
   name: string;
   className?: string;
+  connection?: GitLabConnection | null;
 }
+
+const resolveAvatar = (raw: string | null | undefined, connection: GitLabConnection | null) => {
+  if (!raw?.trim()) return null;
+  try {
+    const base = connection && new URL(normalizeGitlabBaseUrl(connection.gitlabUrl) + "/");
+    const url = new URL(raw, base ?? globalThis.location?.href);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      if (url.protocol === "blob:" || /^data:image\//i.test(url.href)) {
+        return { direct: url.href, account: null, preferAuthenticated: false };
+      }
+      return null;
+    }
+    if (url.username || url.password) return null;
+    let hadToken = false;
+    // GitLab account credentials belong in authenticated request headers, never in img.src.
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(?:private_token|access_token|oauth_token)$/i.test(key)) {
+        url.searchParams.delete(key);
+        hadToken = true;
+      }
+    }
+    const direct = url.href;
+    const account = url.origin === base?.origin ? connection : null;
+    const resolved = account && resolveGitlabAssetUrl(account, direct);
+    const useProxy = Boolean(resolved && isGitlabProxiedAssetUrl(resolved));
+    return { direct, account, preferAuthenticated: Boolean(account && (hadToken || useProxy)) };
+  } catch {
+    return null;
+  }
+};
 
 export class GitlabAvatarVM extends VM<GitlabAvatarPayload> {
   @observable accessor displaySrc: string | null = null;
-  @observable accessor hasError = false;
 
   private objectUrl: string | null = null;
+  private request: AbortController | null = null;
+  private triedDirect = false;
 
-  @computed
-  get connection() {
-    return this.globals.stores.settings.activeConnection;
+  @computedStruct
+  private get source() {
+    const connection = this.payload.connection === undefined
+      ? this.globals.stores.settings.activeConnection
+      : this.payload.connection;
+    return resolveAvatar(this.payload.avatarUrl, connection);
   }
 
-  @computed
-  get src() {
-    if (!this.payload.avatarUrl) {
-      return null;
-    }
-
-    return this.connection
-      ? resolveGitlabAssetUrl(this.connection, this.payload.avatarUrl)
-      : this.payload.avatarUrl;
-  }
-
-  @computed
-  get showImage() {
-    return Boolean(this.displaySrc && !this.hasError);
+  private showDirect() {
+    this.triedDirect = true;
+    this.displaySrc = this.source?.direct ?? null;
   }
 
   @actionBound
   handleImageError() {
-    this.hasError = true;
+    if (this.source?.account && !this.request) {
+      this.displaySrc = null;
+      void this.loadAuthenticated(this.source.account, this.source.direct);
+    } else if (!this.triedDirect) {
+      this.showDirect();
+    } else {
+      this.displaySrc = null;
+    }
   }
 
-  @actionBound
-  private resetState() {
-    this.revokeObjectUrl();
-    this.displaySrc = null;
-    this.hasError = false;
-  }
-
-  @actionBound
-  private applyDisplaySrc(
-    src: string | null,
-    avatarUrl: string | null | undefined,
-    connection: GitLabConnection | null,
-  ) {
-    this.resetState();
-
-    if (!src || !avatarUrl) {
-      return;
-    }
-
-    if (!isGitlabProxiedAssetUrl(src)) {
-      this.displaySrc = src;
-      return;
-    }
-
-    if (!connection) {
-      this.hasError = true;
-      return;
-    }
-
-    void this.loadProxiedAvatar(connection, avatarUrl);
-  }
-
-  private async loadProxiedAvatar(
-    connection: GitLabConnection,
-    avatarUrl: string,
-  ) {
-    const signal = this.unmountSignal;
-    const requestAvatarUrl = avatarUrl;
-
+  private async loadAuthenticated(connection: GitLabConnection, avatarUrl: string) {
+    const controller = new AbortController();
+    this.request = controller;
     try {
-      const blob = await fetchGitlabAssetBlob(connection, avatarUrl, signal);
-
-      if (signal.aborted || requestAvatarUrl !== this.payload.avatarUrl) {
-        return;
-      }
-
-      const objectUrl = URL.createObjectURL(blob);
-
+      const blob = await fetchGitlabAssetBlob(connection, avatarUrl, controller.signal);
+      if (controller.signal.aborted) return;
       runInAction(() => {
-        if (requestAvatarUrl !== this.payload.avatarUrl) {
-          URL.revokeObjectURL(objectUrl);
-          return;
-        }
-
-        this.revokeObjectUrl();
-        this.objectUrl = objectUrl;
-        this.displaySrc = objectUrl;
-        this.hasError = false;
+        this.objectUrl = URL.createObjectURL(blob);
+        this.displaySrc = this.objectUrl;
       });
     } catch {
-      if (signal.aborted || requestAvatarUrl !== this.payload.avatarUrl) {
-        return;
-      }
-
-      runInAction(() => {
-        if (requestAvatarUrl !== this.payload.avatarUrl) {
-          return;
-        }
-
-        this.hasError = true;
-      });
+      if (!controller.signal.aborted) this.handleImageError();
     }
   }
 
-  private revokeObjectUrl() {
-    if (!this.objectUrl) {
-      return;
-    }
-
-    URL.revokeObjectURL(this.objectUrl);
+  private releaseSource() {
+    this.request?.abort();
+    this.request = null;
+    this.triedDirect = false;
+    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = null;
   }
 
-
   willMount() {
     reaction(
-      () => ({
-        src: this.src,
-        avatarUrl: this.payload.avatarUrl,
-        connection: this.connection,
-      }),
-      ({ src, avatarUrl, connection }) => {
-        this.applyDisplaySrc(src, avatarUrl, connection);
+      () => this.source,
+      (source) => {
+        this.releaseSource();
+        this.displaySrc = null;
+        if (!source) return;
+        if (source.preferAuthenticated && source.account) {
+          void this.loadAuthenticated(source.account, source.direct);
+        } else {
+          this.showDirect();
+        }
       },
-      { fireImmediately: true },
+      { fireImmediately: true, signal: this.unmountSignal },
     );
   }
 
   didUnmount() {
-    this.revokeObjectUrl();
+    this.releaseSource();
   }
 }

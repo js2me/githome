@@ -7,6 +7,7 @@ import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
 import { MrStateBadge } from "@/entities/gitlab-merge-requests/ui/mr-state-badge";
 import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { cn } from "@/shared/lib/cn";
+import { getJiraProjectUrl, splitJiraText } from "@/shared/lib/gitlab/jira-links";
 
 const shortDate = new Intl.DateTimeFormat("ru-RU", {
   day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
@@ -92,9 +93,10 @@ const mergeStates: Record<string, string> = {
 };
 
 export function MergeRequestOverview({
-  mergeRequest, projectPath, loadedFiles, onShowFiles, onShowComments, children,
+  mergeRequest, jiraLinks, projectPath, loadedFiles, onShowFiles, onShowComments, children,
 }: {
   mergeRequest: GitLabMergeRequestDC;
+  jiraLinks: Record<string, string>;
   projectPath: string;
   loadedFiles: number;
   onShowFiles: () => void;
@@ -102,6 +104,15 @@ export function MergeRequestOverview({
   children?: ReactNode;
 }) {
   const mr = mergeRequest;
+  const titleParts = splitJiraText(mr.title);
+  const titleKeys = new Set(titleParts.map((part) => part.key));
+  const jiraProjects = new Map<string, string>();
+  const branchIssues = [];
+  for (const [key, url] of Object.entries(jiraLinks)) {
+    const projectUrl = getJiraProjectUrl(url, key);
+    if (projectUrl) jiraProjects.set(projectUrl, key.slice(0, key.lastIndexOf("-")));
+    if (!titleKeys.has(key)) branchIssues.push({ key, url });
+  }
   const author = mr.author?.name || mr.author?.username;
   const assignees = mr.assignees?.map((user) => user.name).filter(Boolean).join(", ");
   const fileCount = mr.changes_count || loadedFiles || undefined;
@@ -115,7 +126,7 @@ export function MergeRequestOverview({
     <header aria-label="Сводка merge request" className="@container glass-panel min-w-0 rounded-2xl">
       <div className="flex min-w-0 flex-col gap-3 px-3.5 pt-3.5 pb-3 @md:px-5 @md:pt-4">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 text-xs text-fg-muted">
+          <div className="flex min-w-0 max-w-full flex-auto items-center gap-1.5 text-xs text-fg-muted">
             <CodePullRequest aria-hidden="true" className="shrink-0 text-[var(--glass-accent)]" width={16} height={16} />
             {projectPath && (
               <>
@@ -126,8 +137,20 @@ export function MergeRequestOverview({
             <span className="shrink-0 font-mono font-semibold text-fg-default">!{mr.iid}</span>
             <MrStateBadge mergeRequest={mr} language="ru" />
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex max-w-full flex-wrap items-center gap-1.5">
             <CopyControl key={mr.web_url} value={mr.web_url} label="Скопировать ссылку на MR" />
+            {Array.from(jiraProjects, ([url, projectKey]) => (
+              <a
+                key={url}
+                className={cn(actionClass, "max-w-full text-fg-link no-underline")}
+                href={url} target="_blank" rel="noopener noreferrer"
+                aria-label={`Открыть проект ${projectKey} в Jira`}
+                title={`Открыть проект ${projectKey} в Jira`}
+              >
+                <span className="truncate">Jira · {projectKey}</span>
+                <ArrowUpRightFromSquare aria-hidden="true" width={14} height={14} className="shrink-0" />
+              </a>
+            ))}
             <a
               className={cn(actionClass, "text-[var(--glass-accent)] no-underline")}
               href={mr.web_url} target="_blank" rel="noreferrer" aria-label="Открыть в GitLab" title="Открыть в GitLab"
@@ -139,7 +162,14 @@ export function MergeRequestOverview({
         </div>
 
         <h2 className="m-0 text-xl leading-tight font-semibold tracking-tight text-fg-default [overflow-wrap:anywhere] @lg:text-[26px]">
-          {mr.title}
+          {titleParts.map(({ text, key }, index) => key && jiraLinks[key] ? (
+            <a
+              key={index}
+              className="rounded-sm text-fg-link underline decoration-1 underline-offset-4 hover:decoration-2"
+              href={jiraLinks[key]} target="_blank" rel="noopener noreferrer"
+              aria-label={`Открыть задачу ${key} в Jira`}
+            >{text}</a>
+          ) : text)}
         </h2>
 
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
@@ -149,6 +179,16 @@ export function MergeRequestOverview({
             <ArrowRight aria-hidden="true" width={14} height={14} className="shrink-0" />
             <CopyControl key={"target-" + mr.target_branch} branch="target" value={mr.target_branch} label="Скопировать целевую ветку" />
           </div>
+          {branchIssues.map(({ key, url }) => (
+            <a
+              key={key}
+              className="inline-flex items-center gap-1 rounded-sm text-xs font-medium text-fg-link underline underline-offset-2"
+              href={url} target="_blank" rel="noopener noreferrer"
+              aria-label={`Открыть задачу ${key} в Jira`}
+            >
+              {key}<ArrowUpRightFromSquare aria-hidden="true" width={12} height={12} />
+            </a>
+          ))}
           {mr.state === "opened" && mergeLabel && (
             <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium", blocked ? "text-[var(--color-danger-fg)]" : "text-fg-muted")}>
               <MergeIcon aria-hidden="true" width={15} height={15} className={!blocked && mr.merge_status === "can_be_merged" ? "text-[var(--color-success-fg)]" : undefined} />

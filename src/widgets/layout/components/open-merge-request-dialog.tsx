@@ -10,11 +10,12 @@ export const OpenMergeRequestDialog = withViewModel(OpenMergeRequestVM, ({ model
       className="glass-primary inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-semibold sm:px-3.5"
       aria-haspopup="dialog"
       aria-label="Открыть MR"
+      title="Открыть MR"
       aria-keyshortcuts="Control+K Meta+K"
       onClick={model.open}
     >
       <Link className="size-4" aria-hidden />
-      <span>Открыть MR</span>
+      <span><span className="hidden min-[420px]:inline">Открыть </span>MR</span>
       <kbd aria-hidden className="hidden rounded border border-current/35 px-1 py-0.5 font-sans text-[10px] leading-none font-medium lg:inline">
         {/Mac|iPad|iPhone/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}
       </kbd>

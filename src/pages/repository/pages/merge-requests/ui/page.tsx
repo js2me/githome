@@ -1,11 +1,11 @@
 import { CodePullRequest, Magnifier, Xmark } from "@gravity-ui/icons";
 import { withViewModel } from "mobx-view-model-react";
-import { MR_STATES } from "@/entities/gitlab-merge-requests/model/mr-list";
+import { MR_FILTERS } from "@/entities/gitlab-merge-requests/model/mr-list";
 import { cn } from "@/shared/lib/cn";
 import { LoadMoreSentinel } from "@/shared/ui/load-more-sentinel";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { MergeRequestsPageVM } from "../model";
-import { MergeRequestList } from "./components/merge-request-list";
+import { MergeRequestListRows } from "./components/merge-request-list";
 
 export const MergeRequestsPage = withViewModel(MergeRequestsPageVM, ({ model }) => {
   const { mrList } = model;
@@ -25,9 +25,9 @@ export const MergeRequestsPage = withViewModel(MergeRequestsPageVM, ({ model }) 
 
       <div className="glass-panel overflow-hidden rounded-2xl">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--glass-border)] p-3 sm:p-4">
-          <div className="flex max-w-full flex-wrap items-center gap-1" role="group" aria-label="Состояние merge request">
-            {MR_STATES.map((state) => {
-              const active = mrList.activeState.id === state.id;
+          <div className="grid w-full grid-cols-2 gap-1 min-[440px]:flex min-[440px]:w-auto" role="group" aria-label="Фильтры merge requests">
+            {MR_FILTERS.map((filter) => {
+              const active = mrList.activeFilter.id === filter.id;
               return (
                 <button
                   className={cn(
@@ -36,12 +36,12 @@ export const MergeRequestsPage = withViewModel(MergeRequestsPageVM, ({ model }) 
                       ? "bg-[var(--glass-selected)] text-[var(--glass-accent)]"
                       : "text-fg-muted hover:bg-[var(--glass-hover)] hover:text-fg-default",
                   )}
-                  key={state.id}
+                  key={filter.id}
                   type="button"
                   aria-pressed={active}
-                  onClick={() => mrList.setState(state)}
+                  onClick={() => mrList.setFilter(filter.id)}
                 >
-                  {state.label}
+                  {filter.label}
                   {active && mrList.resultCount != null && (
                     <span className="ml-1.5 rounded-md bg-[var(--glass-control)] px-1.5 py-0.5 text-xs tabular-nums">
                       {mrList.resultCount}
@@ -92,7 +92,7 @@ export const MergeRequestsPage = withViewModel(MergeRequestsPageVM, ({ model }) 
               {mrList.appliedSearch ? <Magnifier /> : <CodePullRequest />}
             </span>
             <p className="text-sm font-semibold">
-              {mrList.appliedSearch ? "По вашему запросу ничего не найдено" : mrList.activeState.empty}
+              {mrList.appliedSearch ? "По вашему запросу ничего не найдено" : mrList.activeFilter.empty}
             </p>
             {mrList.appliedSearch && (
               <button
@@ -107,12 +107,17 @@ export const MergeRequestsPage = withViewModel(MergeRequestsPageVM, ({ model }) 
         )}
 
         {mrList.showList && (
-          <MergeRequestList
-            mergeRequests={mrList.mergeRequests}
-            approvalCounts={mrList.approvalCounts}
-            selectedMergeRequestIid={mrList.selectedMergeRequestIid}
-            onSelect={mrList.openMergeRequest}
-          />
+          <ul className="m-0 list-none divide-y divide-[var(--glass-border)] p-0">
+            {mrList.pages.map((page) => (
+              <MergeRequestListRows
+                key={page.page}
+                project={model.selectedProject}
+                mergeRequests={page.items}
+                selectedMergeRequestIid={mrList.selectedMergeRequestIid}
+                onSelect={mrList.openMergeRequest}
+              />
+            ))}
+          </ul>
         )}
 
         {mrList.showLoadError && (
