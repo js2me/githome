@@ -7,7 +7,7 @@ import type {
 
 export const getMergeRequestReviewers = async (
   connection: GitLabConnection,
-  project: GitLabProjectDC,
+  project: Pick<GitLabProjectDC, "id">,
   mergeRequestIid: number,
   signal?: AbortSignal,
 ): Promise<GitLabMergeRequestReviewerDC[]> => {

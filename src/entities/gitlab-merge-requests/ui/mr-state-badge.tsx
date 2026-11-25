@@ -48,18 +48,20 @@ const stateLabels: Record<string, { en: string; ru: string }> = {
   opened: { en: "Open", ru: "Открыт" },
   merged: { en: "Merged", ru: "Влит" },
   closed: { en: "Closed", ru: "Закрыт" },
+  locked: { en: "Locked", ru: "Заблокирован" },
+  reopened: { en: "Reopened", ru: "Открыт повторно" },
 };
 
 export const MrStateBadge = ({
   mergeRequest,
   size = "sm",
-  language = "en",
+  language = "ru",
 }: {
   mergeRequest: GitLabMergeRequestDC;
   language?: "en" | "ru";
   size?: NonNullable<VariantProps<typeof mrStateBadgeVariants>["size"]>;
 }) => {
-  const stateKey = isDraft(mergeRequest) ? "draft" : mergeRequest.state;
+  const stateKey = mergeRequest.state === "opened" && isDraft(mergeRequest) ? "draft" : mergeRequest.state;
 
   return (
     <span

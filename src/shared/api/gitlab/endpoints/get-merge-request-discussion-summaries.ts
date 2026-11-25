@@ -81,7 +81,7 @@ const loadCountPage = async (
 
 const loadRestSummary = async (
   connection: GitLabConnection,
-  project: GitLabProjectDC,
+  project: Pick<GitLabProjectDC, "id">,
   iid: number,
   signal?: AbortSignal,
 ): Promise<GitLabMergeRequestDiscussionSummary | undefined> => {
@@ -106,14 +106,14 @@ const loadRestSummary = async (
 
 export const getMergeRequestDiscussionSummaries = async (
   connection: GitLabConnection,
-  project: GitLabProjectDC,
+  project: Pick<GitLabProjectDC, "id"> & { path_with_namespace?: string },
   mergeRequestIids: readonly number[],
   signal?: AbortSignal,
 ): Promise<SummariesByIid> => {
   signal?.throwIfAborted();
   const summaries: SummariesByIid = {};
   const iids = [...new Set(mergeRequestIids)];
-  if (!unsupportedConnections.has(connection)) {
+  if (project.path_with_namespace && !unsupportedConnections.has(connection)) {
     try {
       for (let i = 0; i < iids.length; i += 100) {
         await loadCountPage(connection, project.path_with_namespace, iids.slice(i, i + 100), summaries, signal);
@@ -126,7 +126,7 @@ export const getMergeRequestDiscussionSummaries = async (
     }
   }
 
-  // Older GitLab instances expose these counts only through individual discussions.
+  // REST also works by numeric ID when an inbox entry has no project path.
   const missing = iids.filter(iid => !summaries[iid]);
   for (let i = 0; i < missing.length; i += 3) {
     signal?.throwIfAborted();

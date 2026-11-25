@@ -8,7 +8,7 @@
   display: grid;
   width: 100%;
   min-width: max-content;
-  grid-template-columns: 50px 50px 8px minmax(0, 1fr);
+  grid-template-columns: 50px 50px 20px minmax(0, 1fr);
 }
 
 .git-diff-line-num {
@@ -88,19 +88,21 @@
 
 .git-diff-line-num--old-removed {
   background: var(--diff-line-num-old);
+  color: var(--diff-prefix-removed);
 }
 
 .git-diff-line-num--new-added {
   background: var(--diff-line-num-new);
+  color: var(--diff-prefix-added);
 }
 
 .git-diff-prefix {
-  width: 8px;
   user-select: none;
   text-align: center;
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
     Consolas, "Liberation Mono", "Courier New", monospace);
   font-size: var(--diff-code-font-size);
+  font-weight: 600;
   line-height: var(--diff-code-line-height);
   color: var(--diff-line-num-text);
   background: var(--diff-canvas);
@@ -139,10 +141,22 @@
 
 .git-diff-inline-added {
   background: var(--diff-inline-added);
+  border-bottom: 1px solid var(--diff-prefix-added);
 }
 
 .git-diff-inline-removed {
   background: var(--diff-inline-removed);
+  border-bottom: 1px dashed var(--diff-prefix-removed);
+}
+
+.git-diff-token {
+  color: var(--diff-token);
+}
+
+@supports (color: oklch(from black max(l, 0.78) c h)) {
+  .git-diff-token {
+    color: oklch(from var(--diff-token) var(--diff-token-lightness) c h);
+  }
 }
 
 .git-diff-code code {

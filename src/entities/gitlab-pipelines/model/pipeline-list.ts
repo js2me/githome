@@ -1,4 +1,4 @@
-import { actionBound, computed, observable, runInAction } from "mobx";
+import { actionBound, computed, observable, observableRef, runInAction } from "mobx";
 import type { Globals } from "@/globals";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type {
@@ -46,16 +46,11 @@ const parsePipelineVariables = (input: string): GitLabPipelineVariableDC[] =>
       };
     });
 
-const isPipelineActive = (status: string) =>
-  [
-    "created",
-    "waiting_for_resource",
-    "preparing",
-    "waiting_for_callback",
-    "pending",
-    "running",
-    "scheduled",
-  ].includes(status);
+const activeStatuses = new Set([
+  "created", "waiting_for_resource", "preparing", "waiting_for_callback", "pending", "running", "scheduled", "canceling",
+]);
+export const isPipelineActive = (status: string) => activeStatuses.has(status);
+const canCancelStatus = (status: string) => status !== "canceling" && isPipelineActive(status);
 
 export const getPipelineMergeRequestIid = (
   pipeline: GitLabPipelineDC,
@@ -70,7 +65,7 @@ export class PipelineList {
   @observable accessor statusFilter = "";
   @observable accessor refSearch = "";
   @observable accessor refFilter = "";
-  @observable accessor selectedPipelineId: number | null = null;
+  @observableRef accessor openedRun: GitLabPipelineDC | null = null;
   @observable accessor busyPipelineId: number | null = null;
   @observable accessor busyJobId: number | null = null;
   @observable accessor actionError: string | null = null;
@@ -101,9 +96,13 @@ export class PipelineList {
           },
         };
       },
-      queryOptions: () => ({
-        refetchInterval: this.selectedPipelineId === null ? false : 5000,
-      }),
+      queryOptions: () => {
+        const opened = this.openedRun;
+        if (!opened) return { refetchInterval: false };
+        return {
+          refetchInterval: () => isPipelineActive(this.selectedPipeline?.status ?? opened.status) ? 5000 : false,
+        };
+      },
     });
 
     this.mergeRequestDetailsQuery = createGitlabApiQuery<
@@ -120,7 +119,7 @@ export class PipelineList {
           : { projectId, iids };
       },
       queryKey: ({ connection, projectId, iids }) =>
-        ["pipeline-merge-request-details", connection.gitlabUrl, projectId, iids] as const,
+        ["pipeline-merge-request-details", connection.id, connection.gitlabUrl, connection.credentialsRevision, projectId, iids] as const,
       queryFn: async ({ connection, projectId, iids, signal }) => {
         const results = await Promise.all(
           iids.map(async (iid) => {
@@ -146,6 +145,12 @@ export class PipelineList {
   @computed
   get pipelines(): GitLabPipelineDC[] {
     return (this.pipelinesQuery.data?.pages ?? []).flatMap((page) => page.items);
+  }
+
+  @computed
+  get selectedPipeline() {
+    const opened = this.openedRun;
+    return opened && (this.pipelines.find(run => run.id === opened.id) ?? opened);
   }
 
   @computed
@@ -186,7 +191,7 @@ export class PipelineList {
     return error instanceof Error
       ? error.message
       : error
-        ? "Не удалось загрузить pipelines"
+        ? "Не удалось загрузить пайплайны"
         : null;
   }
 
@@ -220,7 +225,7 @@ export class PipelineList {
   }
 
   isPipelineCancelable(pipeline: GitLabPipelineDC) {
-    return this.params.canManagePipelines() && isPipelineActive(pipeline.status);
+    return this.params.canManagePipelines() && canCancelStatus(pipeline.status);
   }
 
   isPipelineRetryable(pipeline: GitLabPipelineDC) {
@@ -231,18 +236,7 @@ export class PipelineList {
   }
 
   isJobCancelable(job: GitLabJobDC) {
-    return (
-      this.params.canManagePipelines() &&
-      [
-        "created",
-        "waiting_for_resource",
-        "preparing",
-        "waiting_for_callback",
-        "pending",
-        "running",
-        "scheduled",
-      ].includes(job.status)
-    );
+    return this.params.canManagePipelines() && canCancelStatus(job.status);
   }
 
   canRunJob(job: GitLabJobDC) {
@@ -282,9 +276,8 @@ export class PipelineList {
   }
 
   @actionBound
-  togglePipeline(pipeline: GitLabPipelineDC) {
-    const isSamePipeline = this.selectedPipelineId === pipeline.id;
-    this.selectedPipelineId = isSamePipeline ? null : pipeline.id;
+  selectPipeline(pipeline: GitLabPipelineDC | null) {
+    this.openedRun = pipeline;
     this.actionError = null;
   }
 
@@ -448,12 +441,12 @@ export class PipelineList {
 
     if (!this.params.canManagePipelines()) {
       this.createPipelineError =
-        "Для запуска pipeline нужны права Developer или выше.";
+        "Для запуска пайплайна нужна роль Developer или выше.";
       return;
     }
 
     if (!ref) {
-      this.createPipelineError = "Укажите ветку, тег или commit SHA.";
+      this.createPipelineError = "Укажите ветку, тег или SHA коммита.";
       return;
     }
 
@@ -462,7 +455,7 @@ export class PipelineList {
       variables = parsePipelineVariables(this.variablesText);
     } catch (error) {
       this.createPipelineError =
-        error instanceof Error ? error.message : "Проверьте формат variables";
+        error instanceof Error ? error.message : "Проверьте формат переменных";
       return;
     }
 
@@ -488,7 +481,7 @@ export class PipelineList {
     } catch (error) {
       runInAction(() => {
         this.createPipelineError =
-          error instanceof Error ? error.message : "Не удалось запустить pipeline";
+          error instanceof Error ? error.message : "Не удалось запустить пайплайн";
       });
     } finally {
       runInAction(() => {

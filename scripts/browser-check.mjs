@@ -113,7 +113,7 @@ const accountProfiles = new Map([
 ]);
 const projectMrs = [
   ...mrs,
-  { ...mr(11, 'Refine navigation', currentUser.name), author: currentUser },
+  { ...mr(11, 'Refine navigation', currentUser.name), author: currentUser, draft: true },
   { ...mr(12, 'Update release notes', currentUser.name), author: currentUser, state: 'merged' },
   { ...mr(13, 'Replace sidebar', currentUser.name), author: currentUser, state: 'closed' },
   { ...mr(14, 'Archive release notes', AUTHORS[1]), state: 'closed' },
@@ -134,6 +134,22 @@ const discussionCounts = [
   { iid: '4', resolvableDiscussionsCount: 1, resolvedDiscussionsCount: 1 },
   { iid: '11', resolvableDiscussionsCount: 2, resolvedDiscussionsCount: 0 },
 ];
+
+const betaRequest = {
+  ...mr(1, 'Review the beta deployment', AUTHORS[1]),
+  id: 2001, project_id: 2, detailed_merge_status: 'requested_changes',
+  references: { short: '!1', full: 'group/beta!1' },
+};
+const pipeline = {
+  id: 4821, iid: 31, project_id: 1, status: 'success', ref: 'refs/merge-requests/156/head',
+  source: 'merge_request_event', sha: 'a12bc3456789', duration: 82,
+  web_url: 'https://gitlab.mock/group/alpha/-/pipelines/4821', created_at: '2026-07-27T08:00:00Z',
+};
+const pipelineJobs = Array.from({ length: 125 }, (_, index) => ({
+  id: 700 + index, name: index === 0 ? 'typecheck' : `test-${index}`,
+  stage: index === 0 ? 'build' : 'test', status: 'success',
+  web_url: `https://gitlab.mock/group/alpha/-/jobs/${700 + index}`,
+})).reverse();
 
 const tsxChange = {
   old_path: 'packages/feature-14/summary.tsx',
@@ -203,6 +219,7 @@ const imageMr = {
   description: 'Show both versions of a renamed file.',
   source_branch: `feature/${titleIssue}-${branchIssue}-image-diffs`,
   diff_refs: imageMrDiffRefs,
+  head_pipeline: pipeline,
 };
 const fileDiscussionPath = '/git-proxy/gitlab.mock/api/v4/projects/1/merge_requests/156/discussions';
 const isFileDiscussionPost = (req) =>
@@ -212,6 +229,16 @@ const route = (url, postData, token) => {
   const { pathname, searchParams } = new URL(url);
   const p = pathname.replace('/git-proxy/gitlab.mock', '');
   if (p === '/api/v4/user') return accountProfiles.get(token) ?? {};
+  if (p === '/api/v4/merge_requests') {
+    return searchParams.get('scope') === 'created_by_me' ? [projectMrs.find(item => item.iid === 11)] : [mrs[0], betaRequest];
+  }
+  if (p === '/api/v4/projects/1/pipelines') return [pipeline];
+  if (p === '/api/v4/projects/1/pipelines/4821') return pipeline;
+  if (p === '/api/v4/projects/1/pipelines/4821/jobs') {
+    const page = Number(searchParams.get('page') ?? 1);
+    const size = Number(searchParams.get('per_page') ?? 20);
+    return pipelineJobs.slice((page - 1) * size, page * size);
+  }
   if (p === '/api/v4/markdown') {
     const { text = '', project, gfm } = JSON.parse(postData ?? '{}');
     if (text === unlinkedIssue) return { html: '' };
@@ -414,6 +441,22 @@ await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 await sleep(4500);
 check('home: projects rendered', (await page.evaluate(() => document.body.innerText)).includes('group/alpha'));
 
+try {
+  const rows = '.home-request-row';
+  await page.waitForFunction(selector => {
+    const cards = Array.from(document.querySelectorAll(selector), row => row.innerText);
+    return cards.some(text => text.includes('group/alpha') && text.includes('Approved') && text.includes('Resolved 2/2')) &&
+      cards.some(text => text.includes('group/beta') && text.includes('Requested') && !text.includes('Approved'));
+  }, { timeout: 5000 }, rows);
+  check('home review badges distinguish identical MR numbers in different projects', true);
+  await page.click('button::-p-text(Мои MR)');
+  await page.waitForFunction(selector => [...document.querySelectorAll(selector)].some(row =>
+    row.innerText.includes('Refine navigation') && row.innerText.includes('Unresolved')), { timeout: 5000 }, rows);
+  check('authored MRs on the dashboard also show review badges', true);
+} catch (error) {
+  check('review badges in both dashboard tabs', false, String(error));
+}
+
 check('click project card', await clickByText('alpha'));
 await sleep(4000);
 check('repository page opened', page.url().includes('/repository/1'));
@@ -453,6 +496,9 @@ try {
     }), { timeout: 5000 }, expectedStatuses);
     check(`MR rows show accurate review statuses within the ${width}px viewport`, true);
   }
+  check('MR list displays open and draft states in Russian',
+    await page.$eval('main button[aria-label^="Открыть !1 "]', row => row.innerText.includes('Открыт')) &&
+    await page.$eval('main button[aria-label^="Открыть !11 "]', row => row.innerText.includes('Черновик')));
 } catch (error) {
   check('review statuses in the MR list', false, String(error));
 } finally {
@@ -686,6 +732,33 @@ try {
   await page.waitForSelector(card);
   await page.$eval(card, element => element.scrollIntoView({ block: 'center' }));
   await checkTsxColors(card, 'TSX additions and changed words retain their syntax colors');
+  for (const theme of ['dark', 'light']) {
+    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }]);
+    await page.waitForFunction(dark => document.documentElement.classList.contains('dark') === dark, {}, theme === 'dark');
+    const minimumContrast = await page.$eval(card, element => {
+      const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      const luminance = color => {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, 1, 1);
+        const rgb = Array.from(ctx.getImageData(0, 0, 1, 1).data).slice(0, 3).map(value => {
+          const s = value / 255;
+          return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+      };
+      const styles = [...element.querySelectorAll('.git-diff-code .git-diff-token, .git-diff-line-num, .git-diff-prefix')]
+        .filter(node => node.textContent.trim());
+      return Math.min(...styles.map(node => {
+        const style = getComputedStyle(node);
+        const bg = style.backgroundColor === 'rgba(0, 0, 0, 0)'
+          ? getComputedStyle(node.closest('.git-diff-code')).backgroundColor : style.backgroundColor;
+        const [low, high] = [luminance(bg), luminance(style.color)].sort((a, b) => a - b);
+        return (high + 0.05) / (low + 0.05);
+      }));
+    });
+    check(`diff text, change markers and line numbers retain contrast in ${theme} mode`,
+      minimumContrast >= 4.5 && Number.isFinite(minimumContrast), minimumContrast.toFixed(2));
+  }
   await page.keyboard.down('Control');
   await page.keyboard.press('f');
   await page.keyboard.up('Control');
@@ -1070,6 +1143,36 @@ try {
   check('another account remains selectable when profile details are missing', true);
 } catch (error) {
   check('GitLab account identities and switching', false, String(error));
+}
+
+try {
+  for (const { path, trigger, width } of [
+    { path: '/repository/1/merge-requests/156', trigger: 'section[aria-label="Последний пайплайн"] button[aria-haspopup="dialog"]', width: 1280 },
+    { path: '/repository/1/pipelines', trigger: 'button[aria-label="Открыть пайплайн #4821"]', width: 320 },
+  ]) {
+    await page.setViewport({ width, height: 640 });
+    await page.goto(BASE + path, { waitUntil: 'networkidle0' });
+    const button = await page.waitForSelector(trigger, { visible: true, timeout: 5000 });
+    const before = await button.boundingBox();
+    await button.focus();
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('dialog[open] a[href$="/jobs/700"]', { timeout: 5000 });
+    const fits = await page.$eval('dialog[open]', dialog => {
+      const bounds = dialog.getBoundingClientRect();
+      return dialog.innerText.includes('Пайплайн #4821') && dialog.innerText.includes('typecheck') &&
+        dialog.querySelectorAll('li').length === 125 &&
+        bounds.left >= 0 && bounds.right <= innerWidth && bounds.height <= innerHeight &&
+        [...dialog.querySelectorAll('div')].some(div => div.scrollHeight > div.clientHeight &&
+          getComputedStyle(div).overflowY === 'auto');
+    });
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('dialog[open]', { hidden: true, timeout: 3000 });
+    const after = await button.boundingBox();
+    check(`pipeline details scroll inside a dialog and return focus on ${path}`, fits &&
+      await button.evaluate(el => el === document.activeElement) && before.height === after.height);
+  }
+} catch (error) {
+  check('pipeline detail dialogs', false, String(error));
 }
 
 check('no page errors', pageErrors.length === 0, pageErrors[0]?.slice(0, 150));

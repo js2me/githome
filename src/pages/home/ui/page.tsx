@@ -1,12 +1,10 @@
 import {
   ArrowRight,
   ChevronDown,
-  ChevronRight,
   CircleCheck,
   CodePullRequest,
   Folders,
   LogoGitlab,
-  Person,
 } from "@gravity-ui/icons";
 import { withViewModel } from "mobx-view-model-react";
 import { cn } from "@/shared/lib/cn";
@@ -16,6 +14,7 @@ import { ProjectAvatar } from "@/shared/ui/project-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { HomePageVM } from "../model";
 import type { ProjectListTab } from "../model/gitlab-projects-list";
+import { InboxPageRows } from "./inbox-page-rows";
 import "./page.css";
 
 const BranchDiagram = () => (
@@ -94,34 +93,10 @@ export const HomePage = withViewModel(
           {reviewInbox.isLoading && (
             <p className="home-empty-state" role="status">Загружаем мерж-реквесты…</p>
           )}
-          {reviewInbox.requests.length > 0 && (
+          {reviewInbox.hasRequests && (
             <ul className="list-none px-2 py-2 sm:px-3">
-              {reviewInbox.requests.map((request) => (
-                <li key={request.id} className="home-list-item">
-                  <button
-                    className="home-request-row group flex w-full min-w-0 items-center gap-3 rounded-xl px-3 py-3.5 text-left sm:gap-4 sm:px-4"
-                    type="button"
-                    onClick={() => reviewInbox.openRequest(request)}
-                  >
-                    <span className="home-request-icon grid size-9 shrink-0 place-items-center rounded-xl sm:size-10" aria-hidden>
-                      <CodePullRequest className="size-5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex min-w-0 items-baseline gap-2 text-xs">
-                        <span className="shrink-0 font-mono font-semibold text-[var(--glass-accent)]">!{request.iid}</span>
-                        <span className="truncate text-fg-muted" title={request.projectPath}>{request.projectPath}</span>
-                      </span>
-                      <span className="mt-1 block text-[15px] leading-snug font-semibold break-words">{request.title}</span>
-                      {request.author?.name && (
-                        <span className="mt-1.5 flex items-center gap-1.5 text-xs text-fg-muted">
-                          <Person className="size-3" aria-hidden />
-                          <span className="truncate">{request.author.name}</span>
-                        </span>
-                      )}
-                    </span>
-                    <ChevronRight className="size-4 shrink-0 text-fg-muted group-hover:text-[var(--glass-accent)]" aria-hidden />
-                  </button>
-                </li>
+              {reviewInbox.pages.map((page) => (
+                <InboxPageRows key={page.page} rows={page.items} onSelect={reviewInbox.openRequest} />
               ))}
             </ul>
           )}
@@ -145,7 +120,7 @@ export const HomePage = withViewModel(
               </button>
             </div>
           ) : null}
-          {!reviewInbox.isLoading && !reviewInbox.error && reviewInbox.requests.length === 0 && (
+          {!reviewInbox.isLoading && !reviewInbox.error && !reviewInbox.hasRequests && (
             <div className="home-empty-state" role="status">
               <CircleCheck className="mx-auto mb-3 size-7 text-[var(--color-success-fg)]" aria-hidden />
               {reviewInbox.scope === "reviewer" ? "Нет мерж-реквестов, где вы назначены ревьюером." : "У вас пока нет открытых мерж-реквестов."}

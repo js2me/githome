@@ -7,7 +7,7 @@ import type {
   GitLabPipelineDC,
   GitLabProjectDC,
 } from "@/shared/api/gitlab";
-import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
+import { createGitlabApiQuery, createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
 
 export interface PipelineCardPayload {
@@ -29,6 +29,7 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
   readonly pipelineQuery;
   readonly jobsQuery;
 
+  @observable private accessor openPipelineKey: string | null = null;
   @observable accessor busyJobId: number | null = null;
   @observable accessor actionError: string | null = null;
 
@@ -51,25 +52,26 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
       }),
     });
 
-    this.jobsQuery = createGitlabQuery<GitLabJobDC[]>({
+    this.jobsQuery = createGitlabApiQuery<GitLabJobDC[], { projectId: number; pipelineId: number }>({
       globals: this.globals,
       abortSignal: this.unmountSignal,
-      params: () => ({
-        path: `/projects/${this.payload.projectId}/pipelines/${this.payload.pipelineId}/jobs`,
-        query: {
-          per_page: 100,
-          include_retried: false,
-        },
+      params: () => this.detailsOpen && ({
+        projectId: this.payload.projectId,
+        pipelineId: this.payload.pipelineId,
       }),
-      queryOptions: () => ({
-        refetchInterval: (query) => {
-          const jobs = query.state.data as GitLabJobDC[] | undefined;
+      queryKey: ({ connection, projectId, pipelineId }) =>
+        ["pipeline-jobs", connection.id, connection.credentialsRevision, projectId, pipelineId],
+      queryFn: ({ connection, projectId, pipelineId, signal }) =>
+        gitlabApi.getPipelineJobs(connection, projectId, pipelineId, signal),
+      queryOptions: {
+        refetchInterval: ({ state }) => {
+          const jobs = state.data as GitLabJobDC[] | undefined;
           const hasActiveJob =
             jobs?.some((job) => ACTIVE_JOB_STATUSES.has(job.status)) ?? false;
 
           return this.shouldPollPipeline || hasActiveJob ? 5000 : false;
         },
-      }),
+      },
     });
   }
 
@@ -83,17 +85,24 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
     return this.pipelineQuery.data;
   }
 
+  private get pipelineKey() {
+    return `${this.globals.stores.settings.activeId}/${this.payload.projectId}/${this.payload.pipelineId}`;
+  }
+
   @computed
-  get stages(): Array<{ name: string; jobs: GitLabJobDC[] }> {
-    const stageMap = new Map<string, GitLabJobDC[]>();
+  get detailsOpen() {
+    return this.openPipelineKey === this.pipelineKey;
+  }
 
-    for (const job of [...this.jobs].reverse()) {
-      const stageJobs = stageMap.get(job.stage) ?? [];
-      stageJobs.push(job);
-      stageMap.set(job.stage, stageJobs);
-    }
+  @actionBound
+  openDetails() {
+    this.actionError = null;
+    this.openPipelineKey = this.pipelineKey;
+  }
 
-    return [...stageMap].map(([name, jobs]) => ({ name, jobs }));
+  @actionBound
+  closeDetails() {
+    this.openPipelineKey = null;
   }
 
   @computed
@@ -151,6 +160,7 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
       return;
     }
 
+    const pipelineKey = this.pipelineKey;
     this.busyJobId = job.id;
     this.actionError = null;
 
@@ -171,9 +181,10 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
         );
       }
 
-      await this.jobsQuery.refetch();
+      if (pipelineKey === this.openPipelineKey) await this.jobsQuery.refetch();
     } catch (error) {
       runInAction(() => {
+        if (pipelineKey !== this.pipelineKey) return;
         this.actionError =
           error instanceof Error ? error.message : "Не удалось выполнить действие";
       });

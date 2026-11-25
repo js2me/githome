@@ -31,6 +31,8 @@ export interface GitLabMergeRequestDC {
   description?: string | null;
   labels?: string[];
   merge_status?: string;
+  detailed_merge_status?: string;
+  reviewers?: GitLabUserDC[];
   has_conflicts?: boolean;
   user_notes_count?: number;
   changes_count?: string;

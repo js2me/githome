@@ -93,18 +93,19 @@
   --diff-border: #c7c9d4;
   --diff-code-font-size: 13px;
   --diff-code-line-height: 1.6;
-  --diff-line-added: #cfdee1;
-  --diff-line-removed: #e6dee4;
-  --diff-line-num-new: #c9dbe1;
-  --diff-line-num-old: #d6c6cc;
-  --diff-inline-added: #b8d4d6;
-  --diff-inline-removed: #e6cfd4;
-  --diff-prefix-added: #166775;
-  --diff-prefix-removed: #914c54;
-  --diff-line-num-text: #9da0ab;
+  --diff-line-added: #e6f5e9;
+  --diff-line-removed: #fff0ee;
+  --diff-line-num-new: #d1edd9;
+  --diff-line-num-old: #f9dcd6;
+  --diff-inline-added: #c0e7ca;
+  --diff-inline-removed: #f7cac5;
+  --diff-prefix-added: #20623b;
+  --diff-prefix-removed: #913a40;
+  --diff-line-num-text: #535f73;
+  --diff-token-lightness: min(l, 0.46);
   --diff-code-text: #343b58;
   --diff-hunk-bg: #dcdee3;
-  --diff-hunk-text: #6c6e75;
+  --diff-hunk-text: #525e71;
   --diff-expand-bg: #dcdee3;
   --diff-header-bg: #dcdee3;
   --diff-stats-added: #166775;
@@ -259,20 +260,21 @@
 
   --color-card-hover-shadow: rgb(0 0 0 / 0.24);
 
-  /* Diff — Dracula Official (diffEditor.* / gitDecoration.*) */
+  /* Diff */
   --diff-border: #44475a;
-  --diff-line-added: #263b38;
-  --diff-line-removed: #542b32;
-  --diff-line-num-new: #1a3930;
-  --diff-line-num-old: #582734;
-  --diff-inline-added: #235242;
-  --diff-inline-removed: #571024;
-  --diff-prefix-added: #50fa7b;
-  --diff-prefix-removed: #ff5555;
-  --diff-line-num-text: #6272a4;
+  --diff-line-added: #16342b;
+  --diff-line-removed: #3b242e;
+  --diff-line-num-new: #1b4234;
+  --diff-line-num-old: #4d2a36;
+  --diff-inline-added: #22543a;
+  --diff-inline-removed: #652f40;
+  --diff-prefix-added: #9ae8b1;
+  --diff-prefix-removed: #ffb1b0;
+  --diff-line-num-text: #a1adbf;
+  --diff-token-lightness: max(l, 0.78);
   --diff-code-text: #f8f8f2;
   --diff-hunk-bg: #343746;
-  --diff-hunk-text: #6272a4;
+  --diff-hunk-text: #afbad0;
   --diff-expand-bg: #21222c;
   --diff-header-bg: #343746;
   --diff-stats-added: #50fa7b;

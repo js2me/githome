@@ -11,6 +11,8 @@ type InboxRequest = GitLabMergeRequestDC & {
   references?: { full?: string };
 };
 
+export type InboxRow = InboxRequest & { projectPath: string };
+
 export class ReviewInbox {
   @observable accessor scope: InboxScope = "reviewer";
 
@@ -46,15 +48,21 @@ export class ReviewInbox {
   }
 
   @computed
-  get requests() {
-    return (this.query.data?.pages ?? []).flatMap((page) =>
-      page.items.map((request) => ({
+  get pages() {
+    return (this.query.data?.pages ?? []).map((page) => ({
+      page: page.page,
+      items: page.items.map((request) => ({
         ...request,
         projectPath: request.references?.full?.replace(/!\d+$/, "") ||
           this.projects.projects.find((project) => project.data.id === request.project_id)
             ?.data.path_with_namespace || `#${request.project_id}`,
       })),
-    );
+    }));
+  }
+
+  @computed
+  get hasRequests() {
+    return this.pages.some((page) => page.items.length > 0);
   }
 
   @computed
@@ -93,7 +101,7 @@ export class ReviewInbox {
   }
 
   @actionBound
-  openRequest(request: InboxRequest & { projectPath: string }) {
+  openRequest(request: InboxRow) {
     const connectionId = this.globals.stores.settings.activeId;
     if (!connectionId) return;
 

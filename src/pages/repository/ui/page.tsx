@@ -82,7 +82,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
                 </button>
                 {[
                   { label: "Files", Icon: Code, open: model.openFiles },
-                  { label: "Pipelines", Icon: Timeline, open: model.openPipelines },
+                  { label: "Пайплайны", Icon: Timeline, open: model.openPipelines },
                   { label: "Аналитика", Icon: ChartLine, open: model.openAnalytics },
                 ].map(({ label, Icon, open }) => (
                   <button key={label} type="button" onClick={open} className="glass-control inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold">

@@ -1,4 +1,5 @@
 import { memo, type CSSProperties, type ReactNode } from "react";
+import { cn } from "@/shared/lib/cn";
 import type { WordDiffSegment } from "@/shared/lib/compute-word-diff";
 import { mapTokensToGitlabDiffSyntax } from "@/shared/lib/gitlab/syntax/diff-syntax";
 import type { SyntaxToken } from "@/shared/lib/syntax-highlight/shiki-highlighter";
@@ -9,11 +10,11 @@ const wordChangeClasses = {
   del: "git-diff-inline-removed",
 };
 
-const tokenStyle = (token?: SyntaxToken): CSSProperties | undefined => {
+const tokenStyle = (token?: SyntaxToken): (CSSProperties & { "--diff-token"?: string }) | undefined => {
   if (!token) return undefined;
   const flags = token.fontStyle ?? 0;
   return {
-    color: token.color,
+    "--diff-token": token.color,
     fontStyle: flags & 1 ? "italic" : undefined,
     fontWeight: flags & 2 ? "bold" : undefined,
     textDecoration: flags & 4 ? "underline" : undefined,
@@ -61,7 +62,7 @@ export const HighlightedCode = memo(({
           <span
             key={start}
             style={tokenStyle(token)}
-            className={wordChange ? wordChangeClasses[wordChange] : undefined}
+            className={cn(token?.color && "git-diff-token", wordChange && wordChangeClasses[wordChange])}
           >
             {content}
           </span>,

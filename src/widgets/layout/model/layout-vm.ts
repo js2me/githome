@@ -98,7 +98,7 @@ export class LayoutVM extends VM {
       return { label: "Merge requests", open: this.openMergeRequests };
     }
     if (routes.files.isOpened) return { label: "Files", open: this.openFiles };
-    if (routes.pipelines.isOpened) return { label: "Pipelines", open: this.openPipelines };
+    if (routes.pipelines.isOpened) return { label: "Пайплайны", open: this.openPipelines };
     if (routes.analytics.isOpened) return { label: "Аналитика", open: this.openAnalytics };
     return null;
   }

@@ -1,11 +1,17 @@
+import { actionBound, observable, reaction } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
-import { PipelineList } from "@/entities/gitlab-pipelines/model/pipeline-list";
+import { isPipelineActive, PipelineList } from "@/entities/gitlab-pipelines/model/pipeline-list";
 import { RepositoryPageVM } from "@/pages/repository/model/page-vm";
+import { gitlabApi, type GitLabJobDC, type GitLabPipelineDC } from "@/shared/api/gitlab";
+import { createGitlabApiQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
 
 export class PipelinesPageVM extends VM<{}, RepositoryPageVM> {
   readonly pipelineList: PipelineList;
+  readonly jobs;
+  readonly trace;
+  @observable accessor traceJobId: number | null = null;
 
   constructor(globals: Globals, params: ViewModelParams<{}, RepositoryPageVM>) {
     super(globals, params);
@@ -26,5 +32,73 @@ export class PipelinesPageVM extends VM<{}, RepositoryPageVM> {
         return accessLevel >= 30;
       },
     });
+
+    this.jobs = createGitlabApiQuery<GitLabJobDC[], { projectId: number; pipelineId: number }>({
+      globals,
+      abortSignal: this.unmountSignal,
+      params: () => {
+        const run = this.pipelineList.openedRun;
+        return run && { projectId: run.project_id, pipelineId: run.id };
+      },
+      queryKey: ({ connection, projectId, pipelineId }) =>
+        ["pipeline-jobs", connection.id, connection.credentialsRevision, projectId, pipelineId],
+      queryFn: ({ connection, projectId, pipelineId, signal }) =>
+        gitlabApi.getPipelineJobs(connection, projectId, pipelineId, signal),
+      queryOptions: {
+        refetchInterval: ({ state }) => {
+          const run = this.pipelineList.selectedPipeline;
+          const jobs = state.data as GitLabJobDC[] | undefined;
+          return run && (isPipelineActive(run.status) || jobs?.some(job => isPipelineActive(job.status))) ? 5000 : false;
+        },
+      },
+    });
+    this.trace = createGitlabApiQuery<string, { projectId: number; jobId: number }>({
+      globals,
+      abortSignal: this.unmountSignal,
+      params: () => {
+        const run = this.pipelineList.openedRun;
+        return run && this.traceJobId !== null && { projectId: run.project_id, jobId: this.traceJobId };
+      },
+      queryKey: ({ connection, projectId, jobId }) =>
+        ["pipeline-job-trace", connection.id, connection.credentialsRevision, projectId, jobId],
+      queryFn: ({ connection, projectId, jobId, signal }) =>
+        gitlabApi.getPipelineJobTrace(connection, projectId, jobId, signal),
+    });
+
+    reaction(
+      () => [this.parentViewModel.projectId, globals.stores.settings.activeId, globals.stores.settings.activeItem?.credentialsRevision],
+      this.closeDetails,
+      { signal: this.unmountSignal },
+    );
+  }
+
+  @actionBound
+  openDetails(run: GitLabPipelineDC) {
+    this.pipelineList.selectPipeline(run);
+    this.traceJobId = null;
+  }
+
+  @actionBound
+  closeDetails() {
+    this.pipelineList.selectPipeline(null);
+    this.traceJobId = null;
+  }
+
+  @actionBound
+  toggleTrace(jobId: number) {
+    this.traceJobId = this.traceJobId === jobId ? null : jobId;
+  }
+
+  @actionBound
+  async runJob(job: GitLabJobDC) {
+    const run = this.pipelineList.openedRun;
+    await this.pipelineList.runJobAction(job);
+    if (run && run === this.pipelineList.openedRun) await this.jobs.refetch();
+  }
+
+  @actionBound
+  async runPipeline(run: GitLabPipelineDC, action: "retry" | "cancel") {
+    await this.pipelineList.runPipelineAction(run, action);
+    if (this.pipelineList.openedRun?.id === run.id) await this.jobs.refetch();
   }
 }

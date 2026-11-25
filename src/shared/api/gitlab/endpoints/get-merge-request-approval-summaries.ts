@@ -21,7 +21,7 @@ const summarize = (data: GitLabMergeRequestApprovalsDC): GitLabMergeRequestAppro
 
 export const getMergeRequestApprovalSummaries = async (
   connection: GitLabConnection,
-  project: GitLabProjectDC,
+  project: Pick<GitLabProjectDC, "id">,
   mergeRequestIids: readonly number[],
   signal?: AbortSignal,
 ): Promise<Partial<Record<number, GitLabMergeRequestApprovalSummary>>> => {
