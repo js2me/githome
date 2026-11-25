@@ -41,6 +41,8 @@ export default defineConfig(({ mode, command }) => {
   dotenv.config();
 
   return {
+    // Electron serves the renderer from the root of its local HTTP server.
+    base: '/',
     // Linked worktrees can share node_modules. Keep lazy chunks local to the running app.
     cacheDir: `.vite/${mode}/${isElectron ? 'electron' : 'web'}`,
     plugins: [

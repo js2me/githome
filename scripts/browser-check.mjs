@@ -2,7 +2,8 @@
  * Headless smoke check for Suspense navigation + GitlabAvatar sibling lists
  * (mobx-view-model integration; no real GitLab needed).
  *
- * Prereq: dev server running (`pnpm dev`, vite on 1420).
+ * Run against the dev server (`pnpm dev`, port 1420) or the desktop renderer
+ * (`pnpm build:app && pnpm preview`, set BASE=http://localhost:4173).
  * Usage:  node scripts/browser-check.mjs
  * Env:    BASE=http://localhost:1420  CHROME_PATH=/usr/bin/google-chrome
  *
@@ -795,6 +796,13 @@ try {
   await page.waitForSelector(`${tree} [data-changes-file-id]`);
   const mountedRows = await page.$$eval(`${tree} .changes-file-tree__row`, rows => rows.length);
   check('large MR mounts only nearby tree rows', mountedRows < 60, `${mountedRows} rows in the DOM`);
+  for (const [kind, row] of [['folder', 'button[aria-expanded]'], ['file', '[data-changes-file-id]']]) {
+    const icon = await page.$eval(`${tree} ${row} .changes-file-tree__row-icon img`, async image => {
+      await image.decode().catch(() => {});
+      return { loaded: image.naturalWidth > 0, url: image.currentSrc };
+    });
+    check(`${kind} icon renders on a nested MR route`, icon.loaded, icon.url);
+  }
 
   await waitForWorkspace(false);
   const workspaceTopAtPageStart = await page.$eval(workspace, aside => aside.getBoundingClientRect().top);
