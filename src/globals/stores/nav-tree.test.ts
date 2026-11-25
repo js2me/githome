@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { pruneOrphanedMergeRequestItems } from "@/features/merge-requests/model/merge-request-nav";
+import type { Globals } from "@/globals";
+import {
+  MergeRequestNavAdapter,
+  pruneOrphanedMergeRequestItems,
+} from "@/features/merge-requests/model/merge-request-nav";
 import type { NavTreeItem } from "./nav-tree";
 
 class MemoryStorage implements Storage {
@@ -59,6 +63,22 @@ describe("NavTreeStore", () => {
   afterEach(() => {
     store.clear();
   });
+
+  const createMrNavigation = (iid: number) => new MergeRequestNavAdapter({
+    routes: {
+      mergeRequest: {
+        isOpened: true,
+        params: { projectId: "1", mergeRequestIid: String(iid) },
+      },
+    },
+    stores: {
+      navTree: store,
+      settings: {
+        activeId: "active-connection",
+        connections: [{ id: "active-connection" }],
+      },
+    },
+  } as unknown as Globals);
 
   it("starts empty and persists its snapshot", () => {
     expect(store.snapshot).toEqual({ groups: [], items: [] });
@@ -186,6 +206,37 @@ describe("NavTreeStore", () => {
     store.clear();
 
     expect(store.snapshot).toEqual({ groups: [], items: [] });
+  });
+
+  it("keeps the loaded MR and repository titles when restoring an open tab", () => {
+    const navigation = createMrNavigation(42);
+    navigation.updateDetails("active-connection", 1, 42, {
+      title: "Review API",
+      projectPath: "group/project",
+    });
+    const snapshot = store.snapshot;
+    store.collapse();
+
+    navigation.start();
+
+    expect(store.snapshot).toEqual(snapshot);
+    expect(store.isExpanded).toBe(true);
+  });
+
+  it("uses the known repository title for a new MR opened by URL", () => {
+    const navigation = createMrNavigation(43);
+    navigation.updateDetails("active-connection", 1, 42, {
+      title: "Review API",
+      projectPath: "group/project",
+    });
+
+    navigation.start();
+
+    expect(store.groups).toMatchObject([{ title: "group/project" }]);
+    expect(store.items).toMatchObject([
+      { title: "Review API" },
+      { title: "Merge Request", payload: { projectPath: "group/project", mergeRequestIid: 43 } },
+    ]);
   });
 
   it("prunes MR items for removed connections without touching other item kinds", () => {

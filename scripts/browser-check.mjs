@@ -15,6 +15,7 @@
  * - home -> project (lazy page under Suspense) -> Merge requests -> back -> forward
  * - exactly one visible avatar per author on every MR-list mount
  * - open multiple MR tabs across repositories, switch between them, and close one
+ * - stack workspace tabs and keep the desktop page clear of the panel at 980px and 150% scale
  * - scroll and select files in a 255-file merge request
  * - compare PNG and JPEG revisions and open either side in the zoom viewer
  * - submit a file-level comment and render the new thread on the file
@@ -338,17 +339,61 @@ const openMrFromProject = async (projectId, title) => {
 };
 
 check('open MR tab from first repository', await openMrFromProject(1, 'Mock MR #1'));
+check('open another MR in the first repository', await openMrFromProject(1, 'Mock MR #3'));
 check('open MR tab from second repository', await openMrFromProject(2, 'Mock MR #2'));
 
-const workspaceOverlay = await page.$eval('aside[aria-label="Рабочая область"]', (aside) => ({
-  expanded: aside.getAttribute('data-expanded') === 'true',
-  position: getComputedStyle(aside).position,
-}));
+await page.setViewport({ width: 980, height: 640, deviceScaleFactor: 1.5 });
+const workspaceLayout = () => page.$eval('aside[aria-label="Рабочая область"]', (aside) => {
+  const nav = aside.querySelector('nav[aria-label="Навигационное дерево"]');
+  const withinColumn = (elements) => {
+    const rows = [...elements].map((element) => element.getBoundingClientRect());
+    return rows.every((row, index) => index === 0 || (
+      Math.abs(row.left - rows[0].left) < 1 && row.top >= rows[index - 1].bottom - 1
+    ));
+  };
+  const panelRight = aside.getBoundingClientRect().right;
+  const headerLeft = document.querySelector('header:has(h1)').getBoundingClientRect().left;
+  const mainLeft = document.querySelector('main').getBoundingClientRect().left;
+  const sections = [...nav.querySelectorAll('section')];
+  return {
+    expanded: aside.dataset.expanded === 'true',
+    position: getComputedStyle(aside).position,
+    fitsPage: Math.abs(headerLeft - panelRight) < 1 && Math.abs(mainLeft - panelRight) < 1,
+    panelRight,
+    headerLeft,
+    mainLeft,
+    navWidth: nav.clientWidth,
+    navScrollWidth: nav.scrollWidth,
+    verticalGroups: sections.length === 2 && withinColumn(sections),
+    verticalTabs: sections.some((section) => section.querySelectorAll('li').length >= 2) &&
+      sections.every((section) => withinColumn(section.querySelectorAll('li'))),
+  };
+});
+
+await sleep(400);
+const workspaceOpen = await workspaceLayout();
 check(
-  'workspace auto-opens as a fixed overlay when an MR is added',
-  workspaceOverlay.expanded && workspaceOverlay.position === 'fixed',
-  JSON.stringify(workspaceOverlay),
+  'workspace auto-opens and leaves room for the header and main at 980px',
+  workspaceOpen.expanded && workspaceOpen.position === 'fixed' && workspaceOpen.fitsPage,
+  JSON.stringify(workspaceOpen),
 );
+check(
+  'workspace groups and all MR tabs form one column without horizontal scrolling at 980px',
+  workspaceOpen.verticalGroups && workspaceOpen.verticalTabs && workspaceOpen.navScrollWidth <= workspaceOpen.navWidth,
+);
+
+await page.mouse.move(100, 120);
+await page.mouse.move(500, 120);
+await sleep(400);
+const workspaceClosed = await workspaceLayout();
+check(
+  'header and main fill the space beside the collapsed workspace rail',
+  !workspaceClosed.expanded && workspaceClosed.fitsPage && workspaceClosed.panelRight < workspaceOpen.panelRight,
+  JSON.stringify(workspaceClosed),
+);
+await page.mouse.move(5, 120);
+await sleep(400);
+await page.click('nav[aria-label="Навигационное дерево"] button[aria-label="Закрыть Mock MR #3"]');
 
 const sidebarState = await page.evaluate(() => {
   const sidebar = document.querySelector('nav[aria-label="Навигационное дерево"]');

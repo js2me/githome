@@ -10,22 +10,23 @@ export interface LayoutProps extends ViewModelProps<LayoutVM> {
 }
 
 export const Layout = withViewModel(LayoutVM, ({ model, children }: LayoutProps) => {
-  const connection = model.globals.stores.settings.activeConnection;
+  const { stores, navigation } = model.globals;
+  const { navTree } = stores;
 
   return (
-    <GitLabConnectionProvider connection={connection}>
+    <GitLabConnectionProvider connection={stores.settings.activeConnection}>
       <div className="flex min-h-screen min-w-0 flex-col bg-canvas-default">
-        <AppNav />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
-          <NavTreeSidebar
-            store={model.globals.stores.navTree}
-            activeItemId={model.globals.navigation.mergeRequests.activeItemId}
-            onSelect={(item) => model.globals.navigation.mergeRequests.select(item)}
-            onClose={(item) => model.globals.navigation.mergeRequests.close(item)}
-            onSelectGroup={(group) =>
-              model.globals.navigation.mergeRequests.selectGroup(group)
-            }
-          />
+        <NavTreeSidebar
+          store={navTree}
+          activeItemId={navigation.mergeRequests.activeItemId}
+          onSelect={(item) => navigation.mergeRequests.select(item)}
+          onClose={(item) => navigation.mergeRequests.close(item)}
+          onSelectGroup={(group) => navigation.mergeRequests.selectGroup(group)}
+        />
+        <div className="flex min-w-0 flex-1 flex-col transition-[margin-left] duration-300 ease-in-out peer-data-[expanded]/workspace:ml-4 motion-reduce:transition-none md:peer-data-[expanded=true]/workspace:ml-64">
+          <div className="@container">
+            <AppNav />
+          </div>
           <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6">
             <Suspense fallback={null}>{children}</Suspense>
           </main>

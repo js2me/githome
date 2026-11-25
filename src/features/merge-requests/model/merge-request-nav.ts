@@ -276,13 +276,20 @@ export class MergeRequestNavAdapter {
       return;
     }
 
-    this.globals.stores.navTree.expand();
+    const navTree = this.globals.stores.navTree;
+    const tab = { connectionId, projectId, mergeRequestIid };
+    const itemId = createMergeRequestNavItemId(tab);
+    navTree.expand();
+    if (navTree.items.some((item) => item.id === itemId)) {
+      return;
+    }
+
+    const groupId = createGroupId(connectionId, projectId);
+    const projectPath = navTree.groups.find((group) => group.id === groupId)?.title;
     this.upsertItem(
       {
-        connectionId,
-        projectId,
-        projectPath: "Загрузка репозитория…",
-        mergeRequestIid,
+        ...tab,
+        projectPath: projectPath ?? "Загрузка репозитория…",
       },
       "Merge Request",
     );

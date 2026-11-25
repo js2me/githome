@@ -50,13 +50,11 @@ export const NavTreeSidebar = observer(
         aria-label="Рабочая область"
         aria-expanded={store.isExpanded}
         data-expanded={store.isExpanded}
-        className={cn(
-          "fixed left-0 top-0 z-50 flex h-screen w-64 max-w-[calc(100vw-1rem)] flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-300 ease-in-out dark:border-slate-800 dark:bg-gray-900",
-        )}
+        className="peer/workspace fixed left-0 top-0 z-50 flex h-dvh w-64 max-w-[calc(100vw-1rem)] flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-300 ease-in-out motion-reduce:transition-none dark:border-slate-800 dark:bg-gray-900 md:shadow-none"
         style={{
           transform: store.isExpanded
             ? "translateX(0)"
-            : "translateX(calc(-100% + 16px))",
+            : "translateX(calc(-100% + 1rem))",
         }}
         onMouseEnter={store.expand}
         onMouseLeave={store.collapse}
@@ -80,17 +78,17 @@ export const NavTreeSidebar = observer(
 
         <nav
           aria-label="Навигационное дерево"
-          className="flex min-h-0 flex-1 gap-4 overflow-auto p-3 lg:flex-col lg:gap-3"
+          className="flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto p-3"
         >
           {groups.map((group) => (
-            <section className="min-w-48 lg:min-w-0" key={group.id}>
+            <section className="min-w-0 shrink-0" key={group.id}>
               <h3
                 className="mb-1 truncate px-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500"
                 title={group.title}
               >
                 {group.kind ? (
                   <button
-                    className="w-full cursor-pointer border-0 bg-transparent p-0 text-left text-inherit transition hover:text-brand focus-visible:outline-2 focus-visible:outline-brand"
+                    className="block w-full cursor-pointer truncate border-0 bg-transparent p-0 text-left text-inherit transition hover:text-brand focus-visible:outline-2 focus-visible:outline-brand"
                     type="button"
                     title={group.title}
                     aria-label={`Открыть ${group.title}`}
@@ -102,12 +100,12 @@ export const NavTreeSidebar = observer(
                   group.title
                 )}
               </h3>
-              <ul className="m-0 flex list-none gap-1 p-0 lg:flex-col">
+              <ul className="m-0 flex list-none flex-col gap-1 p-0">
                 {group.items.map((item) => {
                   const isActive = activeItemId === item.id;
 
                   return (
-                    <li className="min-w-48 lg:min-w-0" key={item.id}>
+                    <li className="min-w-0" key={item.id}>
                       <div
                         className={cn(
                           "group flex items-center rounded-lg transition",
