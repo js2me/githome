@@ -14,7 +14,7 @@ import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { cn } from "@/shared/lib/cn";
 import { filterDiscussionsForActivity } from "@/shared/lib/gitlab/diff-discussions";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChangesActiveFileLink } from "./changes-active-file-link";
 import { ChangesFileTree } from "./changes-file-tree";
 import { ChangesTreeLayout } from "./changes-tree-layout";
@@ -112,13 +112,7 @@ const CrossIcon = () => (
   </svg>
 );
 
-const BranchLabel = ({
-  branch,
-  label,
-}: {
-  branch: string;
-  label: string;
-}) => {
+const useCopyText = (value: string) => {
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
     "idle",
   );
@@ -127,14 +121,54 @@ const BranchLabel = ({
     setCopyStatus("idle");
 
     try {
-      await navigator.clipboard.writeText(branch);
+      await navigator.clipboard.writeText(value);
       setCopyStatus("copied");
-      window.setTimeout(() => setCopyStatus("idle"), 1200);
     } catch {
       setCopyStatus("failed");
-      window.setTimeout(() => setCopyStatus("idle"), 1600);
     }
-  }, [branch]);
+  }, [value]);
+
+  useEffect(() => {
+    if (copyStatus === "idle") {
+      return;
+    }
+
+    const timeout = window.setTimeout(
+      () => setCopyStatus("idle"),
+      copyStatus === "copied" ? 1200 : 1600,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [copyStatus]);
+
+  return { copyStatus, handleCopy };
+};
+
+const CopyMergeRequestLink = ({ url }: { url: string }) => {
+  const { copyStatus, handleCopy } = useCopyText(url);
+  const message = copyStatus === "copied"
+    ? "Скопировано"
+    : copyStatus === "failed"
+      ? "Не удалось скопировать"
+      : "";
+
+  return (
+    <>
+      <button
+        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-[13px] font-semibold text-fg-default transition hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+        type="button"
+        aria-label="Скопировать ссылку на MR"
+        onClick={() => void handleCopy()}
+      >
+        {copyStatus === "copied" ? <CheckIcon /> : copyStatus === "failed" ? <CrossIcon /> : <CopyIcon />}
+        {message || "Скопировать ссылку"}
+      </button>
+      <span className="sr-only" role="status">{message}</span>
+    </>
+  );
+};
+
+const BranchLabel = ({ branch, label }: { branch: string; label: string }) => {
+  const { copyStatus, handleCopy } = useCopyText(branch);
 
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 py-1 pl-2 pr-1 dark:border-slate-700 dark:bg-slate-950">
@@ -310,14 +344,17 @@ export const MergeRequestDetail = ({
             {mergeRequest.title}
           </h2>
           <MrStateBadge mergeRequest={mergeRequest} size="md" />
-          <a
-            className="ml-auto shrink-0 rounded-lg bg-orange-50 px-3 py-2 text-[13px] font-semibold text-orange-700 no-underline hover:bg-orange-100 dark:bg-orange-950 dark:text-orange-300 dark:hover:bg-orange-900"
-            href={mergeRequest.web_url}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Открыть в GitLab
-          </a>
+          <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2.5">
+            <CopyMergeRequestLink key={mergeRequest.web_url} url={mergeRequest.web_url} />
+            <a
+              className="shrink-0 rounded-lg bg-orange-50 px-3 py-2 text-[13px] font-semibold text-orange-700 no-underline hover:bg-orange-100 dark:bg-orange-950 dark:text-orange-300 dark:hover:bg-orange-900"
+              href={mergeRequest.web_url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Открыть в GitLab
+            </a>
+          </div>
         </div>
 
         {pipelineCard}

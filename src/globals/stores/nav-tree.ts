@@ -1,4 +1,4 @@
-import { actionBound, computed, computedStruct, observable } from "mobx";
+import { actionBound, computed, computedStruct } from "mobx";
 import { appStorage } from "@/shared/lib/storage";
 
 export interface NavTreeGroup<Kind extends string = string, Payload = unknown> {
@@ -27,8 +27,6 @@ const navTreeKey = appStorage.key<NavTreeSnapshot>("nav-tree", {
 });
 
 export class NavTreeStore {
-  @observable accessor isExpanded = false;
-
   @computedStruct
   get snapshot(): NavTreeSnapshot {
     return navTreeKey.value;
@@ -62,10 +60,6 @@ export class NavTreeStore {
     item: NavTreeItem<Kind, Payload>,
   ) {
     const exists = this.items.some((current) => current.id === item.id);
-    if (!exists) {
-      this.isExpanded = true;
-    }
-
     navTreeKey.value = {
       ...this.snapshot,
       items: exists
@@ -98,16 +92,5 @@ export class NavTreeStore {
       groups: [],
       items: [],
     };
-    this.isExpanded = false;
-  }
-
-  @actionBound
-  expand() {
-    this.isExpanded = true;
-  }
-
-  @actionBound
-  collapse() {
-    this.isExpanded = false;
   }
 }

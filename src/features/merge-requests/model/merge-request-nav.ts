@@ -136,7 +136,6 @@ export class MergeRequestNavAdapter {
       mergeRequestIid,
     };
 
-    this.globals.stores.navTree.expand();
     this.upsertItem(payload, title);
     this.navigate(payload);
   }
@@ -279,7 +278,6 @@ export class MergeRequestNavAdapter {
     const navTree = this.globals.stores.navTree;
     const tab = { connectionId, projectId, mergeRequestIid };
     const itemId = createMergeRequestNavItemId(tab);
-    navTree.expand();
     if (navTree.items.some((item) => item.id === itemId)) {
       return;
     }

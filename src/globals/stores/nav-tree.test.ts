@@ -215,12 +215,10 @@ describe("NavTreeStore", () => {
       projectPath: "group/project",
     });
     const snapshot = store.snapshot;
-    store.collapse();
 
     navigation.start();
 
     expect(store.snapshot).toEqual(snapshot);
-    expect(store.isExpanded).toBe(true);
   });
 
   it("uses the known repository title for a new MR opened by URL", () => {

@@ -15,10 +15,11 @@
  * - home -> project (lazy page under Suspense) -> Merge requests -> back -> forward
  * - exactly one visible avatar per author on every MR-list mount
  * - open multiple MR tabs across repositories, switch between them, and close one
- * - stack workspace tabs and keep the desktop page clear of the panel at 980px and 150% scale
+ * - open the sticky workspace picker by pointer and keyboard without shifting the page
  * - scroll and select files in a 255-file merge request
  * - compare PNG and JPEG revisions and open either side in the zoom viewer
  * - submit a file-level comment and render the new thread on the file
+ * - copy the GitLab URL from the MR header
  * - avatar titles map to the right authors, zero page/console errors
  */
 import puppeteer from 'puppeteer-core';
@@ -323,27 +324,48 @@ await page.goForward({ waitUntil: 'domcontentloaded' });
 await sleep(3000);
 await checkMrList('MR list after back/forward');
 
-const openMrFromProject = async (projectId, title) => {
+const workspace = 'aside[aria-label="Рабочая область"]';
+const workspaceTrigger = `${workspace} button[aria-expanded]`;
+const workspaceTree = `${workspace} nav[aria-label="Навигационное дерево"]`;
+const waitForWorkspace = (expanded) => page.waitForSelector(
+  `${workspace}[data-expanded="${expanded}"]`, { timeout: 3000 },
+);
+const leaveWorkspace = () => page.mouse.move(page.viewport().width - 20, 60);
+const openWorkspace = async () => {
+  await leaveWorkspace();
+  await page.hover(workspaceTrigger);
+  await waitForWorkspace(true);
+};
+
+const openMrFromProject = async (projectId, iid) => {
   await page.goto(`${BASE}/repository/${projectId}/merge-requests`, {
     waitUntil: 'domcontentloaded',
     timeout: 30000,
   });
   await sleep(3500);
+  const title = `Mock MR #${iid}`;
   const clicked = await clickByText(title);
   if (!clicked) return false;
-  await sleep(3500);
-  return page.evaluate((expectedTitle) =>
-    [...document.querySelectorAll('nav[aria-label="Навигационное дерево"] button')]
-      .some((button) => button.textContent?.trim() === expectedTitle),
-  title);
+  const detailPath = `/repository/${projectId}/merge-requests/${iid}`;
+  await page.waitForFunction((path, expectedTitle) => location.pathname === path &&
+    [...document.querySelectorAll('main h2')].some(heading => heading.textContent === expectedTitle),
+  { timeout: 5000 }, detailPath, title);
+  await page.waitForSelector(workspaceTrigger, { timeout: 3000 });
+  return page.$eval(workspaceTrigger, trigger => trigger.getAttribute('aria-expanded') === 'false');
 };
 
-check('open MR tab from first repository', await openMrFromProject(1, 'Mock MR #1'));
-check('open another MR in the first repository', await openMrFromProject(1, 'Mock MR #3'));
-check('open MR tab from second repository', await openMrFromProject(2, 'Mock MR #2'));
+check('open MR tab from first repository with the workspace picker collapsed', await openMrFromProject(1, 1));
+check('open another MR in the first repository with the workspace picker collapsed', await openMrFromProject(1, 3));
+check('open MR tab from second repository with the workspace picker collapsed', await openMrFromProject(2, 2));
 
 await page.setViewport({ width: 980, height: 640, deviceScaleFactor: 1.5 });
-const workspaceLayout = () => page.$eval('aside[aria-label="Рабочая область"]', (aside) => {
+const mainLayout = () => page.$eval('main', main => {
+  const { x, y, width } = main.getBoundingClientRect();
+  return { x, y, width };
+});
+const mainBeforeOpening = await mainLayout();
+await openWorkspace();
+const workspaceOpen = await page.$eval(workspace, (aside) => {
   const nav = aside.querySelector('nav[aria-label="Навигационное дерево"]');
   const withinColumn = (elements) => {
     const rows = [...elements].map((element) => element.getBoundingClientRect());
@@ -351,17 +373,12 @@ const workspaceLayout = () => page.$eval('aside[aria-label="Рабочая об�
       Math.abs(row.left - rows[0].left) < 1 && row.top >= rows[index - 1].bottom - 1
     ));
   };
-  const panelRight = aside.getBoundingClientRect().right;
-  const headerLeft = document.querySelector('header:has(h1)').getBoundingClientRect().left;
-  const mainLeft = document.querySelector('main').getBoundingClientRect().left;
+  const trigger = aside.querySelector('button[aria-expanded]');
   const sections = [...nav.querySelectorAll('section')];
   return {
-    expanded: aside.dataset.expanded === 'true',
+    expanded: trigger.getAttribute('aria-expanded') === 'true',
     position: getComputedStyle(aside).position,
-    fitsPage: Math.abs(headerLeft - panelRight) < 1 && Math.abs(mainLeft - panelRight) < 1,
-    panelRight,
-    headerLeft,
-    mainLeft,
+    opensDown: nav.getBoundingClientRect().top >= trigger.getBoundingClientRect().bottom - 1,
     navWidth: nav.clientWidth,
     navScrollWidth: nav.scrollWidth,
     verticalGroups: sections.length === 2 && withinColumn(sections),
@@ -370,30 +387,41 @@ const workspaceLayout = () => page.$eval('aside[aria-label="Рабочая об�
   };
 });
 
-await sleep(400);
-const workspaceOpen = await workspaceLayout();
 check(
-  'workspace auto-opens and leaves room for the header and main at 980px',
-  workspaceOpen.expanded && workspaceOpen.position === 'fixed' && workspaceOpen.fitsPage,
+  'hover reveals the sticky workspace list below the trigger at 980px',
+  workspaceOpen.expanded && workspaceOpen.position === 'sticky' && workspaceOpen.opensDown,
   JSON.stringify(workspaceOpen),
+);
+const mainWhileOpen = await mainLayout();
+check('opening the workspace picker does not move the page',
+  Object.entries(mainBeforeOpening).every(([key, value]) => Math.abs(mainWhileOpen[key] - value) < 1),
+  JSON.stringify({ before: mainBeforeOpening, open: mainWhileOpen }),
 );
 check(
   'workspace groups and all MR tabs form one column without horizontal scrolling at 980px',
   workspaceOpen.verticalGroups && workspaceOpen.verticalTabs && workspaceOpen.navScrollWidth <= workspaceOpen.navWidth,
 );
 
-await page.mouse.move(100, 120);
-await page.mouse.move(500, 120);
-await sleep(400);
-const workspaceClosed = await workspaceLayout();
-check(
-  'header and main fill the space beside the collapsed workspace rail',
-  !workspaceClosed.expanded && workspaceClosed.fitsPage && workspaceClosed.panelRight < workspaceOpen.panelRight,
-  JSON.stringify(workspaceClosed),
+await leaveWorkspace();
+await waitForWorkspace(false);
+check('workspace closes when the pointer leaves', true);
+
+await page.focus(workspaceTrigger);
+await page.keyboard.press('Enter');
+await waitForWorkspace(true);
+await page.keyboard.press('Tab');
+check('keyboard users can open the workspace picker and reach the list',
+  await page.$eval(workspaceTree, nav => nav.contains(document.activeElement)),
 );
-await page.mouse.move(5, 120);
-await sleep(400);
-await page.click('nav[aria-label="Навигационное дерево"] button[aria-label="Закрыть Mock MR #3"]');
+await page.keyboard.press('Escape');
+await waitForWorkspace(false);
+check('Escape closes the workspace and returns focus to its trigger',
+  await page.$eval(workspaceTrigger, trigger => document.activeElement === trigger),
+);
+
+await openWorkspace();
+await page.click(`${workspaceTree} button[aria-label="Закрыть Mock MR #3"]`);
+await openWorkspace();
 
 const sidebarState = await page.evaluate(() => {
   const sidebar = document.querySelector('nav[aria-label="Навигационное дерево"]');
@@ -423,6 +451,7 @@ if (alphaRepositoryGroup) {
   check('clicking a repository group opens that repository', page.url().endsWith('/repository/1'));
 }
 
+await openWorkspace();
 const firstMrTab = await page.$('nav[aria-label="Навигационное дерево"] button[title="Mock MR #1"]');
 check('switch to the first MR tab', Boolean(firstMrTab));
 if (firstMrTab) {
@@ -430,6 +459,7 @@ if (firstMrTab) {
   await sleep(1000);
   check('first MR tab becomes active', page.url().endsWith('/repository/1/merge-requests/1'));
 
+  await openWorkspace();
   const closeFirstMrTab = await page.$('nav[aria-label="Навигационное дерево"] button[aria-label="Закрыть Mock MR #1"]');
   check('close the active MR tab', Boolean(closeFirstMrTab));
   if (closeFirstMrTab) {
@@ -438,33 +468,6 @@ if (firstMrTab) {
     check('closing the active tab switches to the remaining MR', page.url().endsWith('/repository/2/merge-requests/2'));
   }
 }
-
-await page.mouse.move(500, 120);
-await sleep(400);
-check(
-  'workspace retracts when the pointer leaves it',
-  await page.$eval('aside[aria-label="Рабочая область"]', (aside) =>
-    aside.getAttribute('data-expanded') === 'false',
-  ),
-);
-
-await page.mouse.move(5, 120);
-await sleep(400);
-check(
-  'hovering the exposed rail expands the workspace',
-  await page.$eval('aside[aria-label="Рабочая область"]', (aside) =>
-    aside.getAttribute('data-expanded') === 'true',
-  ),
-);
-
-await page.mouse.move(500, 120);
-await sleep(400);
-check(
-  'workspace retracts again after leaving the rail-expanded panel',
-  await page.$eval('aside[aria-label="Рабочая область"]', (aside) =>
-    aside.getAttribute('data-expanded') === 'false',
-  ),
-);
 
 // Use a real wheel event and pointer click so scroll capture and hit testing
 // run exactly as they do in the application.
@@ -477,16 +480,18 @@ try {
   const mountedRows = await page.$$eval(`${tree} .changes-file-tree__row`, rows => rows.length);
   check('large MR mounts only nearby tree rows', mountedRows < 60, `${mountedRows} rows in the DOM`);
 
-  // Move the pointer out of the workspace overlay opened by MR navigation.
-  await page.mouse.move(80, 120);
-  await page.mouse.move(900, 120);
-  await page.waitForFunction(() =>
-    document.querySelector('aside[aria-label="Рабочая область"]')?.dataset.expanded === 'false',
-  );
-  await sleep(350);
+  await waitForWorkspace(false);
+  const workspaceTopAtPageStart = await page.$eval(workspace, aside => aside.getBoundingClientRect().top);
 
   // Start where the sticky tree and diff cards are visible together.
   await page.$eval('.git-diff', diff => window.scrollTo(0, diff.getBoundingClientRect().top + window.scrollY));
+  check('the workspace trigger sticks near the top while scrolling an MR',
+    await page.$eval(workspace, (aside, initialTop) => {
+      const { top } = aside.getBoundingClientRect();
+      const stickyTop = Number.parseFloat(getComputedStyle(aside).top);
+      return window.scrollY > 0 && top < initialTop && Math.abs(top - stickyTop) < 1;
+    }, workspaceTopAtPageStart),
+  );
   const point = await page.$eval(tree, nav => {
     const rect = nav.getBoundingClientRect();
     return { x: rect.left + 35, y: rect.top + 70 };
@@ -568,12 +573,7 @@ try {
   const afterButton = `${firstImageDiff} button[aria-label="Открыть изображение «Стало»"]`;
   const viewer = 'dialog[open][aria-label^="Было"]';
   await page.$eval(firstImageDiff, card => card.scrollIntoView({ block: 'center' }));
-  await page.mouse.move(80, 120);
-  await page.mouse.move(720, 120);
-  await page.waitForFunction(() =>
-    document.querySelector('aside[aria-label="Рабочая область"]')?.dataset.expanded === 'false',
-  );
-  await sleep(350);
+  await waitForWorkspace(false);
   await page.click(`${beforeButton} img`);
   await page.waitForSelector(`${viewer} button[aria-label="Приблизить"]:enabled`);
   const viewedImage = () => page.$eval(`${viewer} img`, image => ({
@@ -638,6 +638,22 @@ try {
   check('the new comment appears on the file and closes the form', true);
 } catch (error) {
   check('submitting a file-level comment', false, String(error));
+}
+
+try {
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, 'writeText', {
+      configurable: true,
+      value: async (text) => { window.copiedMergeRequestUrl = text; },
+    });
+  });
+  const copy = await page.waitForSelector('button[aria-label="Скопировать ссылку на MR"]', { timeout: 3000 });
+  await copy.click();
+  await page.waitForFunction(button => button.textContent.includes('Скопировано'), { timeout: 3000 }, copy);
+  check('MR header copies the GitLab URL', await page.evaluate(() => window.copiedMergeRequestUrl) ===
+    mr(156, 'Image MR', AUTHORS[0]).web_url);
+} catch (error) {
+  check('copying the MR link', false, String(error));
 }
 
 check('no page errors', pageErrors.length === 0, pageErrors[0]?.slice(0, 150));
