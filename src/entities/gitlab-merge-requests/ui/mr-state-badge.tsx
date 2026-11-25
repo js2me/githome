@@ -43,31 +43,20 @@ export const getMrStateBadgeState = (state: string): MrStateBadgeState => {
 const isDraft = (mergeRequest: GitLabMergeRequestDC) =>
   mergeRequest.draft ?? mergeRequest.work_in_progress ?? false;
 
-const getStateLabel = (mergeRequest: GitLabMergeRequestDC) => {
-  if (isDraft(mergeRequest)) {
-    return "Draft";
-  }
-
-  if (mergeRequest.state === "opened") {
-    return "Open";
-  }
-
-  if (mergeRequest.state === "merged") {
-    return "Merged";
-  }
-
-  if (mergeRequest.state === "closed") {
-    return "Closed";
-  }
-
-  return mergeRequest.state;
+const stateLabels: Record<string, { en: string; ru: string }> = {
+  draft: { en: "Draft", ru: "Черновик" },
+  opened: { en: "Open", ru: "Открыт" },
+  merged: { en: "Merged", ru: "Влит" },
+  closed: { en: "Closed", ru: "Закрыт" },
 };
 
 export const MrStateBadge = ({
   mergeRequest,
   size = "sm",
+  language = "en",
 }: {
   mergeRequest: GitLabMergeRequestDC;
+  language?: "en" | "ru";
   size?: NonNullable<VariantProps<typeof mrStateBadgeVariants>["size"]>;
 }) => {
   const stateKey = isDraft(mergeRequest) ? "draft" : mergeRequest.state;
@@ -79,7 +68,7 @@ export const MrStateBadge = ({
         size,
       })}
     >
-      {getStateLabel(mergeRequest)}
+      {stateLabels[stateKey]?.[language] ?? stateKey}
     </span>
   );
 };

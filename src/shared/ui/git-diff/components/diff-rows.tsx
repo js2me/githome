@@ -39,7 +39,7 @@ import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
 import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { useDiffSyntaxHighlight } from "./diff-syntax-highlight";
-import { SearchHighlightedText, useRowSearchHighlight } from "./diff-search";
+import { useRowSearchHighlight } from "./diff-search";
 import { HighlightedCode } from "./highlighted-code";
 
 export const diffGridClassName = "git-diff-grid";
@@ -249,27 +249,6 @@ const getLineSurfaceClasses = (type: DiffDisplayLine["type"]) => {
   }
 };
 
-const WordDiffContent = memo(({ segments }: { segments: WordDiffSegment[] }) => (
-  <>
-    {segments.map((segment, index) =>
-      segment.highlight ? (
-        <span
-          key={index}
-          className={
-            segment.highlight === "add"
-              ? "git-diff-inline-added"
-              : "git-diff-inline-removed"
-          }
-        >
-          {segment.text}
-        </span>
-      ) : (
-        <span key={index}>{segment.text}</span>
-      ),
-    )}
-  </>
-));
-
 const DiffLineContent = memo(
   ({
     line,
@@ -282,33 +261,12 @@ const DiffLineContent = memo(
   }) => {
     const syntax = useDiffSyntaxHighlight();
     const searchHighlight = useRowSearchHighlight(rowId);
-    const hasSearchHighlight = searchHighlight.ranges.length > 0;
-
-    if (hasSearchHighlight && rowId) {
-      return (
-        <SearchHighlightedText
-          text={line.text || " "}
-          ranges={searchHighlight.ranges}
-          activeRange={searchHighlight.activeRange}
-        />
-      );
-    }
-
-    if (line.type === "no-newline") {
-      return <span className="italic">{line.text}</span>;
-    }
-
-    if (wordDiffSegments) {
-      return <WordDiffContent segments={wordDiffSegments} />;
-    }
-
-    const tokens = syntax?.getLineTokens(line) ?? null;
-
     return (
       <HighlightedCode
-        tokens={tokens}
-        fallback={line.text || " "}
-        gitlabSyntax
+        text={line.text}
+        tokens={syntax?.getLineTokens(line)}
+        wordDiffSegments={wordDiffSegments}
+        searchHighlight={searchHighlight}
       />
     );
   },

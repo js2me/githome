@@ -7,14 +7,13 @@ import type {
 import type { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
 import type { MergeRequestApprovalView } from "@/shared/lib/gitlab/merge-request-approval-view";
 import type { MrReviewAction } from "../../model/mr-info";
-import { MrStateBadge } from "@/entities/gitlab-merge-requests/ui/mr-state-badge";
+import { MergeRequestOverview } from "./merge-request-overview";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
 import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { cn } from "@/shared/lib/cn";
 import { filterDiscussionsForActivity } from "@/shared/lib/gitlab/diff-discussions";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { ChangesActiveFileLink } from "./changes-active-file-link";
 import { ChangesFileTree } from "./changes-file-tree";
 import { ChangesTreeLayout } from "./changes-tree-layout";
@@ -25,181 +24,6 @@ import { MergeRequestCommentForm } from "./merge-request-comment-form";
 import { MergeRequestDiscussions } from "./merge-request-discussions";
 import { MrReviewActions } from "./mr-review-actions";
 import { GitDiff } from "@/shared/ui/git-diff";
-
-const formatDateTime = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const getAuthorName = (mergeRequest: GitLabMergeRequestDC) =>
-  mergeRequest.author?.name ?? "Unknown";
-
-const getChangesCount = (mergeRequest: GitLabMergeRequestDC) => {
-  const rawCount = mergeRequest.changes_count;
-  if (rawCount === undefined || rawCount === null || rawCount === "") {
-    return 0;
-  }
-
-  const count = Number(rawCount);
-  return Number.isFinite(count) ? count : 0;
-};
-
-const getAssigneeNames = (mergeRequest: GitLabMergeRequestDC) =>
-  (mergeRequest.assignees ?? [])
-    .map((assignee) => assignee.name)
-    .filter((name): name is string => Boolean(name));
-
-const CopyIcon = ({ className = "" }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 16 16"
-    width="14"
-    height="14"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.7"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M6 4.5h7v9H6z" />
-    <path d="M3 11.5v-9h7" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg
-    className="text-green-600 dark:text-green-400"
-    viewBox="0 0 16 16"
-    width="14"
-    height="14"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="m3 8.5 3 3 7-7" />
-  </svg>
-);
-
-const CrossIcon = () => (
-  <svg
-    className="text-red-600 dark:text-red-400"
-    viewBox="0 0 16 16"
-    width="14"
-    height="14"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M4.5 4.5 11.5 11.5" />
-    <path d="M11.5 4.5 4.5 11.5" />
-  </svg>
-);
-
-const useCopyText = (value: string) => {
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
-    "idle",
-  );
-
-  const handleCopy = useCallback(async () => {
-    setCopyStatus("idle");
-
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopyStatus("copied");
-    } catch {
-      setCopyStatus("failed");
-    }
-  }, [value]);
-
-  useEffect(() => {
-    if (copyStatus === "idle") {
-      return;
-    }
-
-    const timeout = window.setTimeout(
-      () => setCopyStatus("idle"),
-      copyStatus === "copied" ? 1200 : 1600,
-    );
-    return () => window.clearTimeout(timeout);
-  }, [copyStatus]);
-
-  return { copyStatus, handleCopy };
-};
-
-const CopyMergeRequestLink = ({ url }: { url: string }) => {
-  const { copyStatus, handleCopy } = useCopyText(url);
-  const message = copyStatus === "copied"
-    ? "Скопировано"
-    : copyStatus === "failed"
-      ? "Не удалось скопировать"
-      : "";
-
-  return (
-    <>
-      <button
-        className="glass-control inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold"
-        type="button"
-        aria-label="Скопировать ссылку на MR"
-        onClick={() => void handleCopy()}
-      >
-        {copyStatus === "copied" ? <CheckIcon /> : copyStatus === "failed" ? <CrossIcon /> : <CopyIcon />}
-        {message || "Скопировать ссылку"}
-      </button>
-      <span className="sr-only" role="status">{message}</span>
-    </>
-  );
-};
-
-const BranchLabel = ({ branch, label }: { branch: string; label: string }) => {
-  const { copyStatus, handleCopy } = useCopyText(branch);
-
-  return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-[var(--glass-border)] bg-[var(--glass-control)] py-1 pr-1 pl-2">
-      <span className="min-w-0 truncate text-fg-default">{branch}</span>
-      <button
-        className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 disabled:cursor-wait dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-        type="button"
-        aria-label={`Скопировать ${label}`}
-        title={
-          copyStatus === "copied"
-            ? "Скопировано"
-            : copyStatus === "failed"
-              ? "Не удалось скопировать"
-              : `Скопировать ${label}`
-        }
-        disabled={copyStatus === "copied"}
-        onClick={() => {
-          void handleCopy();
-        }}
-      >
-        {copyStatus === "copied" ? (
-          <CheckIcon />
-        ) : copyStatus === "failed" ? (
-          <CrossIcon />
-        ) : (
-          <CopyIcon />
-        )}
-      </button>
-    </span>
-  );
-};
 
 export const MergeRequestDetail = ({
   markdownScope,
@@ -309,11 +133,6 @@ export const MergeRequestDetail = ({
   onSelectDiffVersion: (id: number | null) => void;
   pipelineCard?: ReactNode;
 }) => {
-  const authorName = getAuthorName(mergeRequest);
-  const changesCount = getChangesCount(mergeRequest);
-  const assigneeNames = getAssigneeNames(mergeRequest);
-  const userNotesCount = mergeRequest.user_notes_count ?? 0;
-  const labels = mergeRequest.labels ?? [];
   const description = mergeRequest.description ?? "";
   const { activeFile, selectActiveFile, jumpToFile } = useActiveDiffFile(changes, diffRevision);
   const headRef = selectedDiffVersionId === null
@@ -330,105 +149,30 @@ export const MergeRequestDetail = ({
   const [activityExpanded, setActivityExpanded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
-  const mainContent = (
-    <div className="flex min-w-0 flex-col gap-5">
+  const activityButton = useRef<HTMLButtonElement>(null);
+  const changesHeading = useRef<HTMLHeadingElement>(null);
+
+  const overview = (
+    <div className="flex min-w-0 flex-col gap-3">
       {resolveDiscussionError && (
         <StatusMessage error>{resolveDiscussionError}</StatusMessage>
       )}
-      <header className="glass-panel flex flex-col gap-3 rounded-2xl px-4 py-4 sm:px-5">
-        <div className="flex flex-wrap items-start gap-2.5">
-          <span className="shrink-0 pt-1 font-mono text-base font-semibold text-fg-muted">
-            !{mergeRequest.iid}
-          </span>
-          <h2 className="m-0 min-w-[min(12rem,100%)] flex-1 text-[22px] leading-snug font-semibold break-words tracking-tight text-fg-default">
-            {mergeRequest.title}
-          </h2>
-          <MrStateBadge mergeRequest={mergeRequest} size="md" />
-          <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2.5">
-            <CopyMergeRequestLink key={mergeRequest.web_url} url={mergeRequest.web_url} />
-            <a
-              className="glass-control shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-[var(--glass-accent)] no-underline"
-              href={mergeRequest.web_url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Открыть в GitLab
-            </a>
-          </div>
-        </div>
-
+      <MergeRequestOverview
+        mergeRequest={mergeRequest}
+        projectPath={markdownScope.projectPath}
+        loadedFiles={changes.length}
+        onShowFiles={() => {
+          changesHeading.current?.focus({ preventScroll: true });
+          changesHeading.current?.scrollIntoView({ block: "start" });
+        }}
+        onShowComments={() => {
+          setActivityExpanded(true);
+          activityButton.current?.focus({ preventScroll: true });
+          activityButton.current?.scrollIntoView({ block: "start" });
+        }}
+      >
         {pipelineCard}
-
-        <div className="flex flex-wrap items-center gap-2 font-mono text-[13px] text-fg-muted">
-          <BranchLabel branch={mergeRequest.source_branch} label="source branch" />
-          <span className="shrink-0 px-0.5 text-lg font-bold text-fg-default">→</span>
-          <BranchLabel branch={mergeRequest.target_branch} label="target branch" />
-        </div>
-
-        <div className="flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-fg-muted">
-          <div className="flex items-center gap-2">
-            <GitlabAvatar
-              className="h-6 w-6 rounded-full object-cover"
-              avatarUrl={mergeRequest.author?.avatar_url}
-              name={authorName}
-            />
-            <span className="text-fg-default">{authorName}</span>
-          </div>
-
-          <span>создан {formatDateTime(mergeRequest.created_at ?? mergeRequest.updated_at)}</span>
-          <span>обновлён {formatDateTime(mergeRequest.updated_at)}</span>
-
-          {userNotesCount > 0 && (
-            <span>
-              {userNotesCount}{" "}
-              {userNotesCount === 1 ? "комментарий" : "комментариев"}
-            </span>
-          )}
-
-          {changesCount > 0 && (
-            <span>
-              {changesCount}{" "}
-              {changesCount === 1 ? "файл" : "файлов"}
-            </span>
-          )}
-        </div>
-
-        {(mergeRequest.has_conflicts || mergeRequest.merge_status) && (
-          <div className="flex flex-wrap items-center gap-2 text-[13px]">
-            {mergeRequest.has_conflicts && (
-              <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 dark:bg-red-950 dark:text-red-300">
-                Есть конфликты
-              </span>
-            )}
-            {mergeRequest.merge_status && (
-              <span className="rounded-full bg-slate-100 px-2 py-1 text-fg-muted dark:bg-slate-800 dark:text-slate-300">
-                merge status: {mergeRequest.merge_status}
-              </span>
-            )}
-          </div>
-        )}
-
-        {labels.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 text-[13px]">
-            {labels.map((label) => (
-              <span
-                key={label}
-                className="rounded-full bg-violet-100 px-2 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300"
-              >
-                {label}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {assigneeNames.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 text-[13px]">
-            <span className="text-fg-muted">Assignees:</span>
-            <span className="text-fg-default">{assigneeNames.join(", ")}</span>
-          </div>
-        )}
-      </header>
-
+      </MergeRequestOverview>
       <MrReviewActions
         mergeRequest={mergeRequest}
         approvals={approvals}
@@ -439,7 +183,11 @@ export const MergeRequestDetail = ({
         onRequestChanges={onRequestChanges}
         onCancelRequestChanges={onCancelRequestChanges}
       />
+    </div>
+  );
 
+  const mainContent = (
+    <div className="flex min-w-0 flex-col gap-5">
       {description.trim() && (
         <section className="flex flex-col gap-3">
           <button
@@ -471,7 +219,8 @@ export const MergeRequestDetail = ({
       <section className="flex flex-col gap-3">
         <button
           type="button"
-          className="m-0 flex items-center gap-2 text-lg font-semibold cursor-pointer bg-transparent border-none p-0 text-left"
+          className="m-0 flex scroll-mt-16 items-center gap-2 text-lg font-semibold cursor-pointer bg-transparent border-none p-0 text-left"
+          ref={activityButton}
           onClick={() => setActivityExpanded((v) => !v)}
           aria-expanded={activityExpanded}
         >
@@ -519,8 +268,8 @@ export const MergeRequestDetail = ({
       />
 
       <section className="flex flex-col gap-3">
-        <h3 className="m-0 flex items-center gap-2 text-lg font-semibold">
-          Changes
+        <h3 ref={changesHeading} tabIndex={-1} className="m-0 flex scroll-mt-16 items-center gap-2 text-lg font-semibold">
+          Изменения
           {changes.length > 0 && (
             <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
               {changes.length}
@@ -597,6 +346,7 @@ export const MergeRequestDetail = ({
       <div className="flex flex-col gap-4">
         <ChangesTreeLayout
           changes={changes}
+          overview={overview}
           tree={
             showChangesTree ? (
               <ChangesFileTree

@@ -59,7 +59,7 @@ const DiffSearchUiContext = createContext<DiffSearchUiContextValue | null>(null)
 const DiffSearchHighlightStoreContext =
   createContext<DiffSearchHighlightStore | null>(null);
 
-interface RowSearchHighlightState {
+export interface RowSearchHighlightState {
   ranges: TextRange[];
   activeRange: TextRange | null;
 }
@@ -906,54 +906,48 @@ export const useRowSearchHighlight = (rowId?: string) => {
 export const useDiffSearchOptional = () =>
   useContext(DiffSearchRegistrationContext);
 
+interface SearchHighlightedTextProps extends RowSearchHighlightState {
+  text: string;
+}
+
+export const renderSearchHighlightedText = (
+  { text, ranges, activeRange }: SearchHighlightedTextProps,
+  renderPlain: (start: number, end: number) => ReactNode = (start, end) => text.slice(start, end),
+) => {
+  if (ranges.length === 0) {
+    return <>{text.length ? renderPlain(0, text.length) : " "}</>;
+  }
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+
+  for (const range of ranges) {
+    if (range.start > cursor) {
+      nodes.push(renderPlain(cursor, range.start));
+    }
+
+    const isActive = activeRange?.start === range.start && activeRange.end === range.end;
+    nodes.push(
+      <mark
+        key={range.start}
+        className={cn(
+          "git-diff-search-mark",
+          isActive ? "git-diff-search-mark--active" : "git-diff-search-mark--inactive",
+        )}
+      >
+        {text.slice(range.start, range.end)}
+      </mark>,
+    );
+
+    cursor = range.end;
+  }
+
+  if (cursor < text.length) {
+    nodes.push(renderPlain(cursor, text.length));
+  }
+
+  return <>{nodes.length ? nodes : " "}</>;
+};
+
 export const SearchHighlightedText = memo(
-  ({
-    text,
-    ranges,
-    activeRange,
-  }: {
-    text: string;
-    ranges: TextRange[];
-    activeRange: TextRange | null;
-  }) => {
-    if (ranges.length === 0) {
-      return <>{text || " "}</>;
-    }
-
-    const nodes: ReactNode[] = [];
-    let cursor = 0;
-
-    for (const [index, range] of ranges.entries()) {
-      if (range.start > cursor) {
-        nodes.push(text.slice(cursor, range.start));
-      }
-
-      const isActive =
-        activeRange !== null &&
-        activeRange.start === range.start &&
-        activeRange.end === range.end;
-
-      nodes.push(
-        <mark
-          key={`${range.start}:${range.end}:${index}`}
-          className={cn(
-            "git-diff-search-mark",
-            isActive
-              ? "git-diff-search-mark--active"
-              : "git-diff-search-mark--inactive",
-          )}
-        >
-          {text.slice(range.start, range.end)}
-        </mark>,
-      );
-
-      cursor = range.end;
-    }
-
-    if (cursor < text.length) {
-      nodes.push(text.slice(cursor));
-    }
-
-    return <>{nodes}</>;
-  },
+  (props: SearchHighlightedTextProps) => renderSearchHighlightedText(props),
 );

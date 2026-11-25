@@ -13,6 +13,7 @@ import { VM } from "@/shared/lib/view-models/vm";
 export interface PipelineCardPayload {
   projectId: number;
   pipelineId: number;
+  permissions: GitLabProjectDC["permissions"];
 }
 
 const ACTIVE_JOB_STATUSES = new Set(["created", "pending", "running"]);
@@ -26,7 +27,6 @@ const ACTIVE_PIPELINE_STATUSES = new Set([
 
 export class PipelineCardVM extends VM<PipelineCardPayload> {
   readonly pipelineQuery;
-  readonly projectQuery;
   readonly jobsQuery;
 
   @observable accessor busyJobId: number | null = null;
@@ -49,12 +49,6 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
             : false;
         },
       }),
-    });
-
-    this.projectQuery = createGitlabQuery<GitLabProjectDC>({
-      globals: this.globals,
-      abortSignal: this.unmountSignal,
-      params: () => ({ path: `/projects/${this.payload.projectId}` }),
     });
 
     this.jobsQuery = createGitlabQuery<GitLabJobDC[]>({
@@ -129,7 +123,7 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
 
   @computed
   get canRunJobs() {
-    const permissions = this.projectQuery.data?.permissions;
+    const permissions = this.payload.permissions;
     return Math.max(
       permissions?.project_access?.access_level ?? 0,
       permissions?.group_access?.access_level ?? 0,

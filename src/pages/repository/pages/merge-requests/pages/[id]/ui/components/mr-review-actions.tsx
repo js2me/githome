@@ -1,79 +1,93 @@
+import {
+  ArrowUturnCcwLeft,
+  Check,
+  CodePullRequestCheck,
+  PencilToLine,
+} from "@gravity-ui/icons";
 import type {
   GitLabMergeRequestDC,
   GitLabMergeRequestReviewerDC,
 } from "@/shared/api/gitlab";
 import type { MergeRequestApprovalView } from "@/shared/lib/gitlab/merge-request-approval-view";
-import type { MrReviewAction } from "../../model/mr-info";
 import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
+import type { MrReviewAction } from "../../model/mr-info";
+import "./mr-review-actions.css";
 
-const getReviewerStateLabel = (state: string) => {
-  switch (state) {
-    case "reviewed":
-    case "approved":
-      return "Одобрил";
-    case "requested_changes":
-      return "Запросил правки";
-    case "reviewing":
-    case "review_started":
-      return "Ревью в процессе";
-    case "unapproved":
-      return "Отозвал апрув";
-    case "unreviewed":
-      return "Ожидает ревью";
-    default:
-      return state;
-  }
+const reviewerStates: Record<string, { label: string; tone?: string }> = {
+  reviewed: { label: "Ревью завершено", tone: "success" },
+  approved: { label: "Одобрено", tone: "success" },
+  requested_changes: { label: "Запрошены правки", tone: "changes" },
+  reviewing: { label: "Ревью в процессе", tone: "active" },
+  review_started: { label: "Ревью в процессе", tone: "active" },
+  unapproved: { label: "Одобрение отозвано" },
+  unreviewed: { label: "Ожидает ревью" },
 };
 
-const ReviewerAvatar = ({
-  name,
-  avatarUrl,
-}: {
-  name: string;
-  avatarUrl: string | null;
-}) => (
-  <GitlabAvatar
-    className="h-6 w-6 rounded-full object-cover"
-    avatarUrl={avatarUrl}
-    name={name}
-  />
-);
-
-const ReviewerRow = ({ reviewer }: { reviewer: GitLabMergeRequestReviewerDC }) => {
-  const isApproved =
-    reviewer.state === "reviewed" || reviewer.state === "approved";
+const Reviewer = ({ reviewer, approved }: { reviewer: GitLabMergeRequestReviewerDC; approved: boolean }) => {
   const requestedChanges = reviewer.state === "requested_changes";
+  const status = approved && !requestedChanges ? "approved" : reviewer.state;
+  const state = reviewerStates[status] ?? { label: status };
+  return (
+    <li className="flex min-w-0 max-w-full items-center gap-2">
+      <GitlabAvatar className="size-7 shrink-0 rounded-full object-cover" name={reviewer.user.name} avatarUrl={reviewer.user.avatar_url} />
+      <span className="grid min-w-0 gap-0.5">
+        <span className="text-[13px] leading-tight font-medium [overflow-wrap:anywhere]">{reviewer.user.name}</span>
+        <span className="flex flex-wrap gap-x-2 gap-y-1 text-xs leading-tight">
+          <span className="mr-review-state inline-flex min-w-0 items-center gap-1.5 [overflow-wrap:anywhere]" data-tone={state.tone}>
+            <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current" />
+            {state.label}
+          </span>
+          {approved && requestedChanges && (
+            <span className="mr-review-state inline-flex items-center gap-1" data-tone="success">
+              <Check className="size-3" aria-hidden /> Одобрено
+            </span>
+          )}
+        </span>
+      </span>
+    </li>
+  );
+};
+
+const ApprovalSummary = ({ approvals }: { approvals: MergeRequestApprovalView }) => {
+  if (!approvals.approvals_available) {
+    return <p className="text-xs text-fg-muted">Одобрения недоступны на этом сервере GitLab</p>;
+  }
+
+  const required = approvals.approvals_required;
+  const approvedCount = approvals.approved_by.length;
+  if (required === 0) return <p className="text-xs text-fg-muted">Обязательных одобрений нет</p>;
+  if (required === null) return (
+    <p className="text-xs text-fg-muted">
+      {approvedCount ? <>Одобрений получено <strong>{approvedCount}</strong></> : "Одобрений пока нет"}
+    </p>
+  );
+
+  const completed = Math.max(0, Math.min(required, approvals.approvals_left === null
+    ? approvedCount
+    : required - approvals.approvals_left));
 
   return (
-    <div className="flex items-center gap-2 text-[13px]">
-      <ReviewerAvatar
-        name={reviewer.user.name}
-        avatarUrl={reviewer.user.avatar_url ?? null}
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-muted">
+      <span>Одобрения <strong className="font-semibold text-fg-default">{completed} из {required}</strong></span>
+      <progress
+        className="mr-review-progress"
+        aria-label="Обязательные одобрения"
+        data-complete={completed === required}
+        max={required}
+        value={completed}
       />
-      <span className="text-slate-700 dark:text-slate-300">
-        {reviewer.user.name}
-      </span>
-      <span
-        className={
-          requestedChanges
-            ? "rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300"
-            : isApproved
-              ? "rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700 dark:bg-green-950 dark:text-green-300"
-              : "rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-        }
-      >
-        {getReviewerStateLabel(reviewer.state)}
-      </span>
     </div>
   );
 };
 
-const actionButtonClass =
-  "glass-control inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:cursor-wait";
-
-const isDraft = (mergeRequest: GitLabMergeRequestDC) =>
-  mergeRequest.draft ?? mergeRequest.work_in_progress ?? false;
+const actionButton = "inline-flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[13px] leading-tight font-semibold";
+const actionLabels = {
+  approve: { idle: "Одобрить", busy: "Одобряем…" },
+  unapprove: { idle: "Отозвать одобрение", busy: "Отзываем…" },
+  requestChanges: { idle: "Запросить правки", busy: "Отправляем…" },
+  cancelRequestChanges: { idle: "Отозвать запрос правок", busy: "Отзываем…" },
+} satisfies Record<MrReviewAction, { idle: string; busy: string }>;
 
 export const MrReviewActions = ({
   mergeRequest,
@@ -94,122 +108,83 @@ export const MrReviewActions = ({
   onRequestChanges: () => void;
   onCancelRequestChanges: () => void;
 }) => {
-  if (mergeRequest.state !== "opened" || isDraft(mergeRequest)) {
-    return null;
-  }
+  if (mergeRequest.state !== "opened" || (mergeRequest.draft ?? mergeRequest.work_in_progress)) return null;
 
   const isBusy = reviewActionInProgress !== null;
-  const approvalsSummary =
-    approvals.approvals_required !== null
-      ? `${approvals.approved_by.length}/${approvals.approvals_required} апрувов`
-      : approvals.approved_by.length > 0
-        ? `${approvals.approved_by.length} апрув(ов)`
-        : null;
+  const userApproved = approvals.current_user_approved;
+  const userRequestedChanges = approvals.current_user_requested_changes;
+  const approvalAction = userApproved ? "unapprove" : "approve";
+  const changesAction = userRequestedChanges ? "cancelRequestChanges" : "requestChanges";
+  const ApprovalIcon = userApproved ? ArrowUturnCcwLeft : Check;
+  const ChangesIcon = userRequestedChanges ? ArrowUturnCcwLeft : PencilToLine;
+  const approvedIds = new Set(approvals.approved_by.map(({ user }) => user.id));
+  const reviewerIds = new Set(approvals.reviewers.map(({ user }) => user.id));
+  const otherApprovers = approvals.approved_by.filter(({ user }) => !reviewerIds.has(user.id));
 
   return (
-    <section className="glass-panel flex flex-col gap-3 rounded-2xl px-4 py-4 sm:px-5">
-      {reviewActionError && (
-        <StatusMessage error className="mt-0">
-          {reviewActionError}
-        </StatusMessage>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h3 className="m-0 text-sm font-semibold text-slate-800 dark:text-slate-200">
-            Ревью
-          </h3>
-          {approvalsSummary && (
-            <span className="text-[13px] text-slate-500">{approvalsSummary}</span>
-          )}
-          {!approvals.approvals_available && (
-            <span className="text-[12px] text-slate-400">
-              Апрувы недоступны на этом инстансе GitLab
-            </span>
-          )}
+    <section className="mr-review glass-panel min-w-0 rounded-2xl" aria-label="Ревью">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-5 gap-y-3 px-4 py-3.5 sm:px-5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--glass-selected)] text-[var(--glass-accent)]" aria-hidden>
+            <CodePullRequestCheck className="size-[19px]" />
+          </span>
+          <div className="grid min-w-0 gap-1">
+            <h3 className="text-base leading-tight font-semibold tracking-tight">Ревью</h3>
+            <div aria-live="polite"><ApprovalSummary approvals={approvals} /></div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {approvals.current_user_requested_changes ? (
+        <div className="mr-review-actions flex flex-wrap items-center gap-2" role="group" aria-label="Действия ревью" aria-busy={isBusy}>
+          {approvals.approvals_available && (
             <button
               type="button"
-              className={`${actionButtonClass} border-red-300 bg-red-50/80 text-red-700 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/70 dark:text-red-300 dark:hover:bg-red-900`}
+              className={`${actionButton} ${userApproved ? "glass-control" : "glass-primary"}`}
               disabled={isBusy}
-              onClick={onCancelRequestChanges}
+              onClick={userApproved ? onUnapprove : onApprove}
             >
-              {reviewActionInProgress === "cancelRequestChanges"
-                ? "Отмена..."
-                : "Отозвать запрос правок"}
-            </button>
-          ) : (
-            <button
-              type="button"
-              className={`${actionButtonClass} text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950`}
-              disabled={isBusy}
-              onClick={onRequestChanges}
-            >
-              {reviewActionInProgress === "requestChanges"
-                ? "Отправка..."
-                : "Request changes"}
+              <ApprovalIcon className="size-4 shrink-0" aria-hidden />
+              {actionLabels[approvalAction][reviewActionInProgress === approvalAction ? "busy" : "idle"]}
             </button>
           )}
-
-          {approvals.approvals_available &&
-            (approvals.current_user_approved ? (
-              <button
-                type="button"
-                className={`${actionButtonClass} border-green-300 bg-green-50/80 text-green-800 hover:bg-green-100 dark:border-green-900 dark:bg-green-950/70 dark:text-green-300 dark:hover:bg-green-900`}
-                disabled={isBusy}
-                onClick={onUnapprove}
-              >
-                {reviewActionInProgress === "unapprove"
-                  ? "Отмена..."
-                  : "Отозвать апрув"}
-              </button>
-            ) : (
-              <button
-                type="button"
-                className={`${actionButtonClass} border-transparent bg-success-emphasis text-white hover:bg-success-emphasis-hover`}
-                disabled={isBusy}
-                onClick={onApprove}
-              >
-                {reviewActionInProgress === "approve" ? "Апрув..." : "Approve"}
-              </button>
-            ))}
+          <button
+            type="button"
+            className={`${actionButton} glass-control`}
+            disabled={isBusy}
+            onClick={userRequestedChanges ? onCancelRequestChanges : onRequestChanges}
+          >
+            <ChangesIcon className="size-4 shrink-0" aria-hidden />
+            {actionLabels[changesAction][reviewActionInProgress === changesAction ? "busy" : "idle"]}
+          </button>
         </div>
       </div>
 
-      {approvals.approved_by.length > 0 && (
-        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-          <span className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
-            Одобрили
-          </span>
-          <div className="flex flex-wrap gap-3">
-            {approvals.approved_by.map((entry) => (
-              <div key={entry.user.id} className="flex items-center gap-2 text-[13px]">
-                <ReviewerAvatar
-                  name={entry.user.name}
-                  avatarUrl={entry.user.avatar_url ?? null}
-                />
-                <span className="text-slate-700 dark:text-slate-300">
-                  {entry.user.name}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {reviewActionError && <StatusMessage className="mx-4 mt-0 mb-3 sm:mx-5" error>{reviewActionError}</StatusMessage>}
 
-      {approvals.reviewers.length > 0 && (
-        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-          <span className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
-            Reviewers
-          </span>
-          <div className="flex flex-col gap-2">
-            {approvals.reviewers.map((reviewer) => (
-              <ReviewerRow key={reviewer.user.id} reviewer={reviewer} />
-            ))}
-          </div>
+      {(approvals.reviewers.length > 0 || approvals.approved_by.length > 0) && (
+        <div className="mr-review-people grid gap-x-6 gap-y-3 border-t border-[var(--glass-border)] px-4 py-3 sm:px-5">
+          {approvals.reviewers.length > 0 && (
+            <div className="min-w-0">
+              <h4 className="mb-2 text-xs font-semibold text-fg-muted">Ревьюеры</h4>
+              <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                {approvals.reviewers.map(reviewer => (
+                  <Reviewer key={reviewer.user.id} reviewer={reviewer} approved={approvedIds.has(reviewer.user.id)} />
+                ))}
+              </ul>
+            </div>
+          )}
+          {otherApprovers.length > 0 && (
+            <div className="min-w-0">
+              <h4 className="mb-2 text-xs font-semibold text-fg-muted">Одобрили</h4>
+              <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                {otherApprovers.map(({ user }) => (
+                  <li key={user.id} className="flex min-w-0 max-w-full items-center gap-2 text-[13px] font-medium">
+                    <GitlabAvatar className="size-6 shrink-0 rounded-full object-cover" name={user.name} avatarUrl={user.avatar_url} />
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{user.name}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </section>

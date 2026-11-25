@@ -1,152 +1,155 @@
+import {
+  ArrowUpRightFromSquare,
+  ChevronDown,
+  CircleCheckFill,
+  CircleDashed,
+  CircleMinus,
+  CirclePause,
+  CirclePlay,
+  CircleXmarkFill,
+  Clock,
+} from "@gravity-ui/icons";
+import { observer } from "mobx-react-lite";
 import { withViewModel } from "mobx-view-model-react";
+import { useId, useState } from "react";
 import type { GitLabJobDC } from "@/shared/api/gitlab";
 import { PipelineCardVM } from "./model";
 
-const STATUS_STYLES: Record<string, string> = {
-  success: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-  failed: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
-  canceled: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  skipped: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  running: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-  pending: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  created: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  manual: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300",
+interface StatusAppearance {
+  label: string;
+  icon: typeof Clock;
+  color?: string;
+  needsAttention?: boolean;
+}
+
+const pending = { icon: Clock, color: "text-[var(--glass-accent)]" };
+const statuses: Record<string, StatusAppearance> = {
+  success: { label: "Успешно", icon: CircleCheckFill, color: "text-[var(--color-success-fg)]" },
+  failed: { label: "Ошибка", icon: CircleXmarkFill, color: "text-[var(--color-danger-fg)]", needsAttention: true },
+  running: { label: "Выполняется", icon: CirclePlay, color: "text-[var(--color-accent-blue)]" },
+  canceled: { label: "Отменено", icon: CircleMinus, needsAttention: true },
+  skipped: { label: "Пропущено", icon: CircleMinus },
+  manual: { label: "Ручной запуск", icon: CirclePause, color: pending.color, needsAttention: true },
+  blocked: { label: "Заблокировано", icon: CirclePause, color: pending.color, needsAttention: true },
+  created: { label: "Создано", ...pending },
+  scheduled: { label: "Запланировано", ...pending },
+  preparing: { label: "Подготовка", ...pending },
+  pending: { label: "В очереди", ...pending },
+  waiting_for_resource: { label: "Ожидание ресурса", ...pending },
+  waiting_for_callback: { label: "Ожидание ответа", ...pending },
 };
 
-const StatusBadge = ({ status }: { status: string }) => (
-  <span
-    className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
-      STATUS_STYLES[status] ??
-      "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-    }`}
-  >
-    {status.replaceAll("_", " ")}
+const statusAppearance = (status: string): StatusAppearance =>
+  statuses[status] ?? { label: status.replaceAll("_", " "), icon: CircleDashed };
+
+const Status = ({ label, icon: Icon, color = "text-fg-muted" }: StatusAppearance) => (
+  <span className={`inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold ${color}`}>
+    <Icon className="size-4 shrink-0" aria-hidden />
+    <span>{label}</span>
   </span>
 );
 
-const JobRow = ({
-  job,
-  model,
-}: {
-  job: GitLabJobDC;
-  model: PipelineCardVM;
-}) => {
-  const isBusy = model.busyJobId === job.id;
+const JobRow = observer(({ job, model }: { job: GitLabJobDC; model: PipelineCardVM }) => {
+  const action = job.status === "manual" ? "Запустить" : "Повторить";
 
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-lg bg-[var(--glass-control)] px-3 py-2.5">
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
-          {job.name}
-        </span>
-      </span>
-
-      {job.web_url && (
-        <a
-          className="text-xs font-semibold text-[var(--glass-accent)] hover:underline"
-          href={job.web_url}
-          target="_blank"
-          rel="noreferrer"
-        >
-          GitLab ↗
-        </a>
-      )}
-
-      <StatusBadge status={job.status} />
-
+    <li className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 py-2">
+      <div className="flex min-w-0 flex-1 basis-24 flex-col items-start gap-1">
+        {job.web_url ? (
+          <a
+            className="max-w-full rounded-sm text-[13px] font-medium text-fg-default hover:underline [overflow-wrap:anywhere]"
+            href={job.web_url}
+            target="_blank"
+            rel="noreferrer"
+            title={`Открыть задание ${job.name} в GitLab`}
+          >
+            {job.name}<ArrowUpRightFromSquare className="ml-1 inline size-3 text-fg-muted" aria-hidden />
+          </a>
+        ) : (
+          <span className="max-w-full text-[13px] font-medium [overflow-wrap:anywhere]">{job.name}</span>
+        )}
+        <Status {...statusAppearance(job.status)} />
+      </div>
       {model.canRun(job) && (
         <button
-          className="glass-control rounded-lg px-3 py-1.5 text-xs font-semibold disabled:cursor-wait"
+          className="glass-control min-h-8 rounded-md px-2 text-xs font-semibold"
           type="button"
           disabled={model.busyJobId !== null}
+          aria-label={`${action} задание ${job.name}`}
           onClick={() => void model.runJob(job)}
         >
-          {isBusy
-            ? "Запускаем..."
-            : job.status === "manual"
-              ? "Запустить"
-              : "Повторить"}
+          {model.busyJobId === job.id ? "Запускаем…" : action}
         </button>
       )}
     </li>
   );
-};
+});
 
-export const PipelineCard = withViewModel(
-  PipelineCardVM,
-  ({ model }) => {
-    const { pipelineId } = model.payload;
-    const pipeline = model.pipeline;
+export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
+  const { projectId, pipelineId } = model.payload;
+  const { pipeline, pipelineErrorMessage, errorMessage, actionError } = model;
+  const detailsId = useId();
+  const pipelineKey = `${projectId}/${pipelineId}`;
+  const [selection, setSelection] = useState<{ key: string; expanded: boolean } | null>(null);
+  const status: StatusAppearance = pipeline?.status
+    ? statusAppearance(pipeline.status)
+    : { label: model.pipelineQuery.isLoading ? "Загрузка…" : "Статус недоступен", icon: CircleDashed };
+  const expanded = selection?.key === pipelineKey
+    ? selection.expanded
+    : Boolean(status.needsAttention || pipelineErrorMessage || errorMessage || actionError);
 
-    return (
-      <section className="flex flex-col gap-3 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-control)] p-3">
-        <div className="flex flex-wrap items-center gap-2 text-[13px]">
-          <span className="text-fg-muted">Последний pipeline:</span>
-          {pipeline?.web_url ? (
-            <a
-              className="font-semibold text-fg-default no-underline hover:underline"
-              href={pipeline.web_url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              #{pipelineId}
-            </a>
-          ) : (
-            <span className="font-semibold text-fg-default">#{pipelineId}</span>
-          )}
-          {pipeline ? (
-            <StatusBadge status={pipeline.status} />
-          ) : model.pipelineQuery.isLoading ? (
-            <span className="text-slate-500">Загружаем статус...</span>
-          ) : null}
-        </div>
-
-        {model.pipelineErrorMessage && (
-          <p className="m-0 text-sm text-red-600 dark:text-red-300">
-            {model.pipelineErrorMessage}
-          </p>
+  return (
+    <section className="min-w-0 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-control)]" aria-label="Последний пайплайн">
+      <div className="flex min-w-0 items-center gap-2 px-2.5 py-0.5 sm:gap-3">
+        <span className="text-xs font-semibold text-fg-default">Пайплайн</span>
+        {pipeline?.web_url ? (
+          <a
+            className="inline-flex shrink-0 items-center gap-1 rounded-sm py-1 font-mono text-xs text-fg-link hover:underline"
+            href={pipeline.web_url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Открыть пайплайн #${pipelineId} в GitLab`}
+          >
+            #{pipelineId}<ArrowUpRightFromSquare className="size-3" aria-hidden />
+          </a>
+        ) : (
+          <span className="shrink-0 font-mono text-xs text-fg-muted">#{pipelineId}</span>
         )}
-
-        {model.isLoading && (
-          <p className="m-0 text-sm text-slate-500">Загружаем jobs...</p>
-        )}
-
-        {model.errorMessage && !model.isLoading && (
-          <p className="m-0 text-sm text-red-600 dark:text-red-300">
-            {model.errorMessage}
-          </p>
-        )}
-
-        {!model.isLoading && !model.errorMessage && model.jobs.length === 0 && (
-          <p className="m-0 text-sm text-slate-500">В pipeline нет jobs.</p>
-        )}
-
-        {model.stages.length > 0 && (
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] items-start gap-3">
-            {model.stages.map((stage) => (
-              <section
-                key={stage.name}
-                className="min-w-0 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-surface)] p-2.5"
-              >
-                <h3 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-slate-500">
-                  {stage.name}
-                </h3>
-                <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                  {stage.jobs.map((job) => (
-                    <JobRow key={job.id} job={job} model={model} />
-                  ))}
-                </ul>
-              </section>
-            ))}
+        <button
+          className="flex min-h-9 min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 rounded-md px-1.5 text-left hover:bg-[var(--glass-hover)]"
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={detailsId}
+          aria-label={`${status.label}. ${expanded ? "Свернуть" : "Показать"} этапы пайплайна`}
+          onClick={() => setSelection({ key: pipelineKey, expanded: !expanded })}
+        >
+          <Status {...status} />
+          <ChevronDown className={`size-3.5 shrink-0 text-fg-muted ${expanded ? "rotate-180" : ""}`} aria-hidden />
+        </button>
+      </div>
+      <div id={detailsId} hidden={!expanded}>
+        {expanded && (
+          <div className="space-y-2 border-t border-[var(--glass-border)] px-3 py-2.5 text-xs text-fg-muted">
+            {pipelineErrorMessage && <p role="alert" className="text-[var(--color-danger-fg)]">{pipelineErrorMessage}</p>}
+            {model.isLoading && <p role="status">Загружаем задания…</p>}
+            {errorMessage && !model.isLoading && <p role="alert" className="text-[var(--color-danger-fg)]">{errorMessage}</p>}
+            {!model.isLoading && !errorMessage && model.jobs.length === 0 && <p>В этом пайплайне нет заданий.</p>}
+            {model.stages.length > 0 && (
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] items-start gap-x-5 gap-y-2">
+                {model.stages.map((stage) => (
+                  <section key={stage.name} className="min-w-0">
+                    <h3 className="border-b border-[var(--glass-border)] pb-1.5 text-xs font-semibold text-fg-muted [overflow-wrap:anywhere]">{stage.name}</h3>
+                    <ul className="divide-y divide-[var(--glass-border)] text-fg-default">
+                      {stage.jobs.map((job) => <JobRow key={job.id} job={job} model={model} />)}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+            )}
+            {actionError && <p role="alert" className="text-[var(--color-danger-fg)]">Не удалось выполнить действие. {actionError}</p>}
           </div>
         )}
-
-        {model.actionError && (
-          <p className="m-0 text-sm text-red-600 dark:text-red-300">
-            Не удалось выполнить действие: {model.actionError}
-          </p>
-        )}
-      </section>
-    );
-  },
-);
+      </div>
+    </section>
+  );
+});

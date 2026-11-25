@@ -1,0 +1,35 @@
+.mr-review {
+  container-type: inline-size;
+}
+
+.mr-review-progress {
+  width: 4.5rem;
+  height: 4px;
+  overflow: hidden;
+  appearance: none;
+  border: 0;
+  border-radius: 1rem;
+  background: var(--glass-border);
+  color: var(--glass-accent);
+}
+
+.mr-review-progress[data-complete="true"] { color: var(--color-success-fg); }
+.mr-review-progress::-webkit-progress-bar { background: transparent; }
+.mr-review-progress::-webkit-progress-value { background: currentColor; border-radius: inherit; }
+.mr-review-progress::-moz-progress-bar { background: currentColor; border-radius: inherit; }
+
+.mr-review-state { color: var(--color-fg-muted); }
+.mr-review-state[data-tone="success"] { color: var(--color-success-fg); }
+.mr-review-state[data-tone="changes"] { color: var(--color-danger-fg); }
+.mr-review-state[data-tone="active"] { color: var(--color-accent-blue); }
+
+@container (min-width: 38rem) {
+  .mr-review-people:has(> :nth-child(2)) {
+    grid-template-columns: 3fr 2fr;
+  }
+}
+
+@container (max-width: 30rem) {
+  .mr-review-actions { width: 100%; }
+  .mr-review-actions button { flex: 1 1 auto; }
+}

@@ -17,6 +17,7 @@
  * - open multiple MR tabs across repositories, switch between them, and close one
  * - open the sticky workspace picker by pointer and keyboard without shifting the page
  * - scroll and select files in a 255-file merge request
+ * - retain TSX token colors on changed words and newly added lines in small and large MRs
  * - compare PNG and JPEG revisions and open either side in the zoom viewer
  * - submit a file-level comment and render the new thread on the file
  * - copy the GitLab URL from the MR header and open an MR by a pasted URL
@@ -98,7 +99,21 @@ const mr = (iid, title, authorName) => ({
 const projects = [project(1, 'alpha'), project(2, 'beta'), project(3, 'gamma')];
 const mrs = AUTHORS.map((name, i) => mr(i + 1, `Mock MR #${i + 1}`, name));
 
+const tsxChange = {
+  old_path: 'packages/feature-14/summary.tsx',
+  new_path: 'packages/feature-14/summary.tsx',
+  diff: [
+    '@@ -1,3 +1,4 @@',
+    ' import { Badge } from "./badge";',
+    '-const badge = <Badge state="draft" />;',
+    '+const badge = <Badge state="ready" />;',
+    ' export default badge;',
+    '+export const highlightLabel = "visible";',
+  ].join('\n'),
+};
+
 const largeMrChanges = Array.from({ length: 255 }, (_, index) => {
+  if (index === 254) return tsxChange;
   const directory = String(Math.floor(index / 17)).padStart(2, '0');
   const path = `packages/feature-${directory}/file-${String(index).padStart(3, '0')}.ts`;
   return {
@@ -151,9 +166,11 @@ const route = (url) => {
   }
   if (p.endsWith('/diffs_batch.json')) {
     if (p.includes('/155/')) return { diff_files: largeMrChanges };
+    if (p.includes('/157/')) return { diff_files: [tsxChange] };
     return { diff_files: p.includes('/156/') ? imageMrChanges : [] };
   }
   if (p.endsWith('/merge_requests/155')) return mr(155, 'Large MR', AUTHORS[0]);
+  if (p.endsWith('/merge_requests/157')) return mr(157, 'TSX MR', AUTHORS[0]);
   if (p.endsWith('/merge_requests/156')) {
     return {
       ...mr(156, 'Image MR', AUTHORS[0]),
@@ -469,6 +486,59 @@ if (firstMrTab) {
   }
 }
 
+const checkTsxColors = async (cardSelector, label, search = false) => {
+  const result = await page.waitForFunction((selector, searching) => {
+    const card = document.querySelector(selector);
+    if (!card) return false;
+    const rows = [...card.querySelectorAll('.git-diff-code code')];
+    const countColors = (row) => {
+      const colors = new Set();
+      const text = document.createTreeWalker(row, NodeFilter.SHOW_TEXT);
+      while (text.nextNode()) {
+        const parent = text.currentNode.parentElement;
+        if (text.currentNode.textContent.trim() && !parent.closest('mark')) {
+          colors.add(getComputedStyle(parent).color);
+        }
+      }
+      return colors.size;
+    };
+    const context = rows.find(row => row.textContent.startsWith('import '));
+    const added = rows.find(row => row.textContent.startsWith('export const highlightLabel'));
+    const before = rows.find(row => row.textContent.includes('state="draft"'));
+    const after = rows.find(row => row.textContent.includes('state="ready"'));
+    // Tokenization is lazy. Wait for the grammar to reach this visible file.
+    if (!context || countColors(context) < 3 || !added || !before || !after) return false;
+    if (searching && !added.querySelector('mark')) return false;
+    return {
+      added: countColors(added),
+      before: countColors(before),
+      after: countColors(after),
+      removedWord: before.querySelector('.git-diff-inline-removed')?.textContent,
+      addedWord: after.querySelector('.git-diff-inline-added')?.textContent,
+    };
+  }, { timeout: 8000 }, cardSelector, search);
+  const colors = await result.jsonValue();
+  await result.dispose();
+  check(label, colors.added >= 3 && colors.before >= 3 && colors.after >= 3 &&
+    colors.removedWord === 'draft' && colors.addedWord === 'ready', JSON.stringify(colors));
+};
+
+try {
+  await page.goto(`${BASE}/repository/1/merge-requests/157`, { waitUntil: 'domcontentloaded' });
+  const card = '.git-diff > article:first-child';
+  await page.waitForSelector(card);
+  await page.$eval(card, element => element.scrollIntoView({ block: 'center' }));
+  await checkTsxColors(card, 'TSX additions and changed words retain their syntax colors');
+  await page.keyboard.down('Control');
+  await page.keyboard.press('f');
+  await page.keyboard.up('Control');
+  await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Поиск по файлам и коду');
+  await page.keyboard.type('highlightLabel');
+  await checkTsxColors(card, 'a search result preserves syntax colors around the matched text', true);
+} catch (error) {
+  check('small TSX diff highlighting', false, String(error));
+}
+
 // Use a real wheel event and pointer click so scroll capture and hit testing
 // run exactly as they do in the application.
 try {
@@ -541,6 +611,7 @@ try {
     lastRow, button => button.getAttribute('aria-current') === 'true' &&
       document.documentElement.scrollHeight - window.innerHeight - window.scrollY < 2,
   ));
+  await checkTsxColors('.git-diff > article:last-child', 'TSX colors appear at the bottom of a 255-file MR');
 } catch (error) {
   check('large MR tree navigation', false, String(error));
 }
@@ -654,6 +725,22 @@ try {
     mr(156, 'Image MR', AUTHORS[0]).web_url);
 } catch (error) {
   check('copying the MR link', false, String(error));
+}
+
+try {
+  const navigation = await page.waitForSelector('nav[aria-label="Разделы merge request"]');
+  const files = await navigation.$('::-p-text(Файлы)');
+  await files.click();
+  check('the overview opens the changes section with keyboard focus', await page.evaluate(
+    () => document.activeElement?.matches('h3') && document.activeElement.textContent.includes('Изменения'),
+  ));
+  const comments = await navigation.$('::-p-text(Комментарии)');
+  await comments.click();
+  await page.waitForFunction(() => document.activeElement?.getAttribute('aria-expanded') === 'true' &&
+    document.activeElement.textContent.includes('Активность'), { timeout: 3000 });
+  check('the overview opens and focuses the discussion', true);
+} catch (error) {
+  check('MR overview shortcuts', false, String(error));
 }
 
 try {

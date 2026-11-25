@@ -85,9 +85,7 @@
   --color-collapse-btn-bg: #333238;
   --color-collapse-btn-bg-hover: #44434a;
 
-  /* File type icons */
-  --color-file-tsx: #61dafb;
-  --color-file-ts: #3178c6;
+  /* File status icons */
   --color-file-renamed: #2563eb;
   --color-file-modified: #c17d00;
 

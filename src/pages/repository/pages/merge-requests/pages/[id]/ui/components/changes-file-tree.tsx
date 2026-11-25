@@ -1,4 +1,4 @@
-import { Comment, FileCode, Folder, FolderOpen, Magnifier } from "@gravity-ui/icons";
+import { Comment, Magnifier } from "@gravity-ui/icons";
 import type { IObservableValue } from "mobx";
 import { observer } from "mobx-react-lite";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -15,6 +15,7 @@ import {
 } from "@/shared/lib/build-changes-tree";
 import { cn } from "@/shared/lib/cn";
 import { getChangesTreeFileDataId } from "@/shared/lib/diff-search";
+import { FileTypeIcon } from "@/shared/ui/file-type-icon";
 import "./changes-file-tree.css";
 
 const matchesSearchPattern = (path: string, query: string) => {
@@ -118,30 +119,6 @@ const flattenVisibleRows = (
   return rows;
 };
 
-const FileTypeIcon = ({ fileName }: { fileName: string }) => {
-  if (fileName.endsWith(".tsx") || fileName.endsWith(".jsx")) {
-    return (
-      <span className="changes-file-tree__row-icon changes-file-tree__row-icon--tsx">
-        <FileCode />
-      </span>
-    );
-  }
-
-  if (fileName.endsWith(".ts") || fileName.endsWith(".js")) {
-    return (
-      <span className="changes-file-tree__row-icon changes-file-tree__row-icon--ts">
-        <FileCode />
-      </span>
-    );
-  }
-
-  return (
-    <span className="changes-file-tree__row-icon">
-      <FileCode />
-    </span>
-  );
-};
-
 const FileStatusIcon = ({ status }: { status: ChangeFileStatus }) => {
   if (status === "added") {
     return (
@@ -234,7 +211,7 @@ const TreeNodeView = memo(
           onClick={() => onToggleFolder(node.path)}
         >
           <span className="changes-file-tree__row-icon">
-            {expanded ? <FolderOpen /> : <Folder />}
+            <FileTypeIcon path={node.path} folder expanded={expanded} />
           </span>
           <span className="changes-file-tree__row-label">{node.name}</span>
         </button>
@@ -251,7 +228,9 @@ const TreeNodeView = memo(
         title={node.path}
         onClick={() => onSelectFile(node.id)}
       >
-        <FileTypeIcon fileName={node.name} />
+        <span className="changes-file-tree__row-icon">
+          <FileTypeIcon path={node.path} />
+        </span>
         <span className="changes-file-tree__row-label">{node.name}</span>
         <span className="changes-file-tree__row-stats">
           {node.additions > 0 && (

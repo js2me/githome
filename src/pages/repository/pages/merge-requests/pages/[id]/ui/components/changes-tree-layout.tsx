@@ -1,25 +1,30 @@
 import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { cn } from "@/shared/lib/cn";
 import { useChangesFileTreeWidth } from "../hooks/use-changes-file-tree-width";
 
 export const ChangesTreeLayout = ({
   changes,
+  overview,
   tree,
   connector,
   children,
 }: {
   changes: GitLabMergeRequestChangeDC[];
-  tree: ReactNode;
+  overview: ReactNode;
+  tree: ReactElement | null;
   connector: ReactNode;
   children: ReactNode;
 }) => {
   const { width, handleResizePointerDown } = useChangesFileTreeWidth(changes);
 
   return (
-    <div className="changes-tree-layout flex min-w-0 flex-col gap-4 lg:flex-row">
+    <div className={cn("changes-tree-layout grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-4", tree && "lg:grid-cols-[auto_minmax(0,1fr)]")}>
+      <div className={cn("relative z-20 min-w-0", tree && "lg:col-start-2 lg:row-start-1")}>
+        {overview}
+      </div>
       {tree && (
-        <div className="changes-tree-layout__sidebar relative z-10 w-full shrink-0 self-stretch lg:w-auto" style={{ width }}>
+        <div className="changes-tree-layout__sidebar relative z-10 w-full self-stretch lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:w-auto" style={{ width }}>
           <div className="changes-tree-layout__sticky relative lg:sticky lg:top-4">
             {tree}
             <div
@@ -40,7 +45,7 @@ export const ChangesTreeLayout = ({
 
       {connector}
 
-      <div className="relative z-20 flex min-w-0 flex-1 flex-col gap-5">
+      <div className="relative z-20 flex min-w-0 flex-col gap-5">
         {children}
       </div>
     </div>

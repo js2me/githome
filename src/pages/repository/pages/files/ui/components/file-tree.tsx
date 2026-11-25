@@ -1,7 +1,7 @@
-import { File, Folder, FolderOpen } from "@gravity-ui/icons";
 import { observer } from "mobx-react-lite";
 import type { GitLabRepositoryTreeItemDC } from "@/shared/api/gitlab";
 import { cn } from "@/shared/lib/cn";
+import { FileTypeIcon } from "@/shared/ui/file-type-icon";
 import type { RepositoryTreeModel } from "../../model/repository-tree";
 
 const TreeNode = observer(
@@ -28,11 +28,10 @@ const TreeNode = observer(
             )}
             style={{ paddingLeft: `${depth * 12 + 8}px` }}
             type="button"
+            aria-expanded={isExpanded}
             onClick={() => void treeModel.toggleFolder(item.path)}
           >
-            <span className="shrink-0 text-slate-400">
-              {isExpanded ? <FolderOpen width={16} height={16} /> : <Folder width={16} height={16} />}
-            </span>
+            <FileTypeIcon path={item.path} folder expanded={isExpanded} className="shrink-0" />
             <span className="min-w-0 truncate font-medium">{item.name}</span>
             {isLoading && (
               <span className="ml-auto shrink-0 text-xs text-slate-400">...</span>
@@ -73,11 +72,10 @@ const TreeNode = observer(
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         type="button"
+        aria-current={isActive || undefined}
         onClick={() => treeModel.selectFile(item.path)}
       >
-        <span className="shrink-0 text-slate-400">
-          <File width={16} height={16} />
-        </span>
+        <FileTypeIcon path={item.path} className="shrink-0" />
         <span className="min-w-0 truncate">{item.name}</span>
       </button>
     );

@@ -1,6 +1,7 @@
-import { File, Magnifier } from "@gravity-ui/icons";
+import { Magnifier } from "@gravity-ui/icons";
 import { observer } from "mobx-react-lite";
 import { cn } from "@/shared/lib/cn";
+import { FileTypeIcon } from "@/shared/ui/file-type-icon";
 import { Popup } from "@/shared/ui/popup";
 import type { FilesPageVM } from "../../model";
 import type { FilesSearchMode } from "../../model/repository-files-search";
@@ -113,7 +114,7 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
                 type="button"
                 onClick={() => searchModel.selectFile(item.path)}
               >
-                <File width={16} height={16} className="shrink-0 text-slate-400" />
+                <FileTypeIcon path={item.path} className="shrink-0" />
                 <span className="min-w-0 truncate font-medium">{item.name}</span>
                 <span className="ml-auto min-w-0 truncate text-xs text-slate-400">
                   {item.path}
@@ -131,7 +132,7 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
                 onClick={() => searchModel.selectContentResult(result)}
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <File width={16} height={16} className="shrink-0 text-slate-400" />
+                  <FileTypeIcon path={result.path} className="shrink-0" />
                   <span className="min-w-0 truncate font-medium">{result.path}</span>
                   <span className="shrink-0 text-xs text-slate-400">
                     :{result.startline}

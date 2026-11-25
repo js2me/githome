@@ -81,6 +81,7 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
                 payload={{
                   projectId: markdownScope.projectId,
                   pipelineId: detailView.mergeRequest.head_pipeline.id,
+                  permissions: model.project?.permissions,
                 }}
               />
             ) : null

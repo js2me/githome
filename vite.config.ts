@@ -4,6 +4,7 @@ import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
 import electron from "vite-plugin-electron/simple";
+import { viteStaticCopy } from "vite-plugin-static-copy";
 import { defineConfig, type Plugin } from "vite";
 import { mobxVmVitePlugin } from "mobx-view-model-vite-plugin";
 import { handleGitlabProxyRequest } from "./electron/gitlab-proxy";
@@ -36,8 +37,16 @@ export default defineConfig(({ mode, command }) => {
   dotenv.config();
 
   return {
+    // Linked worktrees can share node_modules. Keep lazy chunks local to the running app.
+    cacheDir: `.vite/${mode}/${isElectron ? "electron" : "web"}`,
     plugins: [
       gitlabProxyPlugin(),
+      viteStaticCopy({
+        targets: [
+          { src: "node_modules/material-icon-theme/icons/*.svg", dest: "file-icons" },
+          { src: "node_modules/material-icon-theme/LICENSE", dest: "file-icons" },
+        ],
+      }),
       tailwindcss(),
       react({
         useAtYourOwnRisk_mutateSwcOptions(options) {

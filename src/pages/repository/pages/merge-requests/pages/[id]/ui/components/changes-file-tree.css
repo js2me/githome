@@ -120,11 +120,10 @@
   display: inline-flex;
   align-self: stretch;
   width: 16px;
-  shrink: 0;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   background: var(--file-tree-bg);
-  color: var(--file-tree-muted);
 }
 
 .changes-file-tree__row:hover .changes-file-tree__row-icon {
@@ -133,19 +132,6 @@
 
 .changes-file-tree__row--active .changes-file-tree__row-icon {
   background: var(--file-tree-active);
-}
-
-.changes-file-tree__row-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-.changes-file-tree__row-icon--tsx {
-  color: var(--color-file-tsx);
-}
-
-.changes-file-tree__row-icon--ts {
-  color: var(--color-file-ts);
 }
 
 .changes-file-tree__row-label {
