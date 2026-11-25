@@ -1,5 +1,5 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabPost } from "../client";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabPost } from '../client';
 
 interface GitLabMarkdownResponseDC {
   html: string;
@@ -15,7 +15,7 @@ export const renderMarkdown = async (
 ): Promise<string> => {
   const response = await gitlabPost<GitLabMarkdownResponseDC>(
     connection,
-    "/markdown",
+    '/markdown',
     {
       text: options.text,
       gfm: true,

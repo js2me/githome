@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { cn } from "@/shared/lib/cn";
+import type { ReactNode } from 'react';
+import { cn } from '@/shared/lib/cn';
 
 export const DiffFileCopyIcon = ({
   children,
@@ -10,7 +10,7 @@ export const DiffFileCopyIcon = ({
 }) => (
   <svg
     aria-hidden="true"
-    className={cn("h-3.5 w-3.5", className)}
+    className={cn('h-3.5 w-3.5', className)}
     viewBox="0 0 16 16"
     fill="none"
     stroke="currentColor"

@@ -1,10 +1,13 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabFetch, normalizeGitlabBaseUrl } from "../client";
-import { enqueueGitLabFileContentRequest } from "../file-content-request-queue";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabFetch, normalizeGitlabBaseUrl } from '../client';
+import { enqueueGitLabFileContentRequest } from '../file-content-request-queue';
 
 const MAX_CACHED_CONTENT_BYTES = 16 * 1024 * 1024;
 const contentCache = new Map<string, { content: string; size: number }>();
-const inFlightBySignal = new WeakMap<AbortSignal, Map<string, Promise<string>>>();
+const inFlightBySignal = new WeakMap<
+  AbortSignal,
+  Map<string, Promise<string>>
+>();
 const unscopedInFlight = new Map<string, Promise<string>>();
 let cachedContentBytes = 0;
 
@@ -20,7 +23,7 @@ const getCacheKey = (
     projectId,
     ref,
     filePath,
-  ].join("\0");
+  ].join('\0');
 
 const readCachedContent = (key: string) => {
   const cached = contentCache.get(key);

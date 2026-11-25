@@ -1,14 +1,14 @@
-import { actionBound, computed, reaction } from "mobx";
-import type { Globals } from "@/globals";
+import { actionBound, computed, reaction } from 'mobx';
+import type { Workspace } from '@/features/workspace-navigation';
+import { WorkspaceVM } from '@/features/workspace-navigation';
 import type {
   GitLabProjectDC,
   GitLabProjectReadmeDC,
-} from "@/shared/api/gitlab";
-import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
-import { VM } from "@/shared/lib/view-models/vm";
-import { ProjectReadmeModel } from "./project-readme";
+} from '@/shared/api/gitlab';
+import { createGitlabQuery } from '@/shared/lib/gitlab/create-query';
+import { ProjectReadmeModel } from './project-readme';
 
-export class RepositoryPageVM extends VM {
+export class RepositoryPageVM extends WorkspaceVM {
   private projectQuery!: ReturnType<typeof createGitlabQuery<GitLabProjectDC>>;
   private readmeModel!: ProjectReadmeModel;
 
@@ -48,9 +48,8 @@ export class RepositoryPageVM extends VM {
     );
   }
 
-  static resolveMergeRequestIid(globals: Globals): number | null {
-    const mergeRequestIid =
-      globals.routes.mergeRequest.params?.mergeRequestIid;
+  static resolveMergeRequestIid(globals: Workspace): number | null {
+    const mergeRequestIid = globals.routes.mergeRequest.params?.mergeRequestIid;
 
     if (!mergeRequestIid) {
       return null;
@@ -73,7 +72,7 @@ export class RepositoryPageVM extends VM {
 
   @computed
   get projectIdParam(): string {
-    return this.projectId !== null ? String(this.projectId) : "";
+    return this.projectId !== null ? String(this.projectId) : '';
   }
 
   @computed
@@ -133,15 +132,15 @@ export class RepositoryPageVM extends VM {
       return null;
     }
 
-    return error instanceof Error ? error.message : "Не удалось загрузить репозиторий";
+    return error instanceof Error
+      ? error.message
+      : 'Не удалось загрузить репозиторий';
   }
 
   @computed
   get showReadmeMissing() {
     return (
-      !this.isReadmeLoading &&
-      !this.readmeErrorMessage &&
-      this.readme === null
+      !this.isReadmeLoading && !this.readmeErrorMessage && this.readme === null
     );
   }
 

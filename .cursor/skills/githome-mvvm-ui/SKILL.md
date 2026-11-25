@@ -11,7 +11,7 @@ description: >-
 
 **Правило:** бизнес-логика и сложная логика — во ViewModel. React-хуки для этого — зло.
 
-`useState`, `useEffect`, `useCallback`, `useMemo` в view — только если это чисто UI-механика (фокус, ref, портал). Всё остальное — в VM.
+Biome запрещает импорт `useState`, `useRef` и `useEffect` из React. Состояние и DOM-ссылки храните в VM, подписки привязывайте к её жизненному циклу. В представлении допустимы хуки интеграции с DOM и внешними UI-библиотеками, например `useLayoutEffect` для измерений виртуализатора.
 
 ## Где применять
 
@@ -56,7 +56,7 @@ feature-or-component/
 
 Выбор HOC — по удобству:
 
-- **`withPropsViewModel`** (`mobx-view-model`) — компонент принимает props, которые мапятся в VM payload. Примеры: `gitlab-avatar`, `git-diff`, `gitlab-markdown`.
+- **`withPropsViewModel`** (`mobx-view-model-react`) — компонент принимает props, которые мапятся в VM payload. Примеры: `gitlab-avatar`, `git-diff`, `gitlab-markdown`.
 - **`withViewModel`** (`mobx-view-model-react`) — VM без внешних props или с children/контекстом дерева. Примеры: страницы, `layout`, `repository-shell`.
 
 ```tsx

@@ -1,23 +1,17 @@
-import {
-  actionBound,
-  computed,
-  observable,
-  reaction,
-  runInAction,
-} from "mobx";
-import { gitlabApi } from "@/shared/api/gitlab";
+import { actionBound, computed, observable, reaction, runInAction } from 'mobx';
 import type {
   GitLabRepositoryTreeItemDC,
   GitLabSearchBlobDC,
-} from "@/shared/api/gitlab";
-import type { Globals } from "@/globals";
-import { createGitlabApiQuery } from "@/shared/lib/gitlab/create-query";
+} from '@/shared/api/gitlab';
+import { gitlabApi } from '@/shared/api/gitlab';
+import { createGitlabApiQuery } from '@/shared/lib/gitlab/create-query';
+import type { Globals } from '@/shared/model/globals';
 
 const SEARCH_DEBOUNCE_MS = 400;
 const MIN_QUERY_LENGTH = 2;
 const MAX_FILE_RESULTS = 50;
 
-export type FilesSearchMode = "files" | "content";
+export type FilesSearchMode = 'files' | 'content';
 
 export interface FileSearchResult {
   path: string;
@@ -37,9 +31,9 @@ export class RepositoryFilesSearchModel {
   filesSearchQuery;
   contentSearchQuery;
 
-  @observable accessor searchQuery = "";
-  @observable accessor debouncedQuery = "";
-  @observable accessor searchMode: FilesSearchMode = "files";
+  @observable accessor searchQuery = '';
+  @observable accessor debouncedQuery = '';
+  @observable accessor searchMode: FilesSearchMode = 'files';
   @observable accessor isOpen = false;
 
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -60,7 +54,7 @@ export class RepositoryFilesSearchModel {
           projectId === null ||
           !ref ||
           search.length < MIN_QUERY_LENGTH ||
-          this.searchMode !== "files"
+          this.searchMode !== 'files'
         ) {
           return false;
         }
@@ -73,7 +67,7 @@ export class RepositoryFilesSearchModel {
       },
       queryKey: ({ connection, projectId, ref, search }) =>
         [
-          "project-file-search",
+          'project-file-search',
           connection.gitlabUrl,
           projectId,
           ref,
@@ -104,7 +98,7 @@ export class RepositoryFilesSearchModel {
           projectId === null ||
           !ref ||
           search.length < MIN_QUERY_LENGTH ||
-          this.searchMode !== "content"
+          this.searchMode !== 'content'
         ) {
           return false;
         }
@@ -113,7 +107,7 @@ export class RepositoryFilesSearchModel {
       },
       queryKey: ({ connection, projectId, ref, search }) =>
         [
-          "project-blob-search",
+          'project-blob-search',
           connection.gitlabUrl,
           projectId,
           ref,
@@ -140,7 +134,7 @@ export class RepositoryFilesSearchModel {
 
         if (!trimmed) {
           runInAction(() => {
-            this.debouncedQuery = "";
+            this.debouncedQuery = '';
           });
           return;
         }
@@ -189,7 +183,7 @@ export class RepositoryFilesSearchModel {
     if (apiResults && !this.filesSearchQuery.error) {
       return apiResults.slice(0, MAX_FILE_RESULTS).map((result) => ({
         path: result.path,
-        name: result.basename || result.path.split("/").pop() || result.path,
+        name: result.basename || result.path.split('/').pop() || result.path,
       }));
     }
 
@@ -204,7 +198,7 @@ export class RepositoryFilesSearchModel {
   @computed
   get isFilesLoading() {
     return (
-      this.searchMode === "files" &&
+      this.searchMode === 'files' &&
       this.hasQuery &&
       (this.filesSearchQuery.isLoading || this.filesSearchQuery.isFetching)
     );
@@ -213,7 +207,7 @@ export class RepositoryFilesSearchModel {
   @computed
   get isContentLoading() {
     return (
-      this.searchMode === "content" &&
+      this.searchMode === 'content' &&
       this.hasQuery &&
       (this.contentSearchQuery.isLoading || this.contentSearchQuery.isFetching)
     );
@@ -236,14 +230,14 @@ export class RepositoryFilesSearchModel {
     }
 
     if (error instanceof Error) {
-      if (error.message.includes("403") || error.message.includes("404")) {
-        return "Поиск по файлам недоступен на этом GitLab";
+      if (error.message.includes('403') || error.message.includes('404')) {
+        return 'Поиск по файлам недоступен на этом GitLab';
       }
 
       return error.message;
     }
 
-    return "Не удалось выполнить поиск по файлам";
+    return 'Не удалось выполнить поиск по файлам';
   }
 
   @computed
@@ -254,19 +248,19 @@ export class RepositoryFilesSearchModel {
     }
 
     if (error instanceof Error) {
-      if (error.message.includes("403") || error.message.includes("404")) {
-        return "Поиск по содержимому недоступен на этом GitLab";
+      if (error.message.includes('403') || error.message.includes('404')) {
+        return 'Поиск по содержимому недоступен на этом GitLab';
       }
 
       return error.message;
     }
 
-    return "Не удалось выполнить поиск по содержимому";
+    return 'Не удалось выполнить поиск по содержимому';
   }
 
   @computed
   get errorMessage() {
-    return this.searchMode === "files"
+    return this.searchMode === 'files'
       ? this.filesErrorMessage
       : this.contentErrorMessage;
   }
@@ -308,8 +302,8 @@ export class RepositoryFilesSearchModel {
   @actionBound
   selectFile(path: string) {
     this.params.onSelectFile(path);
-    this.searchQuery = "";
-    this.debouncedQuery = "";
+    this.searchQuery = '';
+    this.debouncedQuery = '';
     this.isOpen = false;
   }
 

@@ -1,15 +1,21 @@
-import { computed, type IObservableValue } from "mobx";
-import { GitLabDiscussionDC, GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
-import { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
-import { getDiffFileKey } from "@/shared/lib/diff-search";
-import { DiffFileContentLoader } from "@/shared/lib/syntax-highlight/types";
-import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
-import type { ViewModelParams } from "mobx-view-model";
-import type { Globals } from "@/globals";
-import { VM } from "@/shared/lib/view-models/vm";
-import { FileGitDiff } from "./file-git-diff";
-import type { FileGitDiffContent } from "./file-git-diff/content";
-import type { DiffImageLoader } from "./file-git-diff/images";
+import {
+  compareShallow,
+  type IObservableValue,
+  observableRef,
+  reaction,
+} from 'mobx';
+import type {
+  GitLabDiscussionDC,
+  GitLabMergeRequestChangeDC,
+} from '@/shared/api/gitlab';
+import { getDiffFileKey } from '@/shared/lib/diff-search';
+import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/diff-comment';
+import type { DiffFileContentLoader } from '@/shared/lib/syntax-highlight/types';
+import { VM } from '@/shared/lib/view-models/vm';
+import type { GitlabMarkdownScope } from '@/shared/ui/gitlab-markdown/model';
+import { FileGitDiff } from './file-git-diff';
+import type { FileGitDiffContent } from './file-git-diff/content';
+import type { DiffImageLoader } from './file-git-diff/images';
 
 const MAX_CONCURRENT_COLLAPSED_EXPANDS = 2;
 
@@ -60,10 +66,6 @@ export class GitDiffVM extends VM<GitDiffPayload> {
   private readonly pendingCollapsedExpands = new Set<FileGitDiffContent>();
   private activeCollapsedExpands = 0;
 
-  constructor(globals: Globals, params: ViewModelParams<GitDiffPayload>) {
-    super(globals, params);
-  }
-
   scheduleCollapsedExpand(content: FileGitDiffContent) {
     if (
       content.parsed ||
@@ -100,16 +102,24 @@ export class GitDiffVM extends VM<GitDiffPayload> {
     }
   }
 
-  @computed
-  private get changes() {
-    return this.payload.changes;
+  @observableRef accessor filesGitDiffs: FileGitDiff[] = [];
+
+  willMount() {
+    reaction(
+      () => this.payload.changes.slice(),
+      (changes) => this.syncFiles(changes),
+      {
+        equals: compareShallow,
+        fireImmediately: true,
+        signal: this.unmountSignal,
+      },
+    );
   }
 
-  @computed
-  get filesGitDiffs(): FileGitDiff[] {
+  private syncFiles(changes: GitLabMergeRequestChangeDC[]) {
     const activeKeys = new Set<string>();
 
-    const models = this.changes.map((change) => {
+    const models = changes.map((change) => {
       const key = getDiffFileKey(change.old_path, change.new_path);
       activeKeys.add(key);
 
@@ -131,7 +141,7 @@ export class GitDiffVM extends VM<GitDiffPayload> {
       }
     }
 
-    return models;
+    this.filesGitDiffs = models;
   }
 
   willUnmount() {

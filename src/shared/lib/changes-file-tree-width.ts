@@ -1,8 +1,8 @@
-import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
+import type { GitLabMergeRequestChangeDC } from '@/shared/api/gitlab';
 import {
   buildChangesTree,
   type ChangesTreeNode,
-} from "@/shared/lib/build-changes-tree";
+} from '@/shared/lib/build-changes-tree';
 
 export const CHANGES_FILE_TREE_MIN_WIDTH = 220;
 export const CHANGES_FILE_TREE_MAX_WIDTH = 640;
@@ -21,18 +21,18 @@ const ROW_LABEL_FONT =
   '13px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
 const ROW_STATS_FONT =
   '600 12px ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace';
-const SEARCH_PLACEHOLDER = "Search (e.g. *.vue)";
+const SEARCH_PLACEHOLDER = 'Search (e.g. *.vue)';
 
 let measureContext: CanvasRenderingContext2D | null = null;
 
 const getMeasureContext = () => {
-  if (typeof document === "undefined") {
+  if (typeof document === 'undefined') {
     return null;
   }
 
   if (!measureContext) {
-    const canvas = document.createElement("canvas");
-    measureContext = canvas.getContext("2d");
+    const canvas = document.createElement('canvas');
+    measureContext = canvas.getContext('2d');
   }
 
   return measureContext;
@@ -51,10 +51,7 @@ const measureTextWidth = (text: string, font: string) => {
 export const getMaxChangesFileTreeWidthForViewport = () =>
   Math.min(
     CHANGES_FILE_TREE_MAX_WIDTH,
-    Math.max(
-      CHANGES_FILE_TREE_MIN_WIDTH,
-      window.innerWidth - 480,
-    ),
+    Math.max(CHANGES_FILE_TREE_MIN_WIDTH, window.innerWidth - 480),
   );
 
 export const clampChangesFileTreeWidth = (value: number) =>
@@ -77,15 +74,18 @@ const formatStats = (additions: number, deletions: number) => {
     parts.push(`−${deletions}`);
   }
 
-  return parts.join(" ");
+  return parts.join(' ');
 };
 
 const measureNodeRowWidth = (node: ChangesTreeNode, depth: number) => {
   const paddingLeft = depth * ROW_DEPTH_PADDING + ROW_PADDING_LEFT_BASE;
   let width =
-    paddingLeft + ROW_ICON_WIDTH + ROW_GAP + measureTextWidth(node.name, ROW_LABEL_FONT);
+    paddingLeft +
+    ROW_ICON_WIDTH +
+    ROW_GAP +
+    measureTextWidth(node.name, ROW_LABEL_FONT);
 
-  if (node.type === "file") {
+  if (node.type === 'file') {
     const stats = formatStats(node.additions, node.deletions);
 
     if (stats) {
@@ -104,7 +104,7 @@ const getMaxTreeRowWidth = (nodes: ChangesTreeNode[], depth = 0): number => {
   for (const node of nodes) {
     max = Math.max(max, measureNodeRowWidth(node, depth));
 
-    if (node.type === "folder") {
+    if (node.type === 'folder') {
       max = Math.max(max, getMaxTreeRowWidth(node.children, depth + 1));
     }
   }

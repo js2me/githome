@@ -1,13 +1,13 @@
-import { action, computed } from "mobx";
-import type { SettingsStore } from "@/globals/stores/settings";
-import type { GitLabProjectDC } from "@/shared/api/gitlab";
-import { appStorage } from "@/shared/lib/storage";
+import { action, computed } from 'mobx';
+import type { GitLabProjectDC } from '@/shared/api/gitlab';
+import type { SettingsStore } from '@/shared/lib/gitlab/settings';
+import { appStorage } from '@/shared/lib/storage';
 
 type ProjectsByConnection = Record<string, GitLabProjectDC>;
 
 export class Repository {
   private static readonly projectsByConnectionKey =
-    appStorage.key<ProjectsByConnection>("selected-projects", {});
+    appStorage.key<ProjectsByConnection>('selected-projects', {});
 
   constructor(private settings: SettingsStore) {}
 

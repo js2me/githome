@@ -1,18 +1,21 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
 import type {
-  GitLabMergeRequestApprovalsDC,
   GitLabMergeRequestApprovalSummary,
+  GitLabMergeRequestApprovalsDC,
   GitLabProjectDC,
-} from "../data-contracts";
-import { getMergeRequestApprovals } from "./get-merge-request-approvals";
+} from '../data-contracts';
+import { getMergeRequestApprovals } from './get-merge-request-approvals';
 
-const summarize = (data: GitLabMergeRequestApprovalsDC): GitLabMergeRequestApprovalSummary | null => {
+const summarize = (
+  data: GitLabMergeRequestApprovalsDC,
+): GitLabMergeRequestApprovalSummary | null => {
   if (!Array.isArray(data.approved_by)) return null;
   const count = data.approved_by.length;
   if (!count || (data.approvals_left != null && data.approvals_left > 0)) {
     return { count, approved: false };
   }
-  if (typeof data.approved === "boolean") return { count, approved: data.approved };
+  if (typeof data.approved === 'boolean')
+    return { count, approved: data.approved };
   if (data.approvals_required === 0) return { count, approved: true };
 
   // A voter can be ineligible for a required rule, even if the count meets its quota.
@@ -21,7 +24,7 @@ const summarize = (data: GitLabMergeRequestApprovalsDC): GitLabMergeRequestAppro
 
 export const getMergeRequestApprovalSummaries = async (
   connection: GitLabConnection,
-  project: Pick<GitLabProjectDC, "id">,
+  project: Pick<GitLabProjectDC, 'id'>,
   mergeRequestIids: readonly number[],
   signal?: AbortSignal,
 ): Promise<Partial<Record<number, GitLabMergeRequestApprovalSummary>>> => {
@@ -36,7 +39,7 @@ export const getMergeRequestApprovalSummaries = async (
           signal,
         );
         const summary = summarize(approvals);
-        return summary && [iid, summary] as const;
+        return summary && ([iid, summary] as const);
       } catch {
         signal?.throwIfAborted();
         return null;

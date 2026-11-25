@@ -1,19 +1,20 @@
-import { actionBound, observable, reaction, runInAction } from "mobx";
-import { createRef } from "yummies/mobx";
-import { gitlabApi } from "@/shared/api/gitlab";
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { hydrateProxiedGitlabImages } from "@/shared/lib/gitlab/hydrate-gitlab-images";
+import DOMPurify from 'dompurify';
+import { actionBound, observable, reaction, runInAction } from 'mobx';
+import { createRef } from 'yummies/mobx';
+import { gitlabApi } from '@/shared/api/gitlab';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { hydrateProxiedGitlabImages } from '@/shared/lib/gitlab/hydrate-gitlab-images';
 import {
   getCachedGitLabMarkdown,
   getGitLabMarkdownCacheKey,
   setCachedGitLabMarkdown,
-} from "@/shared/lib/gitlab/markdown-cache";
+} from '@/shared/lib/gitlab/markdown-cache';
 import {
   postProcessGitLabHtml,
   sanitizeGitlabCodeBlocks,
-} from "@/shared/lib/gitlab/post-process-html";
-import { enhanceMarkdownCodeBlocks } from "@/shared/lib/syntax-highlight/enhance-markdown-code-blocks";
-import { VM } from "@/shared/lib/view-models/vm";
+} from '@/shared/lib/gitlab/post-process-html';
+import { enhanceMarkdownCodeBlocks } from '@/shared/lib/syntax-highlight/enhance-markdown-code-blocks';
+import { VM } from '@/shared/lib/view-models/vm';
 
 export interface GitlabMarkdownScope {
   connection: GitLabConnection | null;
@@ -60,7 +61,7 @@ export class GitlabMarkdownVM extends VM<GitlabMarkdownPayload> {
       () => {
         this.syncFromCacheOrFetch();
       },
-      { fireImmediately: true },
+      { fireImmediately: true, signal: this.unmountSignal },
     );
 
     reaction(
@@ -76,9 +77,17 @@ export class GitlabMarkdownVM extends VM<GitlabMarkdownPayload> {
         const connection = this.payload.connection;
         const html = this.html;
 
-        if (!html || !container || !this.hasScope || !connection) {
+        if (html === null || !container || !this.hasScope || !connection) {
           return;
         }
+
+        container.replaceChildren(
+          DOMPurify.sanitize(html, {
+            USE_PROFILES: { html: true },
+            ADD_ATTR: ['target'],
+            RETURN_DOM_FRAGMENT: true,
+          }),
+        );
 
         let cancelled = false;
         const signal = this.unmountSignal;
@@ -100,8 +109,8 @@ export class GitlabMarkdownVM extends VM<GitlabMarkdownPayload> {
               !signal.aborted &&
               this.container.current === container
             ) {
-              for (const pre of container.querySelectorAll("pre")) {
-                pre.classList.add("gitlab-markdown-plain-code");
+              for (const pre of container.querySelectorAll('pre')) {
+                pre.classList.add('gitlab-markdown-plain-code');
               }
             }
           });
@@ -115,7 +124,7 @@ export class GitlabMarkdownVM extends VM<GitlabMarkdownPayload> {
           cleanupImages?.();
         };
       },
-      { fireImmediately: true },
+      { fireImmediately: true, signal: this.unmountSignal },
     );
   }
 
@@ -124,7 +133,7 @@ export class GitlabMarkdownVM extends VM<GitlabMarkdownPayload> {
     const text = this.payload.text;
 
     if (!text.trim()) {
-      this.html = "";
+      this.html = '';
       this.hasError = false;
       return;
     }
@@ -164,7 +173,7 @@ export class GitlabMarkdownVM extends VM<GitlabMarkdownPayload> {
         projectPath,
       });
 
-      if (signal.aborted || requestText !== this.payload.text) {
+      if (signal.aborted || cacheKey !== this.cacheKey) {
         return;
       }
 
@@ -173,7 +182,7 @@ export class GitlabMarkdownVM extends VM<GitlabMarkdownPayload> {
       );
 
       runInAction(() => {
-        if (requestText !== this.payload.text) {
+        if (cacheKey !== this.cacheKey) {
           return;
         }
 
@@ -182,12 +191,12 @@ export class GitlabMarkdownVM extends VM<GitlabMarkdownPayload> {
         this.hasError = false;
       });
     } catch {
-      if (signal.aborted || requestText !== this.payload.text) {
+      if (signal.aborted || cacheKey !== this.cacheKey) {
         return;
       }
 
       runInAction(() => {
-        if (requestText !== this.payload.text) {
+        if (cacheKey !== this.cacheKey) {
           return;
         }
 

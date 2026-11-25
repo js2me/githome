@@ -1,10 +1,10 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabFetch } from "../client";
-import type { GitLabProjectReadmeDC } from "../data-contracts";
-import { getRepositoryFileContent } from "./get-repository-file-content";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabFetch } from '../client';
+import type { GitLabProjectReadmeDC } from '../data-contracts';
+import { getRepositoryFileContent } from './get-repository-file-content';
 
 const decodeGitLabBase64Content = (value: string) => {
-  const normalized = value.replace(/\s/g, "");
+  const normalized = value.replace(/\s/g, '');
   const binary = atob(normalized);
   const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
   return new TextDecoder().decode(bytes);
@@ -15,16 +15,16 @@ export const decodeProjectReadmeContent = (
 ): GitLabProjectReadmeDC => ({
   ...readme,
   content:
-    readme.encoding === "base64"
+    readme.encoding === 'base64'
       ? decodeGitLabBase64Content(readme.content)
       : readme.content,
 });
 
 export const README_FALLBACK_PATHS = [
-  "README.md",
-  "Readme.md",
-  "readme.md",
-  "README.MD",
+  'README.md',
+  'Readme.md',
+  'readme.md',
+  'README.MD',
 ] as const;
 
 const fetchProjectReadmeFromFile = async (
@@ -44,13 +44,11 @@ const fetchProjectReadmeFromFile = async (
       );
 
       return {
-        file_name: filePath.split("/").pop() ?? filePath,
+        file_name: filePath.split('/').pop() ?? filePath,
         file_path: filePath,
         content,
       };
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   return null;
@@ -72,7 +70,7 @@ export const getProjectReadme = async (
     const readme = (await response.json()) as GitLabProjectReadmeDC;
     return decodeProjectReadmeContent(readme);
   } catch {
-    const refsToTry = ref ? [ref, "HEAD"] : ["HEAD"];
+    const refsToTry = ref ? [ref, 'HEAD'] : ['HEAD'];
 
     for (const nextRef of refsToTry) {
       const readme = await fetchProjectReadmeFromFile(

@@ -1,5 +1,5 @@
-import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
-import { buildUnifiedDiffFromGitlabLines } from "@/shared/lib/gitlab/build-unified-diff-from-gitlab-lines";
+import type { GitLabMergeRequestChangeDC } from '@/shared/api/gitlab';
+import { buildUnifiedDiffFromGitlabLines } from '@/shared/lib/gitlab/build-unified-diff-from-gitlab-lines';
 
 export interface GitLabWebDiffViewerDC {
   name?: string | null;
@@ -33,12 +33,12 @@ export const mapGitlabWebDiffFileToChange = (
 ): GitLabMergeRequestChangeDC => {
   const collapsed = Boolean(file.viewer?.collapsed);
   const generatedFile = Boolean(file.viewer?.generated);
-  const tooLarge = file.viewer?.name === "no_preview";
+  const tooLarge = file.viewer?.name === 'no_preview';
   const highlightedLines = file.highlighted_diff_lines ?? [];
   const diff =
     !tooLarge && highlightedLines.length > 0
       ? buildUnifiedDiffFromGitlabLines(highlightedLines)
-      : "";
+      : '';
 
   return {
     old_path: file.old_path,

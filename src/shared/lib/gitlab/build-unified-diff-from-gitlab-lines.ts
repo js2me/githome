@@ -1,32 +1,32 @@
-import type { GitLabHighlightedDiffLineDC } from "@/shared/api/gitlab/data-contracts";
+import type { GitLabHighlightedDiffLineDC } from '@/shared/api/gitlab/data-contracts';
 
 export type { GitLabHighlightedDiffLineDC };
 
 const decodeHtmlEntities = (value: string) => {
-  if (typeof document !== "undefined") {
-    const textarea = document.createElement("textarea");
+  if (typeof document !== 'undefined') {
+    const textarea = document.createElement('textarea');
     textarea.innerHTML = value;
     return textarea.value;
   }
 
   return value
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'");
 };
 
 const getLineText = (line: GitLabHighlightedDiffLineDC) => {
-  const raw = line.rich_text ?? line.text ?? "";
+  const raw = line.rich_text ?? line.text ?? '';
   return decodeHtmlEntities(raw);
 };
 
 const isDiffLine = (type: string | null | undefined) =>
-  type === "old" ||
-  type === "new" ||
-  type === "old-nonewline" ||
-  type === "new-nonewline" ||
+  type === 'old' ||
+  type === 'new' ||
+  type === 'old-nonewline' ||
+  type === 'new-nonewline' ||
   !type;
 
 export const buildUnifiedDiffFromGitlabLines = (
@@ -54,7 +54,7 @@ export const buildUnifiedDiffFromGitlabLines = (
   };
 
   for (const line of lines) {
-    if (line.type === "match") {
+    if (line.type === 'match') {
       flushHunk();
       continue;
     }
@@ -70,13 +70,13 @@ export const buildUnifiedDiffFromGitlabLines = (
       hunkNewStart = line.new_line ?? line.old_line ?? 1;
     }
 
-    if (line.type === "old" || line.type === "old-nonewline") {
+    if (line.type === 'old' || line.type === 'old-nonewline') {
       hunkLines.push(`-${text}`);
       hunkOldCount += 1;
       continue;
     }
 
-    if (line.type === "new" || line.type === "new-nonewline") {
+    if (line.type === 'new' || line.type === 'new-nonewline') {
       hunkLines.push(`+${text}`);
       hunkNewCount += 1;
       continue;
@@ -89,5 +89,5 @@ export const buildUnifiedDiffFromGitlabLines = (
 
   flushHunk();
 
-  return output.join("\n");
+  return output.join('\n');
 };

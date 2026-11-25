@@ -1,254 +1,27 @@
+import { observer } from 'mobx-react-lite';
+import { withPropsViewModel } from 'mobx-view-model-react';
 import {
   createContext,
   memo,
-  useCallback,
-  useContext,
-  useDeferredValue,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
   type ReactNode,
   type Ref,
-} from "react";
+  useContext,
+  useSyncExternalStore,
+} from 'react';
+import { cn } from '@/shared/lib/cn';
+import { DiffSearchVM } from '../model/diff-search';
 import {
-  areTextRangesEqual,
-  collectDiffSearchMatchesAsync,
-  type DiffSearchFileEntry,
-  type DiffSearchLineEntry,
-  type DiffSearchMatch,
-  getDiffFileElementId,
-  indexMatchesByRowId,
-  isDiffFileHeaderRowId,
-  type TextRange,
-} from "@/shared/lib/diff-search";
-import { cn } from "@/shared/lib/cn";
-import { registerFindShortcutHandler } from "@/shared/lib/find-shortcut";
+  EMPTY_ROW_HIGHLIGHT,
+  type RowSearchHighlightState,
+} from '../model/search-highlights';
 
-interface DiffSearchRegistrationContextValue {
-  registerFile: (
-    fileKey: string,
-    path: string,
-    lines: DiffSearchLineEntry[],
-    scrollToRow: (rowId: string) => void,
-  ) => void;
-  unregisterFile: (fileKey: string) => void;
-}
+export type { DiffSearchFindBarVisibility } from '../model/diff-search';
+export type { RowSearchHighlightState } from '../model/search-highlights';
 
-interface DiffSearchUiContextValue {
-  query: string;
-  setQuery: (value: string) => void;
-  activeIndex: number;
-  matchCount: number;
-  miniBarActive: boolean;
-  isMainBarInView: boolean;
-  inputRef: Ref<HTMLInputElement>;
-  miniInputRef: Ref<HTMLInputElement>;
-  onClose: () => void;
-  onNext: () => void;
-  onPrevious: () => void;
-}
-
-const DiffSearchRegistrationContext =
-  createContext<DiffSearchRegistrationContextValue | null>(null);
-
-const DiffSearchUiContext = createContext<DiffSearchUiContextValue | null>(null);
-
-const DiffSearchHighlightStoreContext =
-  createContext<DiffSearchHighlightStore | null>(null);
-
-export interface RowSearchHighlightState {
-  ranges: TextRange[];
-  activeRange: TextRange | null;
-}
-
-const EMPTY_ROW_HIGHLIGHT: RowSearchHighlightState = {
-  ranges: [],
-  activeRange: null,
-};
-
-class DiffSearchHighlightStore {
-  private rowStates = new Map<string, RowSearchHighlightState>();
-  private rowListeners = new Map<string, Set<() => void>>();
-  private hasActiveQuery = false;
-  private globalListeners = new Set<() => void>();
-
-  subscribeGlobal = (onStoreChange: () => void) => {
-    this.globalListeners.add(onStoreChange);
-    return () => {
-      this.globalListeners.delete(onStoreChange);
-    };
-  };
-
-  subscribeRow = (rowId: string, onStoreChange: () => void) => {
-    let listeners = this.rowListeners.get(rowId);
-    if (!listeners) {
-      listeners = new Set();
-      this.rowListeners.set(rowId, listeners);
-    }
-
-    listeners.add(onStoreChange);
-    return () => {
-      listeners?.delete(onStoreChange);
-      if (listeners?.size === 0) {
-        this.rowListeners.delete(rowId);
-      }
-    };
-  };
-
-  getHasActiveQuery = () => this.hasActiveQuery;
-
-  getRowState = (rowId: string): RowSearchHighlightState =>
-    this.rowStates.get(rowId) ?? EMPTY_ROW_HIGHLIGHT;
-
-  private notifyRow(rowId: string) {
-    const listeners = this.rowListeners.get(rowId);
-    if (!listeners) {
-      return;
-    }
-
-    for (const listener of listeners) {
-      listener();
-    }
-  }
-
-  private notifyGlobal() {
-    for (const listener of this.globalListeners) {
-      listener();
-    }
-  }
-
-  private setRowState(rowId: string, nextState: RowSearchHighlightState) {
-    const previousState = this.rowStates.get(rowId) ?? EMPTY_ROW_HIGHLIGHT;
-    const rangesChanged = !areTextRangesEqual(
-      previousState.ranges,
-      nextState.ranges,
-    );
-    const activeRangeChanged =
-      previousState.activeRange?.start !== nextState.activeRange?.start ||
-      previousState.activeRange?.end !== nextState.activeRange?.end;
-
-    if (!rangesChanged && !activeRangeChanged) {
-      return;
-    }
-
-    if (nextState.ranges.length === 0 && !nextState.activeRange) {
-      this.rowStates.delete(rowId);
-    } else {
-      this.rowStates.set(rowId, nextState);
-    }
-
-    this.notifyRow(rowId);
-  }
-
-  updateHighlights(
-    query: string,
-    matches: DiffSearchMatch[],
-    activeMatch: DiffSearchMatch | null,
-  ) {
-    const nextHasActiveQuery = Boolean(query.trim());
-    const hasActiveQueryChanged = this.hasActiveQuery !== nextHasActiveQuery;
-    this.hasActiveQuery = nextHasActiveQuery;
-
-    const matchesByRowId = indexMatchesByRowId(matches);
-    const affectedRowIds = new Set<string>([
-      ...this.rowStates.keys(),
-      ...matchesByRowId.keys(),
-    ]);
-
-    if (activeMatch) {
-      affectedRowIds.add(activeMatch.rowId);
-    }
-
-    for (const rowId of affectedRowIds) {
-      const ranges = matchesByRowId.get(rowId) ?? [];
-      const activeRange =
-        activeMatch && activeMatch.rowId === rowId
-          ? { start: activeMatch.start, end: activeMatch.end }
-          : null;
-
-      this.setRowState(rowId, { ranges, activeRange });
-    }
-
-    if (hasActiveQueryChanged) {
-      this.notifyGlobal();
-    }
-  }
-
-  updateHighlightsForRows(
-    matches: DiffSearchMatch[],
-    activeMatch: DiffSearchMatch | null,
-    changedRowIds: readonly string[],
-  ) {
-    if (changedRowIds.length === 0) {
-      return;
-    }
-
-    const matchesByRowId = indexMatchesByRowId(matches);
-
-    for (const rowId of changedRowIds) {
-      const ranges = matchesByRowId.get(rowId) ?? [];
-      const activeRange =
-        activeMatch && activeMatch.rowId === rowId
-          ? { start: activeMatch.start, end: activeMatch.end }
-          : null;
-
-      this.setRowState(rowId, { ranges, activeRange });
-    }
-  }
-
-  updateActiveMatch(
-    matches: DiffSearchMatch[],
-    previousActiveMatch: DiffSearchMatch | null,
-    nextActiveMatch: DiffSearchMatch | null,
-  ) {
-    if (
-      previousActiveMatch?.rowId === nextActiveMatch?.rowId &&
-      previousActiveMatch?.start === nextActiveMatch?.start &&
-      previousActiveMatch?.end === nextActiveMatch?.end
-    ) {
-      return;
-    }
-
-    const matchesByRowId = indexMatchesByRowId(matches);
-    const affectedRowIds = new Set<string>();
-
-    if (previousActiveMatch) {
-      affectedRowIds.add(previousActiveMatch.rowId);
-    }
-
-    if (nextActiveMatch) {
-      affectedRowIds.add(nextActiveMatch.rowId);
-    }
-
-    for (const rowId of affectedRowIds) {
-      const ranges = matchesByRowId.get(rowId) ?? [];
-      const activeRange =
-        nextActiveMatch && nextActiveMatch.rowId === rowId
-          ? { start: nextActiveMatch.start, end: nextActiveMatch.end }
-          : null;
-
-      this.setRowState(rowId, { ranges, activeRange });
-    }
-  }
-
-  clear() {
-    const affectedRowIds = [...this.rowStates.keys()];
-    this.rowStates.clear();
-    this.hasActiveQuery = false;
-
-    for (const rowId of affectedRowIds) {
-      this.notifyRow(rowId);
-    }
-
-    this.notifyGlobal();
-  }
-}
+const DiffSearchContext = createContext<DiffSearchVM | null>(null);
 
 const diffSearchControlButtonClassName =
-  "glass-control inline-flex size-7 shrink-0 items-center justify-center rounded-md";
+  'glass-control inline-flex size-7 shrink-0 items-center justify-center rounded-md';
 
 const DiffSearchInput = memo(
   ({
@@ -260,7 +33,7 @@ const DiffSearchInput = memo(
     onNext,
     onPrevious,
   }: {
-    variant: "full" | "mini";
+    variant: 'full' | 'mini';
     query: string;
     inputRef: Ref<HTMLInputElement>;
     onQueryChange: (value: string) => void;
@@ -268,37 +41,37 @@ const DiffSearchInput = memo(
     onNext: () => void;
     onPrevious: () => void;
   }) => {
-    const isMini = variant === "mini";
+    const isMini = variant === 'mini';
 
     return (
       <span
         className={cn(
-          "inline-grid min-w-0 max-w-full flex-1 grid-cols-[minmax(0,1fr)]",
-          isMini ? "sm:min-w-20" : "sm:min-w-60",
+          'inline-grid min-w-0 max-w-full flex-1 grid-cols-[minmax(0,1fr)]',
+          isMini ? 'sm:min-w-20' : 'sm:min-w-60',
         )}
       >
         <span
           className={cn(
-            "invisible col-start-1 row-start-1 overflow-hidden whitespace-pre border border-transparent font-mono",
-            isMini ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-sm",
+            'invisible col-start-1 row-start-1 overflow-hidden whitespace-pre border border-transparent font-mono',
+            isMini ? 'px-2 py-1 text-xs' : 'px-2.5 py-1.5 text-sm',
           )}
           aria-hidden
         >
-          {query || " "}
+          {query || ' '}
         </span>
         <input
           ref={inputRef}
           className={cn(
-            "glass-input col-start-1 row-start-1 w-full min-w-0 rounded-md font-mono",
-            isMini ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-sm",
+            'glass-input col-start-1 row-start-1 w-full min-w-0 rounded-md font-mono',
+            isMini ? 'px-2 py-1 text-xs' : 'px-2.5 py-1.5 text-sm',
           )}
-          placeholder={isMini ? undefined : "Поиск по файлам и коду..."}
+          placeholder={isMini ? undefined : 'Поиск по файлам и коду...'}
           aria-label="Поиск по файлам и коду"
           type="search"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter") {
+            if (event.key === 'Enter') {
               event.preventDefault();
               if (event.shiftKey) {
                 onPrevious();
@@ -307,7 +80,7 @@ const DiffSearchInput = memo(
               }
             }
 
-            if (event.key === "Escape") {
+            if (event.key === 'Escape') {
               event.preventDefault();
               onClose();
             }
@@ -330,7 +103,7 @@ const DiffSearchControls = memo(
     onNext,
     onPrevious,
   }: {
-    variant: "full" | "mini";
+    variant: 'full' | 'mini';
     query: string;
     activeIndex: number;
     matchCount: number;
@@ -340,7 +113,7 @@ const DiffSearchControls = memo(
     onNext: () => void;
     onPrevious: () => void;
   }) => {
-    const isMini = variant === "mini";
+    const isMini = variant === 'mini';
 
     return (
       <>
@@ -354,14 +127,21 @@ const DiffSearchControls = memo(
           onPrevious={onPrevious}
         />
         {query.trim() && (
-          <span className={cn("shrink-0 text-fg-muted", isMini ? "text-[11px]" : "text-xs")}>
-            {matchCount > 0 ? `${activeIndex + 1} / ${matchCount}` : "Нет совпадений"}
+          <span
+            className={cn(
+              'shrink-0 text-fg-muted',
+              isMini ? 'text-[11px]' : 'text-xs',
+            )}
+          >
+            {matchCount > 0
+              ? `${activeIndex + 1} / ${matchCount}`
+              : 'Нет совпадений'}
           </span>
         )}
         <button
           className={cn(
             diffSearchControlButtonClassName,
-            isMini && "h-6 w-6 text-xs",
+            isMini && 'h-6 w-6 text-xs',
           )}
           type="button"
           title="Предыдущее (Shift+Enter)"
@@ -373,7 +153,7 @@ const DiffSearchControls = memo(
         <button
           className={cn(
             diffSearchControlButtonClassName,
-            isMini && "h-6 w-6 text-xs",
+            isMini && 'h-6 w-6 text-xs',
           )}
           type="button"
           title="Следующее (Enter)"
@@ -428,8 +208,8 @@ const DiffSearchFindBar = memo(
   ),
 );
 
-export const DiffSearchStickyMiniBar = memo(() => {
-  const ui = useContext(DiffSearchUiContext);
+export const DiffSearchStickyMiniBar = observer(() => {
+  const ui = useContext(DiffSearchContext);
   if (!ui) {
     return null;
   }
@@ -460,417 +240,34 @@ export const DiffSearchStickyMiniBar = memo(() => {
   );
 });
 
-export type DiffSearchFindBarVisibility = "toggle" | "always";
-
-export const DiffSearchProvider = memo(
-  ({
-    children,
-    findBarVisibility = "toggle",
-  }: {
-    children: ReactNode;
-    findBarVisibility?: DiffSearchFindBarVisibility;
-  }) => {
-  const [query, setQuery] = useState("");
-  const [isOpen, setIsOpen] = useState(findBarVisibility === "always");
-  const [miniBarActive, setMiniBarActive] = useState(false);
-  const [isMainBarInView, setIsMainBarInView] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [focusRequestId, setFocusRequestId] = useState(0);
-  const [registryVersion, setRegistryVersion] = useState(0);
-  const deferredQuery = useDeferredValue(query);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const miniInputRef = useRef<HTMLInputElement>(null);
-  const mainBarRef = useRef<HTMLDivElement>(null);
-  const fileEntriesRef = useRef<Map<string, DiffSearchFileEntry>>(new Map());
-  const scrollHandlersRef = useRef<Map<string, (rowId: string) => void>>(new Map());
-  const highlightStoreRef = useRef<DiffSearchHighlightStore | null>(null);
-
-  if (!highlightStoreRef.current) {
-    highlightStoreRef.current = new DiffSearchHighlightStore();
-  }
-
-  const highlightStore = highlightStoreRef.current;
-  const matchesRef = useRef<DiffSearchMatch[]>([]);
-  const activeMatchRef = useRef<DiffSearchMatch | null>(null);
-  const activeIndexRef = useRef(activeIndex);
-  const searchGenerationRef = useRef(0);
-  const pendingScrollToFirstMatchRef = useRef(false);
-  const [matches, setMatches] = useState<DiffSearchMatch[]>([]);
-
-  activeIndexRef.current = activeIndex;
-
-  const activeMatch = matches[activeIndex] ?? null;
-  activeMatchRef.current = activeMatch;
-
-  useEffect(() => {
-    const trimmedQuery = deferredQuery.trim();
-
-    if (!trimmedQuery) {
-      searchGenerationRef.current += 1;
-      matchesRef.current = [];
-      setMatches([]);
-      highlightStore.clear();
-      return;
-    }
-
-    const generation = searchGenerationRef.current + 1;
-    searchGenerationRef.current = generation;
-    const abortController = new AbortController();
-
-    matchesRef.current = [];
-    setMatches([]);
-    highlightStore.clear();
-
-    void (async () => {
-      try {
-        const result = await collectDiffSearchMatchesAsync(
-          fileEntriesRef.current,
-          deferredQuery,
-          {
-            signal: abortController.signal,
-            onProgress: (partialMatches, changedRowIds) => {
-              if (generation !== searchGenerationRef.current) {
-                return;
-              }
-
-              matchesRef.current = partialMatches;
-              setMatches(partialMatches);
-              highlightStore.updateHighlightsForRows(
-                partialMatches,
-                partialMatches[0] ?? null,
-                changedRowIds,
-              );
-            },
-          },
-        );
-
-        if (generation !== searchGenerationRef.current) {
-          return;
-        }
-
-        matchesRef.current = result;
-        setMatches(result);
-        highlightStore.updateActiveMatch(
-          result,
-          activeMatchRef.current,
-          result[activeIndexRef.current] ?? result[0] ?? null,
-        );
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return;
-        }
-
-        throw error;
-      }
-    })();
-
-    return () => {
-      abortController.abort();
-    };
-  }, [deferredQuery, highlightStore, registryVersion]);
-
-  const scrollToActiveMatch = useCallback(
-    (match: DiffSearchMatch | null) => {
-      if (!match) {
-        return;
-      }
-
-      document
-        .getElementById(getDiffFileElementId(match.fileKey))
-        ?.scrollIntoView({ block: "nearest" });
-
-      if (isDiffFileHeaderRowId(match.rowId)) {
-        return;
-      }
-
-      requestAnimationFrame(() => {
-        scrollHandlersRef.current.get(match.fileKey)?.(match.rowId);
-      });
-    },
-    [],
-  );
-
-  const goToMatch = useCallback(
-    (index: number) => {
-      const currentMatches = matchesRef.current;
-      if (currentMatches.length === 0) {
-        return;
-      }
-
-      const normalizedIndex =
-        ((index % currentMatches.length) + currentMatches.length) %
-        currentMatches.length;
-      setActiveIndex(normalizedIndex);
-      scrollToActiveMatch(currentMatches[normalizedIndex] ?? null);
-    },
-    [scrollToActiveMatch],
-  );
-
-  const goToNext = useCallback(() => {
-    goToMatch(activeIndex + 1);
-  }, [activeIndex, goToMatch]);
-
-  const goToPrevious = useCallback(() => {
-    goToMatch(activeIndex - 1);
-  }, [activeIndex, goToMatch]);
-
-  const isMainFindBarVisible = useCallback(() => {
-    const mainBar = mainBarRef.current;
-    if (!mainBar) {
-      return false;
-    }
-
-    const rect = mainBar.getBoundingClientRect();
-    return rect.bottom > 0 && rect.top < window.innerHeight;
-  }, []);
-
-  const close = useCallback(() => {
-    if (findBarVisibility === "always") {
-      setQuery("");
-      setActiveIndex(0);
-      setMiniBarActive(false);
-      highlightStore.clear();
-      inputRef.current?.blur();
-      miniInputRef.current?.blur();
-      return;
-    }
-
-    setIsOpen(false);
-    setQuery("");
-    setActiveIndex(0);
-    setMiniBarActive(false);
-    highlightStore.clear();
-  }, [findBarVisibility, highlightStore]);
-
-  const open = useCallback(() => {
-    setIsOpen(true);
-
-    const mainBarVisible = isMainFindBarVisible();
-    setIsMainBarInView(mainBarVisible);
-    setMiniBarActive(!mainBarVisible);
-    setFocusRequestId((value) => value + 1);
-  }, [isMainFindBarVisible]);
-
-  useLayoutEffect(() => {
-    if (focusRequestId === 0) {
-      return;
-    }
-
-    const focusSearchInput = () => {
-      if (miniBarActive) {
-        const miniInput = miniInputRef.current;
-        if (!miniInput) {
-          return false;
-        }
-
-        miniInput.focus();
-        miniInput.select();
-        return true;
-      }
-
-      const mainInput = inputRef.current;
-      if (!mainInput) {
-        return false;
-      }
-
-      mainInput.focus();
-      mainInput.select();
-      return true;
-    };
-
-    if (focusSearchInput()) {
-      return;
-    }
-
-    const frame = requestAnimationFrame(() => {
-      focusSearchInput();
-    });
-
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, [focusRequestId, miniBarActive]);
-
-  const openRef = useRef(open);
-  openRef.current = open;
-
-  useEffect(() => {
-    registerFindShortcutHandler(() => {
-      openRef.current();
-    });
-
-    return () => {
-      registerFindShortcutHandler(null);
-    };
-  }, []);
-
-  useEffect(() => {
-    setActiveIndex(0);
-    pendingScrollToFirstMatchRef.current = Boolean(deferredQuery.trim());
-  }, [deferredQuery]);
-
-  useEffect(() => {
-    const mainBar = mainBarRef.current;
-    if (!mainBar) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsMainBarInView(entry.isIntersecting);
-      },
-      { threshold: 0 },
-    );
-
-    observer.observe(mainBar);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [findBarVisibility, isOpen]);
-
-  useEffect(() => {
-    if (isMainBarInView) {
-      setMiniBarActive(false);
-    }
-  }, [isMainBarInView]);
-
-  useEffect(() => {
-    const nextActiveMatch = matches[activeIndex] ?? null;
-    highlightStore.updateActiveMatch(
-      matches,
-      activeMatchRef.current,
-      nextActiveMatch,
-    );
-    activeMatchRef.current = nextActiveMatch;
-  }, [activeIndex, highlightStore, matches]);
-
-  useEffect(() => {
-    if (!pendingScrollToFirstMatchRef.current || matches.length === 0) {
-      return;
-    }
-
-    pendingScrollToFirstMatchRef.current = false;
-    scrollToActiveMatch(matches[0] ?? null);
-  }, [matches, scrollToActiveMatch]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" && event.key !== "F3") return;
-
-      const findBarVisible =
-        findBarVisibility === "always" || isOpen;
-
-      if (!findBarVisible || document.querySelector("dialog:modal")) {
-        return;
-      }
-
-      if (event.key === "Escape") {
-        event.preventDefault();
-        close();
-        return;
-      }
-
-      if (event.key === "F3") {
-        event.preventDefault();
-        if (event.shiftKey) {
-          goToPrevious();
-        } else {
-          goToNext();
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown, { capture: true });
-    return () =>
-      document.removeEventListener("keydown", handleKeyDown, { capture: true });
-  }, [close, findBarVisibility, goToNext, goToPrevious, isOpen]);
-
-  const registerFile = useCallback(
-    (
-      fileKey: string,
-      path: string,
-      lines: DiffSearchLineEntry[],
-      scrollToRow: (rowId: string) => void,
-    ) => {
-      fileEntriesRef.current.set(fileKey, { path, lines });
-      scrollHandlersRef.current.set(fileKey, scrollToRow);
-      setRegistryVersion((value) => value + 1);
-    },
-    [],
-  );
-
-  const unregisterFile = useCallback((fileKey: string) => {
-    fileEntriesRef.current.delete(fileKey);
-    scrollHandlersRef.current.delete(fileKey);
-    setRegistryVersion((value) => value + 1);
-  }, []);
-
-  const registrationValue = useMemo<DiffSearchRegistrationContextValue>(
-    () => ({
-      registerFile,
-      unregisterFile,
-    }),
-    [registerFile, unregisterFile],
-  );
-
-  const uiValue = useMemo<DiffSearchUiContextValue>(
-    () => ({
-      query,
-      setQuery,
-      activeIndex,
-      matchCount: matches.length,
-      miniBarActive,
-      isMainBarInView,
-      inputRef,
-      miniInputRef,
-      onClose: close,
-      onNext: goToNext,
-      onPrevious: goToPrevious,
-    }),
-    [
-      query,
-      activeIndex,
-      matches.length,
-      miniBarActive,
-      isMainBarInView,
-      close,
-      goToNext,
-      goToPrevious,
-    ],
-  );
-
-  return (
-    <DiffSearchHighlightStoreContext.Provider value={highlightStore}>
-      <DiffSearchRegistrationContext.Provider value={registrationValue}>
-        <DiffSearchUiContext.Provider value={uiValue}>
-          {(findBarVisibility === "always" || isOpen) && (
-            <DiffSearchFindBar
-              barRef={mainBarRef}
-              query={query}
-              activeIndex={activeIndex}
-              matchCount={matches.length}
-              inputRef={inputRef}
-              onQueryChange={setQuery}
-              onClose={close}
-              onNext={goToNext}
-              onPrevious={goToPrevious}
-            />
-          )}
-          <DiffSearchStickyMiniBar />
-          {children}
-        </DiffSearchUiContext.Provider>
-      </DiffSearchRegistrationContext.Provider>
-    </DiffSearchHighlightStoreContext.Provider>
-  );
-  },
+export const DiffSearchProvider = withPropsViewModel(
+  DiffSearchVM,
+  ({ model }) => (
+    <DiffSearchContext.Provider value={model}>
+      {model.showMainBar && (
+        <DiffSearchFindBar
+          barRef={model.mainBarRef}
+          query={model.query}
+          activeIndex={model.activeIndex}
+          matchCount={model.matchCount}
+          inputRef={model.inputRef}
+          onQueryChange={model.setQuery}
+          onClose={model.onClose}
+          onNext={model.onNext}
+          onPrevious={model.onPrevious}
+        />
+      )}
+      <DiffSearchStickyMiniBar />
+      {model.payload.children}
+    </DiffSearchContext.Provider>
+  ),
 );
 
 export const useDiffSearchRegistration = () => {
-  const context = useContext(DiffSearchRegistrationContext);
+  const context = useContext(DiffSearchContext);
   if (!context) {
     throw new Error(
-      "useDiffSearchRegistration must be used within DiffSearchProvider",
+      'useDiffSearchRegistration must be used within DiffSearchProvider',
     );
   }
 
@@ -878,10 +275,10 @@ export const useDiffSearchRegistration = () => {
 };
 
 export const useDiffSearchRegistrationOptional = () =>
-  useContext(DiffSearchRegistrationContext);
+  useContext(DiffSearchContext);
 
 export const useRowSearchHighlight = (rowId?: string) => {
-  const store = useContext(DiffSearchHighlightStoreContext);
+  const store = useContext(DiffSearchContext)?.highlights;
 
   return useSyncExternalStore(
     (onStoreChange) => {
@@ -903,8 +300,7 @@ export const useRowSearchHighlight = (rowId?: string) => {
 };
 
 /** @deprecated Use useDiffSearchRegistrationOptional */
-export const useDiffSearchOptional = () =>
-  useContext(DiffSearchRegistrationContext);
+export const useDiffSearchOptional = () => useContext(DiffSearchContext);
 
 interface SearchHighlightedTextProps extends RowSearchHighlightState {
   text: string;
@@ -912,10 +308,11 @@ interface SearchHighlightedTextProps extends RowSearchHighlightState {
 
 export const renderSearchHighlightedText = (
   { text, ranges, activeRange }: SearchHighlightedTextProps,
-  renderPlain: (start: number, end: number) => ReactNode = (start, end) => text.slice(start, end),
+  renderPlain: (start: number, end: number) => ReactNode = (start, end) =>
+    text.slice(start, end),
 ) => {
   if (ranges.length === 0) {
-    return <>{text.length ? renderPlain(0, text.length) : " "}</>;
+    return <>{text.length ? renderPlain(0, text.length) : ' '}</>;
   }
   const nodes: ReactNode[] = [];
   let cursor = 0;
@@ -925,13 +322,16 @@ export const renderSearchHighlightedText = (
       nodes.push(renderPlain(cursor, range.start));
     }
 
-    const isActive = activeRange?.start === range.start && activeRange.end === range.end;
+    const isActive =
+      activeRange?.start === range.start && activeRange.end === range.end;
     nodes.push(
       <mark
         key={range.start}
         className={cn(
-          "git-diff-search-mark",
-          isActive ? "git-diff-search-mark--active" : "git-diff-search-mark--inactive",
+          'git-diff-search-mark',
+          isActive
+            ? 'git-diff-search-mark--active'
+            : 'git-diff-search-mark--inactive',
         )}
       >
         {text.slice(range.start, range.end)}
@@ -945,9 +345,9 @@ export const renderSearchHighlightedText = (
     nodes.push(renderPlain(cursor, text.length));
   }
 
-  return <>{nodes.length ? nodes : " "}</>;
+  return <>{nodes.length ? nodes : ' '}</>;
 };
 
-export const SearchHighlightedText = memo(
-  (props: SearchHighlightedTextProps) => renderSearchHighlightedText(props),
+export const SearchHighlightedText = memo((props: SearchHighlightedTextProps) =>
+  renderSearchHighlightedText(props),
 );

@@ -1,8 +1,8 @@
 import {
   buildGitlabRequestHeaders,
   isGitlabProxiedAssetUrl,
-} from "@/shared/api/gitlab";
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
+} from '@/shared/api/gitlab';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
 
 export const hydrateProxiedGitlabImages = (
   root: HTMLElement,
@@ -11,8 +11,8 @@ export const hydrateProxiedGitlabImages = (
   const controllers: AbortController[] = [];
   const objectUrls: string[] = [];
 
-  for (const image of root.querySelectorAll("img[src]")) {
-    const src = image.getAttribute("src");
+  for (const image of root.querySelectorAll('img[src]')) {
+    const src = image.getAttribute('src');
     if (!src || !isGitlabProxiedAssetUrl(src)) {
       continue;
     }
@@ -22,7 +22,7 @@ export const hydrateProxiedGitlabImages = (
 
     void fetch(src, {
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        "PRIVATE-TOKEN": connection.gitToken,
+        'PRIVATE-TOKEN': connection.gitToken,
       }),
       signal: controller.signal,
     })
@@ -34,9 +34,10 @@ export const hydrateProxiedGitlabImages = (
         return response.blob();
       })
       .then((blob) => {
+        if (controller.signal.aborted) return;
         const objectUrl = URL.createObjectURL(blob);
         objectUrls.push(objectUrl);
-        image.setAttribute("src", objectUrl);
+        image.setAttribute('src', objectUrl);
       })
       .catch(() => {});
   }

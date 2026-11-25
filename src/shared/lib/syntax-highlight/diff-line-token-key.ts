@@ -3,7 +3,7 @@ export const getDiffLineTokenKey = (line: {
   oldLine: number | null;
   newLine: number | null;
 }) => {
-  if (line.type === "delete") {
+  if (line.type === 'delete') {
     return `old:${line.oldLine}`;
   }
 

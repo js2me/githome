@@ -1,7 +1,7 @@
 import {
   resolveSyntaxLanguage,
   type SyntaxLanguage,
-} from "@/shared/lib/syntax-highlight/supported-languages";
+} from '@/shared/lib/syntax-highlight/supported-languages';
 
 export const resolveGitlabLanguage = (
   className: string,

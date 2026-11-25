@@ -1,7 +1,7 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabGraphql } from "../client";
-import type { GitLabProjectDC } from "../data-contracts";
-import { ensureCurrentUserReviewer } from "./ensure-current-user-reviewer";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabGraphql } from '../client';
+import type { GitLabProjectDC } from '../data-contracts';
+import { ensureCurrentUserReviewer } from './ensure-current-user-reviewer';
 
 export const requestMergeRequestChanges = async (
   connection: GitLabConnection,
@@ -38,6 +38,6 @@ export const requestMergeRequestChanges = async (
 
   const errors = result.mergeRequestRequestChanges.errors;
   if (errors.length > 0) {
-    throw new Error(errors.join("; "));
+    throw new Error(errors.join('; '));
   }
 };

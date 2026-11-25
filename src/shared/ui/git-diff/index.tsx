@@ -1,12 +1,17 @@
-import { StatusMessage } from "@/shared/ui/status-message";
-import { GitDiffFile } from "./components/git-diff-file";
-import "./styles.css";
-import { withPropsViewModel } from "mobx-view-model-react";
-import { GitDiffVM } from "./model/git-diff-vm";
+import { StatusMessage } from '@/shared/ui/status-message';
+import { GitDiffFile } from './components/git-diff-file';
+import './styles.css';
+import { withPropsViewModel } from 'mobx-view-model-react';
+import { GitDiffVM } from './model/git-diff-vm';
 
 export const GitDiff = withPropsViewModel(
   GitDiffVM,
-  ({ model: { payload: { changes }, filesGitDiffs } }) => {
+  ({
+    model: {
+      payload: { changes },
+      filesGitDiffs,
+    },
+  }) => {
     if (changes.length === 0) {
       return (
         <StatusMessage>Изменения в merge request не найдены.</StatusMessage>

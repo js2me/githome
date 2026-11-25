@@ -1,6 +1,6 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import type { GitLabProjectDC } from "../data-contracts";
-import { gitlabDelete } from "../client";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabDelete } from '../client';
+import type { GitLabProjectDC } from '../data-contracts';
 
 export const deleteMergeRequestDiscussionNote = async (
   connection: GitLabConnection,

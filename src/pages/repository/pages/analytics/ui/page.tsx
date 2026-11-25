@@ -1,199 +1,36 @@
-import { useEffect, useRef } from "react";
-import * as echarts from "echarts/core";
-import { BarChart, LineChart } from "echarts/charts";
-import {
-  GridComponent,
-  LegendComponent,
-  TooltipComponent,
-} from "echarts/components";
-import { CanvasRenderer } from "echarts/renderers";
-import type { EChartsOption } from "echarts";
-import { withViewModel } from "mobx-view-model-react";
-import { StatusMessage } from "@/shared/ui/status-message";
-import { AnalyticsPageVM } from "../model";
+import { withPropsViewModel, withViewModel } from 'mobx-view-model-react';
+import { StatusMessage } from '@/shared/ui/status-message';
+import { AnalyticsPageVM } from '../model';
+import { AnalyticsChartVM } from '../model/chart';
 
-const CHART_SERIES = [
-  { key: "commits", name: "Коммиты", color: "#6366f1" },
-  { key: "mergeRequests", name: "Смерженные MR", color: "#10b981" },
-  { key: "jiraMergeRequests", name: "MR с JIRA-ID", color: "#f59e0b" },
-] as const;
-
-echarts.use([
-  BarChart,
-  LineChart,
-  GridComponent,
-  LegendComponent,
-  TooltipComponent,
-  CanvasRenderer,
-]);
-
-const AnalyticsChart = ({
-  buckets,
-  isDark,
-}: {
-  buckets: AnalyticsPageVM["activityBuckets"];
-  isDark: boolean;
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) {
-      return;
+const AnalyticsChart = withPropsViewModel(AnalyticsChartVM, ({ model }) => (
+  <div
+    ref={model.container}
+    className={
+      model.payload.kind === 'activity'
+        ? 'h-[320px] w-full sm:h-[360px]'
+        : 'h-[300px] w-full sm:h-[360px]'
     }
+  />
+));
 
-    const chart = echarts.init(container);
-    const textColor = isDark ? "#94a3b8" : "#64748b";
-    const splitLineColor = isDark ? "#334155" : "#e2e8f0";
-    const option: EChartsOption = {
-      animationDuration: 350,
-      color: CHART_SERIES.map((series) => series.color),
-      grid: { top: 24, right: 20, bottom: 12, left: 8, containLabel: true },
-      legend: {
-        bottom: 0,
-        textStyle: { color: textColor },
-        itemWidth: 10,
-        itemHeight: 10,
-      },
-      tooltip: {
-        trigger: "axis",
-        backgroundColor: isDark ? "#0f172a" : "#ffffff",
-        borderColor: splitLineColor,
-        textStyle: { color: isDark ? "#e2e8f0" : "#0f172a" },
-      },
-      xAxis: {
-        type: "category",
-        boundaryGap: false,
-        data: buckets.map((bucket) => bucket.label),
-        axisLabel: { color: textColor, hideOverlap: true },
-        axisLine: { lineStyle: { color: splitLineColor } },
-        axisTick: { show: false },
-      },
-      yAxis: {
-        type: "value",
-        minInterval: 1,
-        axisLabel: { color: textColor },
-        axisLine: { show: false },
-        axisTick: { show: false },
-        splitLine: { lineStyle: { color: splitLineColor, type: "dashed" } },
-      },
-      series: CHART_SERIES.map((series) => ({
-        name: series.name,
-        type: "line",
-        smooth: 0.25,
-        symbol: "circle",
-        symbolSize: 6,
-        lineStyle: { width: 3 },
-        areaStyle: { opacity: 0.06 },
-        emphasis: { focus: "series" },
-        data: buckets.map((bucket) => bucket[series.key]),
-      })),
-    };
-
-    chart.setOption(option);
-    const resizeObserver = new ResizeObserver(() => chart.resize());
-    resizeObserver.observe(container);
-
-    return () => {
-      resizeObserver.disconnect();
-      chart.dispose();
-    };
-  }, [buckets, isDark]);
-
-  return <div ref={containerRef} className="h-[320px] w-full sm:h-[360px]" />;
-};
-
-const AuthorChangesChart = ({
-  authors,
-  isDark,
-}: {
-  authors: AnalyticsPageVM["authorChanges"];
-  isDark: boolean;
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) {
-      return;
-    }
-
-    const chart = echarts.init(container);
-    const textColor = isDark ? "#94a3b8" : "#64748b";
-    const splitLineColor = isDark ? "#334155" : "#e2e8f0";
-    const option: EChartsOption = {
-      grid: { top: 12, right: 24, bottom: 12, left: 8, containLabel: true },
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        backgroundColor: isDark ? "#0f172a" : "#ffffff",
-        borderColor: splitLineColor,
-        textStyle: { color: isDark ? "#e2e8f0" : "#0f172a" },
-      },
-      xAxis: {
-        type: "value",
-        minInterval: 1,
-        axisLabel: { color: textColor },
-        axisLine: { show: false },
-        axisTick: { show: false },
-        splitLine: { lineStyle: { color: splitLineColor, type: "dashed" } },
-      },
-      yAxis: {
-        type: "category",
-        inverse: true,
-        data: authors.map((item) => item.author),
-        axisLabel: { color: textColor, width: 140, overflow: "truncate" },
-        axisLine: { show: false },
-        axisTick: { show: false },
-      },
-      series: [
-        {
-          name: "Изменённые файлы",
-          type: "bar",
-          data: authors.map((item) => item.changedFiles),
-          barMaxWidth: 24,
-          itemStyle: { color: "#6366f1", borderRadius: [0, 6, 6, 0] },
-          label: {
-            show: true,
-            position: "right",
-            color: textColor,
-          },
-        },
-      ],
-    };
-
-    chart.setOption(option);
-    const resizeObserver = new ResizeObserver(() => chart.resize());
-    resizeObserver.observe(container);
-
-    return () => {
-      resizeObserver.disconnect();
-      chart.dispose();
-    };
-  }, [authors, isDark]);
-
-  return <div ref={containerRef} className="h-[300px] w-full sm:h-[360px]" />;
-};
-
-const METRIC_CARD_CLASS =
-  "glass-panel rounded-2xl p-4";
+const METRIC_CARD_CLASS = 'glass-panel rounded-2xl p-4';
 
 export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
   const { commits, mergedMergeRequests } = model.analytics;
   const hasConnection = Boolean(model.globals.stores.settings.activeConnection);
-  const isDark = model.globals.stores.theme.isDark;
 
   return (
     <section>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="m-0 text-[22px] font-semibold">Аналитика</h2>
-          <p className="mb-0 mt-1 text-sm text-slate-500">
+          <h2 className="m-0 font-semibold text-[22px]">Аналитика</h2>
+          <p className="mt-1 mb-0 text-slate-500 text-sm">
             Коммиты основной ветки и смерженные merge requests
           </p>
         </div>
 
-        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-500">
+        <label className="flex flex-col gap-1 font-semibold text-slate-500 text-xs">
           Период
           <select
             className="glass-input rounded-lg px-3 py-2 text-sm"
@@ -208,7 +45,9 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
       </div>
 
       {!hasConnection && (
-        <StatusMessage>Подключите GitLab, чтобы загрузить аналитику.</StatusMessage>
+        <StatusMessage>
+          Подключите GitLab, чтобы загрузить аналитику.
+        </StatusMessage>
       )}
 
       {model.isLoading && !model.hasAnalyticsData && (
@@ -216,7 +55,7 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
       )}
 
       {model.isLoading && model.hasAnalyticsData && (
-        <p className="mb-4 text-sm text-slate-500" role="status">
+        <p className="mb-4 text-slate-500 text-sm" role="status">
           Загружаем оставшиеся данные аналитики...
         </p>
       )}
@@ -229,63 +68,63 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
         <>
           <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <article className={METRIC_CARD_CLASS}>
-              <p className="m-0 text-sm font-medium text-slate-500">Коммиты</p>
-              <p className="mb-0 mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
-                {commits.length.toLocaleString("ru-RU")}
+              <p className="m-0 font-medium text-slate-500 text-sm">Коммиты</p>
+              <p className="mt-2 mb-0 font-bold text-3xl text-slate-900 dark:text-slate-100">
+                {commits.length.toLocaleString('ru-RU')}
               </p>
             </article>
             <article className={METRIC_CARD_CLASS}>
-              <p className="m-0 text-sm font-medium text-slate-500">
+              <p className="m-0 font-medium text-slate-500 text-sm">
                 Смерженные MR
               </p>
-              <p className="mb-0 mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
-                {mergedMergeRequests.length.toLocaleString("ru-RU")}
+              <p className="mt-2 mb-0 font-bold text-3xl text-slate-900 dark:text-slate-100">
+                {mergedMergeRequests.length.toLocaleString('ru-RU')}
               </p>
             </article>
             <article className={METRIC_CARD_CLASS}>
-              <p className="m-0 text-sm font-medium text-slate-500">MR с JIRA-ID</p>
-              <p className="mb-0 mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
-                {model.mergeRequestsWithJiraId.length.toLocaleString("ru-RU")}
+              <p className="m-0 font-medium text-slate-500 text-sm">
+                MR с JIRA-ID
+              </p>
+              <p className="mt-2 mb-0 font-bold text-3xl text-slate-900 dark:text-slate-100">
+                {model.mergeRequestsWithJiraId.length.toLocaleString('ru-RU')}
               </p>
             </article>
             <article className={METRIC_CARD_CLASS}>
-              <p className="m-0 text-sm font-medium text-slate-500">
+              <p className="m-0 font-medium text-slate-500 text-sm">
                 Изменённые файлы в MR
               </p>
-              <p className="mb-0 mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
-                {model.totalChangedFiles.toLocaleString("ru-RU")}
+              <p className="mt-2 mb-0 font-bold text-3xl text-slate-900 dark:text-slate-100">
+                {model.totalChangedFiles.toLocaleString('ru-RU')}
               </p>
             </article>
           </div>
 
           <article className="glass-panel rounded-2xl p-4 sm:p-5">
             <div className="mb-2">
-              <h3 className="m-0 text-base font-semibold text-slate-900 dark:text-slate-100">
+              <h3 className="m-0 font-semibold text-base text-slate-900 dark:text-slate-100">
                 Активность по времени
               </h3>
-              <p className="mb-0 mt-1 text-sm text-slate-500">
+              <p className="mt-1 mb-0 text-slate-500 text-sm">
                 Количество событий за день или неделю
               </p>
             </div>
-            <AnalyticsChart
-              buckets={model.activityBuckets}
-              isDark={isDark}
-            />
+            <AnalyticsChart kind="activity" />
           </article>
 
-          <article className="mt-4 glass-panel rounded-2xl p-4 sm:p-5">
+          <article className="glass-panel mt-4 rounded-2xl p-4 sm:p-5">
             <div className="mb-2">
-              <h3 className="m-0 text-base font-semibold text-slate-900 dark:text-slate-100">
+              <h3 className="m-0 font-semibold text-base text-slate-900 dark:text-slate-100">
                 Изменённые файлы по авторам
               </h3>
-              <p className="mb-0 mt-1 text-sm text-slate-500">
-                Сумма файловых изменений в смерженных MR за выбранный период; один файл может учитываться в нескольких MR.
+              <p className="mt-1 mb-0 text-slate-500 text-sm">
+                Сумма файловых изменений в смерженных MR за выбранный период;
+                один файл может учитываться в нескольких MR.
               </p>
             </div>
             {model.authorChanges.length > 0 ? (
-              <AuthorChangesChart authors={model.authorChanges} isDark={isDark} />
+              <AnalyticsChart kind="authors" />
             ) : (
-              <p className="mb-0 mt-5 text-sm text-slate-500">
+              <p className="mt-5 mb-0 text-slate-500 text-sm">
                 Нет смерженных MR за выбранный период.
               </p>
             )}

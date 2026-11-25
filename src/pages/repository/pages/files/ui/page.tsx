@@ -1,24 +1,24 @@
-import { withViewModel } from "mobx-view-model-react";
-import { StatusMessage } from "@/shared/ui/status-message";
-import { FilesPageVM } from "../model";
-import { BranchPicker } from "./components/branch-picker";
-import { CommitPicker } from "./components/commit-picker";
-import { FilesSearch } from "./components/files-search";
-import { FileTree } from "./components/file-tree";
-import { FileViewer } from "./components/file-viewer";
+import { withViewModel } from 'mobx-view-model-react';
+import { StatusMessage } from '@/shared/ui/status-message';
+import { FilesPageVM } from '../model';
+import { BranchPicker } from './components/branch-picker';
+import { CommitPicker } from './components/commit-picker';
+import { FileTree } from './components/file-tree';
+import { FileViewer } from './components/file-viewer';
+import { FilesSearch } from './components/files-search';
 
 export const FilesPage = withViewModel(FilesPageVM, ({ model }) => {
   if (!model.ref) {
     return (
       <section>
         <div className="mb-4 flex flex-wrap items-center gap-3">
-          <h2 className="text-[22px] font-semibold">Files</h2>
+          <h2 className="font-semibold text-[22px]">Files</h2>
           <BranchPicker model={model} />
           <CommitPicker model={model} />
           <FilesSearch model={model} />
         </div>
         <StatusMessage>
-          {model.project ? "Загружаем ветку..." : "Загружаем репозиторий..."}
+          {model.project ? 'Загружаем ветку...' : 'Загружаем репозиторий...'}
         </StatusMessage>
       </section>
     );
@@ -27,7 +27,7 @@ export const FilesPage = withViewModel(FilesPageVM, ({ model }) => {
   return (
     <section>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <h2 className="text-[22px] font-semibold">Files</h2>
+        <h2 className="font-semibold text-[22px]">Files</h2>
         <BranchPicker model={model} />
         <CommitPicker model={model} />
         <FilesSearch model={model} />

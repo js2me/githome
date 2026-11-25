@@ -1,23 +1,24 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { fetchPaginatedItems } from "../fetch-paginated-items";
-import type { GitLabDiscussionDC, GitLabProjectDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import type { GitLabDiscussionDC, GitLabProjectDC } from '../data-contracts';
+import { fetchPaginatedItems } from '../fetch-paginated-items';
 
 export const getMergeRequestDiscussions = async (
   connection: GitLabConnection,
-  project: Pick<GitLabProjectDC, "id">,
+  project: Pick<GitLabProjectDC, 'id'>,
   mergeRequestIid: number,
   signal?: AbortSignal,
 ): Promise<GitLabDiscussionDC[]> => {
   const discussions = await fetchPaginatedItems<GitLabDiscussionDC>(
     connection,
     `/projects/${project.id}/merge_requests/${mergeRequestIid}/discussions`,
-    { sort: "asc" },
+    { sort: 'asc' },
     signal,
   );
 
   return discussions
-    .filter(discussion => {
-      if (!Array.isArray(discussion.notes)) throw new Error("GitLab вернул неполные данные обсуждения");
+    .filter((discussion) => {
+      if (!Array.isArray(discussion.notes))
+        throw new Error('GitLab вернул неполные данные обсуждения');
       return discussion.notes.length > 0;
     })
     .sort((left, right) => {

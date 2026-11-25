@@ -1,25 +1,40 @@
-import { actionBound, observable, reaction, runInAction } from "mobx";
-import type { DiffLineSelection } from "@/shared/lib/diff-line-selection";
+import { actionBound, computed, observable } from 'mobx';
+import type { DiffLineSelection } from '@/shared/lib/diff-line-selection';
 import {
   getLineFromVirtualRows,
   isMultiLineSelection,
   normalizeDiffLineSelection,
-} from "@/shared/lib/diff-line-selection";
-import type { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
-import { getDiffLineSide } from "@/shared/lib/gitlab/line-code";
-import type { FileGitDiff } from ".";
-import { DisposableModel } from "./disposable";
+} from '@/shared/lib/diff-line-selection';
+import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/diff-comment';
+import { getDiffLineSide } from '@/shared/lib/gitlab/line-code';
+import type { FileGitDiff } from '.';
+import { DisposableModel } from './disposable';
 
 export class FileGitDiffLineSelection extends DisposableModel {
   @observable accessor lineSelection: DiffLineSelection | null = null;
   @observable accessor selectionAnchorKey: string | null = null;
   @observable accessor isDraggingSelection = false;
 
+  @computed get formKey() {
+    const selection = this.lineSelection;
+    return selection ? `${selection.startKey}\0${selection.endKey}` : undefined;
+  }
+
+  @computed get selectedKeys() {
+    const selection = this.lineSelection;
+    const keys = this.file.rows.orderedLineKeys;
+    if (!selection) return new Set<string>();
+    const start = keys.indexOf(selection.startKey);
+    const end = keys.indexOf(selection.endKey);
+    return new Set(
+      start >= 0 && end >= start ? keys.slice(start, end + 1) : [],
+    );
+  }
+
   private dragMoved = false;
 
   constructor(private readonly file: FileGitDiff) {
     super();
-    this.setupReactions();
   }
 
   @actionBound
@@ -46,9 +61,7 @@ export class FileGitDiffLineSelection extends DisposableModel {
     }
 
     const orderedLineKeys = this.file.rows.orderedLineKeys;
-    const anchorKey = shiftKey
-      ? (this.selectionAnchorKey ?? lineKey)
-      : lineKey;
+    const anchorKey = shiftKey ? (this.selectionAnchorKey ?? lineKey) : lineKey;
     const nextSelection = normalizeDiffLineSelection(
       anchorKey,
       lineKey,
@@ -78,6 +91,7 @@ export class FileGitDiffLineSelection extends DisposableModel {
 
     this.dragMoved = false;
     this.isDraggingSelection = true;
+    window.addEventListener('mouseup', this.finishDrag, { once: true });
     this.selectionAnchorKey = lineKey;
     this.lineSelection = { startKey: lineKey, endKey: lineKey };
     this.file.parent.payload.onClearSubmitError();
@@ -155,28 +169,12 @@ export class FileGitDiffLineSelection extends DisposableModel {
     }
   }
 
-  private setupReactions() {
-    this.disposers.push(
-      reaction(
-        () => this.isDraggingSelection,
-        (isDragging) => {
-          if (!isDragging) {
-            return;
-          }
+  @actionBound private finishDrag() {
+    this.isDraggingSelection = false;
+  }
 
-          const handleMouseUp = () => {
-            runInAction(() => {
-              this.isDraggingSelection = false;
-            });
-          };
-
-          window.addEventListener("mouseup", handleMouseUp);
-
-          return () => {
-            window.removeEventListener("mouseup", handleMouseUp);
-          };
-        },
-      ),
-    );
+  protected override onDispose() {
+    if (this.isDraggingSelection)
+      window.removeEventListener('mouseup', this.finishDrag);
   }
 }

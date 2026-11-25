@@ -23,6 +23,8 @@
     "build:android": "pnpm build && cap sync android && cd android && ./gradlew assembleDebug",
     "build:android:release": "pnpm build && cap sync android && cd android && ./gradlew assembleRelease",
     "preview": "vite preview",
+    "lint:check": "biome check src",
+    "lint:fix": "biome check --write src",
     "test": "vitest run",
     "check:browser": "node scripts/browser-check.mjs",
     "postinstall": "node node_modules/electron/install.js",
@@ -35,6 +37,7 @@
     "@tanstack/query-core": "^5.101.0",
     "@tanstack/react-virtual": "^3.14.3",
     "diff": "^9.0.0",
+    "dompurify": "3.5.0",
     "echarts": "^6.1.0",
     "electron-updater": "^6.8.11",
     "gologen": "0.0.1",
@@ -52,6 +55,7 @@
     "yummies": "^7.23.2"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.4",
     "@capacitor/android": "^8.5.2",
     "@capacitor/cli": "^8.5.2",
     "@tailwindcss/vite": "^4.3.1",
@@ -63,6 +67,7 @@
     "dotenv": "^17.4.2",
     "electron": "^37.2.6",
     "electron-builder": "^26.0.12",
+    "js2me-biome-config": "1.1.0",
     "material-icon-theme": "5.40.0",
     "mobx-view-model-vite-plugin": "^2.0.7",
     "puppeteer-core": "^25.4.0",
@@ -103,7 +108,10 @@
     ],
     "linux": {
       "extraResources": [
-        { "from": "resources/icon.png", "to": "icon.png" }
+        {
+          "from": "resources/icon.png",
+          "to": "icon.png"
+        }
       ],
       "target": [
         "deb",

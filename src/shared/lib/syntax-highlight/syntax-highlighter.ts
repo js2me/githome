@@ -1,15 +1,14 @@
-import { bundledLanguages } from "shiki/bundle/web";
-import { createHighlighter } from "shiki/bundle/web";
-import type { BundledLanguage, Highlighter } from "shiki/bundle/web";
-import type { ThemeRegistration } from "shiki/core";
-import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
-import type { ParsedFileDiff } from "@/shared/lib/parse-unified-diff";
-import { getDiffLineTokenKey } from "./diff-line-token-key";
-import type { SyntaxLanguage } from "./supported-languages";
-import draculaOfficialTheme from "./themes/dracula-official.json";
-import tokyoNightLightTheme from "./themes/tokyo-night-light.json";
+import type { BundledLanguage, Highlighter } from 'shiki/bundle/web';
+import { bundledLanguages, createHighlighter } from 'shiki/bundle/web';
+import type { ThemeRegistration } from 'shiki/core';
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
+import type { ParsedFileDiff } from '@/shared/lib/parse-unified-diff';
+import { getDiffLineTokenKey } from './diff-line-token-key';
+import type { SyntaxLanguage } from './supported-languages';
+import draculaOfficialTheme from './themes/dracula-official.json';
+import tokyoNightLightTheme from './themes/tokyo-night-light.json';
 
-export type SyntaxTheme = "tokyo-night-light" | "dracula-official";
+export type SyntaxTheme = 'tokyo-night-light' | 'dracula-official';
 
 export interface SyntaxToken {
   content: string;
@@ -27,52 +26,55 @@ const THEMES: ThemeRegistration[] = [
 ];
 
 const EXTENDED_LANGUAGE_LOADERS: Record<string, LanguageLoader> = {
-  clojure: () => import("@shikijs/langs/clojure"),
-  cmake: () => import("@shikijs/langs/cmake"),
-  crystal: () => import("@shikijs/langs/crystal"),
-  csharp: () => import("@shikijs/langs/csharp"),
-  dart: () => import("@shikijs/langs/dart"),
-  docker: () => import("@shikijs/langs/docker"),
-  dockerfile: () => import("@shikijs/langs/dockerfile"),
-  elixir: () => import("@shikijs/langs/elixir"),
-  erlang: () => import("@shikijs/langs/erlang"),
-  fsharp: () => import("@shikijs/langs/fsharp"),
-  gdscript: () => import("@shikijs/langs/gdscript"),
-  go: () => import("@shikijs/langs/go"),
-  groovy: () => import("@shikijs/langs/groovy"),
-  haskell: () => import("@shikijs/langs/haskell"),
-  hcl: () => import("@shikijs/langs/hcl"),
-  ini: () => import("@shikijs/langs/ini"),
-  kotlin: () => import("@shikijs/langs/kotlin"),
-  lua: () => import("@shikijs/langs/lua"),
-  makefile: () => import("@shikijs/langs/makefile"),
-  matlab: () => import("@shikijs/langs/matlab"),
-  nginx: () => import("@shikijs/langs/nginx"),
-  nim: () => import("@shikijs/langs/nim"),
-  nix: () => import("@shikijs/langs/nix"),
-  "objective-c": () => import("@shikijs/langs/objective-c"),
-  ocaml: () => import("@shikijs/langs/ocaml"),
-  perl: () => import("@shikijs/langs/perl"),
-  powershell: () => import("@shikijs/langs/powershell"),
-  proto: () => import("@shikijs/langs/proto"),
-  protobuf: () => import("@shikijs/langs/protobuf"),
-  raku: () => import("@shikijs/langs/raku"),
-  ruby: () => import("@shikijs/langs/ruby"),
-  rust: () => import("@shikijs/langs/rust"),
-  scala: () => import("@shikijs/langs/scala"),
-  solidity: () => import("@shikijs/langs/solidity"),
-  swift: () => import("@shikijs/langs/swift"),
-  terraform: () => import("@shikijs/langs/terraform"),
-  toml: () => import("@shikijs/langs/toml"),
-  vb: () => import("@shikijs/langs/vb"),
-  zig: () => import("@shikijs/langs/zig"),
+  clojure: () => import('@shikijs/langs/clojure'),
+  cmake: () => import('@shikijs/langs/cmake'),
+  crystal: () => import('@shikijs/langs/crystal'),
+  csharp: () => import('@shikijs/langs/csharp'),
+  dart: () => import('@shikijs/langs/dart'),
+  docker: () => import('@shikijs/langs/docker'),
+  dockerfile: () => import('@shikijs/langs/dockerfile'),
+  elixir: () => import('@shikijs/langs/elixir'),
+  erlang: () => import('@shikijs/langs/erlang'),
+  fsharp: () => import('@shikijs/langs/fsharp'),
+  gdscript: () => import('@shikijs/langs/gdscript'),
+  go: () => import('@shikijs/langs/go'),
+  groovy: () => import('@shikijs/langs/groovy'),
+  haskell: () => import('@shikijs/langs/haskell'),
+  hcl: () => import('@shikijs/langs/hcl'),
+  ini: () => import('@shikijs/langs/ini'),
+  kotlin: () => import('@shikijs/langs/kotlin'),
+  lua: () => import('@shikijs/langs/lua'),
+  makefile: () => import('@shikijs/langs/makefile'),
+  matlab: () => import('@shikijs/langs/matlab'),
+  nginx: () => import('@shikijs/langs/nginx'),
+  nim: () => import('@shikijs/langs/nim'),
+  nix: () => import('@shikijs/langs/nix'),
+  'objective-c': () => import('@shikijs/langs/objective-c'),
+  ocaml: () => import('@shikijs/langs/ocaml'),
+  perl: () => import('@shikijs/langs/perl'),
+  powershell: () => import('@shikijs/langs/powershell'),
+  proto: () => import('@shikijs/langs/proto'),
+  protobuf: () => import('@shikijs/langs/protobuf'),
+  raku: () => import('@shikijs/langs/raku'),
+  ruby: () => import('@shikijs/langs/ruby'),
+  rust: () => import('@shikijs/langs/rust'),
+  scala: () => import('@shikijs/langs/scala'),
+  solidity: () => import('@shikijs/langs/solidity'),
+  swift: () => import('@shikijs/langs/swift'),
+  terraform: () => import('@shikijs/langs/terraform'),
+  toml: () => import('@shikijs/langs/toml'),
+  vb: () => import('@shikijs/langs/vb'),
+  zig: () => import('@shikijs/langs/zig'),
 };
 
 export class SyntaxHighlighter {
   private highlighterPromise: Promise<Highlighter> | null = null;
   private highlightQueue: Promise<unknown> = Promise.resolve();
   private readonly lineCache = new Map<string, SyntaxLineTokens>();
-  private readonly parsedDiffCache = new Map<string, Map<string, SyntaxToken[]>>();
+  private readonly parsedDiffCache = new Map<
+    string,
+    Map<string, SyntaxToken[]>
+  >();
   private readonly loadedLanguages = new Set<string>();
 
   preload(): void {
@@ -109,7 +111,7 @@ export class SyntaxHighlighter {
     theme: SyntaxTheme,
   ): Promise<SyntaxToken[]> {
     const lines = await this.highlightCodeBlockTokens(text, lang, theme);
-    return lines[0] ?? [{ content: text || " " }];
+    return lines[0] ?? [{ content: text || ' ' }];
   }
 
   async highlightParsedDiffLines(
@@ -127,12 +129,12 @@ export class SyntaxHighlighter {
       const result = new Map<string, SyntaxToken[]>();
 
       for (const hunk of parsed.hunks) {
-        const lines = hunk.lines.filter((line) => line.type !== "no-newline");
+        const lines = hunk.lines.filter((line) => line.type !== 'no-newline');
         if (lines.length === 0) {
           continue;
         }
 
-        const text = lines.map((line) => line.text).join("\n");
+        const text = lines.map((line) => line.text).join('\n');
         const tokenLines = await this.highlightCodeBlockTokensInternal(
           text,
           lang,
@@ -141,11 +143,11 @@ export class SyntaxHighlighter {
 
         for (const [index, line] of lines.entries()) {
           const key = getDiffLineTokenKey(line);
-          if (key.endsWith(":null")) {
+          if (key.endsWith(':null')) {
             continue;
           }
 
-          result.set(key, tokenLines[index] ?? [{ content: line.text || " " }]);
+          result.set(key, tokenLines[index] ?? [{ content: line.text || ' ' }]);
         }
       }
 
@@ -158,8 +160,8 @@ export class SyntaxHighlighter {
 
   renderTokensToHtml(lines: SyntaxToken[][]): string {
     return lines
-      .map((line) => line.map((token) => this.renderToken(token)).join(""))
-      .join("\n");
+      .map((line) => line.map((token) => this.renderToken(token)).join(''))
+      .join('\n');
   }
 
   private getLanguageLoader(lang: string): LanguageLoader | null {
@@ -209,7 +211,7 @@ export class SyntaxHighlighter {
 
     const registration = await loader();
     await highlighter.loadLanguage(
-      registration as Parameters<Highlighter["loadLanguage"]>[0],
+      registration as Parameters<Highlighter['loadLanguage']>[0],
     );
     this.loadedLanguages.add(lang);
 
@@ -217,8 +219,8 @@ export class SyntaxHighlighter {
   }
 
   private splitFileLines(content: string) {
-    const lines = content.split("\n");
-    if (lines.length > 0 && lines[lines.length - 1] === "") {
+    const lines = content.split('\n');
+    if (lines.length > 0 && lines[lines.length - 1] === '') {
       lines.pop();
     }
 
@@ -243,17 +245,17 @@ export class SyntaxHighlighter {
     for (const hunk of parsed.hunks) {
       parts.push(hunk.header);
       for (const line of hunk.lines) {
-        if (line.type === "no-newline") {
+        if (line.type === 'no-newline') {
           continue;
         }
 
         parts.push(
-          `${line.type}:${line.oldLine ?? ""}:${line.newLine ?? ""}:${line.text}`,
+          `${line.type}:${line.oldLine ?? ''}:${line.newLine ?? ''}:${line.text}`,
         );
       }
     }
 
-    return parts.join("\0");
+    return parts.join('\0');
   }
 
   private trimCache<K, V>(cache: Map<K, V>, maxSize: number) {
@@ -304,7 +306,7 @@ export class SyntaxHighlighter {
     }
 
     const fileLines = this.splitFileLines(content);
-    const source = fileLines.join("\n");
+    const source = fileLines.join('\n');
     const tokenLines = await this.tokenizeSource(source, lang, theme);
 
     const lineTokens: SyntaxLineTokens = new Map();
@@ -334,10 +336,10 @@ export class SyntaxHighlighter {
 
   private escapeHtml(value: string) {
     return value
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   private renderToken(token: SyntaxToken) {
@@ -348,18 +350,18 @@ export class SyntaxHighlighter {
     }
 
     if (token.fontStyle && token.fontStyle & 1) {
-      styles.push("font-style:italic");
+      styles.push('font-style:italic');
     }
 
     if (token.fontStyle && token.fontStyle & 2) {
-      styles.push("font-weight:bold");
+      styles.push('font-weight:bold');
     }
 
     if (token.fontStyle && token.fontStyle & 4) {
-      styles.push("text-decoration:underline");
+      styles.push('text-decoration:underline');
     }
 
-    const styleAttr = styles.length > 0 ? ` style="${styles.join(";")}"` : "";
+    const styleAttr = styles.length > 0 ? ` style="${styles.join(';')}"` : '';
     return `<span${styleAttr}>${this.escapeHtml(token.content)}</span>`;
   }
 }

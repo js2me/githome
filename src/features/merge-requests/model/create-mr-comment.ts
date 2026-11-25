@@ -1,12 +1,12 @@
-import { actionBound, computed, observable, runInAction } from "mobx";
-import { gitlabApi } from "@/shared/api/gitlab";
+import { actionBound, computed, observable, runInAction } from 'mobx';
 import type {
   GitLabDiscussionDC,
   GitLabMergeRequestDC,
   GitLabProjectDC,
-} from "@/shared/api/gitlab";
-import type { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
-import type { Globals } from "@/globals";
+} from '@/shared/api/gitlab';
+import { gitlabApi } from '@/shared/api/gitlab';
+import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/diff-comment';
+import type { Globals } from '@/shared/model/globals';
 
 export type CreateMrCommentContext = {
   project: GitLabProjectDC;
@@ -16,13 +16,13 @@ export type CreateMrCommentContext = {
 export interface CreateMrCommentParams {
   globals: Globals;
   readonly params: () => CreateMrCommentContext | false;
-  readonly getDiffRefs: () => GitLabMergeRequestDC["diff_refs"];
+  readonly getDiffRefs: () => GitLabMergeRequestDC['diff_refs'];
   readonly onDiscussionCreated: (discussion: GitLabDiscussionDC) => void;
 }
 
 export class CreateMrComment {
   @observable accessor isSubmitting = false;
-  @observable accessor submitError = "";
+  @observable accessor submitError = '';
 
   constructor(private readonly options: CreateMrCommentParams) {}
 
@@ -34,7 +34,7 @@ export class CreateMrComment {
 
   @actionBound
   clearSubmitError() {
-    this.submitError = "";
+    this.submitError = '';
   }
 
   @actionBound
@@ -44,22 +44,22 @@ export class CreateMrComment {
     const diffRefs = this.options.getDiffRefs();
 
     if (!connection || !mr) {
-      this.submitError = "Merge request не выбран";
+      this.submitError = 'Merge request не выбран';
       return false;
     }
 
     if (!diffRefs?.base_sha || !diffRefs.head_sha || !diffRefs.start_sha) {
-      this.submitError = "Нельзя оставить комментарий: нет diff refs";
+      this.submitError = 'Нельзя оставить комментарий: нет diff refs';
       return false;
     }
 
     if (!input.body.trim()) {
-      this.submitError = "Введите текст комментария";
+      this.submitError = 'Введите текст комментария';
       return false;
     }
 
     this.isSubmitting = true;
-    this.submitError = "";
+    this.submitError = '';
 
     try {
       const discussion = await gitlabApi.createMergeRequestDiffDiscussion(
@@ -85,7 +85,7 @@ export class CreateMrComment {
         this.submitError =
           error instanceof Error
             ? error.message
-            : "Не удалось отправить комментарий";
+            : 'Не удалось отправить комментарий';
       });
       return false;
     } finally {

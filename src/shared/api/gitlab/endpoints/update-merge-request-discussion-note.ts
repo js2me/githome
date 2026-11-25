@@ -1,6 +1,6 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabPut } from "../client";
-import type { GitLabNoteDC, GitLabProjectDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabPut } from '../client';
+import type { GitLabNoteDC, GitLabProjectDC } from '../data-contracts';
 
 export const updateMergeRequestDiscussionNote = async (
   connection: GitLabConnection,

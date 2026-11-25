@@ -1,9 +1,9 @@
-import { createTwoFilesPatch } from "diff";
+import { createTwoFilesPatch } from 'diff';
 
 const splitContentLines = (content: string) => {
-  const lines = content.split("\n");
+  const lines = content.split('\n');
 
-  if (content.endsWith("\n") && lines[lines.length - 1] === "") {
+  if (content.endsWith('\n') && lines[lines.length - 1] === '') {
     lines.pop();
   }
 
@@ -15,16 +15,16 @@ export const buildNewFileUnifiedDiff = (
   content: string,
 ): string => {
   const lines = splitContentLines(content);
-  const body = lines.map((line) => `+${line}`).join("\n");
+  const body = lines.map((line) => `+${line}`).join('\n');
 
   return [
     `diff --git a/${path} b/${path}`,
-    "new file mode 100644",
-    "--- /dev/null",
+    'new file mode 100644',
+    '--- /dev/null',
     `+++ b/${path}`,
     `@@ -0,0 +1,${lines.length} @@`,
     body,
-  ].join("\n");
+  ].join('\n');
 };
 
 export const buildDeletedFileUnifiedDiff = (
@@ -32,16 +32,16 @@ export const buildDeletedFileUnifiedDiff = (
   content: string,
 ): string => {
   const lines = splitContentLines(content);
-  const body = lines.map((line) => `-${line}`).join("\n");
+  const body = lines.map((line) => `-${line}`).join('\n');
 
   return [
     `diff --git a/${path} b/${path}`,
-    "deleted file mode 100644",
+    'deleted file mode 100644',
     `--- a/${path}`,
-    "+++ /dev/null",
+    '+++ /dev/null',
     `@@ -1,${lines.length} +0,0 @@`,
     body,
-  ].join("\n");
+  ].join('\n');
 };
 
 export const buildModifiedFileUnifiedDiff = (

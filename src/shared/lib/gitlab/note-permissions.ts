@@ -1,4 +1,4 @@
-import type { GitLabNoteDC } from "@/shared/api/gitlab";
+import type { GitLabNoteDC } from '@/shared/api/gitlab';
 
 export const getDiscussionNoteKey = (
   discussionId: string,

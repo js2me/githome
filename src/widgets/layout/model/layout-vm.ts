@@ -1,25 +1,28 @@
-import { action, actionBound, computed, observable } from "mobx";
-import type { ViewModelParams } from "mobx-view-model";
-import { createRef } from "yummies/mobx";
-import type { Globals } from "@/globals";
-import type { GitLabProjectDC } from "@/shared/api/gitlab";
-import { normalizeJiraBaseUrl, parseConnectionDraft } from "@/shared/lib/gitlab/connection";
-import type { GitLabConnectionItem } from "@/shared/lib/storage";
-import { VM } from "@/shared/lib/view-models/vm";
-import { AppSettings } from "./app-settings";
+import { action, actionBound, computed, observable } from 'mobx';
+import type { ViewModelParams } from 'mobx-view-model';
+import { createRef } from 'yummies/mobx';
+import type { Workspace } from '@/features/workspace-navigation';
+import { WorkspaceVM } from '@/features/workspace-navigation';
+import type { GitLabProjectDC } from '@/shared/api/gitlab';
+import {
+  normalizeJiraBaseUrl,
+  parseConnectionDraft,
+} from '@/shared/lib/gitlab/connection';
+import type { GitLabConnectionItem } from '@/shared/lib/storage';
+import { AppSettings } from './app-settings';
 
-export class LayoutVM extends VM {
+export class LayoutVM extends WorkspaceVM {
   readonly appSettings: AppSettings;
   readonly connectionDialog = createRef<HTMLDialogElement>();
   readonly connectionUrlInput = createRef<HTMLInputElement>();
 
   @observable accessor isConnectionDialogOpen = false;
   @observable accessor draftConnectionId: string | null = null;
-  @observable accessor draftGitlabUrl = "";
-  @observable accessor draftGitToken = "";
-  @observable accessor draftJiraUrl = "";
+  @observable accessor draftGitlabUrl = '';
+  @observable accessor draftGitToken = '';
+  @observable accessor draftJiraUrl = '';
 
-  constructor(globals: Globals, params: ViewModelParams) {
+  constructor(globals: Workspace, params: ViewModelParams) {
     super(globals, params);
 
     this.appSettings = new AppSettings(globals);
@@ -32,18 +35,31 @@ export class LayoutVM extends VM {
   @computed
   get canSubmitConnection() {
     return Boolean(
-      parseConnectionDraft(this.draftGitlabUrl, this.draftGitToken, this.draftJiraUrl),
+      parseConnectionDraft(
+        this.draftGitlabUrl,
+        this.draftGitToken,
+        this.draftJiraUrl,
+      ),
     );
   }
 
   @computed
   get isDraftJiraUrlInvalid() {
-    return Boolean(this.draftJiraUrl.trim() && !normalizeJiraBaseUrl(this.draftJiraUrl));
+    return Boolean(
+      this.draftJiraUrl.trim() && !normalizeJiraBaseUrl(this.draftJiraUrl),
+    );
   }
 
   @computed
   get projectId(): number | null {
-    const { analytics, files, mergeRequest, mergeRequests, pipelines, repository } = this.globals.routes;
+    const {
+      analytics,
+      files,
+      mergeRequest,
+      mergeRequests,
+      pipelines,
+      repository,
+    } = this.globals.routes;
 
     const projectId =
       mergeRequest.params?.projectId ??
@@ -95,11 +111,13 @@ export class LayoutVM extends VM {
   get currentSection() {
     const { routes } = this.globals;
     if (routes.mergeRequests.isOpened || this.isMergeRequestDetailOpen) {
-      return { label: "Merge requests", open: this.openMergeRequests };
+      return { label: 'Merge requests', open: this.openMergeRequests };
     }
-    if (routes.files.isOpened) return { label: "Files", open: this.openFiles };
-    if (routes.pipelines.isOpened) return { label: "Пайплайны", open: this.openPipelines };
-    if (routes.analytics.isOpened) return { label: "Аналитика", open: this.openAnalytics };
+    if (routes.files.isOpened) return { label: 'Files', open: this.openFiles };
+    if (routes.pipelines.isOpened)
+      return { label: 'Пайплайны', open: this.openPipelines };
+    if (routes.analytics.isOpened)
+      return { label: 'Аналитика', open: this.openAnalytics };
     return null;
   }
 
@@ -129,7 +147,7 @@ export class LayoutVM extends VM {
 
   @computed
   get projectIdParam() {
-    return this.projectId !== null ? String(this.projectId) : "";
+    return this.projectId !== null ? String(this.projectId) : '';
   }
 
   @action
@@ -186,9 +204,16 @@ export class LayoutVM extends VM {
     const settings = this.globals.stores.settings;
     const saved = this.draftConnectionId
       ? settings.updateConnection(
-          this.draftConnectionId, this.draftGitlabUrl, this.draftGitToken, this.draftJiraUrl,
+          this.draftConnectionId,
+          this.draftGitlabUrl,
+          this.draftGitToken,
+          this.draftJiraUrl,
         )
-      : settings.addConnection(this.draftGitlabUrl, this.draftGitToken, this.draftJiraUrl);
+      : settings.addConnection(
+          this.draftGitlabUrl,
+          this.draftGitToken,
+          this.draftJiraUrl,
+        );
     if (saved) this.closeConnectionPopup();
   }
 
@@ -203,9 +228,9 @@ export class LayoutVM extends VM {
   @action
   private setConnectionDraft(item: GitLabConnectionItem | null) {
     this.draftConnectionId = item?.id ?? null;
-    this.draftGitlabUrl = item?.gitlabUrl ?? "";
-    this.draftGitToken = item?.gitToken ?? "";
-    this.draftJiraUrl = item?.jiraUrl ?? "";
+    this.draftGitlabUrl = item?.gitlabUrl ?? '';
+    this.draftGitToken = item?.gitToken ?? '';
+    this.draftJiraUrl = item?.jiraUrl ?? '';
   }
 
   @actionBound

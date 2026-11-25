@@ -1,18 +1,18 @@
-import { actionBound, computed, observable } from "mobx";
-import type { Globals } from "@/globals";
-import { GitlabProjectInfo } from "@/entities/gitlab-projects/model/gitlab-project-info";
-import type { GitLabProjectDC } from "@/shared/api/gitlab";
-import { createConnectionUserIdQuery } from "@/shared/lib/gitlab/connection-profile-query";
+import { actionBound, computed, observable } from 'mobx';
+import { GitlabProjectInfo } from '@/entities/gitlab-projects';
+import type { GitLabProjectDC } from '@/shared/api/gitlab';
+import { createConnectionUserIdQuery } from '@/shared/lib/gitlab/connection-profile-query';
 import {
   createGitlabListQuery,
   createInfiniteGitlabQuery,
-} from "@/shared/lib/gitlab/create-query";
+} from '@/shared/lib/gitlab/create-query';
+import type { Globals } from '@/shared/model/globals';
 import {
   buildProjectListParams,
   PROJECT_LIST_TABS,
   PROJECTS_PER_PAGE,
   type ProjectListTab,
-} from "./project-list-tab";
+} from './project-list-tab';
 
 const PROJECT_LIST_QUERY_OPTIONS = {
   staleTime: 60 * 60 * 1000,
@@ -54,7 +54,7 @@ export class GitlabProjectsList {
           queryOptions: PROJECT_LIST_QUERY_OPTIONS,
         }),
       ]),
-    ) as GitlabProjectsList["countQueries"];
+    ) as GitlabProjectsList['countQueries'];
 
     this.projectsQuery = createInfiniteGitlabQuery<GitLabProjectDC>({
       globals: params.globals,
@@ -93,10 +93,7 @@ export class GitlabProjectsList {
 
   @computed
   get isInitialLoading() {
-    return (
-      this.currentUserQuery.isLoading ||
-      this.projectsQuery.isLoading
-    );
+    return this.currentUserQuery.isLoading || this.projectsQuery.isLoading;
   }
 
   @computed
@@ -116,15 +113,15 @@ export class GitlabProjectsList {
       return null;
     }
 
-    return error instanceof Error ? error.message : "Не удалось загрузить проекты";
+    return error instanceof Error
+      ? error.message
+      : 'Не удалось загрузить проекты';
   }
 
   @computed
   get canLoadMore() {
     return (
-      this.hasNextPage &&
-      !this.isInitialLoading &&
-      !this.isFetchingNextPage
+      this.hasNextPage && !this.isInitialLoading && !this.isFetchingNextPage
     );
   }
 

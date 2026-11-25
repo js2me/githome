@@ -1,13 +1,13 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabFetch } from "../client";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabFetch } from '../client';
 import type {
   GitLabMergeRequestReviewerDC,
   GitLabProjectDC,
-} from "../data-contracts";
+} from '../data-contracts';
 
 export const getMergeRequestReviewers = async (
   connection: GitLabConnection,
-  project: Pick<GitLabProjectDC, "id">,
+  project: Pick<GitLabProjectDC, 'id'>,
   mergeRequestIid: number,
   signal?: AbortSignal,
 ): Promise<GitLabMergeRequestReviewerDC[]> => {

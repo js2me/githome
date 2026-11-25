@@ -1,13 +1,18 @@
-import { createQuery, queryClient } from "mobx-tanstack-query/preset";
-import { skipToken, type DefaultError, type QueryObserverOptions } from "@tanstack/query-core";
-import type { Globals } from "@/globals";
-import { buildGitlabRequestHeaders, resolveGitlabRequestUrl } from "@/shared/api/gitlab";
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
+import {
+  type DefaultError,
+  type QueryObserverOptions,
+  skipToken,
+} from '@tanstack/query-core';
+import { createQuery, queryClient } from 'mobx-tanstack-query/preset';
+import {
+  buildGitlabRequestHeaders,
+  resolveGitlabRequestUrl,
+} from '@/shared/api/gitlab';
 import {
   buildFetchQueryKey,
   buildFetchQueryUrl,
-  createFetchQuery,
   type CreateFetchQueryOptions,
+  createFetchQuery,
   type FetchQueryDynamicOptions,
   type FetchQueryParams,
   type MaybeFalsy,
@@ -15,22 +20,32 @@ import {
   resolveFetchQueryParams,
   resolveQueryOptions,
   serializeFetchQuery,
-} from "@/shared/lib/create-fetch-query";
-import { createInfiniteFetchQuery, type CreateInfiniteFetchQueryOptions } from "@/shared/lib/create-infinite-fetch-query";
+} from '@/shared/lib/create-fetch-query';
+import {
+  type CreateInfiniteFetchQueryOptions,
+  createInfiniteFetchQuery,
+} from '@/shared/lib/create-infinite-fetch-query';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+
+interface GitlabQueryContext {
+  readonly stores: {
+    readonly settings: { readonly activeConnection: GitLabConnection | null };
+  };
+}
 
 type GitlabFetchQueryParams = MaybeFalsy<
-  Pick<FetchQueryParams, "path" | "query" | "notFoundAsNull" | "responseType">
+  Pick<FetchQueryParams, 'path' | 'query' | 'notFoundAsNull' | 'responseType'>
 >;
 
 export type CreateGitlabQueryOptions<TData = unknown> = {
-  globals: Globals;
+  globals: GitlabQueryContext;
   abortSignal: AbortSignal;
   params: () => GitlabFetchQueryParams;
-  queryOptions?: CreateFetchQueryOptions<TData>["queryOptions"];
+  queryOptions?: CreateFetchQueryOptions<TData>['queryOptions'];
 };
 
 const resolveGitlabFetchParams = (
-  globals: Globals,
+  globals: GitlabQueryContext,
   params: () => GitlabFetchQueryParams,
 ): FetchQueryParams | null => {
   const connection = globals.stores.settings.activeConnection;
@@ -53,19 +68,21 @@ const resolveGitlabFetchParams = (
     responseType: fetchParams.responseType,
     request: {
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        "PRIVATE-TOKEN": connection.gitToken,
+        'PRIVATE-TOKEN': connection.gitToken,
       }),
     },
   };
 };
 
 export type CreateGitlabApiQueryOptions<TData, TParams extends object> = {
-  globals: Globals;
+  globals: GitlabQueryContext;
   abortSignal: AbortSignal;
   params: () => MaybeFalsy<TParams>;
   queryOptions?: FetchQueryDynamicOptions<TData> &
-    Pick<QueryObserverOptions<TData>, "placeholderData">;
-  queryKey: (resolved: { connection: GitLabConnection } & TParams) => readonly unknown[];
+    Pick<QueryObserverOptions<TData>, 'placeholderData'>;
+  queryKey: (
+    resolved: { connection: GitLabConnection } & TParams,
+  ) => readonly unknown[];
   queryFn: (
     resolved: { connection: GitLabConnection; signal: AbortSignal } & TParams,
   ) => Promise<TData>;
@@ -82,7 +99,7 @@ export const createGitlabApiQuery = <TData, TParams extends object>(
       return {
         abortSignal: options.abortSignal,
         enabled: false,
-        queryKey: ["gitlab-api", null] as const,
+        queryKey: ['gitlab-api', null] as const,
         queryFn: skipToken,
         ...options.queryOptions,
       };
@@ -111,11 +128,11 @@ export const createGitlabQuery = <TData = unknown>(
 };
 
 export type CreateInfiniteGitlabQueryOptions = {
-  globals: Globals;
+  globals: GitlabQueryContext;
   abortSignal: AbortSignal;
   initialPageParam?: number;
   params: () => GitlabFetchQueryParams;
-  queryOptions?: CreateInfiniteFetchQueryOptions["queryOptions"];
+  queryOptions?: CreateInfiniteFetchQueryOptions['queryOptions'];
 };
 
 export const createInfiniteGitlabQuery = <TItem = unknown>(
@@ -135,7 +152,7 @@ export type GitlabListResult<TItem> = {
 };
 
 export type CreateGitlabListQueryOptions<TItem = unknown> = {
-  globals: Globals;
+  globals: GitlabQueryContext;
   abortSignal: AbortSignal;
   params: () => GitlabFetchQueryParams;
   queryOptions?:
@@ -148,7 +165,11 @@ export const createGitlabListQuery = <TItem = unknown>(
 ) => {
   const { globals, abortSignal } = options;
 
-  return createQuery<GitlabListResult<TItem>, DefaultError, GitlabListResult<TItem>>({
+  return createQuery<
+    GitlabListResult<TItem>,
+    DefaultError,
+    GitlabListResult<TItem>
+  >({
     abortSignal,
     options: () => {
       const fetchParams = resolveGitlabFetchParams(globals, options.params);
@@ -160,12 +181,12 @@ export const createGitlabListQuery = <TItem = unknown>(
       };
     },
     queryFn: async ({ signal, queryKey }) => {
-      const fetchParams = parseFetchQueryKey(queryKey as Parameters<
-        typeof parseFetchQueryKey
-      >[0]);
+      const fetchParams = parseFetchQueryKey(
+        queryKey as Parameters<typeof parseFetchQueryKey>[0],
+      );
 
       if (!fetchParams) {
-        throw new Error("GitLab list query is not configured");
+        throw new Error('GitLab list query is not configured');
       }
 
       const serializedQuery = serializeFetchQuery(fetchParams.query);
@@ -183,7 +204,7 @@ export const createGitlabListQuery = <TItem = unknown>(
         throw new Error(`Fetch error: ${response.status}`);
       }
 
-      const totalHeader = response.headers.get("X-Total");
+      const totalHeader = response.headers.get('X-Total');
       const items = (await response.json()) as TItem[];
 
       return {

@@ -1,19 +1,22 @@
-import { actionBound, computed, observable, reaction } from "mobx";
-import type { ViewModelParams } from "mobx-view-model";
-import { gitlabApi } from "@/shared/api/gitlab";
-import type { GitLabBranchDC } from "@/shared/api/gitlab";
-import type { Globals } from "@/globals";
-import { RepositoryPageVM } from "@/pages/repository/model/page-vm";
-import { createGitlabApiQuery } from "@/shared/lib/gitlab/create-query";
-import { VM } from "@/shared/lib/view-models/vm";
-import { isImagePath } from "@/shared/lib/image-path";
-import { isMarkdownPath } from "../lib/repository-tree-utils";
-import { FilesPageQuerySync, type FilesQueryData } from "./files-page-query-sync";
-import { RepositoryCommitsModel } from "./repository-commits";
-import { RepositoryFilesSearchModel } from "./repository-files-search";
-import { RepositoryTreeModel } from "./repository-tree";
+import { actionBound, computed, observable, reaction } from 'mobx';
+import type { ViewModelParams } from 'mobx-view-model';
+import type { Workspace } from '@/features/workspace-navigation';
+import { WorkspaceVM } from '@/features/workspace-navigation';
+import type { GitLabBranchDC } from '@/shared/api/gitlab';
+import { gitlabApi } from '@/shared/api/gitlab';
+import { createGitlabApiQuery } from '@/shared/lib/gitlab/create-query';
+import { isImagePath } from '@/shared/lib/image-path';
+import type { RepositoryPageVM } from '../../../model/page-vm';
+import { isMarkdownPath } from '../lib/repository-tree-utils';
+import {
+  FilesPageQuerySync,
+  type FilesQueryData,
+} from './files-page-query-sync';
+import { RepositoryCommitsModel } from './repository-commits';
+import { RepositoryFilesSearchModel } from './repository-files-search';
+import { RepositoryTreeModel } from './repository-tree';
 
-export class FilesPageVM extends VM<{}, RepositoryPageVM> {
+export class FilesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
   treeModel;
   commitsModel;
   searchModel;
@@ -25,9 +28,14 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
   @observable accessor isBranchPickerOpen = false;
   @observable accessor isCommitPickerOpen = false;
 
+  @observable accessor imageUrl: string | null = null;
+
   private lastProjectId: number | null = null;
 
-  constructor(globals: Globals, params: ViewModelParams<{}, RepositoryPageVM>) {
+  constructor(
+    globals: Workspace,
+    params: ViewModelParams<{}, RepositoryPageVM>,
+  ) {
     super(globals, params);
 
     this.commitsModel = new RepositoryCommitsModel({
@@ -70,7 +78,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
         return { projectId };
       },
       queryKey: ({ connection, projectId }) =>
-        ["project-branches", connection.gitlabUrl, projectId] as const,
+        ['project-branches', connection.gitlabUrl, projectId] as const,
       queryFn: ({ connection, projectId, signal }) =>
         gitlabApi.getProjectBranches(connection, projectId, signal),
     });
@@ -94,7 +102,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
       },
       queryKey: ({ connection, projectId, ref, filePath }) =>
         [
-          "repository-file-content",
+          'repository-file-content',
           connection.gitlabUrl,
           projectId,
           ref,
@@ -139,10 +147,25 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
         this.isBranchPickerOpen = false;
         this.isCommitPickerOpen = false;
         this.searchModel.close();
-        this.searchModel.setSearchQuery("");
+        this.searchModel.setSearchQuery('');
       },
-      { fireImmediately: true },
+      { fireImmediately: true, signal: this.unmountSignal },
     );
+  }
+
+  willMount() {
+    reaction(
+      () => this.fileImage,
+      (image) => {
+        if (this.imageUrl) URL.revokeObjectURL(this.imageUrl);
+        this.imageUrl = image ? URL.createObjectURL(image) : null;
+      },
+      { fireImmediately: true, signal: this.unmountSignal },
+    );
+  }
+
+  didUnmount() {
+    if (this.imageUrl) URL.revokeObjectURL(this.imageUrl);
   }
 
   @actionBound
@@ -203,7 +226,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
 
   @computed
   get projectPath() {
-    return this.project?.path_with_namespace ?? "";
+    return this.project?.path_with_namespace ?? '';
   }
 
   @computed
@@ -225,7 +248,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
 
     return error instanceof Error
       ? error.message
-      : "Не удалось загрузить ветки";
+      : 'Не удалось загрузить ветки';
   }
 
   @computed
@@ -255,19 +278,19 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
 
     return error instanceof Error
       ? error.message
-      : "Не удалось загрузить содержимое файла";
+      : 'Не удалось загрузить содержимое файла';
   }
 
   @computed
   get fileContent() {
     const content = this.fileContentQuery.data;
-    return typeof content === "string" ? content : (content?.content ?? null);
+    return typeof content === 'string' ? content : (content?.content ?? null);
   }
 
   @computed
   get fileImage() {
     const content = this.fileContentQuery.data;
-    return typeof content === "string" ? null : (content?.blob ?? null);
+    return typeof content === 'string' ? null : (content?.blob ?? null);
   }
 
   @computed
@@ -289,7 +312,7 @@ export class FilesPageVM extends VM<{}, RepositoryPageVM> {
       return null;
     }
 
-    return path.split("/").pop() ?? path;
+    return path.split('/').pop() ?? path;
   }
 
   @actionBound

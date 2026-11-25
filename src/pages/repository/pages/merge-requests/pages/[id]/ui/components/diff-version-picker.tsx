@@ -1,117 +1,26 @@
-import { observer } from "mobx-react-lite";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { GitLabMergeRequestVersionDC } from "@/shared/api/gitlab";
-import { cn } from "@/shared/lib/cn";
+import { withPropsViewModel } from 'mobx-view-model-react';
+import { cn } from '@/shared/lib/cn';
+import {
+  DiffVersionPickerVM,
+  getVersionLabel,
+} from '../../model/diff-version-picker';
 
-const formatDate = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const getVersionLabel = (
-  version: GitLabMergeRequestVersionDC,
-  index: number,
-  total: number,
-) => {
-  if (index === 0) {
-    return "последняя версия";
-  }
-
-  const pushNumber = total - index;
-  return `push ${pushNumber} от ${formatDate(version.created_at)}`;
-};
-
-interface DiffVersionPickerProps {
-  versions: GitLabMergeRequestVersionDC[];
-  selectedVersionId: number | null;
-  onSelectVersion: (id: number | null) => void;
-}
-
-export const DiffVersionPicker = observer(
-  ({ versions, selectedVersionId, onSelectVersion }: DiffVersionPickerProps) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const popupRef = useRef<HTMLDivElement>(null);
-    const triggerRef = useRef<HTMLButtonElement>(null);
-
-    const close = useCallback(() => setIsOpen(false), []);
-
-    useEffect(() => {
-      if (!isOpen) {
-        return;
-      }
-
-      const handlePointerDown = (event: MouseEvent) => {
-        const target = event.target as Node;
-        if (
-          popupRef.current?.contains(target) ||
-          triggerRef.current?.contains(target)
-        ) {
-          return;
-        }
-
-        close();
-      };
-
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.key === "Escape") {
-          close();
-        }
-      };
-
-      document.addEventListener("mousedown", handlePointerDown);
-      document.addEventListener("keydown", handleKeyDown);
-
-      return () => {
-        document.removeEventListener("mousedown", handlePointerDown);
-        document.removeEventListener("keydown", handleKeyDown);
-      };
-    }, [isOpen, close]);
-
-    const selectedVersion = selectedVersionId
-      ? versions.find((v) => v.id === selectedVersionId)
-      : null;
-
-    const selectedIndex = selectedVersion
-      ? versions.indexOf(selectedVersion)
-      : 0;
-
-    const currentLabel =
-      versions.length > 0
-        ? getVersionLabel(
-            selectedVersion ?? versions[0],
-            selectedIndex,
-            versions.length,
-          )
-        : "последняя версия";
-
-    const handleSelect = useCallback(
-      (id: number | null) => {
-        onSelectVersion(id);
-        close();
-      },
-      [onSelectVersion, close],
-    );
+export const DiffVersionPicker = withPropsViewModel(
+  DiffVersionPickerVM,
+  ({ model }) => {
+    const { versions, selectedVersionId } = model.payload;
+    const { isOpen, currentLabel } = model;
 
     return (
-      <div className="relative inline-flex">
+      <div ref={model.container} className="relative inline-flex">
         <button
-          ref={triggerRef}
           className={cn(
-            "glass-control inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium",
-            isOpen && "border-[var(--glass-accent)] bg-[var(--glass-selected)] text-[var(--glass-accent)]",
+            'glass-control inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-medium text-xs',
+            isOpen &&
+              'border-[var(--glass-accent)] bg-[var(--glass-selected)] text-[var(--glass-accent)]',
           )}
           type="button"
-          onClick={() => setIsOpen((prev) => !prev)}
+          onClick={model.toggle}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
         >
@@ -128,7 +37,6 @@ export const DiffVersionPicker = observer(
 
         {isOpen && (
           <div
-            ref={popupRef}
             className="glass-overlay absolute top-[calc(100%+4px)] left-0 z-50 min-w-[200px] rounded-lg p-1"
             role="listbox"
           >
@@ -141,16 +49,14 @@ export const DiffVersionPicker = observer(
                 <button
                   key={version.id}
                   className={cn(
-                    "flex w-full items-center rounded-md px-3 py-1.5 text-left text-xs transition hover:bg-[var(--glass-hover)]",
+                    'flex w-full items-center rounded-md px-3 py-1.5 text-left text-xs transition hover:bg-[var(--glass-hover)]',
                     isSelected &&
-                      "bg-[var(--glass-selected)] font-semibold text-[var(--glass-accent)]",
+                      'bg-[var(--glass-selected)] font-semibold text-[var(--glass-accent)]',
                   )}
                   type="button"
                   role="option"
                   aria-selected={isSelected}
-                  onClick={() =>
-                    handleSelect(index === 0 ? null : version.id)
-                  }
+                  onClick={() => model.select(index === 0 ? null : version.id)}
                 >
                   {getVersionLabel(version, index, versions.length)}
                 </button>

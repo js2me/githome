@@ -1,6 +1,6 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabFetch } from "../client";
-import type { GitLabProjectDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabFetch } from '../client';
+import type { GitLabProjectDC } from '../data-contracts';
 
 export const getFrequentProjects = async (
   connection: GitLabConnection,
@@ -8,11 +8,11 @@ export const getFrequentProjects = async (
   signal?: AbortSignal,
 ): Promise<GitLabProjectDC[]> => {
   const params = new URLSearchParams({
-    membership: "true",
-    order_by: "last_activity_at",
-    sort: "desc",
+    membership: 'true',
+    order_by: 'last_activity_at',
+    sort: 'desc',
     per_page: String(limit),
-    simple: "false",
+    simple: 'false',
   });
 
   const response = await gitlabFetch(

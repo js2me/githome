@@ -1,12 +1,18 @@
-import { actionBound, computedStruct, observable, reaction, runInAction } from "mobx";
+import {
+  actionBound,
+  computedStruct,
+  observable,
+  reaction,
+  runInAction,
+} from 'mobx';
 import {
   fetchGitlabAssetBlob,
   isGitlabProxiedAssetUrl,
   normalizeGitlabBaseUrl,
   resolveGitlabAssetUrl,
-} from "@/shared/api/gitlab";
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { VM } from "@/shared/lib/view-models/vm";
+} from '@/shared/api/gitlab';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { VM } from '@/shared/lib/view-models/vm';
 
 export interface GitlabAvatarPayload {
   avatarUrl: string | null | undefined;
@@ -15,13 +21,17 @@ export interface GitlabAvatarPayload {
   connection?: GitLabConnection | null;
 }
 
-const resolveAvatar = (raw: string | null | undefined, connection: GitLabConnection | null) => {
+const resolveAvatar = (
+  raw: string | null | undefined,
+  connection: GitLabConnection | null,
+) => {
   if (!raw?.trim()) return null;
   try {
-    const base = connection && new URL(normalizeGitlabBaseUrl(connection.gitlabUrl) + "/");
+    const base =
+      connection && new URL(`${normalizeGitlabBaseUrl(connection.gitlabUrl)}/`);
     const url = new URL(raw, base ?? globalThis.location?.href);
-    if (url.protocol !== "https:" && url.protocol !== "http:") {
-      if (url.protocol === "blob:" || /^data:image\//i.test(url.href)) {
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+      if (url.protocol === 'blob:' || /^data:image\//i.test(url.href)) {
         return { direct: url.href, account: null, preferAuthenticated: false };
       }
       return null;
@@ -39,7 +49,11 @@ const resolveAvatar = (raw: string | null | undefined, connection: GitLabConnect
     const account = url.origin === base?.origin ? connection : null;
     const resolved = account && resolveGitlabAssetUrl(account, direct);
     const useProxy = Boolean(resolved && isGitlabProxiedAssetUrl(resolved));
-    return { direct, account, preferAuthenticated: Boolean(account && (hadToken || useProxy)) };
+    return {
+      direct,
+      account,
+      preferAuthenticated: Boolean(account && (hadToken || useProxy)),
+    };
   } catch {
     return null;
   }
@@ -54,9 +68,10 @@ export class GitlabAvatarVM extends VM<GitlabAvatarPayload> {
 
   @computedStruct
   private get source() {
-    const connection = this.payload.connection === undefined
-      ? this.globals.stores.settings.activeConnection
-      : this.payload.connection;
+    const connection =
+      this.payload.connection === undefined
+        ? this.globals.stores.settings.activeConnection
+        : this.payload.connection;
     return resolveAvatar(this.payload.avatarUrl, connection);
   }
 
@@ -77,11 +92,18 @@ export class GitlabAvatarVM extends VM<GitlabAvatarPayload> {
     }
   }
 
-  private async loadAuthenticated(connection: GitLabConnection, avatarUrl: string) {
+  private async loadAuthenticated(
+    connection: GitLabConnection,
+    avatarUrl: string,
+  ) {
     const controller = new AbortController();
     this.request = controller;
     try {
-      const blob = await fetchGitlabAssetBlob(connection, avatarUrl, controller.signal);
+      const blob = await fetchGitlabAssetBlob(
+        connection,
+        avatarUrl,
+        controller.signal,
+      );
       if (controller.signal.aborted) return;
       runInAction(() => {
         this.objectUrl = URL.createObjectURL(blob);

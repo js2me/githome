@@ -727,6 +727,22 @@ const checkTsxColors = async (cardSelector, label, search = false) => {
 };
 
 try {
+  // An MR without changed files opens a hidden find bar via the shortcut.
+  await page.goto(`${BASE}/repository/1/merge-requests/158`, { waitUntil: 'networkidle0' });
+  await page.waitForSelector('main h2');
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.keyboard.down('Control');
+  await page.keyboard.press('f');
+  await page.keyboard.up('Control');
+  const fullSearch = 'input[placeholder="Поиск по файлам и коду..."]';
+  await page.waitForFunction(selector =>
+    document.activeElement === document.querySelector(selector) &&
+    document.querySelectorAll('input[aria-label="Поиск по файлам и коду"]').length === 1,
+  { timeout: 5000 }, fullSearch);
+  await page.keyboard.type('focus');
+  check('Ctrl+F keeps keyboard input in the main search bar when the floating input disappears',
+    await page.$eval(fullSearch, input => input.value === 'focus'));
+
   await page.goto(`${BASE}/repository/1/merge-requests/157`, { waitUntil: 'domcontentloaded' });
   const card = '.git-diff > article:first-child';
   await page.waitForSelector(card);

@@ -1,7 +1,8 @@
-import { actionBound, computed, observable } from "mobx";
-import type { GitLabCommitDC } from "@/shared/api/gitlab";
-import type { Globals } from "@/globals";
-import { createInfiniteGitlabQuery } from "@/shared/lib/gitlab/create-query";
+import { actionBound, computed, observable, reaction } from 'mobx';
+import { createRef } from 'yummies/mobx';
+import type { GitLabCommitDC } from '@/shared/api/gitlab';
+import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/create-query';
+import type { Globals } from '@/shared/model/globals';
 
 const COMMITS_PER_PAGE = 30;
 
@@ -14,6 +15,8 @@ export interface RepositoryCommitsParams {
 
 export class RepositoryCommitsModel {
   commitsQuery;
+  readonly listContainer = createRef<HTMLDivElement>();
+  @observable private accessor lastVisibleIndex: number | undefined;
 
   @observable accessor selectedCommitSha: string | null = null;
 
@@ -38,6 +41,22 @@ export class RepositoryCommitsModel {
         };
       },
     });
+    reaction(
+      () =>
+        this.listContainer.current &&
+        this.canLoadMore &&
+        this.lastVisibleIndex !== undefined &&
+        this.lastVisibleIndex >= this.commits.length - 5,
+      (nearEnd) => {
+        if (nearEnd) this.loadMore();
+      },
+      { signal: params.abortSignal },
+    );
+  }
+
+  @actionBound
+  updateVisibleRange(index: number | undefined) {
+    this.lastVisibleIndex = index;
   }
 
   @computed
@@ -69,7 +88,7 @@ export class RepositoryCommitsModel {
 
     return error instanceof Error
       ? error.message
-      : "Не удалось загрузить коммиты";
+      : 'Не удалось загрузить коммиты';
   }
 
   @computed
@@ -97,7 +116,7 @@ export class RepositoryCommitsModel {
   get buttonLabel() {
     const commit = this.activeCommit;
     if (!commit) {
-      return "Коммит";
+      return 'Коммит';
     }
 
     return commit.short_id;

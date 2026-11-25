@@ -1,10 +1,10 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { buildGitlabPath, gitlabFetch } from "../client";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { buildGitlabPath, gitlabFetch } from '../client';
 import type {
   GitLabCommitDC,
   GitLabMergeRequestDC,
   GitLabProjectAnalyticsDC,
-} from "../data-contracts";
+} from '../data-contracts';
 
 const PER_PAGE = 100;
 const MAX_PAGES = 100;
@@ -29,7 +29,7 @@ const getAllPages = async <TItem>(
     items.push(...pageItems);
     onPage?.(items);
 
-    const nextPage = response.headers.get("X-Next-Page");
+    const nextPage = response.headers.get('X-Next-Page');
     if (nextPage) {
       continue;
     }
@@ -65,7 +65,7 @@ const getMergeRequestChangedFileCount = async (
     buildGitlabPath(`${mergeRequestPath}/diffs`, { per_page: 1 }),
     signal,
   );
-  const total = diffsResponse.headers.get("X-Total");
+  const total = diffsResponse.headers.get('X-Total');
 
   if (total !== null) {
     return total;
@@ -149,11 +149,11 @@ export const getProjectAnalytics = async (
       connection,
       `/projects/${projectId}/merge_requests`,
       {
-        state: "merged",
+        state: 'merged',
         merged_after: since,
         merged_before: until,
-        order_by: "merged_at",
-        sort: "asc",
+        order_by: 'merged_at',
+        sort: 'asc',
         per_page: PER_PAGE,
       },
       signal,

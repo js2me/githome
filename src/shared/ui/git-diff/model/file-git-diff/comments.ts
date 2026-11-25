@@ -1,13 +1,20 @@
-import { actionBound, observable } from "mobx";
-import type { FileGitDiff } from ".";
+import { actionBound, observable } from 'mobx';
+import type { FileGitDiff } from '.';
 
 export class FileGitDiffComments {
   @observable accessor isFileCommentOpen = false;
+
+  @observable accessor fileCommentBody = '';
+
+  @actionBound setFileCommentBody(body: string) {
+    this.fileCommentBody = body;
+  }
 
   constructor(private readonly file: FileGitDiff) {}
 
   @actionBound
   toggleFileCommentOpen() {
+    this.fileCommentBody = '';
     this.isFileCommentOpen = !this.isFileCommentOpen;
     this.file.selection.lineSelection = null;
     this.file.selection.selectionAnchorKey = null;

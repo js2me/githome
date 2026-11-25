@@ -1,67 +1,74 @@
-import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
-import { cva, type VariantProps } from "yummies/css";
+import { cva, type VariantProps } from 'yummies/css';
+import type { GitLabMergeRequestDC } from '@/shared/api/gitlab';
 
 export const mrStateBadgeVariants = cva(
-  "inline-flex shrink-0 items-center rounded-full border font-semibold leading-none",
+  'inline-flex shrink-0 items-center rounded-full border font-semibold leading-none',
   {
     variants: {
       state: {
-        draft: "border-[var(--glass-border)] bg-[var(--glass-control)] text-fg-muted",
-        opened: "border-green-700/20 bg-green-100/55 text-green-800 dark:border-green-300/25 dark:bg-green-900/35 dark:text-green-300",
-        merged: "border-blue-700/20 bg-blue-100/55 text-blue-700 dark:border-blue-300/25 dark:bg-blue-950/35 dark:text-blue-300",
-        closed: "border-red-700/20 bg-red-100/55 text-red-800 dark:border-red-300/25 dark:bg-red-950/35 dark:text-red-300",
+        draft:
+          'border-[var(--glass-border)] bg-[var(--glass-control)] text-fg-muted',
+        opened:
+          'border-green-700/20 bg-green-100/55 text-green-800 dark:border-green-300/25 dark:bg-green-900/35 dark:text-green-300',
+        merged:
+          'border-blue-700/20 bg-blue-100/55 text-blue-700 dark:border-blue-300/25 dark:bg-blue-950/35 dark:text-blue-300',
+        closed:
+          'border-red-700/20 bg-red-100/55 text-red-800 dark:border-red-300/25 dark:bg-red-950/35 dark:text-red-300',
       },
       size: {
-        sm: "px-2 py-1 text-[11px]",
-        md: "px-2.5 py-1 text-[11px]",
+        sm: 'px-2 py-1 text-[11px]',
+        md: 'px-2.5 py-1 text-[11px]',
       },
     },
     defaultVariants: {
-      state: "draft",
-      size: "sm",
+      state: 'draft',
+      size: 'sm',
     },
   },
 );
 
 export type MrStateBadgeState = NonNullable<
-  VariantProps<typeof mrStateBadgeVariants>["state"]
+  VariantProps<typeof mrStateBadgeVariants>['state']
 >;
 
 export const getMrStateBadgeState = (state: string): MrStateBadgeState => {
   if (
-    state === "draft" ||
-    state === "opened" ||
-    state === "merged" ||
-    state === "closed"
+    state === 'draft' ||
+    state === 'opened' ||
+    state === 'merged' ||
+    state === 'closed'
   ) {
     return state;
   }
 
-  return "draft";
+  return 'draft';
 };
 
 const isDraft = (mergeRequest: GitLabMergeRequestDC) =>
   mergeRequest.draft ?? mergeRequest.work_in_progress ?? false;
 
 const stateLabels: Record<string, { en: string; ru: string }> = {
-  draft: { en: "Draft", ru: "Черновик" },
-  opened: { en: "Open", ru: "Открыт" },
-  merged: { en: "Merged", ru: "Влит" },
-  closed: { en: "Closed", ru: "Закрыт" },
-  locked: { en: "Locked", ru: "Заблокирован" },
-  reopened: { en: "Reopened", ru: "Открыт повторно" },
+  draft: { en: 'Draft', ru: 'Черновик' },
+  opened: { en: 'Open', ru: 'Открыт' },
+  merged: { en: 'Merged', ru: 'Влит' },
+  closed: { en: 'Closed', ru: 'Закрыт' },
+  locked: { en: 'Locked', ru: 'Заблокирован' },
+  reopened: { en: 'Reopened', ru: 'Открыт повторно' },
 };
 
 export const MrStateBadge = ({
   mergeRequest,
-  size = "sm",
-  language = "ru",
+  size = 'sm',
+  language = 'ru',
 }: {
   mergeRequest: GitLabMergeRequestDC;
-  language?: "en" | "ru";
-  size?: NonNullable<VariantProps<typeof mrStateBadgeVariants>["size"]>;
+  language?: 'en' | 'ru';
+  size?: NonNullable<VariantProps<typeof mrStateBadgeVariants>['size']>;
 }) => {
-  const stateKey = mergeRequest.state === "opened" && isDraft(mergeRequest) ? "draft" : mergeRequest.state;
+  const stateKey =
+    mergeRequest.state === 'opened' && isDraft(mergeRequest)
+      ? 'draft'
+      : mergeRequest.state;
 
   return (
     <span

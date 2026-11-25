@@ -196,7 +196,7 @@
   --color-black: #343b58;
 }
 
-/* Тёмная тема — только через класс .dark (ThemeManager в Globals) */
+/* Тёмная тема — только через класс .dark (ThemeManager) */
 .dark {
   --glass-canvas: #151923;
   --glass-glow-indigo: rgb(98 95 158 / 0.28);

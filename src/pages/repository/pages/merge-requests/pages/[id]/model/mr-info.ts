@@ -1,5 +1,15 @@
-import { action, actionBound, computed, observable, reaction, runInAction } from "mobx";
-import { gitlabApi } from "@/shared/api/gitlab";
+import {
+  action,
+  actionBound,
+  computed,
+  observable,
+  reaction,
+  runInAction,
+} from 'mobx';
+import {
+  CreateMrComment,
+  MergeRequestGitDiff,
+} from '@/features/merge-requests';
 import type {
   GitLabDiscussionDC,
   GitLabMergeRequestApprovalsDC,
@@ -7,24 +17,27 @@ import type {
   GitLabMergeRequestDC,
   GitLabMergeRequestReviewerDC,
   GitLabMergeRequestVersionDC,
-} from "@/shared/api/gitlab";
-import type { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
-import { createConnectionUserIdQuery } from "@/shared/lib/gitlab/connection-profile-query";
+  GitLabProjectDC,
+} from '@/shared/api/gitlab';
+import { gitlabApi } from '@/shared/api/gitlab';
+import { createConnectionUserIdQuery } from '@/shared/lib/gitlab/connection-profile-query';
 import {
   createGitlabApiQuery,
   createGitlabQuery,
   createInfiniteGitlabQuery,
-} from "@/shared/lib/gitlab/create-query";
+} from '@/shared/lib/gitlab/create-query';
+import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/diff-comment';
 import {
   buildMergeRequestApprovalView,
   type MergeRequestApprovalView,
-} from "@/shared/lib/gitlab/merge-request-approval-view";
-import type { Globals } from "@/globals";
-import type { GitLabProjectDC } from "@/shared/api/gitlab";
-import { CreateMrComment } from "@/features/merge-requests/model/create-mr-comment";
-import { MergeRequestGitDiff } from "@/features/merge-requests/model/mr-git-diff";
+} from '@/shared/lib/gitlab/merge-request-approval-view';
+import type { Globals } from '@/shared/model/globals';
 
-export type MrReviewAction = "approve" | "unapprove" | "requestChanges" | "cancelRequestChanges";
+export type MrReviewAction =
+  | 'approve'
+  | 'unapprove'
+  | 'requestChanges'
+  | 'cancelRequestChanges';
 
 export type MrInfoModelContext = {
   project: GitLabProjectDC;
@@ -64,35 +77,48 @@ export class MrInfoModel {
   mergeRequestReviewersQuery;
 
   @observable accessor isSubmittingMrComment = false;
-  @observable accessor submitMrCommentError = "";
-  @observable accessor resolvingDiscussionId = "";
-  @observable accessor resolveDiscussionError = "";
-  @observable accessor replyingDiscussionId = "";
-  @observable accessor replyDiscussionErrorKey = "";
-  @observable accessor replyDiscussionError = "";
-  @observable accessor updatingNoteKey = "";
-  @observable accessor updateNoteError = "";
-  @observable accessor deletingNoteKey = "";
-  @observable accessor deleteNoteErrorKey = "";
-  @observable accessor deleteNoteError = "";
+  @observable accessor submitMrCommentError = '';
+  @observable accessor resolvingDiscussionId = '';
+  @observable accessor resolveDiscussionError = '';
+  @observable accessor replyingDiscussionId = '';
+  @observable accessor replyDiscussionErrorKey = '';
+  @observable accessor replyDiscussionError = '';
+  @observable accessor updatingNoteKey = '';
+  @observable accessor updateNoteError = '';
+  @observable accessor deletingNoteKey = '';
+  @observable accessor deleteNoteErrorKey = '';
+  @observable accessor deleteNoteError = '';
   @observable accessor reviewActionInProgress = null as MrReviewAction | null;
-  @observable accessor reviewActionError = "";
-  @observable accessor locallyCreatedDiscussionsKey = "";
+  @observable accessor reviewActionError = '';
+  @observable accessor locallyCreatedDiscussionsKey = '';
   @observable accessor locallyCreatedDiscussions: GitLabDiscussionDC[] = [];
 
   constructor(private readonly options: MrInfoModelParams) {
-    this.mergeRequestDetailQuery = createGitlabApiQuery<GitLabMergeRequestDC, MrInfoModelContext>({
+    this.mergeRequestDetailQuery = createGitlabApiQuery<
+      GitLabMergeRequestDC,
+      MrInfoModelContext
+    >({
       globals: options.globals,
       abortSignal: options.abortSignal,
       queryOptions: {
         ...MR_POLL_QUERY_OPTIONS,
-        refetchOnWindowFocus: "always",
+        refetchOnWindowFocus: 'always',
       },
       params: options.params,
-      queryKey: ({ connection, project, mergeRequestIid }) =>
-        ["merge-request-detail", connection.id, connection.gitlabUrl, project.id, mergeRequestIid],
+      queryKey: ({ connection, project, mergeRequestIid }) => [
+        'merge-request-detail',
+        connection.id,
+        connection.gitlabUrl,
+        project.id,
+        mergeRequestIid,
+      ],
       queryFn: ({ connection, project, mergeRequestIid, signal }) =>
-        gitlabApi.getMergeRequestDetail(connection, project, mergeRequestIid, signal),
+        gitlabApi.getMergeRequestDetail(
+          connection,
+          project,
+          mergeRequestIid,
+          signal,
+        ),
     });
 
     this.gitDiff = new MergeRequestGitDiff({
@@ -133,7 +159,7 @@ export class MrInfoModel {
             path: `/projects/${mr.project.id}/merge_requests/${mr.mergeRequestIid}/discussions`,
             query: {
               per_page: 100,
-              sort: "asc",
+              sort: 'asc',
             },
           };
         },
@@ -142,7 +168,8 @@ export class MrInfoModel {
     reaction(
       () => ({
         hasNextPage: this.mergeRequestDiscussionsQuery.hasNextPage,
-        isFetchingNextPage: this.mergeRequestDiscussionsQuery.isFetchingNextPage,
+        isFetchingNextPage:
+          this.mergeRequestDiscussionsQuery.isFetchingNextPage,
       }),
       ({ hasNextPage, isFetchingNextPage }) => {
         if (hasNextPage && !isFetchingNextPage) {
@@ -152,27 +179,33 @@ export class MrInfoModel {
     );
 
     this.currentUserQuery = createConnectionUserIdQuery(
-      () => options.params() ? options.globals.stores.settings.activeConnection : null,
+      () =>
+        options.params()
+          ? options.globals.stores.settings.activeConnection
+          : null,
       options.abortSignal,
     );
 
-    this.mergeRequestApprovalsQuery = createGitlabQuery<GitLabMergeRequestApprovalsDC>({
-      globals: options.globals,
-      abortSignal: options.abortSignal,
-      queryOptions: MR_POLL_QUERY_OPTIONS,
-      params: () => {
-        const mr = options.params();
-        if (!mr) {
-          return false;
-        }
+    this.mergeRequestApprovalsQuery =
+      createGitlabQuery<GitLabMergeRequestApprovalsDC>({
+        globals: options.globals,
+        abortSignal: options.abortSignal,
+        queryOptions: MR_POLL_QUERY_OPTIONS,
+        params: () => {
+          const mr = options.params();
+          if (!mr) {
+            return false;
+          }
 
-        return {
-          path: `/projects/${mr.project.id}/merge_requests/${mr.mergeRequestIid}/approvals`,
-        };
-      },
-    });
+          return {
+            path: `/projects/${mr.project.id}/merge_requests/${mr.mergeRequestIid}/approvals`,
+          };
+        },
+      });
 
-    this.mergeRequestReviewersQuery = createGitlabQuery<GitLabMergeRequestReviewerDC[]>({
+    this.mergeRequestReviewersQuery = createGitlabQuery<
+      GitLabMergeRequestReviewerDC[]
+    >({
       globals: options.globals,
       abortSignal: options.abortSignal,
       queryOptions: MR_POLL_QUERY_OPTIONS,
@@ -262,7 +295,9 @@ export class MrInfoModel {
 
   @computed
   get currentUserId(): number | null {
-    return this.currentUserQuery.error ? null : (this.currentUserQuery.data ?? null);
+    return this.currentUserQuery.error
+      ? null
+      : (this.currentUserQuery.data ?? null);
   }
 
   @computed
@@ -273,9 +308,7 @@ export class MrInfoModel {
       this.mergeRequestReviewersQuery,
     ];
 
-    if (
-      approvalQueries.some((query) => !query.isFetched && query.isPending)
-    ) {
+    if (approvalQueries.some((query) => !query.isFetched && query.isPending)) {
       return null;
     }
 
@@ -323,7 +356,7 @@ export class MrInfoModel {
 
       return error instanceof Error
         ? error.message
-        : "Не удалось загрузить merge request";
+        : 'Не удалось загрузить merge request';
     }
 
     return null;
@@ -350,8 +383,16 @@ export class MrInfoModel {
       return null;
     }
 
+    const mergeRequest = this.mergeRequestDetail!;
+    const version = this.gitDiff.selectedVersion;
     return {
-      mergeRequest: this.mergeRequestDetail!,
+      mergeRequest,
+      headRef: version
+        ? version.head_commit_sha
+        : mergeRequest.diff_refs?.head_sha,
+      baseRef: version
+        ? version.base_commit_sha || version.start_commit_sha
+        : mergeRequest.diff_refs?.base_sha || mergeRequest.diff_refs?.start_sha,
       changes: this.mergeRequestChanges ?? [],
       changesError: this.changesErrorMessage,
       discussions: this.mergeRequestDiscussions!,
@@ -361,14 +402,15 @@ export class MrInfoModel {
       selectedDiffVersion: this.gitDiff.selectedVersion,
       diffRevision: this.gitDiff.revision,
       isPreparingDiffs: this.gitDiff.isLoading,
-      canCommentOnDiff: this.mergeRequestChanges !== null && this.diffComment.canComment,
+      canCommentOnDiff:
+        this.mergeRequestChanges !== null && this.diffComment.canComment,
     };
   }
 
   private get mergeRequestKey() {
     const mr = this.options.params();
     if (!mr) {
-      return "";
+      return '';
     }
 
     return `${mr.project.id}:${mr.mergeRequestIid}`;
@@ -395,7 +437,9 @@ export class MrInfoModel {
 
   @actionBound
   async submitDiffComment(input: CreateDiffCommentInput) {
-    return this.mergeRequestChanges === null ? false : this.diffComment.submit(input);
+    return this.mergeRequestChanges === null
+      ? false
+      : this.diffComment.submit(input);
   }
 
   @actionBound
@@ -409,17 +453,17 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.submitMrCommentError = "Merge request не выбран";
+      this.submitMrCommentError = 'Merge request не выбран';
       return false;
     }
 
     if (!body.trim()) {
-      this.submitMrCommentError = "Введите текст комментария";
+      this.submitMrCommentError = 'Введите текст комментария';
       return false;
     }
 
     this.isSubmittingMrComment = true;
-    this.submitMrCommentError = "";
+    this.submitMrCommentError = '';
 
     try {
       const createdDiscussion = await gitlabApi.createMergeRequestDiscussion(
@@ -439,7 +483,7 @@ export class MrInfoModel {
         this.submitMrCommentError =
           error instanceof Error
             ? error.message
-            : "Не удалось отправить комментарий";
+            : 'Не удалось отправить комментарий';
       });
       return false;
     } finally {
@@ -451,7 +495,7 @@ export class MrInfoModel {
 
   @actionBound
   clearSubmitMrCommentError() {
-    this.submitMrCommentError = "";
+    this.submitMrCommentError = '';
   }
 
   @actionBound
@@ -461,13 +505,13 @@ export class MrInfoModel {
 
   @action
   clearResolveDiscussionError() {
-    this.resolveDiscussionError = "";
+    this.resolveDiscussionError = '';
   }
 
   @actionBound
   clearReplyDiscussionError() {
-    this.replyDiscussionErrorKey = "";
-    this.replyDiscussionError = "";
+    this.replyDiscussionErrorKey = '';
+    this.replyDiscussionError = '';
   }
 
   @actionBound
@@ -477,15 +521,15 @@ export class MrInfoModel {
     const trimmedBody = body.trim();
 
     this.replyDiscussionErrorKey = discussionId;
-    this.replyDiscussionError = "";
+    this.replyDiscussionError = '';
 
     if (!connection || !mr) {
-      this.replyDiscussionError = "Merge request не выбран";
+      this.replyDiscussionError = 'Merge request не выбран';
       return false;
     }
 
     if (!trimmedBody) {
-      this.replyDiscussionError = "Введите текст ответа";
+      this.replyDiscussionError = 'Введите текст ответа';
       return false;
     }
 
@@ -506,30 +550,30 @@ export class MrInfoModel {
     } catch (error) {
       runInAction(() => {
         this.replyDiscussionError =
-          error instanceof Error ? error.message : "Не удалось отправить ответ";
+          error instanceof Error ? error.message : 'Не удалось отправить ответ';
       });
       return false;
     } finally {
       runInAction(() => {
-        this.replyingDiscussionId = "";
+        this.replyingDiscussionId = '';
       });
     }
   }
 
-  @action
+  @actionBound
   clearUpdateNoteError() {
-    this.updateNoteError = "";
+    this.updateNoteError = '';
   }
 
   @actionBound
   clearDeleteNoteError() {
-    this.deleteNoteErrorKey = "";
-    this.deleteNoteError = "";
+    this.deleteNoteErrorKey = '';
+    this.deleteNoteError = '';
   }
 
   @action
   clearReviewActionError() {
-    this.reviewActionError = "";
+    this.reviewActionError = '';
   }
 
   private refreshDiscussions() {
@@ -555,13 +599,13 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.reviewActionError = "Merge request не выбран";
+      this.reviewActionError = 'Merge request не выбран';
       return false;
     }
 
     const actionMergeRequestKey = `${mr.project.id}:${mr.mergeRequestIid}`;
     this.reviewActionInProgress = action;
-    this.reviewActionError = "";
+    this.reviewActionError = '';
 
     try {
       await runner();
@@ -578,7 +622,7 @@ export class MrInfoModel {
           this.reviewActionError =
             error instanceof Error
               ? error.message
-              : "Не удалось выполнить действие";
+              : 'Не удалось выполнить действие';
         }
       });
       return false;
@@ -598,14 +642,19 @@ export class MrInfoModel {
     const headSha = this.mergeRequestDetail?.diff_refs?.head_sha ?? null;
 
     if (!connection || !mr) {
-      this.reviewActionError = "Merge request не выбран";
+      this.reviewActionError = 'Merge request не выбран';
       return false;
     }
 
-    return this.runReviewAction("approve", () =>
-      gitlabApi.approveMergeRequest(connection, mr.project, mr.mergeRequestIid, {
-        sha: headSha,
-      }),
+    return this.runReviewAction('approve', () =>
+      gitlabApi.approveMergeRequest(
+        connection,
+        mr.project,
+        mr.mergeRequestIid,
+        {
+          sha: headSha,
+        },
+      ),
     );
   }
 
@@ -615,12 +664,16 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.reviewActionError = "Merge request не выбран";
+      this.reviewActionError = 'Merge request не выбран';
       return false;
     }
 
-    return this.runReviewAction("unapprove", () =>
-      gitlabApi.unapproveMergeRequest(connection, mr.project, mr.mergeRequestIid),
+    return this.runReviewAction('unapprove', () =>
+      gitlabApi.unapproveMergeRequest(
+        connection,
+        mr.project,
+        mr.mergeRequestIid,
+      ),
     );
   }
 
@@ -630,11 +683,11 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.reviewActionError = "Merge request не выбран";
+      this.reviewActionError = 'Merge request не выбран';
       return false;
     }
 
-    return this.runReviewAction("requestChanges", () =>
+    return this.runReviewAction('requestChanges', () =>
       gitlabApi.requestMergeRequestChanges(
         connection,
         mr.project,
@@ -649,11 +702,11 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.reviewActionError = "Merge request не выбран";
+      this.reviewActionError = 'Merge request не выбран';
       return false;
     }
 
-    return this.runReviewAction("cancelRequestChanges", () =>
+    return this.runReviewAction('cancelRequestChanges', () =>
       gitlabApi.cancelMergeRequestRequestedChanges(
         connection,
         mr.project,
@@ -668,12 +721,12 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.resolveDiscussionError = "Merge request не выбран";
+      this.resolveDiscussionError = 'Merge request не выбран';
       return false;
     }
 
     this.resolvingDiscussionId = discussionId;
-    this.resolveDiscussionError = "";
+    this.resolveDiscussionError = '';
 
     try {
       await gitlabApi.resolveMergeRequestDiscussion(
@@ -692,12 +745,12 @@ export class MrInfoModel {
         this.resolveDiscussionError =
           error instanceof Error
             ? error.message
-            : "Не удалось обновить статус треда";
+            : 'Не удалось обновить статус треда';
       });
       return false;
     } finally {
       runInAction(() => {
-        this.resolvingDiscussionId = "";
+        this.resolvingDiscussionId = '';
       });
     }
   }
@@ -712,19 +765,19 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.updateNoteError = "Merge request не выбран";
+      this.updateNoteError = 'Merge request не выбран';
       return false;
     }
 
     const trimmedBody = body.trim();
     if (!trimmedBody) {
-      this.updateNoteError = "Введите текст комментария";
+      this.updateNoteError = 'Введите текст комментария';
       return false;
     }
 
     const noteKey = `${discussionId}:${noteId}`;
     this.updatingNoteKey = noteKey;
-    this.updateNoteError = "";
+    this.updateNoteError = '';
 
     try {
       await gitlabApi.updateMergeRequestDiscussionNote(
@@ -744,12 +797,12 @@ export class MrInfoModel {
         this.updateNoteError =
           error instanceof Error
             ? error.message
-            : "Не удалось обновить комментарий";
+            : 'Не удалось обновить комментарий';
       });
       return false;
     } finally {
       runInAction(() => {
-        this.updatingNoteKey = "";
+        this.updatingNoteKey = '';
       });
     }
   }
@@ -761,10 +814,10 @@ export class MrInfoModel {
     const noteKey = `${discussionId}:${noteId}`;
 
     this.deleteNoteErrorKey = noteKey;
-    this.deleteNoteError = "";
+    this.deleteNoteError = '';
 
     if (!connection || !mr) {
-      this.deleteNoteError = "Merge request не выбран";
+      this.deleteNoteError = 'Merge request не выбран';
       return false;
     }
 
@@ -800,12 +853,12 @@ export class MrInfoModel {
         this.deleteNoteError =
           error instanceof Error
             ? error.message
-            : "Не удалось удалить комментарий";
+            : 'Не удалось удалить комментарий';
       });
       return false;
     } finally {
       runInAction(() => {
-        this.deletingNoteKey = "";
+        this.deletingNoteKey = '';
       });
     }
   }

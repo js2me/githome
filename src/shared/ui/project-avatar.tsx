@@ -1,5 +1,5 @@
-import { makeIdentIconDataUrl } from "gologen";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
+import { makeIdentIconDataUrl } from 'gologen';
+import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
 
 export const ProjectAvatar = ({
   id,
@@ -14,11 +14,7 @@ export const ProjectAvatar = ({
 }) => {
   if (avatarUrl) {
     return (
-      <GitlabAvatar
-        className={className}
-        avatarUrl={avatarUrl}
-        name={name}
-      />
+      <GitlabAvatar className={className} avatarUrl={avatarUrl} name={name} />
     );
   }
 

@@ -1,6 +1,6 @@
-import { withPropsViewModel } from "mobx-view-model-react";
-import { cn } from "@/shared/lib/cn";
-import { GitlabAvatarVM } from "./model";
+import { withPropsViewModel } from 'mobx-view-model-react';
+import { cn } from '@/shared/lib/cn';
+import { GitlabAvatarVM } from './model';
 
 export const GitlabAvatar = withPropsViewModel(GitlabAvatarVM, ({ model }) => {
   const { displaySrc, handleImageError } = model;
@@ -22,7 +22,7 @@ export const GitlabAvatar = withPropsViewModel(GitlabAvatarVM, ({ model }) => {
   return (
     <span
       className={cn(
-        "inline-grid shrink-0 place-items-center rounded-full bg-[var(--glass-hover)] text-[11px] font-bold leading-none text-fg-muted",
+        'inline-grid shrink-0 place-items-center rounded-full bg-[var(--glass-hover)] font-bold text-[11px] text-fg-muted leading-none',
         className,
       )}
       title={name}

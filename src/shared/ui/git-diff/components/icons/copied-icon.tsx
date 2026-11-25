@@ -1,4 +1,4 @@
-import { DiffFileCopyIcon } from "./diff-file-copy-icon";
+import { DiffFileCopyIcon } from './diff-file-copy-icon';
 
 export const CopiedIcon = () => (
   <DiffFileCopyIcon className="text-green-600 dark:text-green-400">

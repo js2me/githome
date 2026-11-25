@@ -1,5 +1,5 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabGraphql } from "../client";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabGraphql } from '../client';
 
 export const ensureCurrentUserReviewer = async (
   connection: GitLabConnection,
@@ -73,6 +73,6 @@ export const ensureCurrentUserReviewer = async (
 
   const errors = mutationResult.mergeRequestSetReviewers.errors;
   if (errors.length > 0) {
-    throw new Error(errors.join("; "));
+    throw new Error(errors.join('; '));
   }
 };

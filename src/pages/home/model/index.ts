@@ -1,28 +1,35 @@
-import { actionBound, computed } from "mobx";
-import type { ViewModelParams } from "mobx-view-model";
-import type { Globals } from "@/globals";
-import type { GitlabProjectInfo } from "@/entities/gitlab-projects/model/gitlab-project-info";
-import { VM } from "@/shared/lib/view-models/vm";
-import type { LayoutVM } from "@/widgets/layout/model/layout-vm";
-import { GitlabProjectsList, type ProjectListTab } from "./gitlab-projects-list";
-import { ReviewInbox } from "./review-inbox";
+import { actionBound, computed } from 'mobx';
+import type { ViewModelParams } from 'mobx-view-model';
+import type { GitlabProjectInfo } from '@/entities/gitlab-projects';
+import type { Workspace } from '@/features/workspace-navigation';
+import { WorkspaceVM } from '@/features/workspace-navigation';
+import type { LayoutVM } from '@/widgets/layout';
+import {
+  GitlabProjectsList,
+  type ProjectListTab,
+} from './gitlab-projects-list';
+import { ReviewInbox } from './review-inbox';
 
-export class HomePageVM extends VM<{}, LayoutVM> {
+export class HomePageVM extends WorkspaceVM<{}, LayoutVM> {
   readonly gitlabProjectsList: GitlabProjectsList;
   readonly reviewInbox: ReviewInbox;
 
-  constructor(globals: Globals, params: ViewModelParams<{}, LayoutVM>) {
+  constructor(globals: Workspace, params: ViewModelParams<{}, LayoutVM>) {
     super(globals, params);
     this.gitlabProjectsList = new GitlabProjectsList({
       globals,
       abortSignal: this.unmountSignal,
     });
-    this.reviewInbox = new ReviewInbox(globals, this.unmountSignal, this.gitlabProjectsList);
+    this.reviewInbox = new ReviewInbox(
+      globals,
+      this.unmountSignal,
+      this.gitlabProjectsList,
+    );
   }
 
   @computed
   get connectionLabel() {
-    return this.globals.stores.settings.activeItem?.gitlabUrl.trim() ?? "";
+    return this.globals.stores.settings.activeItem?.gitlabUrl.trim() ?? '';
   }
 
   @computed

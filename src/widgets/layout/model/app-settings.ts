@@ -1,20 +1,35 @@
-import { Display, Moon, Sun } from "@gravity-ui/icons";
-import { actionBound, computed } from "mobx";
-import type { Globals } from "@/globals";
-import type { ThemePreference } from "@/globals/stores/theme-manager";
-import { codeFontSizeKey, wrapSourceCodeKey, type CodeFontSize } from "@/shared/lib/code-view-preferences";
-import { AppUpdates } from "./app-updates";
+import { Display, Moon, Sun } from '@gravity-ui/icons';
+import { actionBound, computed, observable } from 'mobx';
+import { createRef } from 'yummies/mobx';
+import {
+  type CodeFontSize,
+  codeFontSizeKey,
+  wrapSourceCodeKey,
+} from '@/shared/lib/code-view-preferences';
+import type { ThemePreference } from '@/shared/lib/theme-manager';
+import type { Globals } from '@/shared/model/globals';
+import { AppUpdates } from './app-updates';
+
+type SettingsSection = 'appearance' | 'code' | 'updates';
 
 export class AppSettings {
+  readonly dialog = createRef<HTMLDialogElement>();
+  @observable accessor section: SettingsSection = 'appearance';
+
+  @actionBound
+  setSection(section: SettingsSection) {
+    this.section = section;
+  }
+
   readonly updates = new AppUpdates();
   readonly themeOptions: {
     id: ThemePreference;
     label: string;
     Icon: typeof Sun;
   }[] = [
-    { id: "light", label: "Светлая", Icon: Sun },
-    { id: "system", label: "Системная", Icon: Display },
-    { id: "dark", label: "Тёмная", Icon: Moon },
+    { id: 'light', label: 'Светлая', Icon: Sun },
+    { id: 'system', label: 'Системная', Icon: Display },
+    { id: 'dark', label: 'Тёмная', Icon: Moon },
   ];
 
   constructor(private readonly globals: Globals) {}

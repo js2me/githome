@@ -1,6 +1,9 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabFetch } from "../client";
-import type { GitLabMergeRequestVersionDC, GitLabProjectDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabFetch } from '../client';
+import type {
+  GitLabMergeRequestVersionDC,
+  GitLabProjectDC,
+} from '../data-contracts';
 
 export const getMergeRequestVersions = async (
   connection: GitLabConnection,
@@ -14,21 +17,21 @@ export const getMergeRequestVersions = async (
   while (true) {
     const params = new URLSearchParams({
       page: String(page),
-      per_page: "100",
+      per_page: '100',
     });
 
     const response = await gitlabFetch(
       connection,
       `/projects/${project.id}/merge_requests/${mergeRequestIid}/versions?${params}`,
       signal,
-      { cache: "no-store" },
+      { cache: 'no-store' },
     );
 
     const pageVersions =
       (await response.json()) as GitLabMergeRequestVersionDC[];
     allVersions.push(...pageVersions);
 
-    const nextPage = response.headers.get("x-next-page");
+    const nextPage = response.headers.get('x-next-page');
     if (!nextPage) {
       break;
     }

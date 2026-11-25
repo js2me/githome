@@ -1,4 +1,4 @@
-import { cn } from "@/shared/lib/cn";
+import { cn } from '@/shared/lib/cn';
 
 export const LoadingState = ({
   className,
@@ -10,7 +10,7 @@ export const LoadingState = ({
   <div
     role="status"
     className={cn(
-      "glass-panel flex min-h-52 flex-col items-center justify-center gap-3 rounded-2xl p-8",
+      'glass-panel flex min-h-52 flex-col items-center justify-center gap-3 rounded-2xl p-8',
       className,
     )}
   >
@@ -18,6 +18,6 @@ export const LoadingState = ({
       className="size-6 rounded-full border-2 border-[var(--glass-border)] border-t-[var(--glass-accent)] motion-safe:animate-spin"
       aria-hidden
     />
-    <p className="text-sm text-fg-muted">{children}</p>
+    <p className="text-fg-muted text-sm">{children}</p>
   </div>
 );

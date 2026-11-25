@@ -1,14 +1,14 @@
-import { actionBound, computed, observable, observableRef } from "mobx";
-import type { ViewModelParams } from "mobx-view-model";
-import type { Globals } from "@/globals";
+import { actionBound, computed, observable, observableRef } from 'mobx';
+import type { ViewModelParams } from 'mobx-view-model';
 import type {
   GitLabMergeRequestDC,
   GitLabProjectAnalyticsDC,
-} from "@/shared/api/gitlab";
-import { gitlabApi } from "@/shared/api/gitlab";
-import { createGitlabApiQuery } from "@/shared/lib/gitlab/create-query";
-import { VM } from "@/shared/lib/view-models/vm";
-import { RepositoryPageVM } from "@/pages/repository/model/page-vm";
+} from '@/shared/api/gitlab';
+import { gitlabApi } from '@/shared/api/gitlab';
+import { createGitlabApiQuery } from '@/shared/lib/gitlab/create-query';
+import { VM } from '@/shared/lib/view-models/vm';
+import type { Globals } from '@/shared/model/globals';
+import type { RepositoryPageVM } from '../../../model/page-vm';
 
 const JIRA_ID_PATTERN = /\b[A-Z][A-Z0-9]+-\d+\b/i;
 const hasJiraId = (mergeRequest: GitLabMergeRequestDC) =>
@@ -20,10 +20,10 @@ const hasJiraId = (mergeRequest: GitLabMergeRequestDC) =>
       mergeRequest.target_branch,
     ]
       .filter(Boolean)
-      .join("\n"),
+      .join('\n'),
   );
 const getChangedFileCount = (mergeRequest: GitLabMergeRequestDC) => {
-  const count = Number.parseInt(mergeRequest.changes_count ?? "", 10);
+  const count = Number.parseInt(mergeRequest.changes_count ?? '', 10);
   return Number.isFinite(count) ? count : 0;
 };
 
@@ -42,10 +42,7 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
 
   readonly analyticsQuery;
 
-  constructor(
-    globals: Globals,
-    params: ViewModelParams<{}, RepositoryPageVM>,
-  ) {
+  constructor(globals: Globals, params: ViewModelParams<{}, RepositoryPageVM>) {
     super(globals, params);
 
     this.analyticsQuery = createGitlabApiQuery<
@@ -75,7 +72,7 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
       },
       queryKey: ({ connection, projectId, defaultBranch, since, until }) =>
         [
-          "repository-analytics",
+          'repository-analytics',
           connection.gitlabUrl,
           projectId,
           defaultBranch,
@@ -149,10 +146,10 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
     return this.hasAnalyticsProgress &&
       this.analyticsProgressKey === this.currentAnalyticsKey
       ? this.analyticsProgress
-      : this.analyticsQuery.data ?? {
+      : (this.analyticsQuery.data ?? {
           commits: [],
           mergedMergeRequests: [],
-        };
+        });
   }
 
   @computed
@@ -185,7 +182,7 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
     >();
 
     for (const mergeRequest of this.analytics.mergedMergeRequests) {
-      const author = mergeRequest.author?.name?.trim() || "Без имени";
+      const author = mergeRequest.author?.name?.trim() || 'Без имени';
       const username = mergeRequest.author?.username?.trim().toLowerCase();
       const key = username || author.toLowerCase();
       const stats = changesByAuthor.get(key) ?? {
@@ -253,10 +250,10 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
 
       return {
         ...count,
-        label: date.toLocaleDateString("ru-RU", {
-          day: "numeric",
-          month: "short",
-          timeZone: "UTC",
+        label: date.toLocaleDateString('ru-RU', {
+          day: 'numeric',
+          month: 'short',
+          timeZone: 'UTC',
         }),
       };
     });
@@ -295,7 +292,7 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
     return error instanceof Error
       ? error.message
       : error
-        ? "Не удалось загрузить аналитику репозитория"
+        ? 'Не удалось загрузить аналитику репозитория'
         : null;
   }
 

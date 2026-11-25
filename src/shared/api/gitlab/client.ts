@@ -1,4 +1,4 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
 
 interface GraphQLResponse<T> {
   data?: T;
@@ -9,31 +9,33 @@ interface GraphQLResponse<T> {
 }
 
 export class GitLabGraphqlError extends Error {
-  constructor(readonly errors: NonNullable<GraphQLResponse<unknown>["errors"]>) {
-    super(errors.map((error) => error.message).join("; "));
-    this.name = "GitLabGraphqlError";
+  constructor(
+    readonly errors: NonNullable<GraphQLResponse<unknown>['errors']>,
+  ) {
+    super(errors.map((error) => error.message).join('; '));
+    this.name = 'GitLabGraphqlError';
   }
 }
 
-export const GIT_PROXY_PREFIX = "/git-proxy";
+export const GIT_PROXY_PREFIX = '/git-proxy';
 
 export const normalizeGitlabBaseUrl = (url: string): string => {
   let normalized = url.trim();
   if (!normalized) {
-    return "";
+    return '';
   }
 
   if (!/^https?:\/\//i.test(normalized)) {
     normalized = `https://${normalized}`;
   }
 
-  return normalized.replace(/\/+$/, "");
+  return normalized.replace(/\/+$/, '');
 };
 
 const getGitlabOrigin = (gitlabUrl: string) => {
   const url = new URL(normalizeGitlabBaseUrl(gitlabUrl));
   return {
-    protocol: url.protocol.replace(":", ""),
+    protocol: url.protocol.replace(':', ''),
     host: url.host,
   };
 };
@@ -69,7 +71,7 @@ const resolveGitlabAssetApiPath = (pathname: string): string => {
 const normalizeAssetUrl = (assetUrl: string, gitlabBase: string): string => {
   const trimmed = assetUrl.trim();
 
-  if (trimmed.startsWith("//")) {
+  if (trimmed.startsWith('//')) {
     return `${new URL(gitlabBase).protocol}${trimmed}`;
   }
 
@@ -84,8 +86,8 @@ const parseGitlabAssetLocation = (
   const gitlabOrigin = new URL(gitlabBase).origin;
   const { host } = getGitlabOrigin(gitlabBase);
 
-  if (normalizedAssetUrl.startsWith("/")) {
-    const questionIndex = normalizedAssetUrl.indexOf("?");
+  if (normalizedAssetUrl.startsWith('/')) {
+    const questionIndex = normalizedAssetUrl.indexOf('?');
     return {
       host,
       pathname:
@@ -93,7 +95,7 @@ const parseGitlabAssetLocation = (
           ? normalizedAssetUrl.slice(0, questionIndex)
           : normalizedAssetUrl,
       search:
-        questionIndex >= 0 ? normalizedAssetUrl.slice(questionIndex + 1) : "",
+        questionIndex >= 0 ? normalizedAssetUrl.slice(questionIndex + 1) : '',
     };
   }
 
@@ -134,7 +136,7 @@ export const resolveGitlabAssetUrl = (
   }
 
   const apiPath = resolveGitlabAssetApiPath(location.pathname);
-  const query = location.search ? `?${location.search}` : "";
+  const query = location.search ? `?${location.search}` : '';
   return `${GIT_PROXY_PREFIX}/${location.host}${apiPath}${query}`;
 };
 
@@ -148,16 +150,16 @@ export const fetchGitlabAssetBlob = async (
 ): Promise<Blob> => {
   const url = resolveGitlabAssetUrl(connection, assetUrl);
   if (!url) {
-    throw new Error("GitLab asset URL is empty");
+    throw new Error('GitLab asset URL is empty');
   }
 
   const response = await fetch(url, {
     headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-      "PRIVATE-TOKEN": connection.gitToken,
+      'PRIVATE-TOKEN': connection.gitToken,
     }),
     // An avatar redirect may point to a third-party CDN. The avatar component
     // retries it as a regular image without sending the account's request headers.
-    redirect: "error",
+    redirect: 'error',
     signal,
   });
 
@@ -178,7 +180,7 @@ export const resolveGitlabRequestUrl = (
   }
 
   const { host, pathname } = new URL(baseUrl);
-  return `${GIT_PROXY_PREFIX}/${host}${pathname.replace(/\/+$/, "")}${path}`;
+  return `${GIT_PROXY_PREFIX}/${host}${pathname.replace(/\/+$/, '')}${path}`;
 };
 
 export const buildGitlabRequestHeaders = (
@@ -193,12 +195,12 @@ export const buildGitlabRequestHeaders = (
 
   return {
     ...headers,
-    "X-Gitlab-Proxy-Protocol": protocol,
+    'X-Gitlab-Proxy-Protocol': protocol,
   };
 };
 
 const getRetryAfterMs = (response: Response): number | null => {
-  const retryAfter = response.headers.get("retry-after")?.trim();
+  const retryAfter = response.headers.get('retry-after')?.trim();
   if (retryAfter) {
     const seconds = Number(retryAfter);
     if (Number.isFinite(seconds) && seconds >= 0) {
@@ -211,7 +213,7 @@ const getRetryAfterMs = (response: Response): number | null => {
     }
   }
 
-  const resetAt = Number(response.headers.get("ratelimit-reset"));
+  const resetAt = Number(response.headers.get('ratelimit-reset'));
   if (Number.isFinite(resetAt) && resetAt > 0) {
     return Math.max(0, resetAt * 1000 - Date.now());
   }
@@ -226,7 +228,7 @@ export class GitLabApiError extends Error {
     readonly retryAfterMs: number | null = null,
   ) {
     super(message);
-    this.name = "GitLabApiError";
+    this.name = 'GitLabApiError';
   }
 }
 
@@ -237,12 +239,12 @@ export const gitlabGraphql = async <T>(
   signal?: AbortSignal,
 ): Promise<T> => {
   const response = await fetch(
-    resolveGitlabRequestUrl(connection.gitlabUrl, "/api/graphql"),
+    resolveGitlabRequestUrl(connection.gitlabUrl, '/api/graphql'),
     {
-      method: "POST",
+      method: 'POST',
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        "PRIVATE-TOKEN": connection.gitToken,
-        "Content-Type": "application/json",
+        'PRIVATE-TOKEN': connection.gitToken,
+        'Content-Type': 'application/json',
       }),
       body: JSON.stringify({ query, variables }),
       signal,
@@ -251,7 +253,9 @@ export const gitlabGraphql = async <T>(
 
   if (!response.ok) {
     if (response.status === 400) {
-      const payload = await response.json().catch(() => null) as GraphQLResponse<T> | null;
+      const payload = (await response
+        .json()
+        .catch(() => null)) as GraphQLResponse<T> | null;
       if (Array.isArray(payload?.errors) && payload.errors.length) {
         throw new GitLabGraphqlError(payload.errors);
       }
@@ -266,7 +270,7 @@ export const gitlabGraphql = async <T>(
   }
 
   if (!payload.data) {
-    throw new Error("GitLab GraphQL error: empty response");
+    throw new Error('GitLab GraphQL error: empty response');
   }
 
   return payload.data;
@@ -293,20 +297,20 @@ export const buildGitlabPath = (
     return path;
   }
 
-  return `${path}${path.includes("?") ? "&" : "?"}${queryString}`;
+  return `${path}${path.includes('?') ? '&' : '?'}${queryString}`;
 };
 
 export const gitlabFetch = async (
   connection: GitLabConnection,
   path: string,
   signal?: AbortSignal,
-  options?: Pick<RequestInit, "cache">,
+  options?: Pick<RequestInit, 'cache'>,
 ) => {
   const response = await fetch(
     resolveGitlabRequestUrl(connection.gitlabUrl, `/api/v4${path}`),
     {
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        "PRIVATE-TOKEN": connection.gitToken,
+        'PRIVATE-TOKEN': connection.gitToken,
       }),
       ...options,
       signal,
@@ -333,9 +337,9 @@ export const gitlabPostForm = async <T>(
   const response = await fetch(
     resolveGitlabRequestUrl(connection.gitlabUrl, `/api/v4${path}`),
     {
-      method: "POST",
+      method: 'POST',
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        "PRIVATE-TOKEN": connection.gitToken,
+        'PRIVATE-TOKEN': connection.gitToken,
       }),
       body: formData,
       signal,
@@ -363,10 +367,10 @@ export const gitlabPost = async <T>(
   const response = await fetch(
     resolveGitlabRequestUrl(connection.gitlabUrl, `/api/v4${path}`),
     {
-      method: "POST",
+      method: 'POST',
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        "PRIVATE-TOKEN": connection.gitToken,
-        "Content-Type": "application/json",
+        'PRIVATE-TOKEN': connection.gitToken,
+        'Content-Type': 'application/json',
       }),
       body: JSON.stringify(body),
       signal,
@@ -394,10 +398,10 @@ export const gitlabPut = async <T>(
   const response = await fetch(
     resolveGitlabRequestUrl(connection.gitlabUrl, `/api/v4${path}`),
     {
-      method: "PUT",
+      method: 'PUT',
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        "PRIVATE-TOKEN": connection.gitToken,
-        "Content-Type": "application/json",
+        'PRIVATE-TOKEN': connection.gitToken,
+        'Content-Type': 'application/json',
       }),
       body: JSON.stringify(body),
       signal,
@@ -424,9 +428,9 @@ export const gitlabDelete = async (
   const response = await fetch(
     resolveGitlabRequestUrl(connection.gitlabUrl, `/api/v4${path}`),
     {
-      method: "DELETE",
+      method: 'DELETE',
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        "PRIVATE-TOKEN": connection.gitToken,
+        'PRIVATE-TOKEN': connection.gitToken,
       }),
       signal,
     },
@@ -465,7 +469,7 @@ export const gitlabWebFetch = async (
   connection: GitLabConnection,
   path: string,
   signal?: AbortSignal,
-  options?: Pick<RequestInit, "cache">,
+  options?: Pick<RequestInit, 'cache'>,
 ) => {
   const response = await fetch(
     resolveGitlabRequestUrl(
@@ -474,22 +478,22 @@ export const gitlabWebFetch = async (
     ),
     {
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        "PRIVATE-TOKEN": connection.gitToken,
-        Accept: "application/json",
-        "X-Requested-With": "XMLHttpRequest",
+        'PRIVATE-TOKEN': connection.gitToken,
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
       }),
-      redirect: "manual",
+      redirect: 'manual',
       ...options,
       signal,
     },
   );
 
   if (
-    response.type === "opaqueredirect" ||
+    response.type === 'opaqueredirect' ||
     (response.status >= 300 && response.status < 400)
   ) {
     throw new Error(
-      "GitLab web API: требуется авторизация (редирект на страницу входа). Проверьте токен доступа.",
+      'GitLab web API: требуется авторизация (редирект на страницу входа). Проверьте токен доступа.',
     );
   }
 
@@ -524,18 +528,21 @@ export const fetchGitlabWebJson = async <T>(
     ),
     {
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        "PRIVATE-TOKEN": connection.gitToken,
-        Accept: "application/json",
-        "X-Requested-With": "XMLHttpRequest",
+        'PRIVATE-TOKEN': connection.gitToken,
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
       }),
-      redirect: "manual",
+      redirect: 'manual',
       signal: options?.signal,
     },
   );
 
-  if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
+  if (
+    response.type === 'opaqueredirect' ||
+    (response.status >= 300 && response.status < 400)
+  ) {
     throw new Error(
-      "GitLab web API: требуется авторизация (редирект на страницу входа). Проверьте токен доступа.",
+      'GitLab web API: требуется авторизация (редирект на страницу входа). Проверьте токен доступа.',
     );
   }
 
@@ -548,8 +555,8 @@ export const fetchGitlabWebJson = async <T>(
     );
   }
 
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) {
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
     const body = await response.text();
     throw new Error(
       `GitLab web API returned non-JSON response: ${body.slice(0, 200)}`,

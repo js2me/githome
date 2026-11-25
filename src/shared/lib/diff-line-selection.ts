@@ -1,5 +1,5 @@
-import type { VirtualDiffRow } from "@/shared/lib/build-diff-virtual-rows";
-import type { DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
+import type { VirtualDiffRow } from '@/shared/lib/build-diff-virtual-rows';
+import type { DiffDisplayLine } from '@/shared/lib/parse-unified-diff';
 
 export interface DiffLineSelection {
   startKey: string;
@@ -12,7 +12,7 @@ export const getOrderedCommentableLineKeys = (
   const keys: string[] = [];
 
   for (const row of rows) {
-    if (row.type === "line" && row.lineKey) {
+    if (row.type === 'line' && row.lineKey) {
       keys.push(row.lineKey);
     }
   }
@@ -95,10 +95,10 @@ export const getLineFromVirtualRows = (
   lineKey: string,
 ): DiffDisplayLine | null => {
   const row = rows.find(
-    (item) => item.type === "line" && item.lineKey === lineKey,
+    (item) => item.type === 'line' && item.lineKey === lineKey,
   );
 
-  return row?.type === "line" ? row.line : null;
+  return row?.type === 'line' ? row.line : null;
 };
 
 export const getSelectionLineRangeLabel = (
@@ -123,7 +123,7 @@ export const getSelectionLineRangeLabel = (
   }
 
   const formatLine = (line: DiffDisplayLine) => {
-    if (line.type === "delete" && line.oldLine !== null) {
+    if (line.type === 'delete' && line.oldLine !== null) {
       return `−${line.oldLine}`;
     }
 
@@ -131,7 +131,7 @@ export const getSelectionLineRangeLabel = (
       return `+${line.newLine}`;
     }
 
-    return "?";
+    return '?';
   };
 
   return `${formatLine(startLine)} – ${formatLine(endLine)}`;

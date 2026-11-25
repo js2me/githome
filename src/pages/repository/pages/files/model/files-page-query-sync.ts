@@ -1,10 +1,10 @@
-import { reaction } from "mobx";
-import type { Globals } from "@/globals";
+import { reaction } from 'mobx';
+import type { Workspace } from '@/features/workspace-navigation';
 
 export const FILES_QUERY_KEYS = {
-  branch: "branch",
-  commit: "commit",
-  file: "file",
+  branch: 'branch',
+  commit: 'commit',
+  file: 'file',
 } as const;
 
 export type FilesQueryData = {
@@ -19,7 +19,7 @@ export class FilesPageQuerySync {
   private syncingFromQuery = false;
 
   constructor(
-    private readonly globals: Globals,
+    private readonly globals: Workspace,
     private readonly getState: () => FilesQueryState,
     private readonly applyState: (data: FilesQueryData) => void,
   ) {

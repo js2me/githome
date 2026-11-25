@@ -1,6 +1,6 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabFetch } from "../client";
-import type { GitLabRepositoryTreeItemDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabFetch } from '../client';
+import type { GitLabRepositoryTreeItemDC } from '../data-contracts';
 
 export const getRepositoryTree = async (
   connection: GitLabConnection,
@@ -12,15 +12,15 @@ export const getRepositoryTree = async (
 ): Promise<GitLabRepositoryTreeItemDC[]> => {
   const query = new URLSearchParams({
     ref,
-    per_page: "100",
+    per_page: '100',
   });
 
   if (path) {
-    query.set("path", path);
+    query.set('path', path);
   }
 
   if (options?.recursive) {
-    query.set("recursive", "true");
+    query.set('recursive', 'true');
   }
 
   const response = await gitlabFetch(

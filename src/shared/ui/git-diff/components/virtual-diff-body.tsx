@@ -1,303 +1,128 @@
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { observer } from "mobx-react-lite";
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type RefObject,
-} from "react";
-import type { InlineDiffThread } from "@/shared/lib/gitlab/diff-discussions";
-import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
-import type { VirtualDiffRow } from "@/shared/lib/build-diff-virtual-rows";
-import type { DiffExpandMode } from "@/shared/lib/expand-diff-context";
-import type { DiffLineSelection } from "@/shared/lib/diff-line-selection";
-import {
-  isLineKeyInSelection,
-  normalizeDiffLineSelection,
-} from "@/shared/lib/diff-line-selection";
-import type { FileGitDiff } from "../model/file-git-diff";
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
+import { observer } from 'mobx-react-lite';
+import { useLayoutEffect } from 'react';
+import type { VirtualDiffRow } from '@/shared/lib/build-diff-virtual-rows';
+import type { FileGitDiff } from '../model/file-git-diff';
 import {
   DiffCommentFormRow,
   DiffExpandRow,
   DiffHunkRow,
   DiffLineRow,
   DiffThreadRow,
-} from "./diff-rows";
-
-const getLineSelectionFlags = (
-  lineKey: string | null,
-  selectedLineKeys: Set<string>,
-  selectionStartKey: string | null,
-  selectionEndKey: string | null,
-) => {
-  if (!lineKey || selectedLineKeys.size === 0) {
-    return {
-      isSelected: false,
-      isSelectionStart: false,
-      isSelectionEnd: false,
-    };
-  }
-
-  return {
-    isSelected: selectedLineKeys.has(lineKey),
-    isSelectionStart: lineKey === selectionStartKey,
-    isSelectionEnd: lineKey === selectionEndKey,
-  };
-};
+} from './diff-rows';
 
 const isDiffCodeRow = (row: VirtualDiffRow) =>
-  row.type === "line" || row.type === "hunk" || row.type === "expand";
+  row.type === 'line' || row.type === 'hunk' || row.type === 'expand';
 
 const getDiffRowLayoutClassName = (row: VirtualDiffRow) =>
-  isDiffCodeRow(row) ? "w-full min-w-max" : "w-full min-w-full";
+  isDiffCodeRow(row) ? 'w-full min-w-max' : 'w-full min-w-full';
 
-type DiffThreadResolveProps = {
-  markdownScope?: GitlabMarkdownScope;
-  onResolveThread?: (discussionId: string, resolved: boolean) => void;
-  resolvingDiscussionId?: string | null;
-  onReplyThread?: (discussionId: string, body: string) => Promise<boolean>;
-  replyingDiscussionId?: string | null;
-  replyErrorDiscussionId?: string | null;
-  replyError?: string | null;
-  onClearReplyError?: () => void;
-  currentUserId?: number | null;
-  onUpdateDiscussionNote?: (
-    discussionId: string,
-    noteId: number,
-    body: string,
-  ) => Promise<boolean>;
-  onDeleteDiscussionNote?: (
-    discussionId: string,
-    noteId: number,
-  ) => Promise<boolean>;
-  updatingNoteKey?: string | null;
-  deletingNoteKey?: string | null;
-  updateNoteError?: string | null;
-  deleteNoteErrorKey?: string | null;
-  deleteNoteError?: string | null;
-  onClearUpdateNoteError?: () => void;
-  onClearDeleteNoteError?: () => void;
-};
-
-type DiffLineCommentFormProps = {
-  formKey: string;
-  rangeLabel: string | null;
-  errorMessage: string | null;
-  isSubmitting: boolean;
-  onCancel: () => void;
-  onSubmit: (body: string) => void;
-};
-
-const useResolvedThreadExpansion = () => {
-  const [expandedDiscussionIds, setExpandedDiscussionIds] = useState<
-    Set<string>
-  >(() => new Set());
-
-  const isThreadExpanded = useCallback(
-    (threadOrDiscussionId: InlineDiffThread | string) => {
-      const discussionId =
-        typeof threadOrDiscussionId === "string"
-          ? threadOrDiscussionId
-          : threadOrDiscussionId.discussionId;
-      const resolved =
-        typeof threadOrDiscussionId === "string"
-          ? true
-          : threadOrDiscussionId.resolved;
-
-      return !resolved || expandedDiscussionIds.has(discussionId);
-    },
-    [expandedDiscussionIds],
-  );
-
-  const toggleThreadExpanded = useCallback((discussionId: string) => {
-    setExpandedDiscussionIds((current) => {
-      const next = new Set(current);
-      if (next.has(discussionId)) {
-        next.delete(discussionId);
-      } else {
-        next.add(discussionId);
-      }
-      return next;
-    });
-  }, []);
-
-  const collapseThreads = useCallback((discussionIds: string[]) => {
-    if (discussionIds.length === 0) {
-      return;
-    }
-
-    setExpandedDiscussionIds((current) => {
-      const next = new Set(current);
-      let changed = false;
-
-      for (const discussionId of discussionIds) {
-        if (next.delete(discussionId)) {
-          changed = true;
-        }
-      }
-
-      return changed ? next : current;
-    });
-  }, []);
-
-  return {
-    expandedDiscussionIds,
-    isThreadExpanded,
-    toggleThreadExpanded,
-    collapseThreads,
-  };
-};
-
-const VirtualDiffRowView = memo(
-  ({
-    row,
-    canComment,
-    selectedLineKeys,
-    selectionStartKey,
-    selectionEndKey,
-    onLineClick,
-    onLineMouseDown,
-    onLineMouseEnter,
-    onExpandGap,
-    onResolveThread,
-    resolvingDiscussionId,
-    onReplyThread,
-    replyingDiscussionId,
-    replyErrorDiscussionId,
-    replyError,
-    onClearReplyError,
-    currentUserId,
-    onUpdateDiscussionNote,
-    onDeleteDiscussionNote,
-    updatingNoteKey,
-    deletingNoteKey,
-    updateNoteError,
-    deleteNoteErrorKey,
-    deleteNoteError,
-    onClearUpdateNoteError,
-    onClearDeleteNoteError,
-    markdownScope,
-    isThreadExpanded,
-    onToggleThreadExpanded,
-    lineCommentForm,
-  }: {
-    row: VirtualDiffRow;
-    canComment: boolean;
-    selectedLineKeys: Set<string>;
-    selectionStartKey: string | null;
-    selectionEndKey: string | null;
-    onLineClick: (lineKey: string, shiftKey: boolean) => void;
-    onLineMouseDown: (lineKey: string) => void;
-    onLineMouseEnter: (lineKey: string) => void;
-    onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
-    isThreadExpanded: (threadOrDiscussionId: InlineDiffThread | string) => boolean;
-    onToggleThreadExpanded: (discussionId: string) => void;
-    lineCommentForm: DiffLineCommentFormProps | null;
-  } & DiffThreadResolveProps) => {
-    if (row.type === "expand") {
+const VirtualDiffRowView = observer(
+  ({ row, file }: { row: VirtualDiffRow; file: FileGitDiff }) => {
+    const payload = file.parent.payload;
+    if (row.type === 'expand') {
       return (
         <DiffExpandRow
           gap={row.gap}
           expandState={row.expandState}
           isLoading={row.isLoading}
           hunkHeader={row.hunkHeader}
-          onExpand={(gap, mode) => onExpandGap?.(gap.id, mode)}
+          onExpand={(gap, mode) =>
+            file.meta.canExpand && file.expand.expandGap(gap.id, mode)
+          }
         />
       );
     }
 
-    if (row.type === "hunk") {
+    if (row.type === 'hunk') {
       return <DiffHunkRow header={row.header} />;
     }
 
-    if (row.type === "line") {
-      const selectionFlags = getLineSelectionFlags(
-        row.lineKey,
-        selectedLineKeys,
-        selectionStartKey,
-        selectionEndKey,
-      );
-
+    if (row.type === 'line') {
+      const selected = file.selection.lineSelection;
       return (
         <DiffLineRow
           line={row.line}
           prefix={row.prefix}
           lineKey={row.lineKey}
           rowId={row.id}
-          canComment={canComment}
+          canComment={payload.canComment}
           hasThreads={row.threadsCount > 0}
           threads={row.threads}
-          isThreadExpanded={isThreadExpanded}
-          onToggleThreadExpand={onToggleThreadExpanded}
-          isSelected={selectionFlags.isSelected}
-          isSelectionStart={selectionFlags.isSelectionStart}
-          isSelectionEnd={selectionFlags.isSelectionEnd}
+          isThreadExpanded={file.rows.isThreadExpanded}
+          onToggleThreadExpand={file.rows.toggleThread}
+          isSelected={Boolean(
+            row.lineKey && file.selection.selectedKeys.has(row.lineKey),
+          )}
+          isSelectionStart={Boolean(
+            row.lineKey && selected?.startKey === row.lineKey,
+          )}
+          isSelectionEnd={Boolean(
+            row.lineKey && selected?.endKey === row.lineKey,
+          )}
           wordDiffSegments={row.wordDiffSegments}
           onCommentClick={(shiftKey) => {
             if (row.lineKey) {
-              onLineClick(row.lineKey, shiftKey);
+              file.selection.handleLineClick(row.lineKey, shiftKey);
             }
           }}
           onLineMouseDown={() => {
             if (row.lineKey) {
-              onLineMouseDown(row.lineKey);
+              file.selection.handleLineMouseDown(row.lineKey);
             }
           }}
           onLineMouseEnter={() => {
             if (row.lineKey) {
-              onLineMouseEnter(row.lineKey);
+              file.selection.handleLineMouseEnter(row.lineKey);
             }
           }}
         />
       );
     }
 
-    if (row.type === "thread") {
+    if (row.type === 'thread') {
       return (
         <DiffThreadRow
-          markdownScope={markdownScope}
+          markdownScope={payload.markdownScope}
           thread={row.thread}
-          onResolveThread={onResolveThread}
-          resolvingDiscussionId={resolvingDiscussionId}
-          onReplyThread={onReplyThread}
-          replyingDiscussionId={replyingDiscussionId}
-          replyErrorDiscussionId={replyErrorDiscussionId}
-          replyError={replyError}
-          onClearReplyError={onClearReplyError}
-          expanded={isThreadExpanded(row.thread)}
-          onToggleExpand={() => onToggleThreadExpanded(row.thread.discussionId)}
-          currentUserId={currentUserId}
-          onUpdateNote={onUpdateDiscussionNote}
-          onDeleteNote={onDeleteDiscussionNote}
-          updatingNoteKey={updatingNoteKey}
-          deletingNoteKey={deletingNoteKey}
-          updateNoteError={updateNoteError}
-          deleteNoteErrorKey={deleteNoteErrorKey}
-          deleteNoteError={deleteNoteError}
-          onClearUpdateNoteError={onClearUpdateNoteError}
-          onClearDeleteNoteError={onClearDeleteNoteError}
+          onResolveThread={payload.onResolveThread}
+          resolvingDiscussionId={payload.resolvingDiscussionId}
+          onReplyThread={payload.onReplyThread}
+          replyingDiscussionId={payload.replyingDiscussionId}
+          replyErrorDiscussionId={payload.replyErrorDiscussionId}
+          replyError={payload.replyError}
+          onClearReplyError={payload.onClearReplyError}
+          expanded={
+            !row.thread.resolved ||
+            file.rows.isThreadExpanded(row.thread.discussionId)
+          }
+          onToggleExpand={() => file.rows.toggleThread(row.thread.discussionId)}
+          currentUserId={payload.currentUserId}
+          onUpdateNote={payload.onUpdateDiscussionNote}
+          onDeleteNote={payload.onDeleteDiscussionNote}
+          updatingNoteKey={payload.updatingNoteKey}
+          deletingNoteKey={payload.deletingNoteKey}
+          updateNoteError={payload.updateNoteError}
+          deleteNoteErrorKey={payload.deleteNoteErrorKey}
+          deleteNoteError={payload.deleteNoteError}
+          onClearUpdateNoteError={payload.onClearUpdateNoteError}
+          onClearDeleteNoteError={payload.onClearDeleteNoteError}
         />
       );
     }
 
-    if (row.type === "comment-form") {
-      if (!lineCommentForm) {
-        return null;
-      }
-
+    if (row.type === 'comment-form') {
+      const selection = file.selection.lineSelection;
+      if (!selection) return null;
       return (
         <DiffCommentFormRow
-          formKey={lineCommentForm.formKey}
-          markdownScope={markdownScope}
-          errorMessage={lineCommentForm.errorMessage}
-          isSubmitting={lineCommentForm.isSubmitting}
-          rangeLabel={lineCommentForm.rangeLabel}
-          onCancel={lineCommentForm.onCancel}
-          onSubmit={lineCommentForm.onSubmit}
+          key={file.selection.formKey}
+          markdownScope={payload.markdownScope}
+          errorMessage={payload.submitCommentError}
+          isSubmitting={payload.isSubmittingComment}
+          rangeLabel={file.rows.selectionRangeLabel}
+          onCancel={file.selection.clearSelection}
+          onSubmit={file.selection.submitLineComment}
         />
       );
     }
@@ -306,501 +131,94 @@ const VirtualDiffRowView = memo(
   },
 );
 
-const StaticDiffBody = memo(
-  ({
-    rows,
-    canComment,
-    lineSelection,
-    orderedLineKeys,
-    onLineClick,
-    onLineMouseDown,
-    onLineMouseEnter,
-    onExpandGap,
-    onRegisterScrollToRow,
-    onResolveThread,
-    resolvingDiscussionId,
-    onReplyThread,
-    replyingDiscussionId,
-    replyErrorDiscussionId,
-    replyError,
-    onClearReplyError,
-    currentUserId,
-    onUpdateDiscussionNote,
-    onDeleteDiscussionNote,
-    updatingNoteKey,
-    deletingNoteKey,
-    updateNoteError,
-    deleteNoteErrorKey,
-    deleteNoteError,
-    onClearUpdateNoteError,
-    onClearDeleteNoteError,
-    markdownScope,
-    isThreadExpanded,
-    onToggleThreadExpanded,
-    lineCommentForm,
-  }: {
-    rows: VirtualDiffRow[];
-    canComment: boolean;
-    lineSelection: DiffLineSelection | null;
-    orderedLineKeys: string[];
-    onLineClick: (lineKey: string, shiftKey: boolean) => void;
-    onLineMouseDown: (lineKey: string) => void;
-    onLineMouseEnter: (lineKey: string) => void;
-    onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
-    onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
-    isThreadExpanded: (threadOrDiscussionId: InlineDiffThread | string) => boolean;
-    onToggleThreadExpanded: (discussionId: string) => void;
-    lineCommentForm: DiffLineCommentFormProps | null;
-  } & DiffThreadResolveProps) => {
-    const normalizedSelection = useMemo(() => {
-      if (!lineSelection) {
-        return null;
+const VirtualizedDiffBody = observer(({ file }: { file: FileGitDiff }) => {
+  const { navigation } = file;
+  const rows = file.rows.virtualRows;
+  const virtualizer = useWindowVirtualizer({
+    count: rows.length,
+    estimateSize: (index) => rows[index]?.estimatedHeight ?? 20,
+    getItemKey: (index) => rows[index]?.id ?? index,
+    overscan: 24,
+    scrollMargin: navigation.scrollMargin,
+    measureElement: (element) => element.getBoundingClientRect().height,
+  });
+
+  const measureKey = file.rows.layoutKey;
+  useLayoutEffect(() => {
+    navigation.measureMargin();
+    virtualizer.measure();
+  }, [measureKey, navigation, virtualizer]);
+
+  useLayoutEffect(() => {
+    return navigation.registerScrollToRow((rowId: string) => {
+      const index = rows.findIndex((row) => row.id === rowId);
+      if (index >= 0) {
+        virtualizer.scrollToIndex(index, { align: 'center' });
       }
+    });
+  }, [navigation, rows, virtualizer]);
 
-      return normalizeDiffLineSelection(
-        lineSelection.startKey,
-        lineSelection.endKey,
-        orderedLineKeys,
-      );
-    }, [lineSelection, orderedLineKeys]);
+  return (
+    <div ref={navigation.listRef} className="diff-viewport w-full pl-7">
+      <div
+        className="relative w-full"
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const row = rows[virtualRow.index];
 
-    const selectedLineKeys = useMemo(() => {
-      if (!lineSelection || !normalizedSelection) {
-        return new Set<string>();
-      }
+          return (
+            <div
+              key={row.id}
+              data-index={virtualRow.index}
+              data-diff-row-id={row.id}
+              ref={virtualizer.measureElement}
+              className={getDiffRowLayoutClassName(row)}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualRow.start - navigation.scrollMargin}px)`,
+              }}
+            >
+              <VirtualDiffRowView row={row} file={file} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
 
-      return new Set(
-        orderedLineKeys.filter((lineKey) =>
-          isLineKeyInSelection(lineKey, lineSelection, orderedLineKeys),
-        ),
-      );
-    }, [lineSelection, normalizedSelection, orderedLineKeys]);
+export const DiffBody = observer(
+  ({ fileGitDiff: file }: { fileGitDiff: FileGitDiff }) => {
+    const { rows, navigation } = file;
+    useLayoutEffect(() => rows.watchResolvedThreads(), [rows]);
+    const formKey = file.selection.formKey;
+    const commentLineKey = rows.commentFormLineKey;
+    useLayoutEffect(() => {
+      if (commentLineKey)
+        navigation.scrollToRow(`comment-form:${commentLineKey}`);
+    }, [formKey, commentLineKey, navigation]);
 
-    const selectionStartKey = normalizedSelection?.startKey ?? null;
-    const selectionEndKey = normalizedSelection?.endKey ?? null;
-
-    useEffect(() => {
-      if (!onRegisterScrollToRow) {
-        return;
-      }
-
-      onRegisterScrollToRow((rowId: string) => {
-        document
-          .querySelector(`[data-diff-row-id="${CSS.escape(rowId)}"]`)
-          ?.scrollIntoView({ block: "center" });
-      });
-    }, [onRegisterScrollToRow]);
-
+    if (rows.virtualized) return <VirtualizedDiffBody file={file} />;
     return (
       <div className="w-full pl-7">
-        {rows.map((row) => (
+        {rows.virtualRows.map((row) => (
           <div
             key={row.id}
             className={getDiffRowLayoutClassName(row)}
             data-diff-row-id={row.id}
           >
-            <VirtualDiffRowView
-              row={row}
-              canComment={canComment}
-              selectedLineKeys={selectedLineKeys}
-              selectionStartKey={selectionStartKey}
-              selectionEndKey={selectionEndKey}
-              onLineClick={onLineClick}
-              onLineMouseDown={onLineMouseDown}
-              onLineMouseEnter={onLineMouseEnter}
-              onExpandGap={onExpandGap}
-              onResolveThread={onResolveThread}
-              resolvingDiscussionId={resolvingDiscussionId}
-              onReplyThread={onReplyThread}
-              replyingDiscussionId={replyingDiscussionId}
-              replyErrorDiscussionId={replyErrorDiscussionId}
-              replyError={replyError}
-              onClearReplyError={onClearReplyError}
-              currentUserId={currentUserId}
-              onUpdateDiscussionNote={onUpdateDiscussionNote}
-              onDeleteDiscussionNote={onDeleteDiscussionNote}
-              updatingNoteKey={updatingNoteKey}
-              deletingNoteKey={deletingNoteKey}
-              updateNoteError={updateNoteError}
-              deleteNoteErrorKey={deleteNoteErrorKey}
-              deleteNoteError={deleteNoteError}
-              onClearUpdateNoteError={onClearUpdateNoteError}
-              onClearDeleteNoteError={onClearDeleteNoteError}
-              markdownScope={markdownScope}
-              isThreadExpanded={isThreadExpanded}
-              onToggleThreadExpanded={onToggleThreadExpanded}
-              lineCommentForm={lineCommentForm}
-            />
+            <VirtualDiffRowView row={row} file={file} />
           </div>
         ))}
       </div>
     );
   },
 );
-
-const useWindowScrollMargin = (
-  listRef: RefObject<HTMLDivElement | null>,
-  deps: unknown[],
-) => {
-  const [scrollMargin, setScrollMargin] = useState(0);
-
-  const measureScrollMargin = useCallback(() => {
-    const element = listRef.current;
-    if (!element) {
-      return;
-    }
-
-    const rect = element.getBoundingClientRect();
-    setScrollMargin(rect.top + window.scrollY);
-  }, [listRef]);
-
-  useLayoutEffect(() => {
-    measureScrollMargin();
-
-    const observer = new ResizeObserver(measureScrollMargin);
-    if (listRef.current) {
-      observer.observe(listRef.current);
-    }
-
-    window.addEventListener("resize", measureScrollMargin);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measureScrollMargin);
-    };
-  }, [listRef, measureScrollMargin, deps]);
-
-  return scrollMargin;
-};
-
-const VirtualizedDiffBody = memo(
-  ({
-    rows,
-    canComment,
-    lineSelection,
-    orderedLineKeys,
-    onLineClick,
-    onLineMouseDown,
-    onLineMouseEnter,
-    onExpandGap,
-    onRegisterScrollToRow,
-    onResolveThread,
-    resolvingDiscussionId,
-    onReplyThread,
-    replyingDiscussionId,
-    replyErrorDiscussionId,
-    replyError,
-    onClearReplyError,
-    currentUserId,
-    onUpdateDiscussionNote,
-    onDeleteDiscussionNote,
-    updatingNoteKey,
-    deletingNoteKey,
-    updateNoteError,
-    deleteNoteErrorKey,
-    deleteNoteError,
-    onClearUpdateNoteError,
-    onClearDeleteNoteError,
-    markdownScope,
-    isThreadExpanded,
-    onToggleThreadExpanded,
-    expandedThreadSignature,
-    lineCommentForm,
-  }: {
-    rows: VirtualDiffRow[];
-    canComment: boolean;
-    lineSelection: DiffLineSelection | null;
-    orderedLineKeys: string[];
-    onLineClick: (lineKey: string, shiftKey: boolean) => void;
-    onLineMouseDown: (lineKey: string) => void;
-    onLineMouseEnter: (lineKey: string) => void;
-    onExpandGap?: (gapId: string, mode: DiffExpandMode) => void;
-    onRegisterScrollToRow?: (scrollToRow: (rowId: string) => void) => void;
-    isThreadExpanded: (threadOrDiscussionId: InlineDiffThread | string) => boolean;
-    onToggleThreadExpanded: (discussionId: string) => void;
-    expandedThreadSignature: string;
-    lineCommentForm: DiffLineCommentFormProps | null;
-  } & DiffThreadResolveProps) => {
-    const listRef = useRef<HTMLDivElement>(null);
-    const rowIds = useMemo(() => rows.map((row) => row.id).join("\0"), [rows]);
-    const scrollMargin = useWindowScrollMargin(listRef, [rowIds]);
-    const normalizedSelection = useMemo(() => {
-      if (!lineSelection) {
-        return null;
-      }
-
-      return normalizeDiffLineSelection(
-        lineSelection.startKey,
-        lineSelection.endKey,
-        orderedLineKeys,
-      );
-    }, [lineSelection, orderedLineKeys]);
-
-    const selectedLineKeys = useMemo(() => {
-      if (!lineSelection || !normalizedSelection) {
-        return new Set<string>();
-      }
-
-      return new Set(
-        orderedLineKeys.filter((lineKey) =>
-          isLineKeyInSelection(lineKey, lineSelection, orderedLineKeys),
-        ),
-      );
-    }, [lineSelection, normalizedSelection, orderedLineKeys]);
-
-    const selectionStartKey = normalizedSelection?.startKey ?? null;
-    const selectionEndKey = normalizedSelection?.endKey ?? null;
-
-    const virtualizer = useWindowVirtualizer({
-      count: rows.length,
-      estimateSize: (index) => rows[index]?.estimatedHeight ?? 20,
-      getItemKey: (index) => rows[index]?.id ?? index,
-      overscan: 24,
-      scrollMargin,
-      measureElement: (element) => element.getBoundingClientRect().height,
-    });
-
-    useLayoutEffect(() => {
-      virtualizer.measure();
-    }, [rowIds, expandedThreadSignature, lineCommentForm?.formKey, virtualizer]);
-
-    useEffect(() => {
-      if (!onRegisterScrollToRow) {
-        return;
-      }
-
-      onRegisterScrollToRow((rowId: string) => {
-        const index = rows.findIndex((row) => row.id === rowId);
-        if (index >= 0) {
-          virtualizer.scrollToIndex(index, { align: "center" });
-        }
-      });
-    }, [onRegisterScrollToRow, rows, virtualizer]);
-
-    return (
-      <div ref={listRef} className="diff-viewport w-full pl-7">
-        <div
-          className="relative w-full"
-          style={{
-            height: `${virtualizer.getTotalSize()}px`,
-            width: "100%",
-            position: "relative",
-          }}
-        >
-          {virtualizer.getVirtualItems().map((virtualRow) => {
-            const row = rows[virtualRow.index];
-
-            return (
-              <div
-                key={row.id}
-                data-index={virtualRow.index}
-                data-diff-row-id={row.id}
-                ref={virtualizer.measureElement}
-                className={getDiffRowLayoutClassName(row)}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  transform: `translateY(${virtualRow.start - scrollMargin}px)`,
-                }}
-              >
-                <VirtualDiffRowView
-                  row={row}
-                  canComment={canComment}
-                  selectedLineKeys={selectedLineKeys}
-                  selectionStartKey={selectionStartKey}
-                  selectionEndKey={selectionEndKey}
-                  onLineClick={onLineClick}
-                  onLineMouseDown={onLineMouseDown}
-                  onLineMouseEnter={onLineMouseEnter}
-                  onExpandGap={onExpandGap}
-                  onResolveThread={onResolveThread}
-                  resolvingDiscussionId={resolvingDiscussionId}
-                  onReplyThread={onReplyThread}
-                  replyingDiscussionId={replyingDiscussionId}
-                  replyErrorDiscussionId={replyErrorDiscussionId}
-                  replyError={replyError}
-                  onClearReplyError={onClearReplyError}
-                  currentUserId={currentUserId}
-                  onUpdateDiscussionNote={onUpdateDiscussionNote}
-                  onDeleteDiscussionNote={onDeleteDiscussionNote}
-                  updatingNoteKey={updatingNoteKey}
-                  deletingNoteKey={deletingNoteKey}
-                  updateNoteError={updateNoteError}
-                  deleteNoteErrorKey={deleteNoteErrorKey}
-                  deleteNoteError={deleteNoteError}
-                  onClearUpdateNoteError={onClearUpdateNoteError}
-                  onClearDeleteNoteError={onClearDeleteNoteError}
-                  markdownScope={markdownScope}
-                  isThreadExpanded={isThreadExpanded}
-                  onToggleThreadExpanded={onToggleThreadExpanded}
-                  lineCommentForm={lineCommentForm}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  },
-);
-
-export const DiffBody = observer(({ fileGitDiff }: { fileGitDiff: FileGitDiff }) => {
-  const { meta, rows, selection, navigation, parent } = fileGitDiff;
-  const {
-    canComment,
-    onResolveThread,
-    resolvingDiscussionId,
-    onReplyThread,
-    replyingDiscussionId,
-    replyErrorDiscussionId,
-    replyError,
-    onClearReplyError,
-    currentUserId,
-    onUpdateDiscussionNote,
-    onDeleteDiscussionNote,
-    updatingNoteKey,
-    deletingNoteKey,
-    updateNoteError,
-    deleteNoteErrorKey,
-    deleteNoteError,
-    onClearUpdateNoteError,
-    onClearDeleteNoteError,
-    markdownScope,
-    isSubmittingComment,
-    submitCommentError,
-  } = parent.payload;
-
-  const virtualRows = rows.virtualRows;
-  const virtualized = rows.virtualized;
-  const orderedLineKeys = rows.orderedLineKeys;
-  const lineSelection = selection.lineSelection;
-  const commentFormLineKey = rows.commentFormLineKey;
-  const onExpandGap = meta.canExpand ? fileGitDiff.expand.expandGap : undefined;
-
-  const lineCommentForm = lineSelection
-    ? {
-        formKey: `${lineSelection.startKey}\0${lineSelection.endKey}`,
-        rangeLabel: rows.selectionRangeLabel,
-        errorMessage: submitCommentError,
-        isSubmitting: isSubmittingComment,
-        onCancel: selection.clearSelection,
-        onSubmit: (body: string) => {
-          void selection.submitLineComment(body);
-        },
-      }
-    : null;
-
-  const lineSelectionKey = lineCommentForm?.formKey ?? null;
-
-  const {
-    isThreadExpanded,
-    toggleThreadExpanded,
-    expandedDiscussionIds,
-    collapseThreads,
-  } = useResolvedThreadExpansion();
-  const expandedThreadSignature = Array.from(expandedDiscussionIds).join(",");
-  const resolvedThreadIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const row of virtualRows) {
-      if (row.type === "thread" && row.thread.resolved) {
-        ids.add(row.thread.discussionId);
-      }
-    }
-    return ids;
-  }, [virtualRows]);
-  const prevResolvedThreadIdsRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    const newlyResolved = [...resolvedThreadIds].filter(
-      (id) => !prevResolvedThreadIdsRef.current.has(id),
-    );
-    prevResolvedThreadIdsRef.current = resolvedThreadIds;
-
-    if (newlyResolved.length > 0) {
-      collapseThreads(newlyResolved);
-    }
-  }, [collapseThreads, resolvedThreadIds]);
-
-  useEffect(() => {
-    if (!commentFormLineKey) {
-      return;
-    }
-
-    navigation.scrollToRow(`comment-form:${commentFormLineKey}`);
-  }, [commentFormLineKey, lineSelectionKey, navigation]);
-
-  if (virtualized) {
-    return (
-      <VirtualizedDiffBody
-        rows={virtualRows}
-        canComment={canComment}
-        lineSelection={lineSelection}
-        orderedLineKeys={orderedLineKeys}
-        onLineClick={selection.handleLineClick}
-        onLineMouseDown={selection.handleLineMouseDown}
-        onLineMouseEnter={selection.handleLineMouseEnter}
-        onExpandGap={onExpandGap}
-        onRegisterScrollToRow={navigation.registerScrollToRow}
-        onResolveThread={onResolveThread}
-        resolvingDiscussionId={resolvingDiscussionId}
-        onReplyThread={onReplyThread}
-        replyingDiscussionId={replyingDiscussionId}
-        replyErrorDiscussionId={replyErrorDiscussionId}
-        replyError={replyError}
-        onClearReplyError={onClearReplyError}
-        currentUserId={currentUserId}
-        onUpdateDiscussionNote={onUpdateDiscussionNote}
-        onDeleteDiscussionNote={onDeleteDiscussionNote}
-        updatingNoteKey={updatingNoteKey}
-        deletingNoteKey={deletingNoteKey}
-        updateNoteError={updateNoteError}
-        deleteNoteErrorKey={deleteNoteErrorKey}
-        deleteNoteError={deleteNoteError}
-        onClearUpdateNoteError={onClearUpdateNoteError}
-        onClearDeleteNoteError={onClearDeleteNoteError}
-        markdownScope={markdownScope}
-        isThreadExpanded={isThreadExpanded}
-        onToggleThreadExpanded={toggleThreadExpanded}
-        expandedThreadSignature={expandedThreadSignature}
-        lineCommentForm={lineCommentForm}
-      />
-    );
-  }
-
-  return (
-    <StaticDiffBody
-      rows={virtualRows}
-      canComment={canComment}
-      lineSelection={lineSelection}
-      orderedLineKeys={orderedLineKeys}
-      onLineClick={selection.handleLineClick}
-      onLineMouseDown={selection.handleLineMouseDown}
-      onLineMouseEnter={selection.handleLineMouseEnter}
-      onExpandGap={onExpandGap}
-      onRegisterScrollToRow={navigation.registerScrollToRow}
-      onResolveThread={onResolveThread}
-      resolvingDiscussionId={resolvingDiscussionId}
-      onReplyThread={onReplyThread}
-      replyingDiscussionId={replyingDiscussionId}
-      replyErrorDiscussionId={replyErrorDiscussionId}
-      replyError={replyError}
-      onClearReplyError={onClearReplyError}
-      currentUserId={currentUserId}
-      onUpdateDiscussionNote={onUpdateDiscussionNote}
-      onDeleteDiscussionNote={onDeleteDiscussionNote}
-      updatingNoteKey={updatingNoteKey}
-      deletingNoteKey={deletingNoteKey}
-      updateNoteError={updateNoteError}
-      deleteNoteErrorKey={deleteNoteErrorKey}
-      deleteNoteError={deleteNoteError}
-      onClearUpdateNoteError={onClearUpdateNoteError}
-      onClearDeleteNoteError={onClearDeleteNoteError}
-      markdownScope={markdownScope}
-      isThreadExpanded={isThreadExpanded}
-      onToggleThreadExpanded={toggleThreadExpanded}
-      lineCommentForm={lineCommentForm}
-    />
-  );
-});

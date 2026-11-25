@@ -1,10 +1,10 @@
-import { actionBound, computed, observable } from "mobx";
-import type { Globals } from "@/globals";
-import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
-import { createInfiniteGitlabQuery } from "@/shared/lib/gitlab/create-query";
-import type { GitlabProjectsList } from "./gitlab-projects-list";
+import { actionBound, computed, observable } from 'mobx';
+import type { Workspace } from '@/features/workspace-navigation';
+import type { GitLabMergeRequestDC } from '@/shared/api/gitlab';
+import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/create-query';
+import type { GitlabProjectsList } from './gitlab-projects-list';
 
-type InboxScope = "reviewer" | "author";
+type InboxScope = 'reviewer' | 'author';
 
 type InboxRequest = GitLabMergeRequestDC & {
   project_id: number;
@@ -14,12 +14,12 @@ type InboxRequest = GitLabMergeRequestDC & {
 export type InboxRow = InboxRequest & { projectPath: string };
 
 export class ReviewInbox {
-  @observable accessor scope: InboxScope = "reviewer";
+  @observable accessor scope: InboxScope = 'reviewer';
 
   readonly query;
 
   constructor(
-    private readonly globals: Globals,
+    private readonly globals: Workspace,
     abortSignal: AbortSignal,
     private readonly projects: GitlabProjectsList,
   ) {
@@ -28,18 +28,18 @@ export class ReviewInbox {
       abortSignal,
       params: () => {
         const reviewerId = this.projects.currentUserQuery.data;
-        if (this.scope === "reviewer" && !reviewerId) return null;
+        if (this.scope === 'reviewer' && !reviewerId) return null;
 
         return {
-          path: "/merge_requests",
+          path: '/merge_requests',
           query: {
-            state: "opened",
-            order_by: "updated_at",
-            sort: "desc",
+            state: 'opened',
+            order_by: 'updated_at',
+            sort: 'desc',
             per_page: 6,
-            ...(this.scope === "reviewer"
-              ? { scope: "all", reviewer_id: reviewerId }
-              : { scope: "created_by_me" }),
+            ...(this.scope === 'reviewer'
+              ? { scope: 'all', reviewer_id: reviewerId }
+              : { scope: 'created_by_me' }),
           },
         };
       },
@@ -53,9 +53,12 @@ export class ReviewInbox {
       page: page.page,
       items: page.items.map((request) => ({
         ...request,
-        projectPath: request.references?.full?.replace(/!\d+$/, "") ||
-          this.projects.projects.find((project) => project.data.id === request.project_id)
-            ?.data.path_with_namespace || `#${request.project_id}`,
+        projectPath:
+          request.references?.full?.replace(/!\d+$/, '') ||
+          this.projects.projects.find(
+            (project) => project.data.id === request.project_id,
+          )?.data.path_with_namespace ||
+          `#${request.project_id}`,
       })),
     }));
   }
@@ -67,14 +70,18 @@ export class ReviewInbox {
 
   @computed
   get isLoading() {
-    return this.query.isLoading ||
-      (this.scope === "reviewer" && this.projects.currentUserQuery.isLoading);
+    return (
+      this.query.isLoading ||
+      (this.scope === 'reviewer' && this.projects.currentUserQuery.isLoading)
+    );
   }
 
   @computed
   get error() {
-    return this.query.error ||
-      (this.scope === "reviewer" && this.projects.currentUserQuery.error);
+    return (
+      this.query.error ||
+      (this.scope === 'reviewer' && this.projects.currentUserQuery.error)
+    );
   }
 
   @actionBound
@@ -91,7 +98,7 @@ export class ReviewInbox {
 
   @actionBound
   retry() {
-    if (this.scope === "reviewer" && this.projects.currentUserQuery.error) {
+    if (this.scope === 'reviewer' && this.projects.currentUserQuery.error) {
       void this.projects.currentUserQuery.refetch();
     } else if (this.query.isFetchNextPageError) {
       this.loadMore();

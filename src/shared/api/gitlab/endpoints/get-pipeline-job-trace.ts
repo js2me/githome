@@ -1,5 +1,5 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabFetch } from "../client";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabFetch } from '../client';
 
 export const getPipelineJobTrace = async (
   connection: GitLabConnection,

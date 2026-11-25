@@ -1,17 +1,17 @@
-import { diffWordsWithSpace } from "diff";
+import { diffWordsWithSpace } from 'diff';
 
 export interface WordDiffSegment {
   text: string;
-  highlight: "add" | "del" | null;
+  highlight: 'add' | 'del' | null;
 }
 
 export const computeWordDiffSegments = (
   oldText: string,
   newText: string,
-  variant: "delete" | "add",
+  variant: 'delete' | 'add',
 ): WordDiffSegment[] => {
   const changes =
-    variant === "delete"
+    variant === 'delete'
       ? diffWordsWithSpace(newText, oldText)
       : diffWordsWithSpace(oldText, newText);
 
@@ -21,7 +21,7 @@ export const computeWordDiffSegments = (
     if (change.added) {
       segments.push({
         text: change.value,
-        highlight: variant === "delete" ? "del" : "add",
+        highlight: variant === 'delete' ? 'del' : 'add',
       });
       continue;
     }

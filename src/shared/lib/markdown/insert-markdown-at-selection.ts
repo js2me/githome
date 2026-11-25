@@ -11,8 +11,8 @@ const getBlockLineRange = (
   selectionStart: number,
   selectionEnd: number,
 ) => {
-  const lineStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
-  const lineEndIndex = value.indexOf("\n", selectionEnd);
+  const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+  const lineEndIndex = value.indexOf('\n', selectionEnd);
   const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex;
 
   return { lineStart, lineEnd };
@@ -22,7 +22,7 @@ export const wrapMarkdownSelection = (
   input: MarkdownSelection,
   before: string,
   after: string,
-  placeholder = "text",
+  placeholder = 'text',
 ): MarkdownSelectionResult => {
   const { value, selectionStart, selectionEnd } = input;
   const selected = value.slice(selectionStart, selectionEnd);
@@ -72,9 +72,9 @@ export const prefixMarkdownLines = (
   );
   const block = value.slice(lineStart, lineEnd);
   const prefixed = block
-    .split("\n")
+    .split('\n')
     .map((line) => `${prefix}${line}`)
-    .join("\n");
+    .join('\n');
   const nextValue = value.slice(0, lineStart) + prefixed + value.slice(lineEnd);
 
   return {
@@ -87,11 +87,8 @@ export const prefixMarkdownLines = (
 export const insertMarkdownLink = (
   input: MarkdownSelection,
 ): MarkdownSelectionResult => {
-  const selected = input.value.slice(
-    input.selectionStart,
-    input.selectionEnd,
-  );
-  const label = selected || "text";
+  const selected = input.value.slice(input.selectionStart, input.selectionEnd);
+  const label = selected || 'text';
   const insert = `[${label}](url)`;
   const urlStart = input.selectionStart + label.length + 3;
   const urlEnd = urlStart + 3;
@@ -109,14 +106,11 @@ export const insertMarkdownLink = (
 export const insertMarkdownCode = (
   input: MarkdownSelection,
 ): MarkdownSelectionResult => {
-  const selected = input.value.slice(
-    input.selectionStart,
-    input.selectionEnd,
-  );
+  const selected = input.value.slice(input.selectionStart, input.selectionEnd);
 
-  if (selected.includes("\n")) {
-    return wrapMarkdownSelection(input, "```\n", "\n```", "code");
+  if (selected.includes('\n')) {
+    return wrapMarkdownSelection(input, '```\n', '\n```', 'code');
   }
 
-  return wrapMarkdownSelection(input, "`", "`", "code");
+  return wrapMarkdownSelection(input, '`', '`', 'code');
 };

@@ -1,17 +1,13 @@
-import { actionBound, computed, observable } from "mobx";
-import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
+import { actionBound, computed, observable } from 'mobx';
+import type { GitLabMergeRequestChangeDC } from '@/shared/api/gitlab';
+import { getDiffFileKey } from '@/shared/lib/diff-search';
 import {
   getFileLevelThreadsForChange,
   indexDiffDiscussionsForChange,
-} from "@/shared/lib/gitlab/diff-discussions";
-import { getDiffFileKey } from "@/shared/lib/diff-search";
-import { isImageChange } from "@/shared/lib/gitlab/is-image-change";
-import type { FileGitDiff } from ".";
-import {
-  getChangeBadge,
-  getChangePath,
-  getExpandFilePath,
-} from "./helpers";
+} from '@/shared/lib/gitlab/diff-discussions';
+import { isImageChange } from '@/shared/lib/gitlab/is-image-change';
+import type { FileGitDiff } from '.';
+import { getChangeBadge, getChangePath, getExpandFilePath } from './helpers';
 
 export class FileGitDiffMeta {
   @observable accessor change: GitLabMergeRequestChangeDC;
@@ -123,7 +119,8 @@ export class FileGitDiffMeta {
     const change = this.change;
 
     return (
-      !this.isImage && !change.too_large &&
+      !this.isImage &&
+      !change.too_large &&
       !change.generated_file &&
       !change.diff?.trim() &&
       this.canExpand
@@ -180,11 +177,11 @@ export class FileGitDiffMeta {
 
     if (change.diff?.trim()) {
       let count = 0;
-      for (const line of change.diff.split("\n")) {
+      for (const line of change.diff.split('\n')) {
         if (
-          line.startsWith("---") ||
-          line.startsWith("+++") ||
-          line.startsWith("diff --git")
+          line.startsWith('---') ||
+          line.startsWith('+++') ||
+          line.startsWith('diff --git')
         ) {
           continue;
         }
@@ -216,12 +213,12 @@ export class FileGitDiffMeta {
     }
 
     if (this.isDiffContentHidden) {
-      return "6.5rem";
+      return '6.5rem';
     }
 
     const change = this.change;
     if (change.too_large && !content.parsed) {
-      return "5rem";
+      return '5rem';
     }
 
     const lines = this.reservedBodyLineCount;

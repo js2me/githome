@@ -1,26 +1,29 @@
-import { useEffect, useState } from "react";
-import { observer } from "mobx-react-lite";
-import { getDiffFileElementId, getDiffFileHeaderRowId } from "@/shared/lib/diff-search";
-import { cn } from "@/shared/lib/cn";
-import { cva } from "yummies/css";
-import { GitlabCommentEditor } from "@/shared/ui/gitlab-comment-editor";
-import type { FileGitDiff } from "../model/file-git-diff";
-import { DiffFileCollapseBanner } from "./diff-file-collapse-banner";
-import { DiffImages } from "./diff-images";
-import { DiffThreadRow } from "./diff-rows";
+import { observer } from 'mobx-react-lite';
+import { useLayoutEffect } from 'react';
+import { cva } from 'yummies/css';
+import { cn } from '@/shared/lib/cn';
+import {
+  getDiffFileElementId,
+  getDiffFileHeaderRowId,
+} from '@/shared/lib/diff-search';
+import { GitlabCommentEditor } from '@/shared/ui/gitlab-comment-editor';
+import type { FileGitDiff } from '../model/file-git-diff';
+import { DiffFileCollapseBanner } from './diff-file-collapse-banner';
+import { DiffFileCopyButton } from './diff-file-copy-button';
+import { DiffImages } from './diff-images';
+import { DiffThreadRow } from './diff-rows';
 import {
   SearchHighlightedText,
   useDiffSearchRegistrationOptional,
   useRowSearchHighlight,
-} from "./diff-search";
-import { DiffSyntaxHighlightProvider } from "./diff-syntax-highlight";
-import { DiffBody } from "./virtual-diff-body";
-import { DiffFileCopyButton } from "./diff-file-copy-button";
-import { CopyContentIcon } from "./icons/copy-content-icon";
-import { CopyNameIcon } from "./icons/copy-name-icon";
-import { CopyPathIcon } from "./icons/copy-path-icon";
+} from './diff-search';
+import { DiffSyntaxHighlightProvider } from './diff-syntax-highlight';
+import { CopyContentIcon } from './icons/copy-content-icon';
+import { CopyNameIcon } from './icons/copy-name-icon';
+import { CopyPathIcon } from './icons/copy-path-icon';
+import { DiffBody } from './virtual-diff-body';
 
-const getFileNameFromPath = (path: string) => path.split("/").pop() ?? path;
+const getFileNameFromPath = (path: string) => path.split('/').pop() ?? path;
 
 const buildFilesHref = ({
   projectId,
@@ -35,84 +38,90 @@ const buildFilesHref = ({
 }) => {
   const query = new URLSearchParams();
   if (branch) {
-    query.set("branch", branch);
+    query.set('branch', branch);
   }
-  query.set("commit", commit);
-  query.set("file", filePath);
+  query.set('commit', commit);
+  query.set('file', filePath);
   return `/repository/${projectId}/files?${query.toString()}`;
 };
 
 const diffFileBadgeVariants = cva(
-  "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase",
+  'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase',
   {
     variants: {
       badge: {
-        new: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-        deleted: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-200",
-        renamed: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+        new: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
+        deleted: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-200',
+        renamed:
+          'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
       },
     },
   },
 );
 
 const diffFileHeaderTextButtonVariants = cva(
-  "glass-control inline-flex h-7 items-center rounded-md px-2.5 text-xs font-semibold",
+  'glass-control inline-flex h-7 items-center rounded-md px-2.5 text-xs font-semibold',
 );
 
-const FileCommentForm = ({
-  model,
-  isSubmitting,
-  submitError,
-}: {
-  model: FileGitDiff;
-  isSubmitting: boolean;
-  submitError: string | null;
-}) => {
-  const { comments, parent } = model;
-  const { markdownScope } = parent.payload;
-  const [body, setBody] = useState("");
+const FileCommentForm = observer(
+  ({
+    model,
+    isSubmitting,
+    submitError,
+  }: {
+    model: FileGitDiff;
+    isSubmitting: boolean;
+    submitError: string | null;
+  }) => {
+    const { comments, parent } = model;
+    const { markdownScope } = parent.payload;
+    const { fileCommentBody: body, setFileCommentBody: setBody } = comments;
 
-  return (
-    <div className="border-b border-slate-200 bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
-      <div className="mb-2 text-xs font-semibold text-blue-700 dark:text-blue-300">
-        Комментарий к файлу
-      </div>
-      <GitlabCommentEditor
-        projectId={markdownScope?.projectId ?? null}
-        editorClassName="border-orange-300 dark:border-orange-800"
-        placeholder="Оставьте комментарий к файлу"
-        value={body}
-        onChange={setBody}
-        disabled={isSubmitting}
-      />
-      {submitError && (
-        <div className="mt-2 text-xs text-red-600 dark:text-red-300" role="alert">
-          {submitError}
+    return (
+      <div className="border-slate-200 border-b bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
+        <div className="mb-2 font-semibold text-blue-700 text-xs dark:text-blue-300">
+          Комментарий к файлу
         </div>
-      )}
-      <div className="mt-2 flex justify-end gap-2">
-        <button
-          className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
-          type="button"
+        <GitlabCommentEditor
+          projectId={markdownScope?.projectId ?? null}
+          editorClassName="border-orange-300 dark:border-orange-800"
+          placeholder="Оставьте комментарий к файлу"
+          value={body}
+          onChange={setBody}
           disabled={isSubmitting}
-          onClick={comments.cancelFileComment}
-        >
-          Отмена
-        </button>
-        <button
-          className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
-          type="button"
-          disabled={isSubmitting || !body.trim()}
-          onClick={() => {
-            void comments.submitFileComment(body);
-          }}
-        >
-          {isSubmitting ? "Отправка..." : "Отправить"}
-        </button>
+        />
+        {submitError && (
+          <div
+            className="mt-2 text-red-600 text-xs dark:text-red-300"
+            role="alert"
+          >
+            {submitError}
+          </div>
+        )}
+        <div className="mt-2 flex justify-end gap-2">
+          <button
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 font-semibold text-slate-700 text-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+            type="button"
+            disabled={isSubmitting}
+            onClick={comments.cancelFileComment}
+          >
+            Отмена
+          </button>
+          <button
+            className="rounded-md bg-brand px-3 py-1.5 font-semibold text-white text-xs transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
+            type="button"
+            disabled={isSubmitting || !body.trim()}
+            onClick={() => {
+              void comments.submitFileComment(body);
+            }}
+          >
+            {isSubmitting ? 'Отправка...' : 'Отправить'}
+          </button>
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  },
+);
 
 export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
   const {
@@ -149,11 +158,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     showTooLargeBanner,
   } = content;
 
-  const {
-    virtualRows,
-    searchLines,
-    includeCodeLinesInSearch,
-  } = rows;
+  const { virtualRows } = rows;
   const { isFileCommentOpen } = comments;
 
   const {
@@ -192,35 +197,13 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       : null;
 
   const searchRegistration = useDiffSearchRegistrationOptional();
-  const registerFile = searchRegistration?.registerFile;
-  const unregisterFile = searchRegistration?.unregisterFile;
   const headerRowId = getDiffFileHeaderRowId(fileKey);
   const headerSearchHighlight = useRowSearchHighlight(headerRowId);
 
-  useEffect(() => {
-    if (!registerFile || !unregisterFile) {
-      return;
-    }
-
-    registerFile(
-      fileKey,
-      searchFilePath,
-      includeCodeLinesInSearch ? searchLines : [],
-      (rowId) => {
-        navigation.scrollToRow(rowId);
-      },
-    );
-
-    return () => unregisterFile(fileKey);
-  }, [
-    registerFile,
-    unregisterFile,
-    fileKey,
-    searchFilePath,
-    searchLines,
-    includeCodeLinesInSearch,
-    navigation,
-  ]);
+  useLayoutEffect(() => {
+    if (searchRegistration)
+      return navigation.registerSearch(searchRegistration);
+  }, [navigation, searchRegistration]);
 
   const renderDiffContent = () => {
     if (showTooLargeBanner) {
@@ -247,11 +230,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
 
     if (parsed && virtualRows.length > 0) {
       return (
-        <DiffSyntaxHighlightProvider
-          globals={model.parent.globals}
-          change={change}
-          parsed={parsed}
-        >
+        <DiffSyntaxHighlightProvider highlighting={model.highlighting}>
           <DiffBody fileGitDiff={model} />
         </DiffSyntaxHighlightProvider>
       );
@@ -263,12 +242,12 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
           <span>
             {collapsedExpandError
               ? `Не удалось загрузить diff: ${collapsedExpandError}`
-              : "Загружаем diff..."}
+              : 'Загружаем diff...'}
           </span>
           {collapsedExpandError && (
             <button
               type="button"
-              className="cursor-pointer rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="cursor-pointer rounded border border-slate-300 px-2 py-1 font-medium text-slate-700 text-xs hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               disabled={isLoadingCollapsedExpand}
               onClick={() => void content.expandCollapsedFile()}
             >
@@ -282,8 +261,8 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     return (
       <div className="p-3.5 text-[13px] text-slate-500">
         {isResolvingDiff || isLoadingCollapsedExpand
-          ? "Загружаем diff..."
-          : "Нет diff для этого файла."}
+          ? 'Загружаем diff...'
+          : 'Нет diff для этого файла.'}
       </div>
     );
   };
@@ -292,15 +271,15 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     <article
       id={getDiffFileElementId(fileKey)}
       className={cn(
-        "w-full min-w-0 rounded-lg border bg-white dark:bg-gray-900",
+        'w-full min-w-0 rounded-lg border bg-white dark:bg-gray-900',
         isActive
-          ? "border-accent-blue ring-2 ring-[var(--color-accent-blue-ring)] dark:border-accent-blue"
-          : "border-[var(--diff-border)]",
+          ? 'border-accent-blue ring-2 ring-[var(--color-accent-blue-ring)] dark:border-accent-blue'
+          : 'border-[var(--diff-border)]',
       )}
       onClickCapture={(event) => {
         const target = event.target as HTMLElement;
         if (
-          target.closest("button, a, input, textarea, select, label, dialog")
+          target.closest('button, a, input, textarea, select, label, dialog')
         ) {
           return;
         }
@@ -308,20 +287,20 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         navigation.setActive();
       }}
     >
-      <header className="sticky top-0 z-20 flex flex-wrap items-center gap-2.5 rounded-t-lg border-b border-[var(--diff-border)] bg-[var(--diff-header-bg)] px-3.5 py-2.5 sm:flex-nowrap">
+      <header className="sticky top-0 z-20 flex flex-wrap items-center gap-2.5 rounded-t-lg border-[var(--diff-border)] border-b bg-[var(--diff-header-bg)] px-3.5 py-2.5 sm:flex-nowrap">
         {isCollapsible && (
           <button
             className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--color-fg-subtle)] transition hover:bg-[var(--color-accent-emphasis-hover)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)]"
             type="button"
-            title={isFileExpanded ? "Свернуть файл" : "Развернуть файл"}
-            aria-label={isFileExpanded ? "Свернуть файл" : "Развернуть файл"}
+            title={isFileExpanded ? 'Свернуть файл' : 'Развернуть файл'}
+            aria-label={isFileExpanded ? 'Свернуть файл' : 'Развернуть файл'}
             onClick={content.toggleFileExpanded}
           >
             <svg
               aria-hidden="true"
               className={cn(
-                "h-3.5 w-3.5 transition-transform",
-                isFileExpanded && "rotate-90",
+                'h-3.5 w-3.5 transition-transform',
+                isFileExpanded && 'rotate-90',
               )}
               viewBox="0 0 16 16"
               fill="none"
@@ -363,7 +342,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         </div>
 
         {additions > 0 || deletions > 0 ? (
-          <span className="flex shrink-0 items-center gap-2 font-mono text-xs font-bold">
+          <span className="flex shrink-0 items-center gap-2 font-bold font-mono text-xs">
             {additions > 0 && (
               <span className="text-[var(--diff-stats-added)]">
                 +{additions}
@@ -378,9 +357,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         ) : null}
 
         {badge && (
-          <span className={diffFileBadgeVariants({ badge })}>
-            {badge}
-          </span>
+          <span className={diffFileBadgeVariants({ badge })}>{badge}</span>
         )}
 
         <div className="ml-2 flex shrink-0 items-center">
@@ -393,7 +370,10 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
           )}
           {openInFilesHref && (
             <a
-              className={cn(diffFileHeaderTextButtonVariants(), "ml-2 no-underline")}
+              className={cn(
+                diffFileHeaderTextButtonVariants(),
+                'ml-2 no-underline',
+              )}
               href={openInFilesHref}
               title="Открыть файл в Files"
             >
@@ -408,7 +388,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
             type="button"
             onClick={comments.toggleFileCommentOpen}
           >
-            {isFileCommentOpen ? "Скрыть комментарий" : "Комментарий к файлу"}
+            {isFileCommentOpen ? 'Скрыть комментарий' : 'Комментарий к файлу'}
           </button>
         )}
       </header>
@@ -422,7 +402,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       )}
 
       {fileThreads.length > 0 && (
-        <div className="border-b border-slate-200 dark:border-[var(--color-border-default)]">
+        <div className="border-slate-200 border-b dark:border-[var(--color-border-default)]">
           {fileThreads.map((thread) => (
             <DiffThreadRow
               key={`file-thread:${thread.discussionId}`}
@@ -457,7 +437,11 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         <div className="git-diff-body-scroll">
           <div
             className="w-max min-w-full"
-            style={reservedBodyMinHeight ? { minHeight: reservedBodyMinHeight } : undefined}
+            style={
+              reservedBodyMinHeight
+                ? { minHeight: reservedBodyMinHeight }
+                : undefined
+            }
           >
             {renderDiffContent()}
           </div>

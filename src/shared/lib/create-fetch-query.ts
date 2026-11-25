@@ -1,5 +1,5 @@
-import { createQuery } from "mobx-tanstack-query/preset";
-import type { DefaultError } from "@tanstack/query-core";
+import type { DefaultError } from '@tanstack/query-core';
+import { createQuery } from 'mobx-tanstack-query/preset';
 
 type RefetchIntervalQuery = {
   state: { data: unknown };
@@ -10,15 +10,15 @@ export type MaybeFalsy<T> = T | false | null | undefined;
 export type FetchQueryParams = {
   path: string;
   query?: Record<string, string | number | boolean | null | undefined>;
-  request?: Partial<Omit<RequestInit, "signal">>;
+  request?: Partial<Omit<RequestInit, 'signal'>>;
   notFoundAsNull?: boolean;
-  responseType?: "json" | "text";
+  responseType?: 'json' | 'text';
 };
 
 type FetchQueryKeyMeta = {
   notFoundAsNull?: boolean;
-  responseType?: FetchQueryParams["responseType"];
-  request?: Partial<Omit<RequestInit, "signal">>;
+  responseType?: FetchQueryParams['responseType'];
+  request?: Partial<Omit<RequestInit, 'signal'>>;
 };
 
 export type FetchQueryKey = readonly (
@@ -38,14 +38,14 @@ export type FetchQueryDynamicOptions<TData = unknown> = {
   gcTime?: number;
   retry?: boolean | number;
   meta?: Record<string, unknown>;
-  refetchOnWindowFocus?: boolean | "always";
-  refetchOnReconnect?: boolean | "always";
-  refetchOnMount?: boolean | "always";
+  refetchOnWindowFocus?: boolean | 'always';
+  refetchOnReconnect?: boolean | 'always';
+  refetchOnMount?: boolean | 'always';
 };
 
 export type InfiniteFetchQueryDynamicOptions = Omit<
   FetchQueryDynamicOptions,
-  "select"
+  'select'
 >;
 
 export type CreateFetchQueryOptions<TData = unknown> = {
@@ -57,9 +57,9 @@ export type CreateFetchQueryOptions<TData = unknown> = {
 };
 
 const resolveQueryOptions = <TData>(
-  queryOptions?: CreateFetchQueryOptions<TData>["queryOptions"],
+  queryOptions?: CreateFetchQueryOptions<TData>['queryOptions'],
 ): FetchQueryDynamicOptions<TData> => {
-  if (typeof queryOptions === "function") {
+  if (typeof queryOptions === 'function') {
     return queryOptions();
   }
 
@@ -69,7 +69,7 @@ const resolveQueryOptions = <TData>(
 export { resolveQueryOptions };
 
 export const serializeFetchQuery = (
-  query?: FetchQueryParams["query"],
+  query?: FetchQueryParams['query'],
 ): Record<string, string> | null => {
   if (!query) {
     return null;
@@ -107,7 +107,7 @@ export const buildFetchQueryUrl = (
     return path;
   }
 
-  return path.includes("?")
+  return path.includes('?')
     ? `${path}&${queryString}`
     : `${path}?${queryString}`;
 };
@@ -120,7 +120,7 @@ export const buildFetchQueryKey = (
   }
 
   return [
-    ...fetchParams.path.split("/"),
+    ...fetchParams.path.split('/'),
     serializeFetchQuery(fetchParams.query),
     {
       notFoundAsNull: fetchParams.notFoundAsNull,
@@ -138,10 +138,11 @@ export const parseFetchQueryKey = (
   }
 
   const meta = queryKey[queryKey.length - 1] as FetchQueryKeyMeta;
-  const serializedQuery = queryKey[queryKey.length - 2] as
-    | Record<string, string>
-    | null;
-  const path = (queryKey.slice(0, -2) as string[]).join("/");
+  const serializedQuery = queryKey[queryKey.length - 2] as Record<
+    string,
+    string
+  > | null;
+  const path = (queryKey.slice(0, -2) as string[]).join('/');
 
   return {
     path,
@@ -170,7 +171,7 @@ export const createFetchQuery = <TData = unknown>(
       const fetchParams = parseFetchQueryKey(queryKey as FetchQueryKey);
 
       if (!fetchParams) {
-        throw new Error("Fetch query is not configured");
+        throw new Error('Fetch query is not configured');
       }
 
       const serializedQuery = serializeFetchQuery(fetchParams.query);
@@ -188,7 +189,7 @@ export const createFetchQuery = <TData = unknown>(
         throw new Error(`Fetch error: ${response.status}`);
       }
 
-      if (fetchParams.responseType === "text") {
+      if (fetchParams.responseType === 'text') {
         return await response.text();
       }
 

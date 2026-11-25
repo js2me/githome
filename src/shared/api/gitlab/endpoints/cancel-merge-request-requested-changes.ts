@@ -1,6 +1,6 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabGraphql } from "../client";
-import type { GitLabProjectDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabGraphql } from '../client';
+import type { GitLabProjectDC } from '../data-contracts';
 
 export const cancelMergeRequestRequestedChanges = async (
   connection: GitLabConnection,
@@ -32,6 +32,6 @@ export const cancelMergeRequestRequestedChanges = async (
 
   const errors = result.mergeRequestDestroyRequestedChanges.errors;
   if (errors.length > 0) {
-    throw new Error(errors.join("; "));
+    throw new Error(errors.join('; '));
   }
 };

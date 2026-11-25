@@ -1,11 +1,11 @@
-import type { ParsedFileDiff } from "@/shared/lib/parse-unified-diff";
-import { getDiffLineTokenKey } from "./diff-line-token-key";
-import { getLanguageFromPath } from "./language-from-path";
+import type { ParsedFileDiff } from '@/shared/lib/parse-unified-diff';
+import { getDiffLineTokenKey } from './diff-line-token-key';
+import { getLanguageFromPath } from './language-from-path';
 import {
-  syntaxHighlighter,
   type SyntaxTheme,
   type SyntaxToken,
-} from "./syntax-highlighter";
+  syntaxHighlighter,
+} from './syntax-highlighter';
 
 const VIEWPORT_MARGIN_PX = 240;
 
@@ -77,7 +77,7 @@ export class DiffSyntaxHighlight {
       return () => this.disconnectVisibility?.();
     }
 
-    if (typeof IntersectionObserver === "undefined") {
+    if (typeof IntersectionObserver === 'undefined') {
       markVisible();
       this.disconnectVisibility = () => {};
       return () => this.disconnectVisibility?.();
@@ -113,12 +113,12 @@ export class DiffSyntaxHighlight {
   }
 
   getLineTokens(line: DiffSyntaxLine): SyntaxToken[] | null {
-    if (line.type === "no-newline") {
+    if (line.type === 'no-newline') {
       return null;
     }
 
     const key = getDiffLineTokenKey(line);
-    if (key.endsWith(":null")) {
+    if (key.endsWith(':null')) {
       return null;
     }
 
@@ -132,7 +132,9 @@ export class DiffSyntaxHighlight {
   }
 
   private async runHighlight(): Promise<void> {
-    const { parsed, theme, language } = this;
+    const parsed = this.parsed;
+    const theme = this.theme;
+    const language = this.language;
     if (!parsed || !language || !this.isVisible || !theme) {
       return;
     }

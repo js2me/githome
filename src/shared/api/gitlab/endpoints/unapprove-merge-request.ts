@@ -1,6 +1,6 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabPost } from "../client";
-import type { GitLabProjectDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabPost } from '../client';
+import type { GitLabProjectDC } from '../data-contracts';
 
 export const unapproveMergeRequest = async (
   connection: GitLabConnection,

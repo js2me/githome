@@ -2,7 +2,7 @@ import type {
   GitLabMergeRequestApprovalsDC,
   GitLabMergeRequestReviewerDC,
   GitLabUserDC,
-} from "@/shared/api/gitlab";
+} from '@/shared/api/gitlab';
 
 export interface MergeRequestApprovalView {
   approvals_required: number | null;
@@ -33,7 +33,7 @@ export const buildMergeRequestApprovalView = (
     (reviewer) => reviewer.user.id === currentUserId,
   );
   const currentUserRequestedChanges =
-    currentUserReviewer?.state === "requested_changes";
+    currentUserReviewer?.state === 'requested_changes';
 
   return {
     approvals_required: approvalsResult?.approvals_required ?? null,

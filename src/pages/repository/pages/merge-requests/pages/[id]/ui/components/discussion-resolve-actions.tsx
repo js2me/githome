@@ -1,5 +1,5 @@
-import { memo } from "react";
-import { cn } from "@/shared/lib/cn";
+import { memo } from 'react';
+import { cn } from '@/shared/lib/cn';
 
 const CheckIcon = () => (
   <svg
@@ -37,9 +37,9 @@ export const DiscussionResolveActions = memo(
     }
 
     return (
-      <div className={cn("flex items-center justify-end gap-2", className)}>
+      <div className={cn('flex items-center justify-end gap-2', className)}>
         <button
-          className="glass-control inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold disabled:cursor-wait"
+          className="glass-control inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-semibold text-xs disabled:cursor-wait"
           type="button"
           disabled={isResolving}
           onClick={() => onResolve(discussionId, !resolved)}
@@ -47,11 +47,11 @@ export const DiscussionResolveActions = memo(
           <CheckIcon />
           {isResolving
             ? resolved
-              ? "Открываем..."
-              : "Разрешаем..."
+              ? 'Открываем...'
+              : 'Разрешаем...'
             : resolved
-              ? "Открыть тред"
-              : "Разрешить тред"}
+              ? 'Открыть тред'
+              : 'Разрешить тред'}
         </button>
       </div>
     );

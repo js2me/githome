@@ -1,4 +1,4 @@
-import { createStorageData } from "mobx-web-api";
+import { createStorageData } from 'mobx-web-api';
 
 export interface GitLabConnectionItem {
   id: string;
@@ -13,12 +13,15 @@ export interface ConnectionsStorage {
   activeId: string | null;
 }
 
-export const appStorage = createStorageData({ prefix: "githome:" });
+export const appStorage = createStorageData({ prefix: 'githome:' });
 
-export const connectionsKey = appStorage.key<ConnectionsStorage>("connections", {
-  items: [],
-  activeId: null,
-});
+export const connectionsKey = appStorage.key<ConnectionsStorage>(
+  'connections',
+  {
+    items: [],
+    activeId: null,
+  },
+);
 
 const migrateLegacySettings = () => {
   if (connectionsKey.value.items.length > 0) {
@@ -26,7 +29,7 @@ const migrateLegacySettings = () => {
   }
 
   try {
-    const raw = localStorage.getItem("githome:settings");
+    const raw = localStorage.getItem('githome:settings');
     if (!raw) {
       return;
     }
@@ -49,7 +52,7 @@ const migrateLegacySettings = () => {
       activeId: id,
     };
 
-    localStorage.removeItem("githome:settings");
+    localStorage.removeItem('githome:settings');
   } catch {
     // ignore invalid legacy payload
   }

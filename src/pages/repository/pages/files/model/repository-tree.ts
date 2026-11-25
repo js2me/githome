@@ -5,11 +5,11 @@ import {
   observableShallow,
   reaction,
   runInAction,
-} from "mobx";
-import { gitlabApi } from "@/shared/api/gitlab";
-import type { GitLabRepositoryTreeItemDC } from "@/shared/api/gitlab";
-import type { Globals } from "@/globals";
-import { sortRepositoryTreeItems } from "../lib/repository-tree-utils";
+} from 'mobx';
+import type { GitLabRepositoryTreeItemDC } from '@/shared/api/gitlab';
+import { gitlabApi } from '@/shared/api/gitlab';
+import type { Globals } from '@/shared/model/globals';
+import { sortRepositoryTreeItems } from '../lib/repository-tree-utils';
 
 export interface RepositoryTreeParams {
   globals: Globals;
@@ -41,7 +41,7 @@ export class RepositoryTreeModel {
         }
 
         this.reset();
-        void this.loadFolder("");
+        void this.loadFolder('');
       },
       { fireImmediately: true },
     );
@@ -49,17 +49,17 @@ export class RepositoryTreeModel {
 
   @computed
   get rootItems() {
-    return this.getFolderItems("");
+    return this.getFolderItems('');
   }
 
   @computed
   get isRootLoading() {
-    return this.loadingFolders.has("");
+    return this.loadingFolders.has('');
   }
 
   @computed
   get rootErrorMessage() {
-    return this.folderErrors.get("") ?? null;
+    return this.folderErrors.get('') ?? null;
   }
 
   @computed
@@ -68,7 +68,7 @@ export class RepositoryTreeModel {
 
     for (const items of this.folderContents.values()) {
       for (const item of items) {
-        if (item.type === "blob") {
+        if (item.type === 'blob') {
           blobs.push(item);
         }
       }
@@ -116,8 +116,8 @@ export class RepositoryTreeModel {
   async revealFile(path: string) {
     this.selectedFilePath = path;
 
-    const segments = path.split("/");
-    let current = "";
+    const segments = path.split('/');
+    let current = '';
 
     for (let index = 0; index < segments.length - 1; index += 1) {
       current = current ? `${current}/${segments[index]}` : segments[index];
@@ -175,7 +175,7 @@ export class RepositoryTreeModel {
           path,
           error instanceof Error
             ? error.message
-            : "Не удалось загрузить содержимое папки",
+            : 'Не удалось загрузить содержимое папки',
         );
       });
     } finally {

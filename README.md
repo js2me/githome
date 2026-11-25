@@ -24,6 +24,12 @@ pnpm dev:electron
 pnpm rebuild electron
 ```
 
+## Архитектура интерфейса
+
+Слой `app` собирает рабочее пространство, маршруты и хранилища. Страницы в `pages` объединяют виджеты из `widgets`, пользовательские действия из `features` и сущности GitLab из `entities`. В `shared` находятся клиент GitLab, базовая ViewModel и общие компоненты. Между слайсами используйте их публичный `index.ts` или `index.tsx`.
+
+Внутри слайса ViewModel в `model` хранит состояние, DOM-ссылки и управляет запросами и подписками. React-компонент отображает данные модели и вызывает её методы. Biome проверяет запрет на импорт `useState`, `useRef` и `useEffect`.
+
 ## Сборка Electron
 
 ```bash
@@ -100,7 +106,9 @@ Workflow `.github/workflows/release.yml` запускается при кажд�
 
 ## IDE
 
-- [VS Code](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+- [VS Code](https://code.visualstudio.com/) + [Biome](https://marketplace.visualstudio.com/items?itemName=biomejs.biome)
+
+Проверить исходники можно командой `pnpm lint:check`, применить автоматические исправления — `pnpm lint:fix`.
 
 ### Обновление приложения
 

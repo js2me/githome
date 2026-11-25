@@ -11,9 +11,7 @@ export const formatProjectCount = (
 
   const thousands = count / 1000;
   const rounded =
-    thousands >= 10
-      ? Math.round(thousands)
-      : Math.round(thousands * 10) / 10;
+    thousands >= 10 ? Math.round(thousands) : Math.round(thousands * 10) / 10;
 
-  return `${String(rounded).replace(/\.0$/, "")}k`;
+  return `${String(rounded).replace(/\.0$/, '')}k`;
 };

@@ -1,21 +1,22 @@
-import type { GitLabDiscussionDC, GitLabNoteDC } from "@/shared/api/gitlab";
-import { Pencil, TrashBin } from "@gravity-ui/icons";
-import { useCallback, useEffect, useState } from "react";
-import { cn } from "@/shared/lib/cn";
-import {
-  isDiscussionResolvable,
-  isDiscussionResolved,
-} from "@/shared/lib/gitlab/diff-discussions";
+import { Pencil, TrashBin } from '@gravity-ui/icons';
+import { withPropsViewModel } from 'mobx-view-model-react';
+import type { GitLabDiscussionDC, GitLabNoteDC } from '@/shared/api/gitlab';
+import { cn } from '@/shared/lib/cn';
+import { isDiscussionResolvable } from '@/shared/lib/gitlab/diff-discussions';
 import {
   canEditGitLabNote,
   getDiscussionNoteKey,
-} from "@/shared/lib/gitlab/note-permissions";
-import { GitlabCommentEditor } from "@/shared/ui/gitlab-comment-editor";
-import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
-import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
-import { StatusMessage } from "@/shared/ui/status-message";
-import { DiscussionResolveActions } from "./discussion-resolve-actions";
+} from '@/shared/lib/gitlab/note-permissions';
+import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
+import { GitlabCommentEditor } from '@/shared/ui/gitlab-comment-editor';
+import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
+import { StatusMessage } from '@/shared/ui/status-message';
+import {
+  DiscussionNoteVM,
+  type DiscussionsProps,
+  DiscussionThreadVM,
+} from '../../model/merge-request-discussions';
+import { DiscussionResolveActions } from './discussion-resolve-actions';
 
 const formatDateTime = (value: string) => {
   const date = new Date(value);
@@ -23,17 +24,17 @@ const formatDateTime = (value: string) => {
     return value;
   }
 
-  return date.toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return date.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
 const formatPosition = (note: GitLabNoteDC) => {
-  if (note.type !== "DiffNote" || !note.position) {
+  if (note.type !== 'DiffNote' || !note.position) {
     return null;
   }
 
@@ -46,10 +47,8 @@ const formatPosition = (note: GitLabNoteDC) => {
   return line ? `${path}:${line}` : path;
 };
 
-const isDiscussionResolvedState = isDiscussionResolved;
-
 const AuthorAvatar = ({ note }: { note: GitLabNoteDC }) => {
-  const authorName = note.author?.name ?? "Unknown";
+  const authorName = note.author?.name ?? 'Unknown';
 
   return (
     <GitlabAvatar
@@ -60,107 +59,38 @@ const AuthorAvatar = ({ note }: { note: GitLabNoteDC }) => {
   );
 };
 
-const DiscussionNote = ({
-  markdownScope,
-  note,
-  discussionId,
-  isReply,
-  currentUserId = null,
-  onUpdateDiscussionNote,
-  onDeleteDiscussionNote,
-  updatingNoteKey = null,
-  deletingNoteKey = null,
-  updateNoteError = null,
-  deleteNoteErrorKey = null,
-  deleteNoteError = null,
-  onClearUpdateNoteError,
-  onClearDeleteNoteError,
-}: {
-  markdownScope: GitlabMarkdownScope;
-  note: GitLabNoteDC;
-  discussionId: string;
-  isReply: boolean;
-  currentUserId?: number | null;
-  onUpdateDiscussionNote?: (
-    discussionId: string,
-    noteId: number,
-    body: string,
-  ) => Promise<boolean>;
-  onDeleteDiscussionNote?: (
-    discussionId: string,
-    noteId: number,
-  ) => Promise<boolean>;
-  updatingNoteKey?: string | null;
-  deletingNoteKey?: string | null;
-  updateNoteError?: string | null;
-  deleteNoteErrorKey?: string | null;
-  deleteNoteError?: string | null;
-  onClearUpdateNoteError?: () => void;
-  onClearDeleteNoteError?: () => void;
-}) => {
+const DiscussionNote = withPropsViewModel(DiscussionNoteVM, ({ model }) => {
+  const {
+    markdownScope,
+    note,
+    discussionId,
+    isReply,
+    currentUserId = null,
+    onUpdateDiscussionNote,
+    onDeleteDiscussionNote,
+    updatingNoteKey,
+    deletingNoteKey,
+    updateNoteError,
+    deleteNoteErrorKey,
+    deleteNoteError,
+  } = model.payload;
+  const { editor } = model;
+  const { isEditing, editBody } = editor;
   const position = formatPosition(note);
-  const authorName = note.author?.name ?? "Unknown";
-  const authorUsername = note.author?.username ?? "";
+  const authorName = note.author?.name ?? 'Unknown';
+  const authorUsername = note.author?.username ?? '';
   const canEdit = canEditGitLabNote(note, currentUserId);
   const noteKey = getDiscussionNoteKey(discussionId, note.id);
   const isSaving = updatingNoteKey === noteKey;
   const isDeleting = deletingNoteKey === noteKey;
-  const noteDeleteError = deleteNoteErrorKey === noteKey ? deleteNoteError : null;
-  const [isEditing, setIsEditing] = useState(false);
-  const [editBody, setEditBody] = useState(note.body);
-
-  useEffect(() => {
-    if (!isEditing) {
-      setEditBody(note.body);
-    }
-  }, [isEditing, note.body]);
-
-  const handleStartEdit = useCallback(() => {
-    setEditBody(note.body);
-    setIsEditing(true);
-    onClearUpdateNoteError?.();
-  }, [note.body, onClearUpdateNoteError]);
-
-  const handleCancelEdit = useCallback(() => {
-    setEditBody(note.body);
-    setIsEditing(false);
-    onClearUpdateNoteError?.();
-  }, [note.body, onClearUpdateNoteError]);
-
-  const handleSaveEdit = useCallback(async () => {
-    if (!onUpdateDiscussionNote) {
-      return;
-    }
-
-    const success = await onUpdateDiscussionNote(discussionId, note.id, editBody);
-    if (success) {
-      setIsEditing(false);
-    }
-  }, [discussionId, editBody, note.id, onUpdateDiscussionNote]);
-
-  const handleDelete = useCallback(async () => {
-    if (
-      !onDeleteDiscussionNote ||
-      !window.confirm("Удалить комментарий? Это действие нельзя отменить.")
-    ) {
-      return;
-    }
-
-    onClearDeleteNoteError?.();
-    await onDeleteDiscussionNote(discussionId, note.id);
-  }, [
-    discussionId,
-    note.id,
-    onClearDeleteNoteError,
-    onDeleteDiscussionNote,
-  ]);
-
+  const noteDeleteError =
+    deleteNoteErrorKey === noteKey ? deleteNoteError : null;
   return (
     <article
       className={cn(
-        "flex gap-3 px-4 py-3.5",
-        note.system && "bg-[var(--glass-control)]",
-        isReply && "pb-3.5 pl-[52px] pt-0",
+        'flex gap-3 px-4 py-3.5',
+        note.system && 'bg-[var(--glass-control)]',
+        isReply && 'pt-0 pb-3.5 pl-[52px]',
       )}
     >
       <AuthorAvatar note={note} />
@@ -168,17 +98,19 @@ const DiscussionNote = ({
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <header className="flex items-start gap-2">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-1.5">
-            <span className="text-sm font-bold text-slate-900 dark:text-slate-200">
+            <span className="font-bold text-slate-900 text-sm dark:text-slate-200">
               {authorName}
             </span>
             {authorUsername && (
-              <span className="text-[13px] text-slate-500">@{authorUsername}</span>
+              <span className="text-[13px] text-slate-500">
+                @{authorUsername}
+              </span>
             )}
-            <time className="text-xs text-slate-400" dateTime={note.created_at}>
+            <time className="text-slate-400 text-xs" dateTime={note.created_at}>
               {formatDateTime(note.created_at)}
             </time>
             {note.resolvable && note.resolved && (
-              <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-bold uppercase text-green-800 dark:bg-green-950 dark:text-green-300">
+              <span className="rounded-full bg-green-100 px-2 py-0.5 font-bold text-[11px] text-green-800 uppercase dark:bg-green-950 dark:text-green-300">
                 Resolved
               </span>
             )}
@@ -193,7 +125,7 @@ const DiscussionNote = ({
                   title="Редактировать"
                   aria-label="Редактировать комментарий"
                   disabled={Boolean(updatingNoteKey || deletingNoteKey)}
-                  onClick={handleStartEdit}
+                  onClick={editor.start}
                 >
                   <Pencil width={14} height={14} />
                 </button>
@@ -202,10 +134,10 @@ const DiscussionNote = ({
                 <button
                   className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-300"
                   type="button"
-                  title={isDeleting ? "Удаление..." : "Удалить"}
+                  title={isDeleting ? 'Удаление...' : 'Удалить'}
                   aria-label="Удалить комментарий"
                   disabled={Boolean(updatingNoteKey || deletingNoteKey)}
-                  onClick={() => void handleDelete()}
+                  onClick={() => void editor.remove()}
                 >
                   <TrashBin width={14} height={14} />
                 </button>
@@ -215,9 +147,9 @@ const DiscussionNote = ({
         </header>
 
         {position && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <div className="flex items-center gap-1.5 text-slate-500 text-xs">
             <span>на</span>
-            <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-slate-700 text-xs dark:bg-slate-800 dark:text-slate-200">
               {position}
             </code>
           </div>
@@ -229,12 +161,7 @@ const DiscussionNote = ({
               projectId={markdownScope.projectId}
               className="text-sm"
               value={editBody}
-              onChange={(value) => {
-                setEditBody(value);
-                if (updateNoteError) {
-                  onClearUpdateNoteError?.();
-                }
-              }}
+              onChange={editor.changeBody}
               rows={3}
               disabled={isSaving}
             />
@@ -247,20 +174,20 @@ const DiscussionNote = ({
 
             <div className="mt-2.5 flex gap-2">
               <button
-                className="glass-primary rounded-lg px-3.5 py-2 text-[13px] font-semibold"
+                className="glass-primary rounded-lg px-3.5 py-2 font-semibold text-[13px]"
                 type="button"
                 disabled={isSaving || !editBody.trim()}
                 onClick={() => {
-                  void handleSaveEdit();
+                  void editor.save();
                 }}
               >
-                {isSaving ? "Сохранение..." : "Сохранить"}
+                {isSaving ? 'Сохранение...' : 'Сохранить'}
               </button>
               <button
-                className="glass-control rounded-lg px-3.5 py-2 text-[13px] font-semibold"
+                className="glass-control rounded-lg px-3.5 py-2 font-semibold text-[13px]"
                 type="button"
                 disabled={isSaving}
-                onClick={handleCancelEdit}
+                onClick={editor.cancel}
               >
                 Отмена
               </button>
@@ -283,54 +210,18 @@ const DiscussionNote = ({
       </div>
     </article>
   );
-};
+});
 
-const DiscussionThread = ({
-  markdownScope,
-  discussion,
-  onResolveDiscussion,
-  resolvingDiscussionId,
-  currentUserId,
-  onUpdateDiscussionNote,
-  onDeleteDiscussionNote,
-  updatingNoteKey,
-  deletingNoteKey,
-  updateNoteError,
-  deleteNoteErrorKey,
-  deleteNoteError,
-  onClearUpdateNoteError,
-  onClearDeleteNoteError,
-}: {
-  markdownScope: GitlabMarkdownScope;
-  discussion: GitLabDiscussionDC;
-  onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
-  resolvingDiscussionId: string | null;
-  currentUserId?: number | null;
-  onUpdateDiscussionNote?: (
-    discussionId: string,
-    noteId: number,
-    body: string,
-  ) => Promise<boolean>;
-  onDeleteDiscussionNote?: (
-    discussionId: string,
-    noteId: number,
-  ) => Promise<boolean>;
-  updatingNoteKey?: string | null;
-  deletingNoteKey?: string | null;
-  updateNoteError?: string | null;
-  deleteNoteErrorKey?: string | null;
-  deleteNoteError?: string | null;
-  onClearUpdateNoteError?: () => void;
-  onClearDeleteNoteError?: () => void;
-}) => {
+const DiscussionThread = withPropsViewModel(DiscussionThreadVM, ({ model }) => {
+  const {
+    discussion,
+    onResolveDiscussion,
+    resolvingDiscussionId,
+    ...noteProps
+  } = model.payload;
   const [firstNote, ...replies] = discussion.notes;
-  const resolved = isDiscussionResolvedState(discussion);
+  const { resolved, expanded } = model;
   const resolvable = isDiscussionResolvable(discussion);
-  const [expanded, setExpanded] = useState(() => !resolved);
-
-  useEffect(() => {
-    setExpanded(!resolved);
-  }, [discussion.id, resolved]);
 
   if (!firstNote) {
     return null;
@@ -339,20 +230,20 @@ const DiscussionThread = ({
   return (
     <section
       className={cn(
-        "glass-panel overflow-hidden rounded-xl",
-        resolved && "border-green-200 dark:border-green-900",
+        'glass-panel overflow-hidden rounded-xl',
+        resolved && 'border-green-200 dark:border-green-900',
       )}
     >
       {resolved && (
-        <div className="flex items-center justify-between gap-3 border-b border-green-200 bg-green-50 px-3.5 py-2 text-xs font-bold text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
+        <div className="flex items-center justify-between gap-3 border-green-200 border-b bg-green-50 px-3.5 py-2 font-bold text-green-800 text-xs dark:border-green-900 dark:bg-green-950 dark:text-green-300">
           <span>Тред разрешён</span>
           <button
-            className="glass-control rounded-md px-2 py-1 text-[11px] font-semibold text-green-800 dark:text-green-300"
+            className="glass-control rounded-md px-2 py-1 font-semibold text-[11px] text-green-800 dark:text-green-300"
             type="button"
             aria-expanded={expanded}
-            onClick={() => setExpanded((value) => !value)}
+            onClick={model.toggle}
           >
-            {expanded ? "Скрыть" : "Показать"}
+            {expanded ? 'Скрыть' : 'Показать'}
           </button>
         </div>
       )}
@@ -360,20 +251,11 @@ const DiscussionThread = ({
       {expanded && (
         <>
           <DiscussionNote
-            markdownScope={markdownScope}
+            key={firstNote.id}
+            {...noteProps}
             note={firstNote}
             discussionId={discussion.id}
             isReply={false}
-            currentUserId={currentUserId}
-            onUpdateDiscussionNote={onUpdateDiscussionNote}
-            onDeleteDiscussionNote={onDeleteDiscussionNote}
-            updatingNoteKey={updatingNoteKey}
-            deletingNoteKey={deletingNoteKey}
-            updateNoteError={updateNoteError}
-            deleteNoteErrorKey={deleteNoteErrorKey}
-            deleteNoteError={deleteNoteError}
-            onClearUpdateNoteError={onClearUpdateNoteError}
-            onClearDeleteNoteError={onClearDeleteNoteError}
           />
 
           {replies.length > 0 && (
@@ -381,20 +263,10 @@ const DiscussionThread = ({
               {replies.map((note) => (
                 <DiscussionNote
                   key={note.id}
-                  markdownScope={markdownScope}
+                  {...noteProps}
                   note={note}
                   discussionId={discussion.id}
                   isReply
-                  currentUserId={currentUserId}
-                  onUpdateDiscussionNote={onUpdateDiscussionNote}
-                  onDeleteDiscussionNote={onDeleteDiscussionNote}
-                  updatingNoteKey={updatingNoteKey}
-                  deletingNoteKey={deletingNoteKey}
-                  updateNoteError={updateNoteError}
-                  deleteNoteErrorKey={deleteNoteErrorKey}
-                  deleteNoteError={deleteNoteError}
-                  onClearUpdateNoteError={onClearUpdateNoteError}
-                  onClearDeleteNoteError={onClearDeleteNoteError}
                 />
               ))}
             </div>
@@ -406,52 +278,18 @@ const DiscussionThread = ({
             resolvable={resolvable}
             isResolving={resolvingDiscussionId === discussion.id}
             onResolve={onResolveDiscussion}
-            className="border-t border-slate-200 px-4 py-3 dark:border-slate-800"
+            className="border-slate-200 border-t px-4 py-3 dark:border-slate-800"
           />
         </>
       )}
     </section>
   );
-};
+});
 
 export const MergeRequestDiscussions = ({
-  markdownScope,
   discussions,
-  onResolveDiscussion,
-  resolvingDiscussionId,
-  currentUserId,
-  onUpdateDiscussionNote,
-  onDeleteDiscussionNote,
-  updatingNoteKey,
-  deletingNoteKey,
-  updateNoteError,
-  deleteNoteErrorKey,
-  deleteNoteError,
-  onClearUpdateNoteError,
-  onClearDeleteNoteError,
-}: {
-  markdownScope: GitlabMarkdownScope;
-  discussions: GitLabDiscussionDC[];
-  onResolveDiscussion: (discussionId: string, resolved: boolean) => void;
-  resolvingDiscussionId: string | null;
-  currentUserId?: number | null;
-  onUpdateDiscussionNote?: (
-    discussionId: string,
-    noteId: number,
-    body: string,
-  ) => Promise<boolean>;
-  onDeleteDiscussionNote?: (
-    discussionId: string,
-    noteId: number,
-  ) => Promise<boolean>;
-  updatingNoteKey?: string | null;
-  deletingNoteKey?: string | null;
-  updateNoteError?: string | null;
-  deleteNoteErrorKey?: string | null;
-  deleteNoteError?: string | null;
-  onClearUpdateNoteError?: () => void;
-  onClearDeleteNoteError?: () => void;
-}) => {
+  ...threadProps
+}: DiscussionsProps & { discussions: GitLabDiscussionDC[] }) => {
   if (discussions.length === 0) {
     return <StatusMessage>Комментариев пока нет.</StatusMessage>;
   }
@@ -461,20 +299,8 @@ export const MergeRequestDiscussions = ({
       {discussions.map((discussion) => (
         <DiscussionThread
           key={discussion.id}
-          markdownScope={markdownScope}
+          {...threadProps}
           discussion={discussion}
-          onResolveDiscussion={onResolveDiscussion}
-          resolvingDiscussionId={resolvingDiscussionId}
-          currentUserId={currentUserId}
-          onUpdateDiscussionNote={onUpdateDiscussionNote}
-          onDeleteDiscussionNote={onDeleteDiscussionNote}
-          updatingNoteKey={updatingNoteKey}
-          deletingNoteKey={deletingNoteKey}
-          updateNoteError={updateNoteError}
-          deleteNoteErrorKey={deleteNoteErrorKey}
-          deleteNoteError={deleteNoteError}
-          onClearUpdateNoteError={onClearUpdateNoteError}
-          onClearDeleteNoteError={onClearDeleteNoteError}
         />
       ))}
     </div>

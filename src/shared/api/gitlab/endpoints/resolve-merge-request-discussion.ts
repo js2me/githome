@@ -1,6 +1,6 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { buildGitlabPath, gitlabPut } from "../client";
-import type { GitLabDiscussionDC, GitLabProjectDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { buildGitlabPath, gitlabPut } from '../client';
+import type { GitLabDiscussionDC, GitLabProjectDC } from '../data-contracts';
 
 export const resolveMergeRequestDiscussion = async (
   connection: GitLabConnection,

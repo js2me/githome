@@ -1,35 +1,41 @@
-import { ArrowUpRightFromSquare } from "@gravity-ui/icons";
-import { observer } from "mobx-react-lite";
-import { releasesUrl } from "@/shared/lib/app-update/github-release";
-import type { AppUpdateStatus } from "@/shared/lib/app-update/types";
-import type { AppUpdates } from "../model/app-updates";
+import { ArrowUpRightFromSquare } from '@gravity-ui/icons';
+import { observer } from 'mobx-react-lite';
+import { releasesUrl } from '@/shared/lib/app-update/github-release';
+import type { AppUpdateStatus } from '@/shared/lib/app-update/types';
+import type { AppUpdates } from '../model/app-updates';
 
 const updateActions: Partial<Record<AppUpdateStatus, string>> = {
-  checking: "Проверяем…",
-  available: "Скачать обновление",
-  downloading: "Скачиваем…",
-  ready: "Установить и перезапустить",
-  installing: "Устанавливаем…",
+  checking: 'Проверяем…',
+  available: 'Скачать обновление',
+  downloading: 'Скачиваем…',
+  ready: 'Установить и перезапустить',
+  installing: 'Устанавливаем…',
 };
 
 export const AppUpdatePanel = observer(({ model }: { model: AppUpdates }) => {
   const { status, version, nextVersion, progress, message } = model.state;
-  const statusText = message ?? {
-    idle: "Проверьте, вышла ли новая версия GitHome.",
-    checking: "Проверяем GitHub Releases.",
-    available: "Обновление готово к скачиванию.",
-    downloading: `Скачиваем обновление · ${progress ?? 0}%`,
-    ready: "Обновление скачано и готово к установке.",
-    installing: "Завершаем установку обновления.",
-    current: "Установлена последняя версия.",
-    manual: "",
-    error: "",
-  }[status];
+  const statusText =
+    message ??
+    {
+      idle: 'Проверьте, вышла ли новая версия GitHome.',
+      checking: 'Проверяем GitHub Releases.',
+      available: 'Обновление готово к скачиванию.',
+      downloading: `Скачиваем обновление · ${progress ?? 0}%`,
+      ready: 'Обновление скачано и готово к установке.',
+      installing: 'Завершаем установку обновления.',
+      current: 'Установлена последняя версия.',
+      manual: '',
+      error: '',
+    }[status];
 
   return (
     <section aria-labelledby="settings-updates">
-      <h3 id="settings-updates" className="text-lg font-semibold">Обновления GitHome</h3>
-      <p className="mt-1 mb-5 text-sm text-fg-muted">Последняя стабильная версия с GitHub Releases.</p>
+      <h3 id="settings-updates" className="font-semibold text-lg">
+        Обновления GitHome
+      </h3>
+      <p className="mt-1 mb-5 text-fg-muted text-sm">
+        Последняя стабильная версия с GitHub Releases.
+      </p>
 
       <div className="glass-panel rounded-xl p-4 sm:p-5">
         <dl className="grid gap-4 text-sm sm:grid-cols-2">
@@ -45,12 +51,19 @@ export const AppUpdatePanel = observer(({ model }: { model: AppUpdates }) => {
           )}
         </dl>
 
-        <div className="mt-4 border-t border-border-default pt-4">
-          <p role="status" className={status === "error" ? "text-sm text-red-700 dark:text-red-300" : "text-sm text-fg-muted"}>
+        <div className="mt-4 border-border-default border-t pt-4">
+          <p
+            role="status"
+            className={
+              status === 'error'
+                ? 'text-red-700 text-sm dark:text-red-300'
+                : 'text-fg-muted text-sm'
+            }
+          >
             {statusText}
           </p>
 
-          {status === "downloading" && (
+          {status === 'downloading' && (
             <progress
               aria-label="Загрузка обновления"
               className="mt-3 h-2 w-full accent-orange-600"
@@ -64,16 +77,17 @@ export const AppUpdatePanel = observer(({ model }: { model: AppUpdates }) => {
               type="button"
               disabled={model.isBusy}
               onClick={() => void model.perform()}
-              className="glass-primary rounded-lg px-3.5 py-2 text-sm font-semibold"
+              className="glass-primary rounded-lg px-3.5 py-2 font-semibold text-sm"
             >
-              {model.isAndroid && status === "ready" ? "Установить обновление"
-                : updateActions[status] ?? "Проверить обновления"}
+              {model.isAndroid && status === 'ready'
+                ? 'Установить обновление'
+                : (updateActions[status] ?? 'Проверить обновления')}
             </button>
             <a
               href={releasesUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-fg-link hover:underline"
+              className="inline-flex items-center gap-1.5 font-semibold text-fg-link text-sm hover:underline"
             >
               Релизы на GitHub
               <ArrowUpRightFromSquare className="size-3.5" aria-hidden />

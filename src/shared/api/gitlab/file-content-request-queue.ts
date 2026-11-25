@@ -1,4 +1,4 @@
-import { GitLabApiError } from "./client";
+import { GitLabApiError } from './client';
 
 const MAX_CONCURRENT_REQUESTS = 2;
 const MIN_REQUEST_INTERVAL_MS = 50;
@@ -34,7 +34,7 @@ class FileContentRequestQueue {
       };
 
       if (signal?.aborted) {
-        this.settle(job, "reject", new DOMException("Aborted", "AbortError"));
+        this.settle(job, 'reject', new DOMException('Aborted', 'AbortError'));
         return;
       }
 
@@ -43,11 +43,15 @@ class FileContentRequestQueue {
           const index = this.pending.indexOf(job as QueueJob<unknown>);
           if (index >= 0) {
             this.pending.splice(index, 1);
-            this.settle(job, "reject", new DOMException("Aborted", "AbortError"));
+            this.settle(
+              job,
+              'reject',
+              new DOMException('Aborted', 'AbortError'),
+            );
             this.pump();
           }
         };
-        signal.addEventListener("abort", job.onAbort, { once: true });
+        signal.addEventListener('abort', job.onAbort, { once: true });
       }
 
       this.pending.push(job as QueueJob<unknown>);
@@ -60,7 +64,10 @@ class FileContentRequestQueue {
       return;
     }
 
-    while (this.activeRequests < MAX_CONCURRENT_REQUESTS && this.pending.length) {
+    while (
+      this.activeRequests < MAX_CONCURRENT_REQUESTS &&
+      this.pending.length
+    ) {
       const now = Date.now();
       const nextStartAt = Math.max(this.nextRequestAt, this.blockedUntil);
       if (nextStartAt > now) {
@@ -73,7 +80,7 @@ class FileContentRequestQueue {
 
       const job = this.pending.shift()!;
       if (job.signal?.aborted) {
-        this.settle(job, "reject", new DOMException("Aborted", "AbortError"));
+        this.settle(job, 'reject', new DOMException('Aborted', 'AbortError'));
         continue;
       }
 
@@ -86,7 +93,7 @@ class FileContentRequestQueue {
   private async run(job: QueueJob<unknown>) {
     try {
       const result = await job.run();
-      this.settle(job, "resolve", result);
+      this.settle(job, 'resolve', result);
     } catch (error) {
       if (
         error instanceof GitLabApiError &&
@@ -107,7 +114,7 @@ class FileContentRequestQueue {
           this.timer = null;
         }
       } else {
-        this.settle(job, "reject", error);
+        this.settle(job, 'reject', error);
       }
     } finally {
       this.activeRequests -= 1;
@@ -117,7 +124,7 @@ class FileContentRequestQueue {
 
   private settle<T>(
     job: QueueJob<T>,
-    outcome: "resolve" | "reject",
+    outcome: 'resolve' | 'reject',
     value: T | unknown,
   ) {
     if (job.settled) {
@@ -126,10 +133,10 @@ class FileContentRequestQueue {
 
     job.settled = true;
     if (job.signal && job.onAbort) {
-      job.signal.removeEventListener("abort", job.onAbort);
+      job.signal.removeEventListener('abort', job.onAbort);
     }
 
-    if (outcome === "resolve") {
+    if (outcome === 'resolve') {
       job.resolve(value as T);
     } else {
       job.reject(value);

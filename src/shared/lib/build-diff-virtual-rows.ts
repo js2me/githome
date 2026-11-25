@@ -1,22 +1,25 @@
-import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
-import type { DiffExpandGap, DiffExpandState } from "@/shared/lib/expand-diff-context";
+import type { GitLabMergeRequestChangeDC } from '@/shared/api/gitlab';
+import { computeWordDiffSegments } from '@/shared/lib/compute-word-diff';
+import type {
+  DiffExpandGap,
+  DiffExpandState,
+} from '@/shared/lib/expand-diff-context';
 import {
   getEndExpandStateKey,
   shouldEmbedHunkHeaderInExpandBar,
   shouldShowGapExpandBar,
-} from "@/shared/lib/expand-diff-context";
+} from '@/shared/lib/expand-diff-context';
 import {
   collectThreadsForLine,
   getLineKeyFromDiffLine,
   getOrphanThreadsForChange,
   type InlineDiffThread,
-} from "@/shared/lib/gitlab/diff-discussions";
-import { computeWordDiffSegments } from "@/shared/lib/compute-word-diff";
+} from '@/shared/lib/gitlab/diff-discussions';
 import {
-  groupDiffLinesForWordDiff,
   type DiffDisplayLine,
+  groupDiffLinesForWordDiff,
   type ParsedFileDiff,
-} from "@/shared/lib/parse-unified-diff";
+} from '@/shared/lib/parse-unified-diff';
 
 export const DIFF_LINE_HEIGHT = 20;
 export const DIFF_HUNK_HEIGHT = 34;
@@ -29,7 +32,7 @@ export const DIFF_VIRTUALIZE_THRESHOLD = 60;
 
 export type VirtualDiffRow =
   | {
-      type: "expand";
+      type: 'expand';
       id: string;
       gap: DiffExpandGap;
       expandState: DiffExpandState;
@@ -38,32 +41,32 @@ export type VirtualDiffRow =
       estimatedHeight: number;
     }
   | {
-      type: "hunk";
+      type: 'hunk';
       id: string;
       header: string;
       estimatedHeight: number;
     }
   | {
-      type: "line";
+      type: 'line';
       id: string;
       lineKey: string | null;
       line: DiffDisplayLine;
       pairedLine: DiffDisplayLine | null;
-      prefix: "+" | "-" | " ";
+      prefix: '+' | '-' | ' ';
       threadsCount: number;
       threads: InlineDiffThread[];
       wordDiffSegments: ReturnType<typeof computeWordDiffSegments> | null;
       estimatedHeight: number;
     }
   | {
-      type: "thread";
+      type: 'thread';
       id: string;
       lineKey: string;
       thread: InlineDiffThread;
       estimatedHeight: number;
     }
   | {
-      type: "comment-form";
+      type: 'comment-form';
       id: string;
       lineKey: string;
       estimatedHeight: number;
@@ -76,16 +79,16 @@ export interface DiffExpandRenderContext {
   loadingGapId: string | null;
 }
 
-const getLinePrefix = (line: DiffDisplayLine): "+" | "-" | " " => {
-  if (line.type === "add") {
-    return "+";
+const getLinePrefix = (line: DiffDisplayLine): '+' | '-' | ' ' => {
+  if (line.type === 'add') {
+    return '+';
   }
 
-  if (line.type === "delete") {
-    return "-";
+  if (line.type === 'delete') {
+    return '-';
   }
 
-  return " ";
+  return ' ';
 };
 
 const buildPairMap = (lines: DiffDisplayLine[]) => {
@@ -109,19 +112,19 @@ const buildWordDiffSegments = (
   pairedLine: DiffDisplayLine | null,
 ) => {
   if (
-    line.type === "delete" &&
-    pairedLine?.type === "add" &&
+    line.type === 'delete' &&
+    pairedLine?.type === 'add' &&
     line.text !== pairedLine.text
   ) {
-    return computeWordDiffSegments(line.text, pairedLine.text, "delete");
+    return computeWordDiffSegments(line.text, pairedLine.text, 'delete');
   }
 
   if (
-    line.type === "add" &&
-    pairedLine?.type === "delete" &&
+    line.type === 'add' &&
+    pairedLine?.type === 'delete' &&
     line.text !== pairedLine.text
   ) {
-    return computeWordDiffSegments(pairedLine.text, line.text, "add");
+    return computeWordDiffSegments(pairedLine.text, line.text, 'add');
   }
 
   return null;
@@ -155,7 +158,7 @@ const pushLineWithThreads = ({
   placedDiscussionIds: Set<string>;
 }) => {
   rows.push({
-    type: "line",
+    type: 'line',
     id:
       id ??
       `${idPrefix ?? `line:${change.new_path}:${hunkIndex}`}:line:${hunkIndex}:${lineIndex}`,
@@ -176,9 +179,9 @@ const pushLineWithThreads = ({
 
     placedDiscussionIds.add(thread.discussionId);
     rows.push({
-      type: "thread",
+      type: 'thread',
       id: `thread:${thread.discussionId}`,
-      lineKey: lineKey ?? "",
+      lineKey: lineKey ?? '',
       thread,
       estimatedHeight: thread.resolved ? 0 : estimateThreadHeight(thread),
     });
@@ -186,7 +189,7 @@ const pushLineWithThreads = ({
 
   if (lineKey && commentFormLineKey === lineKey) {
     rows.push({
-      type: "comment-form",
+      type: 'comment-form',
       id: `comment-form:${lineKey}`,
       lineKey,
       estimatedHeight: DIFF_COMMENT_FORM_HEIGHT,
@@ -258,11 +261,7 @@ const pushExpandGap = ({
   hunkHeader?: string;
 }) => {
   if (
-    !shouldShowGapExpandBar(
-      gap,
-      expand.expandState,
-      expand.contextLinesByGapId,
-    )
+    !shouldShowGapExpandBar(gap, expand.expandState, expand.contextLinesByGapId)
   ) {
     return;
   }
@@ -270,7 +269,7 @@ const pushExpandGap = ({
   const isCollapsedHunk = Boolean(hunkHeader);
 
   rows.push({
-    type: "expand",
+    type: 'expand',
     id: `expand:${gap.id}`,
     gap,
     expandState: expand.expandState,
@@ -350,7 +349,7 @@ const pushHunkLines = ({
   rows: VirtualDiffRow[];
   change: GitLabMergeRequestChangeDC;
   hunkIndex: number;
-  hunk: ParsedFileDiff["hunks"][number];
+  hunk: ParsedFileDiff['hunks'][number];
   threadIndex: Map<string, InlineDiffThread[]>;
   commentFormLineKey: string | null;
   placedDiscussionIds: Set<string>;
@@ -358,7 +357,7 @@ const pushHunkLines = ({
 }) => {
   if (!skipHeader) {
     rows.push({
-      type: "hunk",
+      type: 'hunk',
       id: `hunk:${change.new_path}:${hunkIndex}`,
       header: hunk.header,
       estimatedHeight: DIFF_HUNK_HEIGHT,
@@ -412,9 +411,9 @@ const pushOrphanThreads = ({
   )) {
     placedDiscussionIds.add(thread.discussionId);
     rows.push({
-      type: "thread",
+      type: 'thread',
       id: `thread:${thread.discussionId}`,
-      lineKey: "",
+      lineKey: '',
       thread,
       estimatedHeight: thread.resolved ? 0 : estimateThreadHeight(thread),
     });
@@ -423,28 +422,6 @@ const pushOrphanThreads = ({
 
 const getGapById = (gaps: DiffExpandGap[], id: string) =>
   gaps.find((gap) => gap.id === id) ?? null;
-
-const getGapHunkRenderFlags = (
-  gap: DiffExpandGap,
-  expand: DiffExpandRenderContext,
-) => {
-  const showExpandBar = shouldShowGapExpandBar(
-    gap,
-    expand.expandState,
-    expand.contextLinesByGapId,
-  );
-
-  return {
-    showExpandBar,
-    embedHunkHeader: shouldEmbedHunkHeaderInExpandBar(
-      gap,
-      expand.expandState,
-      expand.contextLinesByGapId,
-    ),
-    // Hunk header lives only inside a collapsed expand bar, never as a separate row.
-    skipHunkHeader: true,
-  };
-};
 
 export const buildDiffVirtualRows = ({
   change,
@@ -464,124 +441,40 @@ export const buildDiffVirtualRows = ({
   const gaps = expand?.gaps ?? [];
 
   for (const [hunkIndex, hunk] of parsed.hunks.entries()) {
-    if (expand) {
-      if (hunkIndex === 0) {
-        const topGap = getGapById(gaps, "top");
-        if (topGap) {
-          const { embedHunkHeader, skipHunkHeader } = getGapHunkRenderFlags(
-            topGap,
-            expand,
-          );
-
-          const topStartLines = expand.contextLinesByGapId.top ?? [];
-          if (topStartLines.length > 0) {
-            pushContextLines({
-              rows,
-              change,
-              hunkIndex: -1,
-              lines: topStartLines,
-              threadIndex,
-              commentFormLineKey,
-              idPrefix: `expanded:top:${change.new_path}`,
-              placedDiscussionIds,
-            });
-          }
-
-          pushExpandGap({
-            rows,
-            gap: topGap,
-            expand,
-            hunkHeader: embedHunkHeader ? hunk.header : undefined,
-          });
-
-          const topEndLines =
-            expand.contextLinesByGapId[getEndExpandStateKey("top")] ?? [];
-          if (topEndLines.length > 0) {
-            pushContextLines({
-              rows,
-              change,
-              hunkIndex: -1,
-              lines: topEndLines,
-              threadIndex,
-              commentFormLineKey,
-              idPrefix: `expanded:${getEndExpandStateKey("top")}:${change.new_path}`,
-              placedDiscussionIds,
-            });
-          }
-
-          pushHunkLines({
-            rows,
-            change,
-            hunkIndex,
-            hunk,
-            threadIndex,
-            commentFormLineKey,
-            skipHeader: skipHunkHeader,
-            placedDiscussionIds,
-          });
-          continue;
-        }
-      } else {
-        const betweenGap = getGapById(gaps, `between:${hunkIndex - 1}`);
-        let skipHunkHeader = false;
-        let embedHunkHeader = false;
-
-        if (betweenGap) {
-          const flags = getGapHunkRenderFlags(betweenGap, expand);
-          skipHunkHeader = flags.skipHunkHeader;
-          embedHunkHeader = flags.embedHunkHeader;
-
-          const betweenLines =
-            expand.contextLinesByGapId[betweenGap.id] ?? [];
-          if (betweenLines.length > 0) {
-            pushContextLines({
-              rows,
-              change,
-              hunkIndex: -1,
-              lines: betweenLines,
-              threadIndex,
-              commentFormLineKey,
-              idPrefix: `expanded:${betweenGap.id}:${change.new_path}`,
-              placedDiscussionIds,
-            });
-          }
-
-          pushExpandGap({
-            rows,
-            gap: betweenGap,
-            expand,
-            hunkHeader: embedHunkHeader ? hunk.header : undefined,
-          });
-
-          const betweenEndLines =
-            expand.contextLinesByGapId[getEndExpandStateKey(betweenGap.id)] ??
-            [];
-          if (betweenEndLines.length > 0) {
-            pushContextLines({
-              rows,
-              change,
-              hunkIndex: -1,
-              lines: betweenEndLines,
-              threadIndex,
-              commentFormLineKey,
-              idPrefix: `expanded:${getEndExpandStateKey(betweenGap.id)}:${change.new_path}`,
-              placedDiscussionIds,
-            });
-          }
-        }
-
-        pushHunkLines({
-          rows,
-          change,
-          hunkIndex,
-          hunk,
-          threadIndex,
-          commentFormLineKey,
-          skipHeader: skipHunkHeader,
-          placedDiscussionIds,
-        });
-        continue;
-      }
+    const gapId = hunkIndex === 0 ? 'top' : `between:${hunkIndex - 1}`;
+    const gap = getGapById(gaps, gapId);
+    if (gap && expand) {
+      const endKey = getEndExpandStateKey(gap.id);
+      const context = {
+        rows,
+        change,
+        hunkIndex: -1,
+        threadIndex,
+        commentFormLineKey,
+        placedDiscussionIds,
+      };
+      pushContextLines({
+        ...context,
+        lines: expand.contextLinesByGapId[gap.id] ?? [],
+        idPrefix: `expanded:${gap.id}:${change.new_path}`,
+      });
+      pushExpandGap({
+        rows,
+        gap,
+        expand,
+        hunkHeader: shouldEmbedHunkHeaderInExpandBar(
+          gap,
+          expand.expandState,
+          expand.contextLinesByGapId,
+        )
+          ? hunk.header
+          : undefined,
+      });
+      pushContextLines({
+        ...context,
+        lines: expand.contextLinesByGapId[endKey] ?? [],
+        idPrefix: `expanded:${endKey}:${change.new_path}`,
+      });
     }
 
     pushHunkLines({
@@ -591,25 +484,25 @@ export const buildDiffVirtualRows = ({
       hunk,
       threadIndex,
       commentFormLineKey,
+      // A collapsed gap displays its own hunk header.
+      skipHeader: Boolean(gap),
       placedDiscussionIds,
     });
   }
 
-  if (expand) {
-    const bottomGap = getGapById(gaps, "bottom");
-    if (bottomGap) {
-      pushDownExpandSection({
-        rows,
-        gap: bottomGap,
-        expand,
-        change,
-        hunkIndex: parsed.hunks.length,
-        threadIndex,
-        commentFormLineKey,
-        idPrefix: `expanded:bottom:${change.new_path}`,
-        placedDiscussionIds,
-      });
-    }
+  const bottomGap = getGapById(gaps, 'bottom');
+  if (expand && bottomGap) {
+    pushDownExpandSection({
+      rows,
+      gap: bottomGap,
+      expand,
+      change,
+      hunkIndex: parsed.hunks.length,
+      threadIndex,
+      commentFormLineKey,
+      idPrefix: `expanded:bottom:${change.new_path}`,
+      placedDiscussionIds,
+    });
   }
 
   pushOrphanThreads({ rows, threadIndex, placedDiscussionIds });

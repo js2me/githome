@@ -1,4 +1,4 @@
-export type DiffLineType = "context" | "add" | "delete" | "no-newline";
+export type DiffLineType = 'context' | 'add' | 'delete' | 'no-newline';
 
 export interface DiffDisplayLine {
   type: DiffLineType;
@@ -42,12 +42,12 @@ export const parseUnifiedDiff = (raw: string): ParsedFileDiff => {
     currentHunk = null;
   };
 
-  for (const line of raw.split("\n")) {
-    if (line.startsWith("---") || line.startsWith("+++")) {
+  for (const line of raw.split('\n')) {
+    if (line.startsWith('---') || line.startsWith('+++')) {
       continue;
     }
 
-    if (line.startsWith("@@")) {
+    if (line.startsWith('@@')) {
       pushCurrentHunk();
 
       const match = line.match(HUNK_HEADER_RE);
@@ -70,9 +70,9 @@ export const parseUnifiedDiff = (raw: string): ParsedFileDiff => {
       continue;
     }
 
-    if (line.startsWith("\\")) {
+    if (line.startsWith('\\')) {
       currentHunk.lines.push({
-        type: "no-newline",
+        type: 'no-newline',
         text: line,
         oldLine: null,
         newLine: null,
@@ -83,9 +83,9 @@ export const parseUnifiedDiff = (raw: string): ParsedFileDiff => {
     const prefix = line[0];
     const text = line.slice(1);
 
-    if (prefix === " ") {
+    if (prefix === ' ') {
       currentHunk.lines.push({
-        type: "context",
+        type: 'context',
         text,
         oldLine,
         newLine,
@@ -95,9 +95,9 @@ export const parseUnifiedDiff = (raw: string): ParsedFileDiff => {
       continue;
     }
 
-    if (prefix === "-") {
+    if (prefix === '-') {
       currentHunk.lines.push({
-        type: "delete",
+        type: 'delete',
         text,
         oldLine,
         newLine: null,
@@ -107,9 +107,9 @@ export const parseUnifiedDiff = (raw: string): ParsedFileDiff => {
       continue;
     }
 
-    if (prefix === "+") {
+    if (prefix === '+') {
       currentHunk.lines.push({
-        type: "add",
+        type: 'add',
         text,
         oldLine: null,
         newLine,
@@ -138,7 +138,7 @@ export const groupDiffLinesForWordDiff = (
   while (index < lines.length) {
     const line = lines[index];
 
-    if (line.type !== "delete" && line.type !== "add") {
+    if (line.type !== 'delete' && line.type !== 'add') {
       result.push({ deleteLine: null, addLine: null });
       index += 1;
       continue;
@@ -147,12 +147,12 @@ export const groupDiffLinesForWordDiff = (
     const deleteLines: DiffDisplayLine[] = [];
     const addLines: DiffDisplayLine[] = [];
 
-    while (index < lines.length && lines[index].type === "delete") {
+    while (index < lines.length && lines[index].type === 'delete') {
       deleteLines.push(lines[index]);
       index += 1;
     }
 
-    while (index < lines.length && lines[index].type === "add") {
+    while (index < lines.length && lines[index].type === 'add') {
       addLines.push(lines[index]);
       index += 1;
     }

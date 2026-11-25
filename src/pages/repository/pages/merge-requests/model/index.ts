@@ -1,9 +1,9 @@
-import { computed, observableRef } from "mobx";
-import { MrList } from "@/entities/gitlab-merge-requests/model/mr-list";
-import type { RepositoryPageVM } from "@/pages/repository/model/page-vm";
-import { VM } from "@/shared/lib/view-models/vm";
+import { computed, observableRef } from 'mobx';
+import { WorkspaceVM } from '@/features/workspace-navigation';
+import type { RepositoryPageVM } from '../../../model/page-vm';
+import { MrList } from './mr-list';
 
-export class MergeRequestsPageVM extends VM<{}, RepositoryPageVM> {
+export class MergeRequestsPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
   @observableRef accessor mrList: MrList | null = null;
 
   @computed

@@ -1,4 +1,4 @@
-import type { GitLabDiffLinePoint } from "./line-code";
+import type { GitLabDiffLinePoint } from './line-code';
 
 export interface CreateDiffCommentInput {
   body: string;

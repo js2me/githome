@@ -1,6 +1,13 @@
 export type AppUpdateStatus =
-  | "idle" | "checking" | "available" | "downloading" | "ready"
-  | "installing" | "current" | "error" | "manual";
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'downloading'
+  | 'ready'
+  | 'installing'
+  | 'current'
+  | 'error'
+  | 'manual';
 
 export interface AppUpdateState {
   status: AppUpdateStatus;

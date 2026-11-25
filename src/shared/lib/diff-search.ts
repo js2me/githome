@@ -34,7 +34,7 @@ export const getDiffFileHeaderRowId = (fileKey: string) =>
   `file-header:${fileKey}`;
 
 export const isDiffFileHeaderRowId = (rowId: string) =>
-  rowId.startsWith("file-header:");
+  rowId.startsWith('file-header:');
 
 export const findTextRanges = (text: string, query: string): TextRange[] => {
   if (!query) {
@@ -148,7 +148,7 @@ export const collectDiffSearchMatchesAsync = async (
 
   const throwIfAborted = () => {
     if (signal?.aborted) {
-      throw new DOMException("Diff search aborted", "AbortError");
+      throw new DOMException('Diff search aborted', 'AbortError');
     }
   };
 

@@ -1,14 +1,14 @@
-import type { FetchQueryParams } from "@/shared/lib/create-fetch-query";
+import type { FetchQueryParams } from '@/shared/lib/create-fetch-query';
 
 export const PROJECT_LIST_TABS = [
-  { id: "contributed", label: "Участие" },
-  { id: "starred", label: "Избранные" },
-  { id: "personal", label: "Личные" },
-  { id: "member", label: "Участник" },
-  { id: "inactive", label: "Неактивные" },
+  { id: 'contributed', label: 'Участие' },
+  { id: 'starred', label: 'Избранные' },
+  { id: 'personal', label: 'Личные' },
+  { id: 'member', label: 'Участник' },
+  { id: 'inactive', label: 'Неактивные' },
 ] as const;
 
-export type ProjectListTab = (typeof PROJECT_LIST_TABS)[number]["id"];
+export type ProjectListTab = (typeof PROJECT_LIST_TABS)[number]['id'];
 
 export const PROJECTS_PER_PAGE = 50;
 
@@ -24,17 +24,17 @@ export const buildProjectListParams = ({
   userId,
 }: BuildProjectListParamsOptions): Pick<
   FetchQueryParams,
-  "path" | "query"
+  'path' | 'query'
 > | null => {
   const query = {
-    order_by: "last_activity_at",
-    sort: "desc",
+    order_by: 'last_activity_at',
+    sort: 'desc',
     per_page: perPage,
     simple: false,
   } as const;
 
   switch (tab) {
-    case "contributed":
+    case 'contributed':
       if (!userId) {
         return null;
       }
@@ -43,24 +43,24 @@ export const buildProjectListParams = ({
         path: `/users/${userId}/contributed_projects`,
         query,
       };
-    case "starred":
+    case 'starred':
       return {
-        path: "/projects",
+        path: '/projects',
         query: { ...query, starred: true },
       };
-    case "personal":
+    case 'personal':
       return {
-        path: "/projects",
+        path: '/projects',
         query: { ...query, owned: true },
       };
-    case "member":
+    case 'member':
       return {
-        path: "/projects",
+        path: '/projects',
         query: { ...query, membership: true },
       };
-    case "inactive":
+    case 'inactive':
       return {
-        path: "/projects",
+        path: '/projects',
         query: { ...query, membership: true, active: false },
       };
   }

@@ -1,6 +1,6 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabPost } from "../client";
-import type { GitLabProjectDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabPost } from '../client';
+import type { GitLabProjectDC } from '../data-contracts';
 
 export const approveMergeRequest = async (
   connection: GitLabConnection,
@@ -8,10 +8,7 @@ export const approveMergeRequest = async (
   mergeRequestIid: number,
   options?: { sha?: string | null; signal?: AbortSignal },
 ): Promise<void> => {
-  const body =
-    options?.sha && options.sha.trim()
-      ? { sha: options.sha.trim() }
-      : {};
+  const body = options?.sha?.trim() ? { sha: options.sha.trim() } : {};
 
   await gitlabPost(
     connection,

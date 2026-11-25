@@ -1,4 +1,8 @@
-import type { DiffDisplayLine, DiffHunk, ParsedFileDiff } from "./parse-unified-diff";
+import type {
+  DiffDisplayLine,
+  DiffHunk,
+  ParsedFileDiff,
+} from './parse-unified-diff';
 
 export const DIFF_EXPAND_CHUNK = 20;
 
@@ -11,20 +15,20 @@ export interface DiffHunkLineRange {
 
 export interface DiffExpandGap {
   id: string;
-  direction: "up" | "down";
+  direction: 'up' | 'down';
   hiddenCount: number | null;
   newLineStart: number;
   newLineEnd: number | null;
 }
 
-export type DiffExpandState = Record<string, number | "all">;
+export type DiffExpandState = Record<string, number | 'all'>;
 
-export type DiffExpandMode = "chunk-down" | "chunk-up" | "all";
+export type DiffExpandMode = 'chunk-down' | 'chunk-up' | 'all';
 
 export const getEndExpandStateKey = (gapId: string) => `${gapId}:end`;
 
 export const supportsExpandFromEnd = (gap: DiffExpandGap) =>
-  gap.id === "top" || gap.id.startsWith("between:") || gap.id === "bottom";
+  gap.id === 'top' || gap.id.startsWith('between:') || gap.id === 'bottom';
 
 export const getHunkLineRanges = (hunks: DiffHunk[]): DiffHunkLineRange[] =>
   hunks.map((hunk) => {
@@ -41,7 +45,9 @@ export const getHunkLineRanges = (hunks: DiffHunk[]): DiffHunkLineRange[] =>
       }
     }
 
-    const headerMatch = hunk.header.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    const headerMatch = hunk.header.match(
+      /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/,
+    );
     if (headerMatch && oldStart === Number.POSITIVE_INFINITY) {
       oldStart = Number.parseInt(headerMatch[1], 10);
       oldEnd = oldStart;
@@ -73,8 +79,8 @@ export const getDiffExpandGaps = (
 
   if (firstHunk.newStart > 1) {
     gaps.push({
-      id: "top",
-      direction: "up",
+      id: 'top',
+      direction: 'up',
       hiddenCount: firstHunk.newStart - 1,
       newLineStart: 1,
       newLineEnd: firstHunk.newStart - 1,
@@ -90,7 +96,7 @@ export const getDiffExpandGaps = (
     if (gapEnd >= gapStart) {
       gaps.push({
         id: `between:${index}`,
-        direction: "down",
+        direction: 'down',
         hiddenCount: gapEnd - gapStart + 1,
         newLineStart: gapStart,
         newLineEnd: gapEnd,
@@ -106,8 +112,8 @@ export const getDiffExpandGaps = (
 
     if (hiddenBelow > 0) {
       gaps.push({
-        id: "bottom",
-        direction: "down",
+        id: 'bottom',
+        direction: 'down',
         hiddenCount: hiddenBelow,
         newLineStart: bottomStart,
         newLineEnd: fileLineCount,
@@ -115,9 +121,7 @@ export const getDiffExpandGaps = (
     }
   }
 
-  return gaps.filter(
-    (gap) => gap.hiddenCount === null || gap.hiddenCount > 0,
-  );
+  return gaps.filter((gap) => gap.hiddenCount === null || gap.hiddenCount > 0);
 };
 
 export const getRevealedFromStart = (
@@ -126,24 +130,24 @@ export const getRevealedFromStart = (
 ): number => {
   const value = expandState[gap.id];
 
-  if (value === "all") {
+  if (value === 'all') {
     return gap.hiddenCount ?? Number.MAX_SAFE_INTEGER;
   }
 
-  return typeof value === "number" ? value : 0;
+  return typeof value === 'number' ? value : 0;
 };
 
 export const getRevealedFromEnd = (
   gap: DiffExpandGap,
   expandState: DiffExpandState,
 ): number => {
-  if (expandState[gap.id] === "all") {
+  if (expandState[gap.id] === 'all') {
     return 0;
   }
 
   const value = expandState[getEndExpandStateKey(gap.id)];
 
-  if (value === "all") {
+  if (value === 'all') {
     if (gap.hiddenCount === null) {
       return Number.MAX_SAFE_INTEGER;
     }
@@ -152,7 +156,7 @@ export const getRevealedFromEnd = (
     return Math.max(0, gap.hiddenCount - fromStart);
   }
 
-  return typeof value === "number" ? value : 0;
+  return typeof value === 'number' ? value : 0;
 };
 
 /** @deprecated use getRevealedFromStart */
@@ -169,7 +173,7 @@ export const getRemainingHiddenCount = (
     return 0;
   }
 
-  if (expandState[gap.id] === "all") {
+  if (expandState[gap.id] === 'all') {
     return 0;
   }
 
@@ -225,7 +229,11 @@ export const isGapClosedByContext = (
     return false;
   }
 
-  for (let lineNumber = gap.newLineStart; lineNumber <= gap.newLineEnd; lineNumber += 1) {
+  for (
+    let lineNumber = gap.newLineStart;
+    lineNumber <= gap.newLineEnd;
+    lineNumber += 1
+  ) {
     if (!revealed.has(lineNumber)) {
       return false;
     }
@@ -263,11 +271,11 @@ export const shouldEmbedHunkHeaderInExpandBar = (
 
 const getNextChunkReveal = (revealed: number, remaining: number) => {
   if (remaining <= 0) {
-    return "all" as const;
+    return 'all' as const;
   }
 
   if (remaining <= DIFF_EXPAND_CHUNK) {
-    return "all" as const;
+    return 'all' as const;
   }
 
   return revealed + DIFF_EXPAND_CHUNK;
@@ -276,10 +284,10 @@ const getNextChunkReveal = (revealed: number, remaining: number) => {
 export const getNextExpandReveal = (
   gap: DiffExpandGap,
   expandState: DiffExpandState,
-): number | "all" => {
+): number | 'all' => {
   if (gap.hiddenCount === null) {
     const current = expandState[gap.id];
-    if (typeof current === "number") {
+    if (typeof current === 'number') {
       return current + DIFF_EXPAND_CHUNK;
     }
 
@@ -299,10 +307,10 @@ export const getNextExpandReveal = (
 export const getNextExpandRevealFromEnd = (
   gap: DiffExpandGap,
   expandState: DiffExpandState,
-): number | "all" => {
+): number | 'all' => {
   if (gap.hiddenCount === null) {
     const current = expandState[getEndExpandStateKey(gap.id)];
-    if (typeof current === "number") {
+    if (typeof current === 'number') {
       return current + DIFF_EXPAND_CHUNK;
     }
 
@@ -322,7 +330,7 @@ export const getVisibleLineRange = (
   revealCount: number,
   expandState: DiffExpandState = {},
 ): { startLine: number; endLine: number } | null => {
-  if (gap.newLineEnd === null && gap.direction === "down") {
+  if (gap.newLineEnd === null && gap.direction === 'down') {
     return {
       startLine: gap.newLineStart,
       endLine: gap.newLineStart + revealCount - 1,
@@ -331,7 +339,7 @@ export const getVisibleLineRange = (
 
   const endLine = gap.newLineEnd ?? gap.newLineStart;
 
-  if (gap.direction === "up") {
+  if (gap.direction === 'up') {
     const startLine = Math.max(gap.newLineStart, endLine - revealCount + 1);
     return { startLine, endLine };
   }
@@ -377,9 +385,9 @@ export const buildContextLines = (
   const lines: DiffDisplayLine[] = [];
 
   for (let lineNumber = startLine; lineNumber <= endLine; lineNumber += 1) {
-    const text = fileLines[lineNumber - 1] ?? "";
+    const text = fileLines[lineNumber - 1] ?? '';
     lines.push({
-      type: "context",
+      type: 'context',
       text,
       oldLine: lineNumber,
       newLine: lineNumber,
@@ -390,7 +398,7 @@ export const buildContextLines = (
 };
 
 export const getChunkExpandTooltip = (
-  direction: "up" | "down",
+  direction: 'up' | 'down',
   expandState: DiffExpandState,
   gap: DiffExpandGap,
 ): string => {
@@ -398,11 +406,11 @@ export const getChunkExpandTooltip = (
   const count = Math.min(DIFF_EXPAND_CHUNK, remaining);
 
   if (count <= 0) {
-    return direction === "up" ? "Показать строки выше" : "Показать строки ниже";
+    return direction === 'up' ? 'Показать строки выше' : 'Показать строки ниже';
   }
 
   const lines = pluralLinesAccusative(count);
-  return direction === "up"
+  return direction === 'up'
     ? `Показать ${count} ${lines} выше`
     : `Показать ${count} ${lines} ниже`;
 };
@@ -419,42 +427,42 @@ export const getExpandBarLabel = (
     return formatHiddenLinesLabel(count);
   }
 
-  return "Скрытые строки без изменений";
+  return 'Скрытые строки без изменений';
 };
 
-type LinePluralCategory = "one" | "few" | "many";
+type LinePluralCategory = 'one' | 'few' | 'many';
 
 const getLinePluralCategory = (count: number): LinePluralCategory => {
   const mod10 = count % 10;
   const mod100 = count % 100;
 
   if (mod10 === 1 && mod100 !== 11) {
-    return "one";
+    return 'one';
   }
 
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
-    return "few";
+    return 'few';
   }
 
-  return "many";
+  return 'many';
 };
 
 const pluralLinesAccusative = (count: number) => {
   switch (getLinePluralCategory(count)) {
-    case "one":
-      return "строку";
-    case "few":
-      return "строки";
+    case 'one':
+      return 'строку';
+    case 'few':
+      return 'строки';
     default:
-      return "строк";
+      return 'строк';
   }
 };
 
 const formatHiddenLinesLabel = (count: number): string => {
   switch (getLinePluralCategory(count)) {
-    case "one":
+    case 'one':
       return `Скрыта ${count} строка без изменений`;
-    case "few":
+    case 'few':
       return `Скрыты ${count} строки без изменений`;
     default:
       return `Скрыто ${count} строк без изменений`;

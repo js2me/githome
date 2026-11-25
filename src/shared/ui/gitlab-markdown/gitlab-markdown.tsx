@@ -1,7 +1,7 @@
-import { withPropsViewModel } from "mobx-view-model-react";
-import { cn } from "@/shared/lib/cn";
-import { GitlabMarkdownVM } from "./model";
-import "./styles.css";
+import { withPropsViewModel } from 'mobx-view-model-react';
+import { cn } from '@/shared/lib/cn';
+import { GitlabMarkdownVM } from './model';
+import './styles.css';
 
 export const GitLabMarkdown = withPropsViewModel(
   GitlabMarkdownVM,
@@ -17,8 +17,8 @@ export const GitLabMarkdown = withPropsViewModel(
       return (
         <div
           className={cn(
-            "whitespace-pre-wrap break-words text-sm leading-relaxed",
-            italic && "italic text-slate-500 dark:text-slate-400",
+            'whitespace-pre-wrap break-words text-sm leading-relaxed',
+            italic && 'text-slate-500 italic dark:text-slate-400',
             className,
           )}
         >
@@ -31,7 +31,7 @@ export const GitLabMarkdown = withPropsViewModel(
       return (
         <div
           className={cn(
-            "animate-pulse rounded-md bg-slate-100 text-sm text-slate-400 dark:bg-slate-800",
+            'animate-pulse rounded-md bg-slate-100 text-slate-400 text-sm dark:bg-slate-800',
             className,
           )}
         >
@@ -44,11 +44,10 @@ export const GitLabMarkdown = withPropsViewModel(
       <div
         ref={container}
         className={cn(
-          "gitlab-markdown min-w-0 max-w-full",
-          italic && "italic text-slate-500 dark:text-slate-400",
+          'gitlab-markdown min-w-0 max-w-full',
+          italic && 'text-slate-500 italic dark:text-slate-400',
           className,
         )}
-        dangerouslySetInnerHTML={{ __html: html }}
       />
     );
   },

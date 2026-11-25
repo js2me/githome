@@ -1,5 +1,5 @@
-import { createInfiniteQuery } from "mobx-tanstack-query/preset";
-import type { DefaultError } from "@tanstack/query-core";
+import type { DefaultError } from '@tanstack/query-core';
+import { createInfiniteQuery } from 'mobx-tanstack-query/preset';
 import {
   buildFetchQueryKey,
   buildFetchQueryUrl,
@@ -10,7 +10,7 @@ import {
   parseFetchQueryKey,
   resolveFetchQueryParams,
   serializeFetchQuery,
-} from "@/shared/lib/create-fetch-query";
+} from '@/shared/lib/create-fetch-query';
 
 export type FetchPageResult<TItem> = {
   items: TItem[];
@@ -29,16 +29,16 @@ export type CreateInfiniteFetchQueryOptions = {
 };
 
 const resolveInfiniteQueryOptions = (
-  queryOptions?: CreateInfiniteFetchQueryOptions["queryOptions"],
+  queryOptions?: CreateInfiniteFetchQueryOptions['queryOptions'],
 ): InfiniteFetchQueryDynamicOptions => {
-  if (typeof queryOptions === "function") {
+  if (typeof queryOptions === 'function') {
     return queryOptions();
   }
 
   return queryOptions ?? {};
 };
 
-const getPerPage = (query: FetchQueryParams["query"]) => {
+const getPerPage = (query: FetchQueryParams['query']) => {
   const perPage = query?.per_page;
 
   if (perPage == null) {
@@ -54,10 +54,10 @@ const parseFetchPageResult = async <TItem>(
   pageParam: number,
   perPage: number | undefined,
 ): Promise<FetchPageResult<TItem>> => {
-  const totalHeader = response.headers.get("X-Total");
-  const totalPagesHeader = response.headers.get("X-Total-Pages");
-  const nextPageHeader = response.headers.get("X-Next-Page");
-  const currentPageHeader = response.headers.get("X-Page");
+  const totalHeader = response.headers.get('X-Total');
+  const totalPagesHeader = response.headers.get('X-Total-Pages');
+  const nextPageHeader = response.headers.get('X-Next-Page');
+  const currentPageHeader = response.headers.get('X-Page');
   const items = (await response.json()) as TItem[];
   const page = currentPageHeader
     ? Number.parseInt(currentPageHeader, 10)
@@ -87,11 +87,7 @@ const parseFetchPageResult = async <TItem>(
 export const createInfiniteFetchQuery = <TItem = unknown>(
   options: CreateInfiniteFetchQueryOptions,
 ) => {
-  return createInfiniteQuery<
-    FetchPageResult<TItem>,
-    DefaultError,
-    number
-  >({
+  return createInfiniteQuery<FetchPageResult<TItem>, DefaultError, number>({
     abortSignal: options.abortSignal,
     initialPageParam: options.initialPageParam ?? 1,
     getNextPageParam: (lastPage) =>
@@ -109,7 +105,7 @@ export const createInfiniteFetchQuery = <TItem = unknown>(
       const fetchParams = parseFetchQueryKey(queryKey as FetchQueryKey);
 
       if (!fetchParams) {
-        throw new Error("Infinite fetch query is not configured");
+        throw new Error('Infinite fetch query is not configured');
       }
 
       const perPage = getPerPage(fetchParams.query);
@@ -136,8 +132,8 @@ export const createInfiniteFetchQuery = <TItem = unknown>(
         throw new Error(`Fetch error: ${response.status}`);
       }
 
-      if (fetchParams.responseType === "text") {
-        throw new Error("Infinite fetch query supports JSON responses only");
+      if (fetchParams.responseType === 'text') {
+        throw new Error('Infinite fetch query supports JSON responses only');
       }
 
       return parseFetchPageResult<TItem>(response, pageParam, perPage);

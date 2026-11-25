@@ -1,13 +1,15 @@
-import { computed } from "mobx";
-import type { Globals } from "@/globals";
-import type { GitLabProjectReadmeDC } from "@/shared/api/gitlab";
+import { computed } from 'mobx';
+import type { GitLabProjectReadmeDC } from '@/shared/api/gitlab';
 import {
   decodeProjectReadmeContent,
   README_FALLBACK_PATHS,
-} from "@/shared/api/gitlab/endpoints/get-project-readme";
-import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
+} from '@/shared/api/gitlab/endpoints/get-project-readme';
+import { createGitlabQuery } from '@/shared/lib/gitlab/create-query';
+import type { Globals } from '@/shared/model/globals';
 
-type ReadmeQuery = ReturnType<typeof createGitlabQuery<GitLabProjectReadmeDC | null>>;
+type ReadmeQuery = ReturnType<
+  typeof createGitlabQuery<GitLabProjectReadmeDC | null>
+>;
 
 export interface ProjectReadmeParams {
   globals: Globals;
@@ -52,7 +54,7 @@ export class ProjectReadmeModel {
       },
       {
         offset: README_FALLBACK_PATHS.length,
-        resolveRef: () => "HEAD",
+        resolveRef: () => 'HEAD',
       },
     ] as const;
 
@@ -67,25 +69,29 @@ export class ProjectReadmeModel {
             params: () => {
               const projectId = params.projectId();
               const ref = group.resolveRef();
-              if (projectId === null || !ref || !this.shouldRunFallback(queryIndex)) {
+              if (
+                projectId === null ||
+                !ref ||
+                !this.shouldRunFallback(queryIndex)
+              ) {
                 return false;
               }
 
               return {
                 path: `/projects/${projectId}/repository/files/${encodeURIComponent(filePath)}/raw`,
                 query: { ref },
-                responseType: "text",
+                responseType: 'text',
                 notFoundAsNull: true,
               };
             },
             queryOptions: {
               select: (text) => {
-                if (typeof text !== "string" || !text) {
+                if (typeof text !== 'string' || !text) {
                   return null;
                 }
 
                 return {
-                  file_name: filePath.split("/").pop() ?? filePath,
+                  file_name: filePath.split('/').pop() ?? filePath,
                   file_path: filePath,
                   content: text,
                 };
@@ -166,6 +172,6 @@ export class ProjectReadmeModel {
 
     return error instanceof Error
       ? error.message
-      : "Не удалось загрузить README";
+      : 'Не удалось загрузить README';
   }
 }

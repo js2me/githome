@@ -1,11 +1,11 @@
-import { observer } from "mobx-react-lite";
-import { cn } from "@/shared/lib/cn";
-import { Popup } from "@/shared/ui/popup";
-import type { FilesPageVM } from "../../model";
-import { CommitsVirtualList } from "./commits-virtual-list";
+import { observer } from 'mobx-react-lite';
+import { cn } from '@/shared/lib/cn';
+import { Popup } from '@/shared/ui/popup';
+import type { FilesPageVM } from '../../model';
+import { CommitsVirtualList } from './commits-virtual-list';
 
 const pickerButtonClassName =
-  "glass-control inline-flex max-w-[min(100vw-12rem,320px)] items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-sm font-semibold";
+  'glass-control inline-flex max-w-[min(100vw-12rem,320px)] items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-sm font-semibold';
 
 export const CommitPicker = observer(({ model }: { model: FilesPageVM }) => {
   const { commitsModel } = model;
@@ -22,7 +22,8 @@ export const CommitPicker = observer(({ model }: { model: FilesPageVM }) => {
             ref={setTriggerRef}
             className={cn(
               pickerButtonClassName,
-              model.isCommitPickerOpen && "border-[var(--glass-accent)] bg-[var(--glass-selected)] text-[var(--glass-accent)]",
+              model.isCommitPickerOpen &&
+                'border-[var(--glass-accent)] bg-[var(--glass-selected)] text-[var(--glass-accent)]',
             )}
             type="button"
             onClick={model.toggleCommitPicker}
@@ -50,13 +51,15 @@ export const CommitPicker = observer(({ model }: { model: FilesPageVM }) => {
         className="left-0 w-[min(420px,calc(100vw-2.5rem))] p-1"
       >
         {commitsModel.isLoading && commitsModel.commits.length === 0 && (
-          <p className="px-3 py-2 text-sm text-slate-500">Загружаем коммиты...</p>
+          <p className="px-3 py-2 text-slate-500 text-sm">
+            Загружаем коммиты...
+          </p>
         )}
 
         {commitsModel.errorMessage &&
           !commitsModel.isLoading &&
           commitsModel.commits.length === 0 && (
-            <p className="px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
+            <p className="px-3 py-2 text-rose-600 text-sm dark:text-rose-400">
               {commitsModel.errorMessage}
             </p>
           )}
@@ -64,7 +67,9 @@ export const CommitPicker = observer(({ model }: { model: FilesPageVM }) => {
         {!commitsModel.isLoading &&
           !commitsModel.errorMessage &&
           commitsModel.commits.length === 0 && (
-            <p className="px-3 py-2 text-sm text-slate-500">Коммиты не найдены.</p>
+            <p className="px-3 py-2 text-slate-500 text-sm">
+              Коммиты не найдены.
+            </p>
           )}
 
         {commitsModel.commits.length > 0 && (

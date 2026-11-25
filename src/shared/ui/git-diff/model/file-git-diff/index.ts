@@ -1,17 +1,19 @@
-import type { GitLabMergeRequestChangeDC } from "@/shared/api/gitlab";
-import type { GitDiffVM } from "../git-diff-vm";
-import { FileGitDiffComments } from "./comments";
-import { FileGitDiffContent } from "./content";
-import { FileGitDiffContextExpand } from "./context-expand";
-import { FileGitDiffImages } from "./images";
-import { FileGitDiffLineSelection } from "./line-selection";
-import { FileGitDiffMeta } from "./meta";
-import { FileGitDiffNavigation } from "./navigation";
-import { FileGitDiffRows } from "./rows";
+import type { GitLabMergeRequestChangeDC } from '@/shared/api/gitlab';
+import type { GitDiffVM } from '../git-diff-vm';
+import { FileGitDiffComments } from './comments';
+import { FileGitDiffContent } from './content';
+import { FileGitDiffContextExpand } from './context-expand';
+import { FileDiffHighlighting } from './highlighting';
+import { FileGitDiffImages } from './images';
+import { FileGitDiffLineSelection } from './line-selection';
+import { FileGitDiffMeta } from './meta';
+import { FileGitDiffNavigation } from './navigation';
+import { FileGitDiffRows } from './rows';
 
 export class FileGitDiff {
   readonly meta: FileGitDiffMeta;
   readonly content: FileGitDiffContent;
+  readonly highlighting: FileDiffHighlighting;
   readonly images?: FileGitDiffImages;
   readonly expand: FileGitDiffContextExpand;
   readonly rows: FileGitDiffRows;
@@ -25,6 +27,7 @@ export class FileGitDiff {
   ) {
     this.meta = new FileGitDiffMeta(this, change);
     this.content = new FileGitDiffContent(this);
+    this.highlighting = new FileDiffHighlighting(this);
     if (this.meta.isImage) this.images = new FileGitDiffImages(this);
     this.expand = new FileGitDiffContextExpand(this);
     this.rows = new FileGitDiffRows(this);
@@ -55,4 +58,4 @@ export class FileGitDiff {
   }
 }
 
-export { getChangeBadge, getChangePath, getExpandFilePath } from "./helpers";
+export { getChangeBadge, getChangePath, getExpandFilePath } from './helpers';

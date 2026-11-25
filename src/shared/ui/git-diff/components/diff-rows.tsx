@@ -3,53 +3,49 @@ import {
   ArrowUpToLine,
   Pencil,
   TrashBin,
-} from "@gravity-ui/icons";
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type MouseEvent,
-  type ReactNode,
-  type RefObject,
-} from "react";
-import { createPortal } from "react-dom";
+} from '@gravity-ui/icons';
+import { observer } from 'mobx-react-lite';
+import { withPropsViewModel } from 'mobx-view-model-react';
+import { type MouseEvent, memo, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { cn } from '@/shared/lib/cn';
+import type { WordDiffSegment } from '@/shared/lib/compute-word-diff';
 import type {
   DiffExpandGap,
   DiffExpandMode,
   DiffExpandState,
-} from "@/shared/lib/expand-diff-context";
+} from '@/shared/lib/expand-diff-context';
 import {
   getChunkExpandTooltip,
   getExpandBarLabel,
-} from "@/shared/lib/expand-diff-context";
-import type { GitLabNoteDC } from "@/shared/api/gitlab";
-import type { WordDiffSegment } from "@/shared/lib/compute-word-diff";
-import { cn } from "@/shared/lib/cn";
-import { GitlabCommentEditor } from "@/shared/ui/gitlab-comment-editor";
-import type { InlineDiffThread } from "@/shared/lib/gitlab/diff-discussions";
+} from '@/shared/lib/expand-diff-context';
+import type { InlineDiffThread } from '@/shared/lib/gitlab/diff-discussions';
 import {
   canEditGitLabNote,
   getDiscussionNoteKey,
-} from "@/shared/lib/gitlab/note-permissions";
-import type { DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
-import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
-import type { GitlabMarkdownScope } from "@/shared/ui/gitlab-markdown/model";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
-import { useDiffSyntaxHighlight } from "./diff-syntax-highlight";
-import { useRowSearchHighlight } from "./diff-search";
-import { HighlightedCode } from "./highlighted-code";
+} from '@/shared/lib/gitlab/note-permissions';
+import type { DiffDisplayLine } from '@/shared/lib/parse-unified-diff';
+import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
+import { GitlabCommentEditor } from '@/shared/ui/gitlab-comment-editor';
+import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
+import {
+  DiffCommentFormVM,
+  DiffThreadVM,
+  InlineNoteVM,
+  ThreadAvatarVM,
+} from '../model/discussion-rows';
+import { useRowSearchHighlight } from './diff-search';
+import { useDiffSyntaxHighlight } from './diff-syntax-highlight';
+import { HighlightedCode } from './highlighted-code';
 
-export const diffGridClassName = "git-diff-grid";
+export const diffGridClassName = 'git-diff-grid';
 
 const getNotePreview = (body: string, maxLength = 48) => {
   const plain = body
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/[#*_~[\]()]/g, "")
-    .replace(/\s+/g, " ")
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/[#*_~[\]()]/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 
   if (plain.length <= maxLength) {
@@ -69,7 +65,7 @@ const formatRelativeTime = (value: string) => {
   const diffMinutes = Math.floor(diffMs / 60_000);
 
   if (diffMinutes < 1) {
-    return "только что";
+    return 'только что';
   }
 
   if (diffMinutes < 60) {
@@ -86,109 +82,39 @@ const formatRelativeTime = (value: string) => {
     return `${diffDays} дн. назад`;
   }
 
-  return date.toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return date.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
-const ResolvedThreadAvatarTooltip = ({
-  anchorRef,
-  authorName,
-  preview,
-  open,
-}: {
-  anchorRef: RefObject<HTMLDivElement | null>;
-  authorName: string;
-  preview: string;
-  open: boolean;
-}) => {
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(
-    null,
-  );
-
-  const updatePosition = useCallback(() => {
-    const anchor = anchorRef.current;
-    if (!anchor) {
-      return;
-    }
-
-    const rect = anchor.getBoundingClientRect();
-    setPosition({
-      top: rect.top - 8,
-      left: rect.left + rect.width / 2,
-    });
-  }, [anchorRef]);
-
-  useLayoutEffect(() => {
-    if (!open) {
-      setPosition(null);
-      return;
-    }
-
-    updatePosition();
-
-    const handleReposition = () => {
-      updatePosition();
-    };
-
-    window.addEventListener("scroll", handleReposition, true);
-    window.addEventListener("resize", handleReposition);
-
-    return () => {
-      window.removeEventListener("scroll", handleReposition, true);
-      window.removeEventListener("resize", handleReposition);
-    };
-  }, [open, updatePosition]);
-
-  if (!open || !position) {
-    return null;
-  }
-
-  return createPortal(
-    <div
-      className="git-diff-thread-tooltip git-diff-thread-tooltip--portal"
-      role="tooltip"
-      style={{
-        top: position.top,
-        left: position.left,
-      }}
-    >
-      <span className="font-semibold">{authorName}:</span> {preview}
-    </div>,
-    document.body,
-  );
-};
-
-export const ResolvedThreadAvatar = memo(
-  ({
-    thread,
-    onClick,
-  }: {
-    thread: InlineDiffThread;
-    onClick: () => void;
-  }) => {
-    const wrapRef = useRef<HTMLDivElement>(null);
-    const [tooltipOpen, setTooltipOpen] = useState(false);
+export const ResolvedThreadAvatar = withPropsViewModel(
+  ThreadAvatarVM,
+  ({ model }) => {
+    const {
+      payload: { thread, onClick },
+      anchor,
+      position,
+    } = model;
     const firstNote = thread.notes[0];
     if (!firstNote) {
       return null;
     }
 
-    const authorName = firstNote.author?.name ?? "Unknown";
+    const authorName = firstNote.author?.name ?? 'Unknown';
     const preview = getNotePreview(firstNote.body);
 
     return (
       <div
-        ref={wrapRef}
+        ref={anchor}
         className="git-diff-thread-avatar-wrap"
-        onMouseEnter={() => setTooltipOpen(true)}
-        onMouseLeave={() => setTooltipOpen(false)}
-        onFocus={() => setTooltipOpen(true)}
-        onBlur={() => setTooltipOpen(false)}
+        onMouseEnter={model.show}
+        onMouseLeave={model.hide}
+        onFocus={model.show}
+        onBlur={model.hide}
       >
         <button
           className="git-diff-thread-avatar-button"
@@ -205,46 +131,51 @@ export const ResolvedThreadAvatar = memo(
             name={authorName}
           />
         </button>
-        <ResolvedThreadAvatarTooltip
-          anchorRef={wrapRef}
-          authorName={authorName}
-          preview={preview}
-          open={tooltipOpen}
-        />
+        {position &&
+          createPortal(
+            <div
+              className="git-diff-thread-tooltip git-diff-thread-tooltip--portal"
+              role="tooltip"
+              style={position}
+            >
+              <span className="font-semibold">{authorName}:</span> {preview}
+            </div>,
+            document.body,
+          )}
       </div>
     );
   },
 );
 
-const getLineSurfaceClasses = (type: DiffDisplayLine["type"]) => {
+const getLineSurfaceClasses = (type: DiffDisplayLine['type']) => {
   switch (type) {
-    case "add":
+    case 'add':
       return {
-        oldNum: "",
-        newNum: "git-diff-line-num--new-added",
-        prefix: "git-diff-prefix--added",
-        code: "git-diff-code--added",
+        oldNum: '',
+        newNum: 'git-diff-line-num--new-added',
+        prefix: 'git-diff-prefix--added',
+        code: 'git-diff-code--added',
       };
-    case "delete":
+    case 'delete':
       return {
-        oldNum: "git-diff-line-num--old-removed",
-        newNum: "",
-        prefix: "git-diff-prefix--removed",
-        code: "git-diff-code--removed",
+        oldNum: 'git-diff-line-num--old-removed',
+        newNum: '',
+        prefix: 'git-diff-prefix--removed',
+        code: 'git-diff-code--removed',
       };
-    case "no-newline":
+    case 'no-newline':
       return {
-        oldNum: "",
-        newNum: "",
-        prefix: "",
-        code: "italic text-[var(--diff-hunk-text)]",
+        oldNum: '',
+        newNum: '',
+        prefix: '',
+        code: 'italic text-[var(--diff-hunk-text)]',
       };
     default:
       return {
-        oldNum: "",
-        newNum: "",
-        prefix: "",
-        code: "",
+        oldNum: '',
+        newNum: '',
+        prefix: '',
+        code: '',
       };
   }
 };
@@ -311,33 +242,33 @@ export const DiffExpandRow = memo(
     onExpand: (gap: DiffExpandGap, mode: DiffExpandMode) => void;
     hunkHeader?: string;
   }) => {
-    const isBetweenGap = gap.id.startsWith("between:");
-    const showUp = gap.direction === "up" || isBetweenGap;
-    const showDown = gap.direction === "down" || isBetweenGap;
+    const isBetweenGap = gap.id.startsWith('between:');
+    const showUp = gap.direction === 'up' || isBetweenGap;
+    const showDown = gap.direction === 'down' || isBetweenGap;
 
     return (
       <div
         className={cn(
           diffGridClassName,
-          "git-diff-expand-row",
-          hunkHeader && "git-diff-expand-row--collapsed-hunk",
+          'git-diff-expand-row',
+          hunkHeader && 'git-diff-expand-row--collapsed-hunk',
         )}
       >
         <div className="git-diff-expand-gutter">
           {showDown && (
             <ExpandIconButton
-              title={getChunkExpandTooltip("down", expandState, gap)}
+              title={getChunkExpandTooltip('down', expandState, gap)}
               isLoading={isLoading}
-              onClick={() => onExpand(gap, "chunk-down")}
+              onClick={() => onExpand(gap, 'chunk-down')}
             >
               <ArrowDownToLine />
             </ExpandIconButton>
           )}
           {showUp && (
             <ExpandIconButton
-              title={getChunkExpandTooltip("up", expandState, gap)}
+              title={getChunkExpandTooltip('up', expandState, gap)}
               isLoading={isLoading}
-              onClick={() => onExpand(gap, "chunk-up")}
+              onClick={() => onExpand(gap, 'chunk-up')}
             >
               <ArrowUpToLine />
             </ExpandIconButton>
@@ -361,7 +292,7 @@ export const DiffHunkRow = memo(({ header }: { header: string }) => (
   </div>
 ));
 
-export const DiffLineRow = memo(
+export const DiffLineRow = observer(
   ({
     line,
     prefix,
@@ -381,7 +312,7 @@ export const DiffLineRow = memo(
     onLineMouseEnter,
   }: {
     line: DiffDisplayLine;
-    prefix: "+" | "-" | " ";
+    prefix: '+' | '-' | ' ';
     lineKey: string | null;
     rowId?: string;
     canComment: boolean;
@@ -408,30 +339,31 @@ export const DiffLineRow = memo(
       (threads.some((thread) => !thread.resolved) ||
         collapsedResolvedThreads.length < threads.length);
     const selectionClassName = isSelected
-      ? "bg-blue-50 dark:bg-blue-950/70"
-      : "";
+      ? 'bg-blue-50 dark:bg-blue-950/70'
+      : '';
 
     const lineNumInteractionClassName = isCommentable
-      ? "cursor-pointer hover:bg-blue-50/60 dark:hover:bg-blue-950/40"
-      : "";
+      ? 'cursor-pointer hover:bg-blue-50/60 dark:hover:bg-blue-950/40'
+      : '';
     const handleLineNumMouseDown = isCommentable
       ? (event: MouseEvent) => {
-        event.preventDefault();
-        onLineMouseDown?.();
-      }
+          event.preventDefault();
+          onLineMouseDown?.();
+        }
       : undefined;
     const handleLineNumClick = isCommentable
       ? (event: MouseEvent) => {
-        onCommentClick(event.shiftKey);
-      }
+          onCommentClick(event.shiftKey);
+        }
       : undefined;
 
     return (
       <div
         className={cn(
-          "group relative w-full min-w-max items-start overflow-visible",
+          'group relative w-full min-w-max items-start overflow-visible',
           diffGridClassName,
-          collapsedResolvedThreads.length > 0 && "git-diff-line--has-resolved-thread",
+          collapsedResolvedThreads.length > 0 &&
+            'git-diff-line--has-resolved-thread',
         )}
         data-diff-row-id={rowId}
         onMouseEnter={isCommentable ? onLineMouseEnter : undefined}
@@ -449,24 +381,28 @@ export const DiffLineRow = memo(
         )}
         <div
           className={cn(
-            "git-diff-line-num git-diff-line-num--old-border",
+            'git-diff-line-num git-diff-line-num--old-border',
             surface.oldNum,
-            hasVisibleThreads && !isSelected && "bg-orange-50 dark:bg-orange-950",
+            hasVisibleThreads &&
+              !isSelected &&
+              'bg-orange-50 dark:bg-orange-950',
             selectionClassName,
             lineNumInteractionClassName,
-            isSelectionStart && "shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]",
-            isSelectionEnd && "shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]",
+            isSelectionStart &&
+              'shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]',
+            isSelectionEnd &&
+              'shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]',
           )}
           onMouseDown={handleLineNumMouseDown}
           onClick={handleLineNumClick}
         >
           <div className="git-diff-line-num-inner">
-            {line.oldLine ?? ""}
+            {line.oldLine ?? ''}
             {isCommentable && (
               <button
                 className={cn(
-                  "git-diff-comment-button",
-                  isSelected && "git-diff-comment-button--visible",
+                  'git-diff-comment-button',
+                  isSelected && 'git-diff-comment-button--visible',
                 )}
                 type="button"
                 title="Оставить комментарий"
@@ -485,32 +421,33 @@ export const DiffLineRow = memo(
         </div>
         <div
           className={cn(
-            "git-diff-line-num",
+            'git-diff-line-num',
             surface.newNum,
             selectionClassName,
             lineNumInteractionClassName,
-            isSelectionStart && "shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]",
-            isSelectionEnd && "shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]",
+            isSelectionStart &&
+              'shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]',
+            isSelectionEnd &&
+              'shadow-[inset_2px_0_0_0_var(--color-accent-blue-emphasis)]',
           )}
           onMouseDown={handleLineNumMouseDown}
           onClick={handleLineNumClick}
         >
-          <div className="git-diff-line-num-inner">
-            {line.newLine ?? ""}
-          </div>
+          <div className="git-diff-line-num-inner">{line.newLine ?? ''}</div>
         </div>
         <div
-          className={cn("git-diff-prefix", surface.prefix, selectionClassName)}
+          className={cn('git-diff-prefix', surface.prefix, selectionClassName)}
           aria-hidden="true"
         >
-          {prefix === " " ? "" : prefix}
+          {prefix === ' ' ? '' : prefix}
         </div>
         <div
           className={cn(
-            "git-diff-code",
+            'git-diff-code',
             surface.code,
             selectionClassName,
-            isSelected && "shadow-[inset_0_0_0_1px_var(--color-accent-blue-emphasis)]",
+            isSelected &&
+              'shadow-[inset_0_0_0_1px_var(--color-accent-blue-emphasis)]',
           )}
         >
           <code>
@@ -526,8 +463,8 @@ export const DiffLineRow = memo(
   },
 );
 
-const InlineThreadNote = memo(
-  ({
+const InlineThreadNote = withPropsViewModel(InlineNoteVM, ({ model }) => {
+  const {
     markdownScope,
     note,
     discussionId,
@@ -541,209 +478,145 @@ const InlineThreadNote = memo(
     updateNoteError = null,
     deleteNoteErrorKey = null,
     deleteNoteError = null,
-    onClearUpdateNoteError,
-    onClearDeleteNoteError,
-  }: {
-    markdownScope?: GitlabMarkdownScope;
-    note: GitLabNoteDC;
-    discussionId: string;
-    isReply?: boolean;
-    resolvedBy?: string | null;
-    currentUserId?: number | null;
-    onUpdateNote?: (
-      discussionId: string,
-      noteId: number,
-      body: string,
-    ) => Promise<boolean>;
-    onDeleteNote?: (
-      discussionId: string,
-      noteId: number,
-    ) => Promise<boolean>;
-    updatingNoteKey?: string | null;
-    deletingNoteKey?: string | null;
-    updateNoteError?: string | null;
-    deleteNoteErrorKey?: string | null;
-    deleteNoteError?: string | null;
-    onClearUpdateNoteError?: () => void;
-    onClearDeleteNoteError?: () => void;
-  }) => {
-    const authorName = note.author?.name ?? "Unknown";
-    const authorUsername = note.author?.username ?? "";
-    const canEdit = canEditGitLabNote(note, currentUserId);
-    const noteKey = getDiscussionNoteKey(discussionId, note.id);
-    const isSaving = updatingNoteKey === noteKey;
-    const isDeleting = deletingNoteKey === noteKey;
-    const noteDeleteError = deleteNoteErrorKey === noteKey ? deleteNoteError : null;
-    const [isEditing, setIsEditing] = useState(false);
-    const [editBody, setEditBody] = useState(note.body);
+  } = model.payload;
 
-    useEffect(() => {
-      if (!isEditing) {
-        setEditBody(note.body);
-      }
-    }, [isEditing, note.body]);
+  const authorName = note.author?.name ?? 'Unknown';
+  const authorUsername = note.author?.username ?? '';
+  const canEdit = canEditGitLabNote(note, currentUserId);
+  const noteKey = getDiscussionNoteKey(discussionId, note.id);
+  const isSaving = updatingNoteKey === noteKey;
+  const isDeleting = deletingNoteKey === noteKey;
+  const noteDeleteError =
+    deleteNoteErrorKey === noteKey ? deleteNoteError : null;
+  const {
+    isEditing,
+    editBody,
+    start: handleStartEdit,
+    cancel: handleCancelEdit,
+    save: handleSaveEdit,
+    remove: handleDelete,
+  } = model.editor;
 
-    const handleStartEdit = useCallback(() => {
-      setEditBody(note.body);
-      setIsEditing(true);
-      onClearUpdateNoteError?.();
-    }, [note.body, onClearUpdateNoteError]);
+  return (
+    <article className={cn('flex min-w-0 gap-3', isReply && 'pl-11')}>
+      <GitlabAvatar
+        className="h-8 w-8 shrink-0 rounded-full object-cover"
+        avatarUrl={note.author?.avatar_url}
+        name={authorName}
+      />
 
-    const handleCancelEdit = useCallback(() => {
-      setEditBody(note.body);
-      setIsEditing(false);
-      onClearUpdateNoteError?.();
-    }, [note.body, onClearUpdateNoteError]);
-
-    const handleSaveEdit = useCallback(async () => {
-      if (!onUpdateNote) {
-        return;
-      }
-
-      const success = await onUpdateNote(discussionId, note.id, editBody);
-      if (success) {
-        setIsEditing(false);
-      }
-    }, [discussionId, editBody, note.id, onUpdateNote]);
-
-    const handleDelete = useCallback(async () => {
-      if (
-        !onDeleteNote ||
-        !window.confirm("Удалить комментарий? Это действие нельзя отменить.")
-      ) {
-        return;
-      }
-
-      onClearDeleteNoteError?.();
-      await onDeleteNote(discussionId, note.id);
-    }, [discussionId, note.id, onClearDeleteNoteError, onDeleteNote]);
-
-    return (
-      <article className={cn("flex min-w-0 gap-3", isReply && "pl-11")}>
-        <GitlabAvatar
-          className="h-8 w-8 shrink-0 rounded-full object-cover"
-          avatarUrl={note.author?.avatar_url}
-          name={authorName}
-        />
-
-        <div className="min-w-0 flex-1">
-          <div className="mb-1 flex items-start gap-2 text-[13px]">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-              <strong className="text-slate-900 dark:text-slate-200">
-                {authorName}
-              </strong>
-              {authorUsername && (
-                <span className="font-normal text-slate-500">
-                  @{authorUsername}
-                </span>
-              )}
-              <time className="text-xs text-slate-400" dateTime={note.created_at}>
-                {formatRelativeTime(note.created_at)}
-              </time>
-            </div>
-
-            {canEdit && !isEditing && (
-              <div className="flex shrink-0 items-center gap-1">
-                {onUpdateNote && (
-                  <button
-                    className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-                    type="button"
-                    title="Редактировать"
-                    aria-label="Редактировать комментарий"
-                    disabled={Boolean(updatingNoteKey || deletingNoteKey)}
-                    onClick={handleStartEdit}
-                  >
-                    <Pencil width={14} height={14} />
-                  </button>
-                )}
-                {onDeleteNote && (
-                  <button
-                    className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-300"
-                    type="button"
-                    title={isDeleting ? "Удаление..." : "Удалить"}
-                    aria-label="Удалить комментарий"
-                    disabled={Boolean(updatingNoteKey || deletingNoteKey)}
-                    onClick={() => void handleDelete()}
-                  >
-                    <TrashBin width={14} height={14} />
-                  </button>
-                )}
-              </div>
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 flex items-start gap-2 text-[13px]">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+            <strong className="text-slate-900 dark:text-slate-200">
+              {authorName}
+            </strong>
+            {authorUsername && (
+              <span className="font-normal text-slate-500">
+                @{authorUsername}
+              </span>
             )}
+            <time className="text-slate-400 text-xs" dateTime={note.created_at}>
+              {formatRelativeTime(note.created_at)}
+            </time>
           </div>
 
-          {resolvedBy && !isReply && (
-            <div className="mb-1.5 text-xs text-blue-600 dark:text-blue-400">
-              Разрешён {formatRelativeTime(note.updated_at)} — {resolvedBy}
-            </div>
-          )}
-
-          {isEditing ? (
-            <div>
-              <GitlabCommentEditor
-                projectId={markdownScope?.projectId ?? null}
-                className="text-sm"
-                value={editBody}
-                onChange={(value) => {
-                  setEditBody(value);
-                  if (updateNoteError) {
-                    onClearUpdateNoteError?.();
-                  }
-                }}
-                rows={3}
-                disabled={isSaving}
-              />
-
-              {updateNoteError && isEditing && (
-                <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
-                  {updateNoteError}
-                </div>
+          {canEdit && !isEditing && (
+            <div className="flex shrink-0 items-center gap-1">
+              {onUpdateNote && (
+                <button
+                  className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                  type="button"
+                  title="Редактировать"
+                  aria-label="Редактировать комментарий"
+                  disabled={Boolean(updatingNoteKey || deletingNoteKey)}
+                  onClick={handleStartEdit}
+                >
+                  <Pencil width={14} height={14} />
+                </button>
               )}
-
-              <div className="mt-2.5 flex gap-2">
+              {onDeleteNote && (
                 <button
-                  className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 text-[13px] font-semibold text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-300"
                   type="button"
-                  disabled={isSaving || !editBody.trim()}
-                  onClick={() => {
-                    void handleSaveEdit();
-                  }}
+                  title={isDeleting ? 'Удаление...' : 'Удалить'}
+                  aria-label="Удалить комментарий"
+                  disabled={Boolean(updatingNoteKey || deletingNoteKey)}
+                  onClick={() => void handleDelete()}
                 >
-                  {isSaving ? "Сохранение..." : "Сохранить"}
+                  <TrashBin width={14} height={14} />
                 </button>
-                <button
-                  className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
-                  type="button"
-                  disabled={isSaving}
-                  onClick={handleCancelEdit}
-                >
-                  Отмена
-                </button>
-              </div>
-            </div>
-          ) : (
-            <GitLabMarkdown
-              connection={markdownScope?.connection ?? null}
-              projectPath={markdownScope?.projectPath ?? ""}
-              projectId={markdownScope?.projectId ?? 0}
-              text={note.body}
-              className="min-w-0 max-w-full text-sm leading-normal text-slate-800 dark:text-slate-300"
-            />
-          )}
-
-          {noteDeleteError && (
-            <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
-              {noteDeleteError}
+              )}
             </div>
           )}
         </div>
-      </article>
-    );
-  },
-);
 
-export const DiffThreadRow = memo(
-  ({
+        {resolvedBy && !isReply && (
+          <div className="mb-1.5 text-blue-600 text-xs dark:text-blue-400">
+            Разрешён {formatRelativeTime(note.updated_at)} — {resolvedBy}
+          </div>
+        )}
+
+        {isEditing ? (
+          <div>
+            <GitlabCommentEditor
+              projectId={markdownScope?.projectId ?? null}
+              className="text-sm"
+              value={editBody}
+              onChange={model.editor.changeBody}
+              rows={3}
+              disabled={isSaving}
+            />
+
+            {updateNoteError && isEditing && (
+              <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
+                {updateNoteError}
+              </div>
+            )}
+
+            <div className="mt-2.5 flex gap-2">
+              <button
+                className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 font-semibold text-[13px] text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                type="button"
+                disabled={isSaving || !editBody.trim()}
+                onClick={() => {
+                  void handleSaveEdit();
+                }}
+              >
+                {isSaving ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button
+                className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 font-semibold text-[13px] text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
+                type="button"
+                disabled={isSaving}
+                onClick={handleCancelEdit}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        ) : (
+          <GitLabMarkdown
+            connection={markdownScope?.connection ?? null}
+            projectPath={markdownScope?.projectPath ?? ''}
+            projectId={markdownScope?.projectId ?? 0}
+            text={note.body}
+            className="min-w-0 max-w-full text-slate-800 text-sm leading-normal dark:text-slate-300"
+          />
+        )}
+
+        {noteDeleteError && (
+          <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
+            {noteDeleteError}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+});
+
+export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
+  const {
     markdownScope,
     thread,
     onResolveThread,
@@ -752,10 +625,7 @@ export const DiffThreadRow = memo(
     replyingDiscussionId,
     replyErrorDiscussionId,
     replyError,
-    onClearReplyError,
-    expanded: expandedProp,
-    onToggleExpand,
-    placement = "inline",
+    placement = 'inline',
     currentUserId,
     onUpdateNote,
     onDeleteNote,
@@ -766,318 +636,231 @@ export const DiffThreadRow = memo(
     deleteNoteError,
     onClearUpdateNoteError,
     onClearDeleteNoteError,
-  }: {
-    markdownScope?: GitlabMarkdownScope;
-    thread: InlineDiffThread;
-    onResolveThread?: (discussionId: string, resolved: boolean) => void;
-    resolvingDiscussionId?: string | null;
-    onReplyThread?: (discussionId: string, body: string) => Promise<boolean>;
-    replyingDiscussionId?: string | null;
-    replyErrorDiscussionId?: string | null;
-    replyError?: string | null;
-    onClearReplyError?: () => void;
-    expanded?: boolean;
-    onToggleExpand?: () => void;
-    placement?: "inline" | "file";
-    currentUserId?: number | null;
-    onUpdateNote?: (
-      discussionId: string,
-      noteId: number,
-      body: string,
-    ) => Promise<boolean>;
-    onDeleteNote?: (
-      discussionId: string,
-      noteId: number,
-    ) => Promise<boolean>;
-    updatingNoteKey?: string | null;
-    deletingNoteKey?: string | null;
-    updateNoteError?: string | null;
-    deleteNoteErrorKey?: string | null;
-    deleteNoteError?: string | null;
-    onClearUpdateNoteError?: () => void;
-    onClearDeleteNoteError?: () => void;
-  }) => {
-    const [internalExpanded, setInternalExpanded] = useState(() => !thread.resolved);
-    const isControlled = expandedProp !== undefined;
-    const expanded = isControlled ? expandedProp : internalExpanded;
-    const [isReplying, setIsReplying] = useState(false);
-    const [replyBody, setReplyBody] = useState("");
+  } = model.payload;
 
-    useEffect(() => {
-      if (!isControlled) {
-        setInternalExpanded(!thread.resolved);
-      }
-    }, [isControlled, thread.discussionId, thread.resolved]);
+  const { expanded, isReplying, replyBody, toggleExpanded } = model;
 
-    const toggleExpanded = useCallback(() => {
-      if (onToggleExpand) {
-        onToggleExpand();
-        return;
-      }
-
-      setInternalExpanded((value) => !value);
-    }, [onToggleExpand]);
-
-    if (thread.resolved && !expanded) {
-      if (placement === "inline") {
-        return null;
-      }
-
-      const firstNote = thread.notes[0];
-      if (!firstNote) {
-        return null;
-      }
-
-      return (
-        <div className="border-b border-slate-200 px-3.5 py-2 dark:border-[var(--color-border-default)]">
-          <ResolvedThreadAvatar thread={thread} onClick={toggleExpanded} />
-        </div>
-      );
+  if (thread.resolved && !expanded) {
+    if (placement === 'inline') {
+      return null;
     }
 
-    const [firstNote, ...replies] = thread.notes;
+    const firstNote = thread.notes[0];
     if (!firstNote) {
       return null;
     }
 
-    const isSubmittingReply = replyingDiscussionId === thread.discussionId;
-    const threadReplyError =
-      replyErrorDiscussionId === thread.discussionId ? replyError : null;
-
-    const handleSubmitReply = async () => {
-      if (!onReplyThread || !replyBody.trim()) {
-        return;
-      }
-
-      const success = await onReplyThread(thread.discussionId, replyBody);
-      if (success) {
-        setReplyBody("");
-        setIsReplying(false);
-      }
-    };
-
-    const resolvedBy = thread.resolved
-      ? (firstNote.author?.name ?? "Unknown")
-      : null;
-
     return (
-      <div className="w-full min-w-full border-t-2 border-[var(--color-brand-border-accent)]">
-        <div className="bg-white px-3.5 py-3 dark:bg-gray-900">
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-gray-900">
-            <div className="p-3.5">
-              <InlineThreadNote
-                markdownScope={markdownScope}
-                note={firstNote}
-                discussionId={thread.discussionId}
-                resolvedBy={resolvedBy}
-                currentUserId={currentUserId}
-                onUpdateNote={onUpdateNote}
-                onDeleteNote={onDeleteNote}
-                updatingNoteKey={updatingNoteKey}
-                deletingNoteKey={deletingNoteKey}
-                updateNoteError={updateNoteError}
-                deleteNoteErrorKey={deleteNoteErrorKey}
-                deleteNoteError={deleteNoteError}
-                onClearUpdateNoteError={onClearUpdateNoteError}
-                onClearDeleteNoteError={onClearDeleteNoteError}
-              />
+      <div className="border-slate-200 border-b px-3.5 py-2 dark:border-[var(--color-border-default)]">
+        <ResolvedThreadAvatar thread={thread} onClick={toggleExpanded} />
+      </div>
+    );
+  }
 
-              {replies.length > 0 && (
-                <div className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-700">
-                  {replies.map((note) => (
-                    <InlineThreadNote
-                      key={note.id}
-                      markdownScope={markdownScope}
-                      note={note}
-                      discussionId={thread.discussionId}
-                      isReply
-                      currentUserId={currentUserId}
-                      onUpdateNote={onUpdateNote}
-                      onDeleteNote={onDeleteNote}
-                      updatingNoteKey={updatingNoteKey}
-                      deletingNoteKey={deletingNoteKey}
-                      updateNoteError={updateNoteError}
-                      deleteNoteErrorKey={deleteNoteErrorKey}
-                      deleteNoteError={deleteNoteError}
-                      onClearUpdateNoteError={onClearUpdateNoteError}
-                      onClearDeleteNoteError={onClearDeleteNoteError}
+  const [firstNote, ...replies] = thread.notes;
+  if (!firstNote) {
+    return null;
+  }
+
+  const isSubmittingReply = replyingDiscussionId === thread.discussionId;
+  const threadReplyError =
+    replyErrorDiscussionId === thread.discussionId ? replyError : null;
+
+  const resolvedBy = thread.resolved
+    ? (firstNote.author?.name ?? 'Unknown')
+    : null;
+
+  return (
+    <div className="w-full min-w-full border-[var(--color-brand-border-accent)] border-t-2">
+      <div className="bg-white px-3.5 py-3 dark:bg-gray-900">
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-gray-900">
+          <div className="p-3.5">
+            <InlineThreadNote
+              markdownScope={markdownScope}
+              note={firstNote}
+              discussionId={thread.discussionId}
+              resolvedBy={resolvedBy}
+              currentUserId={currentUserId}
+              onUpdateNote={onUpdateNote}
+              onDeleteNote={onDeleteNote}
+              updatingNoteKey={updatingNoteKey}
+              deletingNoteKey={deletingNoteKey}
+              updateNoteError={updateNoteError}
+              deleteNoteErrorKey={deleteNoteErrorKey}
+              deleteNoteError={deleteNoteError}
+              onClearUpdateNoteError={onClearUpdateNoteError}
+              onClearDeleteNoteError={onClearDeleteNoteError}
+            />
+
+            {replies.length > 0 && (
+              <div className="mt-3 space-y-3 border-slate-200 border-t pt-3 dark:border-slate-700">
+                {replies.map((note) => (
+                  <InlineThreadNote
+                    key={note.id}
+                    markdownScope={markdownScope}
+                    note={note}
+                    discussionId={thread.discussionId}
+                    isReply
+                    currentUserId={currentUserId}
+                    onUpdateNote={onUpdateNote}
+                    onDeleteNote={onDeleteNote}
+                    updatingNoteKey={updatingNoteKey}
+                    deletingNoteKey={deletingNoteKey}
+                    updateNoteError={updateNoteError}
+                    deleteNoteErrorKey={deleteNoteErrorKey}
+                    deleteNoteError={deleteNoteError}
+                    onClearUpdateNoteError={onClearUpdateNoteError}
+                    onClearDeleteNoteError={onClearDeleteNoteError}
+                  />
+                ))}
+              </div>
+            )}
+
+            {onReplyThread && (
+              <div className="mt-3 border-slate-200 border-t pt-3 dark:border-slate-700">
+                {isReplying ? (
+                  <div>
+                    <GitlabCommentEditor
+                      projectId={markdownScope?.projectId ?? null}
+                      className="text-sm"
+                      placeholder="Напишите ответ в тред..."
+                      value={replyBody}
+                      onChange={model.changeReply}
+                      rows={3}
+                      disabled={isSubmittingReply}
                     />
-                  ))}
-                </div>
-              )}
-
-              {onReplyThread && (
-                <div className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-700">
-                  {isReplying ? (
-                    <div>
-                      <GitlabCommentEditor
-                        projectId={markdownScope?.projectId ?? null}
-                        className="text-sm"
-                        placeholder="Напишите ответ в тред..."
-                        value={replyBody}
-                        onChange={(value) => {
-                          setReplyBody(value);
-                          if (threadReplyError) {
-                            onClearReplyError?.();
-                          }
-                        }}
-                        rows={3}
-                        disabled={isSubmittingReply}
-                      />
-                      {threadReplyError && (
-                        <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
-                          {threadReplyError}
-                        </div>
-                      )}
-                      <div className="mt-2.5 flex gap-2">
-                        <button
-                          className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 text-[13px] font-semibold text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                          type="button"
-                          disabled={isSubmittingReply || !replyBody.trim()}
-                          onClick={() => void handleSubmitReply()}
-                        >
-                          {isSubmittingReply ? "Отправка..." : "Ответить"}
-                        </button>
-                        <button
-                          className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
-                          type="button"
-                          disabled={isSubmittingReply}
-                          onClick={() => {
-                            setIsReplying(false);
-                            setReplyBody("");
-                            onClearReplyError?.();
-                          }}
-                        >
-                          Отмена
-                        </button>
+                    {threadReplyError && (
+                      <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
+                        {threadReplyError}
                       </div>
+                    )}
+                    <div className="mt-2.5 flex gap-2">
+                      <button
+                        className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 font-semibold text-[13px] text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        type="button"
+                        disabled={isSubmittingReply || !replyBody.trim()}
+                        onClick={() => void model.submitReply()}
+                      >
+                        {isSubmittingReply ? 'Отправка...' : 'Ответить'}
+                      </button>
+                      <button
+                        className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 font-semibold text-[13px] text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
+                        type="button"
+                        disabled={isSubmittingReply}
+                        onClick={model.cancelReply}
+                      >
+                        Отмена
+                      </button>
                     </div>
-                  ) : (
-                    <button
-                      className="cursor-pointer rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
-                      type="button"
-                      onClick={() => {
-                        setIsReplying(true);
-                        onClearReplyError?.();
-                      }}
-                    >
-                      Ответить
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {(thread.resolved || (thread.resolvable && onResolveThread)) && (
-              <div className="flex justify-end gap-2 border-t border-slate-200 px-3.5 py-2.5 dark:border-slate-700">
-                {thread.resolved && (
+                  </div>
+                ) : (
                   <button
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+                    className="cursor-pointer rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-semibold text-slate-700 text-xs transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
                     type="button"
-                    onClick={toggleExpanded}
+                    onClick={model.startReply}
                   >
-                    Свернуть тред
-                  </button>
-                )}
-                {thread.resolvable && onResolveThread && (
-                  <button
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
-                    type="button"
-                    disabled={resolvingDiscussionId === thread.discussionId}
-                    onClick={() =>
-                      onResolveThread(thread.discussionId, !thread.resolved)
-                    }
-                  >
-                    {resolvingDiscussionId === thread.discussionId
-                      ? thread.resolved
-                        ? "Открываем..."
-                        : "Разрешаем..."
-                      : thread.resolved
-                        ? "Открыть тред"
-                        : "Разрешить тред"}
+                    Ответить
                   </button>
                 )}
               </div>
             )}
           </div>
-        </div>
-      </div>
-    );
-  },
-);
 
-
-export const DiffCommentFormRow = memo(
-  ({
-    markdownScope,
-    errorMessage,
-    isSubmitting,
-    rangeLabel,
-    onCancel,
-    onSubmit,
-    formKey,
-  }: {
-    markdownScope?: GitlabMarkdownScope;
-    errorMessage: string | null;
-    isSubmitting: boolean;
-    rangeLabel?: string | null;
-    onCancel: () => void;
-    onSubmit: (body: string) => void;
-    formKey?: string;
-  }) => {
-    const [body, setBody] = useState("");
-    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-
-    useEffect(() => {
-      setBody("");
-      textareaRef.current?.focus();
-    }, [formKey]);
-
-    return (
-    <div className="w-full min-w-0 max-w-full overflow-hidden">
-      <div className="border-t border-slate-200 bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
-        {rangeLabel && (
-          <div className="mb-2 text-xs font-semibold text-blue-700 dark:text-blue-300">
-            Комментарий к строкам {rangeLabel}
-          </div>
-        )}
-        <GitlabCommentEditor
-          inputRef={textareaRef}
-          projectId={markdownScope?.projectId ?? null}
-          editorClassName="border-orange-300 dark:border-orange-800"
-          placeholder="Напишите комментарий..."
-          value={body}
-          onChange={setBody}
-          rows={3}
-          disabled={isSubmitting}
-        />
-
-        {errorMessage && (
-          <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
-            {errorMessage}
-          </div>
-        )}
-
-        <div className="mt-2.5 flex gap-2">
-          <button
-            className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 text-[13px] font-semibold text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
-            disabled={isSubmitting || !body.trim()}
-            onClick={() => onSubmit(body)}
-          >
-            {isSubmitting ? "Отправка..." : "Комментировать"}
-          </button>
-          <button
-            className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
-            type="button"
-            disabled={isSubmitting}
-            onClick={onCancel}
-          >
-            Отмена
-          </button>
+          {(thread.resolved || (thread.resolvable && onResolveThread)) && (
+            <div className="flex justify-end gap-2 border-slate-200 border-t px-3.5 py-2.5 dark:border-slate-700">
+              {thread.resolved && (
+                <button
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-semibold text-slate-700 text-xs transition hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+                  type="button"
+                  onClick={toggleExpanded}
+                >
+                  Свернуть тред
+                </button>
+              )}
+              {thread.resolvable && onResolveThread && (
+                <button
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-semibold text-slate-700 text-xs transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+                  type="button"
+                  disabled={resolvingDiscussionId === thread.discussionId}
+                  onClick={() =>
+                    onResolveThread(thread.discussionId, !thread.resolved)
+                  }
+                >
+                  {resolvingDiscussionId === thread.discussionId
+                    ? thread.resolved
+                      ? 'Открываем...'
+                      : 'Разрешаем...'
+                    : thread.resolved
+                      ? 'Открыть тред'
+                      : 'Разрешить тред'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
+  );
+});
+
+export const DiffCommentFormRow = withPropsViewModel(
+  DiffCommentFormVM,
+  ({ model }) => {
+    const {
+      markdownScope,
+      errorMessage,
+      isSubmitting,
+      rangeLabel,
+      onCancel,
+      onSubmit,
+    } = model.payload;
+
+    const { body, setBody, textareaRef } = model;
+    return (
+      <div className="w-full min-w-0 max-w-full overflow-hidden">
+        <div className="border-slate-200 border-t bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
+          {rangeLabel && (
+            <div className="mb-2 font-semibold text-blue-700 text-xs dark:text-blue-300">
+              Комментарий к строкам {rangeLabel}
+            </div>
+          )}
+          <GitlabCommentEditor
+            inputRef={textareaRef}
+            projectId={markdownScope?.projectId ?? null}
+            editorClassName="border-orange-300 dark:border-orange-800"
+            placeholder="Напишите комментарий..."
+            value={body}
+            onChange={setBody}
+            rows={3}
+            disabled={isSubmitting}
+          />
+
+          {errorMessage && (
+            <div className="mt-2 text-[13px] text-red-700 dark:text-red-300">
+              {errorMessage}
+            </div>
+          )}
+
+          <div className="mt-2.5 flex gap-2">
+            <button
+              className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 font-semibold text-[13px] text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              disabled={isSubmitting || !body.trim()}
+              onClick={() => onSubmit(body)}
+            >
+              {isSubmitting ? 'Отправка...' : 'Комментировать'}
+            </button>
+            <button
+              className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 font-semibold text-[13px] text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
+              type="button"
+              disabled={isSubmitting}
+              onClick={onCancel}
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      </div>
     );
   },
 );

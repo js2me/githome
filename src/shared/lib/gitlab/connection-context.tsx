@@ -1,5 +1,5 @@
-import { createContext, useContext, type ReactNode } from "react";
-import type { GitLabConnection } from "./connection";
+import { createContext, type ReactNode, useContext } from 'react';
+import type { GitLabConnection } from './connection';
 
 const GitLabConnectionContext = createContext<GitLabConnection | null>(null);
 

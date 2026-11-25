@@ -1,57 +1,72 @@
-import { Check, ChevronDown, LogoGitlab, Plus, Xmark } from "@gravity-ui/icons";
-import { observer } from "mobx-react-lite";
-import { useViewModel } from "mobx-view-model-react";
-import { getConnectionLabel, type GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { useConnectionProfile } from "@/shared/lib/gitlab/use-connection-profile";
-import { GitlabAvatar } from "@/shared/ui/gitlab-avatar";
-import { GlassDialog } from "@/shared/ui/glass-dialog";
-import { LayoutVM } from "../model/layout-vm";
+import { Check, ChevronDown, LogoGitlab, Plus, Xmark } from '@gravity-ui/icons';
+import { observer } from 'mobx-react-lite';
+import { useViewModel, withPropsViewModel } from 'mobx-view-model-react';
+import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
+import { GlassDialog } from '@/shared/ui/glass-dialog';
+import { ConnectionButtonVM } from '../model/connection-button';
+import type { LayoutVM } from '../model/layout-vm';
 
-function ConnectionButton({
-  connection, placement, selected, onClick,
-}: {
-  connection: GitLabConnection | null;
-  placement: "header" | "list";
-  selected?: boolean;
-  onClick: () => void;
-}) {
-  const profile = useConnectionProfile(connection);
-  const name = profile?.name?.trim() || profile?.username?.trim();
-  const host = connection ? getConnectionLabel(connection) : "Подключить GitLab";
-  const label = name ? `${name} · ${host}` : host;
-  const inHeader = placement === "header";
+const ConnectionButton = withPropsViewModel(ConnectionButtonVM, ({ model }) => {
+  const { connection, placement, selected, onClick } = model.payload;
+  const { name, host, label, profile } = model;
+  const inHeader = placement === 'header';
 
   return (
     <button
-      className={inHeader
-        ? "glass-control inline-flex h-9 min-w-0 max-w-[min(60vw,16rem)] items-center gap-2 rounded-xl px-2 text-left sm:px-2.5"
-        : "flex w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]"}
+      className={
+        inHeader
+          ? 'glass-control inline-flex h-9 min-w-0 max-w-[min(60vw,16rem)] items-center gap-2 rounded-xl px-2 text-left sm:px-2.5'
+          : 'flex w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]'
+      }
       type="button"
       aria-label={inHeader ? `Подключения GitLab · ${label}` : label}
-      aria-haspopup={inHeader ? "dialog" : undefined}
+      aria-haspopup={inHeader ? 'dialog' : undefined}
       aria-pressed={inHeader ? undefined : selected}
       title={label}
       onClick={onClick}
     >
       {connection && profile && (name || profile.avatar_url) ? (
         <GitlabAvatar
-          className={inHeader ? "size-6 shrink-0 rounded-full object-cover" : "size-8 shrink-0 rounded-full object-cover"}
+          className={
+            inHeader
+              ? 'size-6 shrink-0 rounded-full object-cover'
+              : 'size-8 shrink-0 rounded-full object-cover'
+          }
           connection={connection}
           avatarUrl={profile.avatar_url}
           name={name || host}
         />
       ) : (
-        <LogoGitlab className="size-5 shrink-0 text-[var(--glass-accent)]" aria-hidden />
+        <LogoGitlab
+          className="size-5 shrink-0 text-[var(--glass-accent)]"
+          aria-hidden
+        />
       )}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm leading-4 font-semibold">{name || host}</span>
-        {name && <span className="block truncate text-[11px] leading-3.5 text-fg-muted">{host}</span>}
+        <span className="block truncate font-semibold text-sm leading-4">
+          {name || host}
+        </span>
+        {name && (
+          <span className="block truncate text-[11px] text-fg-muted leading-3.5">
+            {host}
+          </span>
+        )}
       </span>
-      {inHeader && <ChevronDown className="hidden size-3 shrink-0 text-fg-muted min-[480px]:block" aria-hidden />}
-      {!inHeader && selected && <Check className="size-4 shrink-0 text-[var(--glass-accent)]" aria-hidden />}
+      {inHeader && (
+        <ChevronDown
+          className="hidden size-3 shrink-0 text-fg-muted min-[480px]:block"
+          aria-hidden
+        />
+      )}
+      {!inHeader && selected && (
+        <Check
+          className="size-4 shrink-0 text-[var(--glass-accent)]"
+          aria-hidden
+        />
+      )}
     </button>
   );
-}
+});
 
 export const ConnectionPicker = observer(() => {
   const model = useViewModel<LayoutVM>();
@@ -71,13 +86,23 @@ export const ConnectionPicker = observer(() => {
         className="max-h-[calc(100dvh-2rem)] w-[min(27rem,calc(100%-2rem))] overflow-y-auto p-5 sm:p-6"
       >
         <div className="mb-5 flex items-center justify-between gap-3">
-          <h2 id="connections-title" className="text-xl font-bold tracking-tight">Подключения GitLab</h2>
-          <button type="button" className="glass-control grid size-8 place-items-center rounded-lg" aria-label="Закрыть подключения" onClick={model.closeConnectionPopup}>
+          <h2
+            id="connections-title"
+            className="font-bold text-xl tracking-tight"
+          >
+            Подключения GitLab
+          </h2>
+          <button
+            type="button"
+            className="glass-control grid size-8 place-items-center rounded-lg"
+            aria-label="Закрыть подключения"
+            onClick={model.closeConnectionPopup}
+          >
             <Xmark className="size-4" aria-hidden />
           </button>
         </div>
         {model.isConnectionDialogOpen && settings.connections.length > 0 && (
-          <div className="mb-5 flex max-h-44 flex-col gap-1 overflow-y-auto border-b border-[var(--glass-border)] pb-4">
+          <div className="mb-5 flex max-h-44 flex-col gap-1 overflow-y-auto border-[var(--glass-border)] border-b pb-4">
             {settings.connections.map((connection) => (
               <ConnectionButton
                 key={connection.id}
@@ -87,7 +112,12 @@ export const ConnectionPicker = observer(() => {
                 onClick={() => model.selectConnection(connection.id)}
               />
             ))}
-            <button type="button" aria-pressed={!model.draftConnectionId} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[var(--glass-accent)] hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]" onClick={model.selectNewConnection}>
+            <button
+              type="button"
+              aria-pressed={!model.draftConnectionId}
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 font-semibold text-[var(--glass-accent)] text-sm hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]"
+              onClick={model.selectNewConnection}
+            >
               <Plus className="size-4" aria-hidden /> Новое подключение
             </button>
           </div>
@@ -98,7 +128,7 @@ export const ConnectionPicker = observer(() => {
             model.saveConnection();
           }}
         >
-          <label className="mb-4 grid gap-1.5 text-sm font-semibold">
+          <label className="mb-4 grid gap-1.5 font-semibold text-sm">
             Адрес GitLab
             <input
               ref={model.connectionUrlInput}
@@ -113,7 +143,7 @@ export const ConnectionPicker = observer(() => {
               onChange={(event) => model.setDraftGitlabUrl(event.target.value)}
             />
           </label>
-          <label className="grid gap-1.5 text-sm font-semibold">
+          <label className="grid gap-1.5 font-semibold text-sm">
             Токен доступа
             <input
               className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
@@ -124,8 +154,11 @@ export const ConnectionPicker = observer(() => {
               onChange={(event) => model.setDraftGitToken(event.target.value)}
             />
           </label>
-          <label className="mt-4 grid gap-1.5 text-sm font-semibold">
-            <span>Адрес Jira <span className="font-normal text-fg-muted">(необязательно)</span></span>
+          <label className="mt-4 grid gap-1.5 font-semibold text-sm">
+            <span>
+              Адрес Jira{' '}
+              <span className="font-normal text-fg-muted">(необязательно)</span>
+            </span>
             <input
               className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
               type="url"
@@ -139,15 +172,27 @@ export const ConnectionPicker = observer(() => {
               onChange={(event) => model.setDraftJiraUrl(event.target.value)}
             />
           </label>
-          <p id="connection-jira-hint" className="mt-1.5 text-xs text-fg-muted">
+          <p id="connection-jira-hint" className="mt-1.5 text-fg-muted text-xs">
             {model.isDraftJiraUrlInvalid
-              ? "Укажите полный адрес HTTP или HTTPS без логина и пароля."
-              : "Для ссылок на задачи и проекты, когда GitLab не указывает адрес Jira."}
+              ? 'Укажите полный адрес HTTP или HTTPS без логина и пароля.'
+              : 'Для ссылок на задачи и проекты, когда GitLab не указывает адрес Jira.'}
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
-            {model.draftConnectionId && <button className="glass-control mr-auto rounded-xl px-3 py-2 text-sm text-red-700 dark:text-red-300" type="button" onClick={model.removeConnection}>Удалить</button>}
-            <button className="glass-primary rounded-xl px-4 py-2 text-sm font-semibold" type="submit" disabled={!model.canSubmitConnection}>
-              {model.draftConnectionId ? "Сохранить" : "Подключить"}
+            {model.draftConnectionId && (
+              <button
+                className="glass-control mr-auto rounded-xl px-3 py-2 text-red-700 text-sm dark:text-red-300"
+                type="button"
+                onClick={model.removeConnection}
+              >
+                Удалить
+              </button>
+            )}
+            <button
+              className="glass-primary rounded-xl px-4 py-2 font-semibold text-sm"
+              type="submit"
+              disabled={!model.canSubmitConnection}
+            >
+              {model.draftConnectionId ? 'Сохранить' : 'Подключить'}
             </button>
           </div>
         </form>

@@ -1,8 +1,8 @@
-import { computed } from "mobx";
-import type { GitLabProjectDC } from "@/shared/api/gitlab";
+import { computed } from 'mobx';
+import type { GitLabProjectDC } from '@/shared/api/gitlab';
 
 export class GitlabProjectInfo {
-  constructor(readonly data: GitLabProjectDC) { }
+  constructor(readonly data: GitLabProjectDC) {}
 
   @computed
   get name() {

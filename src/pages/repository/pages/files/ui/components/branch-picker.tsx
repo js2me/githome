@@ -1,10 +1,10 @@
-import { observer } from "mobx-react-lite";
-import { cn } from "@/shared/lib/cn";
-import { Popup } from "@/shared/ui/popup";
-import type { FilesPageVM } from "../../model";
+import { observer } from 'mobx-react-lite';
+import { cn } from '@/shared/lib/cn';
+import { Popup } from '@/shared/ui/popup';
+import type { FilesPageVM } from '../../model';
 
 export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
-  const currentLabel = model.branchRef ?? "Ветка";
+  const currentLabel = model.branchRef ?? 'Ветка';
 
   return (
     <Popup
@@ -17,8 +17,9 @@ export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
           <button
             ref={setTriggerRef}
             className={cn(
-              "glass-control inline-flex max-w-[min(100vw-12rem,320px)] items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-sm font-semibold",
-              model.isBranchPickerOpen && "border-[var(--glass-accent)] bg-[var(--glass-selected)] text-[var(--glass-accent)]",
+              'glass-control inline-flex max-w-[min(100vw-12rem,320px)] items-center gap-1.5 rounded-[10px] px-3 py-1.5 font-semibold text-sm',
+              model.isBranchPickerOpen &&
+                'border-[var(--glass-accent)] bg-[var(--glass-selected)] text-[var(--glass-accent)]',
             )}
             type="button"
             onClick={model.toggleBranchPicker}
@@ -38,13 +39,16 @@ export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
         )}
       </Popup.Trigger>
 
-      <Popup.Panel ariaLabel="Ветки" className="left-0 w-[min(320px,calc(100vw-2.5rem))] p-1">
+      <Popup.Panel
+        ariaLabel="Ветки"
+        className="left-0 w-[min(320px,calc(100vw-2.5rem))] p-1"
+      >
         {model.isBranchesLoading && (
-          <p className="px-3 py-2 text-sm text-slate-500">Загружаем ветки...</p>
+          <p className="px-3 py-2 text-slate-500 text-sm">Загружаем ветки...</p>
         )}
 
         {model.branchesErrorMessage && !model.isBranchesLoading && (
-          <p className="px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
+          <p className="px-3 py-2 text-rose-600 text-sm dark:text-rose-400">
             {model.branchesErrorMessage}
           </p>
         )}
@@ -52,7 +56,9 @@ export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
         {!model.isBranchesLoading &&
           !model.branchesErrorMessage &&
           model.branchOptions.length === 0 && (
-            <p className="px-3 py-2 text-sm text-slate-500">Ветки не найдены.</p>
+            <p className="px-3 py-2 text-slate-500 text-sm">
+              Ветки не найдены.
+            </p>
           )}
 
         <div className="max-h-64 overflow-y-auto" role="listbox">
@@ -63,9 +69,9 @@ export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
               <button
                 key={branch.name}
                 className={cn(
-                  "flex w-full items-center border-none bg-transparent px-3 py-2 text-left text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800",
+                  'flex w-full items-center border-none bg-transparent px-3 py-2 text-left text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800',
                   isSelected &&
-                  "bg-orange-50 font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+                    'bg-orange-50 font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300',
                 )}
                 type="button"
                 role="option"
@@ -74,7 +80,7 @@ export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
               >
                 <span className="min-w-0 truncate">{branch.name}</span>
                 {branch.default && (
-                  <span className="ml-2 shrink-0 text-xs font-normal text-slate-400">
+                  <span className="ml-2 shrink-0 font-normal text-slate-400 text-xs">
                     default
                   </span>
                 )}

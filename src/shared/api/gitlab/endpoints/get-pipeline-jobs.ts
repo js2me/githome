@@ -1,6 +1,6 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import type { GitLabJobDC } from "../data-contracts";
-import { fetchPaginatedItems } from "../fetch-paginated-items";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import type { GitLabJobDC } from '../data-contracts';
+import { fetchPaginatedItems } from '../fetch-paginated-items';
 
 export const getPipelineJobs = (
   connection: GitLabConnection,

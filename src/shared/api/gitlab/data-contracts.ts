@@ -93,7 +93,7 @@ export interface GitLabJobDC {
 export interface GitLabPipelineVariableDC {
   key: string;
   value: string;
-  variable_type?: "env_var" | "file";
+  variable_type?: 'env_var' | 'file';
 }
 
 export interface GitLabMergeRequestChangeDC {
@@ -250,7 +250,7 @@ export interface GitLabBranchDC {
 export interface GitLabRepositoryTreeItemDC {
   id: string;
   name: string;
-  type: "tree" | "blob";
+  type: 'tree' | 'blob';
   path: string;
   mode: string;
 }

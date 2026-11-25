@@ -1,4 +1,4 @@
-import type { IReactionDisposer } from "mobx";
+import type { IReactionDisposer } from 'mobx';
 
 export abstract class DisposableModel {
   protected readonly disposers: IReactionDisposer[] = [];

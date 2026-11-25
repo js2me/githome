@@ -1,6 +1,8 @@
-import { actionBound, computed, observable, reaction } from "mobx";
+import { actionBound, computed, observable, reaction } from 'mobx';
 import {
   buildContextLines,
+  type DiffExpandMode,
+  type DiffExpandState,
   getDiffExpandGaps,
   getEndExpandStateKey,
   getNextExpandReveal,
@@ -12,12 +14,10 @@ import {
   isGapClosedByContext,
   isGapFullyExpanded,
   supportsExpandFromEnd,
-  type DiffExpandMode,
-  type DiffExpandState,
-} from "@/shared/lib/expand-diff-context";
-import type { DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
-import type { FileGitDiff } from ".";
-import { DisposableModel } from "./disposable";
+} from '@/shared/lib/expand-diff-context';
+import type { DiffDisplayLine } from '@/shared/lib/parse-unified-diff';
+import type { FileGitDiff } from '.';
+import { DisposableModel } from './disposable';
 
 export class FileGitDiffContextExpand extends DisposableModel {
   @observable accessor expandState: DiffExpandState = {};
@@ -66,7 +66,7 @@ export class FileGitDiffContextExpand extends DisposableModel {
     const result: Record<string, DiffDisplayLine[]> = {};
 
     for (const gap of this.expandGaps) {
-      if (this.expandState[gap.id] === "all") {
+      if (this.expandState[gap.id] === 'all') {
         const revealCount = gap.hiddenCount ?? 0;
         if (revealCount <= 0) {
           continue;
@@ -82,11 +82,7 @@ export class FileGitDiffContextExpand extends DisposableModel {
           continue;
         }
 
-        result[gap.id] = buildContextLines(
-          fileLines,
-          range.startLine,
-          endLine,
-        );
+        result[gap.id] = buildContextLines(fileLines, range.startLine, endLine);
         continue;
       }
 
@@ -171,8 +167,8 @@ export class FileGitDiffContextExpand extends DisposableModel {
     }
 
     const content = await loadFileContent(meta.filePath, meta.fileRef);
-    const lines = content.split("\n");
-    if (lines.length > 0 && lines[lines.length - 1] === "") {
+    const lines = content.split('\n');
+    if (lines.length > 0 && lines[lines.length - 1] === '') {
       lines.pop();
     }
     this.fileLinesCache.set(cacheKey, lines);
@@ -199,20 +195,20 @@ export class FileGitDiffContextExpand extends DisposableModel {
     try {
       await this.loadFileLines();
 
-      if (mode === "all") {
-        const next = { ...this.expandState, [gapId]: "all" as const };
+      if (mode === 'all') {
+        const next = { ...this.expandState, [gapId]: 'all' as const };
         delete next[getEndExpandStateKey(gapId)];
         this.expandState = next;
         return;
       }
 
-      if (mode === "chunk-up" && supportsExpandFromEnd(gap)) {
+      if (mode === 'chunk-up' && supportsExpandFromEnd(gap)) {
         const endKey = getEndExpandStateKey(gapId);
         const nextReveal = getNextExpandRevealFromEnd(gap, this.expandState);
         const next = { ...this.expandState, [endKey]: nextReveal };
 
         if (isGapFullyExpanded(gap, next)) {
-          next[gapId] = "all";
+          next[gapId] = 'all';
           delete next[endKey];
         }
 
@@ -224,7 +220,7 @@ export class FileGitDiffContextExpand extends DisposableModel {
       const next = { ...this.expandState, [gapId]: nextReveal };
 
       if (isGapFullyExpanded(gap, next)) {
-        next[gapId] = "all";
+        next[gapId] = 'all';
         delete next[getEndExpandStateKey(gapId)];
       }
 
@@ -261,7 +257,7 @@ export class FileGitDiffContextExpand extends DisposableModel {
 
           const gapsToNormalize = expandGaps.filter(
             (gap) =>
-              expandState[gap.id] !== "all" &&
+              expandState[gap.id] !== 'all' &&
               isGapClosedByContext(gap, contextLinesByGapId),
           );
 
@@ -273,11 +269,11 @@ export class FileGitDiffContextExpand extends DisposableModel {
           let changed = false;
 
           for (const gap of gapsToNormalize) {
-            if (next[gap.id] === "all") {
+            if (next[gap.id] === 'all') {
               continue;
             }
 
-            next[gap.id] = "all";
+            next[gap.id] = 'all';
             delete next[getEndExpandStateKey(gap.id)];
             changed = true;
           }

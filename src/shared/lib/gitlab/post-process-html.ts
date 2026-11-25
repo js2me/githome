@@ -1,5 +1,8 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { normalizeGitlabBaseUrl, resolveGitlabAssetUrl } from "@/shared/api/gitlab";
+import {
+  normalizeGitlabBaseUrl,
+  resolveGitlabAssetUrl,
+} from '@/shared/api/gitlab';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
 
 const isExternalUrl = (href: string) => /^https?:\/\//i.test(href);
 
@@ -8,37 +11,37 @@ export const postProcessGitLabHtml = (
   connection: GitLabConnection,
 ) => {
   if (!html.trim()) {
-    return "";
+    return '';
   }
 
   const baseUrl = normalizeGitlabBaseUrl(connection.gitlabUrl);
-  const document = new DOMParser().parseFromString(html, "text/html");
+  const document = new DOMParser().parseFromString(html, 'text/html');
 
-  for (const link of document.querySelectorAll("a[href]")) {
-    const href = link.getAttribute("href");
+  for (const link of document.querySelectorAll('a[href]')) {
+    const href = link.getAttribute('href');
     if (!href) {
       continue;
     }
 
-    if (href.startsWith("/")) {
-      link.setAttribute("href", `${baseUrl}${href}`);
+    if (href.startsWith('/')) {
+      link.setAttribute('href', `${baseUrl}${href}`);
     }
 
-    if (isExternalUrl(link.getAttribute("href") ?? "")) {
-      link.setAttribute("target", "_blank");
-      link.setAttribute("rel", "noopener noreferrer");
+    if (isExternalUrl(link.getAttribute('href') ?? '')) {
+      link.setAttribute('target', '_blank');
+      link.setAttribute('rel', 'noopener noreferrer');
     }
   }
 
-  for (const image of document.querySelectorAll("img[src]")) {
-    const src = image.getAttribute("src");
+  for (const image of document.querySelectorAll('img[src]')) {
+    const src = image.getAttribute('src');
     if (!src) {
       continue;
     }
 
     const resolvedSrc = resolveGitlabAssetUrl(connection, src);
     if (resolvedSrc) {
-      image.setAttribute("src", resolvedSrc);
+      image.setAttribute('src', resolvedSrc);
     }
   }
 
@@ -47,17 +50,17 @@ export const postProcessGitLabHtml = (
 
 export const sanitizeGitlabCodeBlocks = (html: string) => {
   if (!html.trim()) {
-    return "";
+    return '';
   }
 
-  const document = new DOMParser().parseFromString(html, "text/html");
+  const document = new DOMParser().parseFromString(html, 'text/html');
 
-  for (const pre of document.querySelectorAll("pre")) {
-    for (const element of pre.querySelectorAll("[style]")) {
-      element.removeAttribute("style");
+  for (const pre of document.querySelectorAll('pre')) {
+    for (const element of pre.querySelectorAll('[style]')) {
+      element.removeAttribute('style');
     }
 
-    pre.classList.add("gitlab-markdown-code-pre");
+    pre.classList.add('gitlab-markdown-code-pre');
   }
 
   return document.body.innerHTML;

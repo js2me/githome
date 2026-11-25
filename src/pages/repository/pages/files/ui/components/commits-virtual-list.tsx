@@ -1,9 +1,8 @@
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { observer } from "mobx-react-lite";
-import { useEffect, useRef } from "react";
-import type { GitLabCommitDC } from "@/shared/api/gitlab";
-import { cn } from "@/shared/lib/cn";
-import type { RepositoryCommitsModel } from "../../model/repository-commits";
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { observer } from 'mobx-react-lite';
+import type { GitLabCommitDC } from '@/shared/api/gitlab';
+import { cn } from '@/shared/lib/cn';
+import type { RepositoryCommitsModel } from '../../model/repository-commits';
 
 const COMMIT_ROW_HEIGHT = 56;
 
@@ -13,12 +12,12 @@ const formatCommitDate = (value: string) => {
     return value;
   }
 
-  return date.toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return date.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
@@ -35,9 +34,9 @@ const CommitRow = ({
 }) => (
   <button
     className={cn(
-      "flex w-full flex-col gap-0.5 border-none bg-transparent px-3 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800",
+      'flex w-full flex-col gap-0.5 border-none bg-transparent px-3 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800',
       isSelected &&
-        "bg-orange-50 hover:bg-orange-50 dark:bg-orange-950 dark:hover:bg-orange-950",
+        'bg-orange-50 hover:bg-orange-50 dark:bg-orange-950 dark:hover:bg-orange-950',
     )}
     type="button"
     role="option"
@@ -47,29 +46,31 @@ const CommitRow = ({
     <span className="flex min-w-0 items-center gap-2">
       <span
         className={cn(
-          "shrink-0 font-mono text-xs",
+          'shrink-0 font-mono text-xs',
           isSelected
-            ? "font-semibold text-orange-700 dark:text-orange-300"
-            : "text-slate-600 dark:text-slate-400",
+            ? 'font-semibold text-orange-700 dark:text-orange-300'
+            : 'text-slate-600 dark:text-slate-400',
         )}
       >
         {commit.short_id}
       </span>
       {isHead && (
-        <span className="shrink-0 text-xs font-normal text-slate-400">HEAD</span>
+        <span className="shrink-0 font-normal text-slate-400 text-xs">
+          HEAD
+        </span>
       )}
       <span
         className={cn(
-          "min-w-0 truncate text-sm",
+          'min-w-0 truncate text-sm',
           isSelected
-            ? "font-semibold text-orange-700 dark:text-orange-300"
-            : "text-slate-800 dark:text-slate-200",
+            ? 'font-semibold text-orange-700 dark:text-orange-300'
+            : 'text-slate-800 dark:text-slate-200',
         )}
       >
         {commit.title}
       </span>
     </span>
-    <span className="truncate text-xs text-slate-500">
+    <span className="truncate text-slate-500 text-xs">
       {commit.author_name} · {formatCommitDate(commit.committed_date)}
     </span>
   </button>
@@ -83,7 +84,7 @@ const CommitsVirtualList = observer(
     commitsModel: RepositoryCommitsModel;
     onSelect: (commit: GitLabCommitDC) => void;
   }) => {
-    const parentRef = useRef<HTMLDivElement>(null);
+    const parentRef = commitsModel.listContainer;
     const commits = commitsModel.commits;
 
     const virtualizer = useVirtualizer({
@@ -91,26 +92,11 @@ const CommitsVirtualList = observer(
       getScrollElement: () => parentRef.current,
       estimateSize: () => COMMIT_ROW_HEIGHT,
       overscan: 8,
+      onChange: (list) =>
+        commitsModel.updateVisibleRange(list.getVirtualItems().at(-1)?.index),
     });
 
     const virtualItems = virtualizer.getVirtualItems();
-    const lastVirtualItem = virtualItems.at(-1);
-
-    useEffect(() => {
-      if (!lastVirtualItem || !commitsModel.canLoadMore) {
-        return;
-      }
-
-      if (lastVirtualItem.index >= commits.length - 5) {
-        commitsModel.loadMore();
-      }
-    }, [
-      commits.length,
-      commitsModel,
-      commitsModel.canLoadMore,
-      lastVirtualItem?.index,
-    ]);
-
     return (
       <div ref={parentRef} className="max-h-64 overflow-y-auto" role="listbox">
         <div
@@ -126,7 +112,7 @@ const CommitsVirtualList = observer(
             return (
               <div
                 key={commit.id}
-                className="absolute left-0 top-0 w-full"
+                className="absolute top-0 left-0 w-full"
                 style={{ transform: `translateY(${virtualRow.start}px)` }}
               >
                 <CommitRow
@@ -141,7 +127,7 @@ const CommitsVirtualList = observer(
         </div>
 
         {commitsModel.isFetchingNextPage && (
-          <p className="px-3 py-2 text-sm text-slate-500">Загружаем ещё...</p>
+          <p className="px-3 py-2 text-slate-500 text-sm">Загружаем ещё...</p>
         )}
       </div>
     );

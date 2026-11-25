@@ -3,9 +3,9 @@ import type {
   GitLabMergeRequestChangeDC,
   GitLabNoteDC,
   GitLabNotePositionDC,
-} from "@/shared/api/gitlab";
-import { getDiffFileKey } from "@/shared/lib/diff-search";
-import type { DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
+} from '@/shared/api/gitlab';
+import { getDiffFileKey } from '@/shared/lib/diff-search';
+import type { DiffDisplayLine } from '@/shared/lib/parse-unified-diff';
 
 export interface InlineDiffThread {
   discussionId: string;
@@ -18,8 +18,7 @@ export const getUserDiscussionNotes = (discussion: GitLabDiscussionDC) =>
   discussion.notes.filter((note) => !note.system);
 
 export const isSystemActivityDiscussion = (discussion: GitLabDiscussionDC) =>
-  discussion.notes.length > 0 &&
-  discussion.notes.every((note) => note.system);
+  discussion.notes.length > 0 && discussion.notes.every((note) => note.system);
 
 export const filterDiscussionsForActivity = (
   discussions: GitLabDiscussionDC[],
@@ -35,8 +34,7 @@ export const filterDiscussionsForActivity = (
 export const isDiscussionResolved = (discussion: GitLabDiscussionDC) => {
   const resolvableNotes = discussion.notes.filter((note) => note.resolvable);
   return (
-    resolvableNotes.length > 0 &&
-    resolvableNotes.every((note) => note.resolved)
+    resolvableNotes.length > 0 && resolvableNotes.every((note) => note.resolved)
   );
 };
 
@@ -44,10 +42,10 @@ export const isDiscussionResolvable = (discussion: GitLabDiscussionDC) =>
   discussion.notes.some((note) => note.resolvable);
 
 const normalizeDiffPath = (path: string | null | undefined) =>
-  path?.replace(/^b\//, "").replace(/^\//, "") ?? "";
+  path?.replace(/^b\//, '').replace(/^\//, '') ?? '';
 
 const toLineNumber = (value: unknown): number | null => {
-  if (value === null || value === undefined || value === "") {
+  if (value === null || value === undefined || value === '') {
     return null;
   }
 
@@ -57,23 +55,23 @@ const toLineNumber = (value: unknown): number | null => {
 
 const getPositionSide = (
   position: GitLabNotePositionDC,
-): "old" | "new" | null => {
+): 'old' | 'new' | null => {
   const startType = position.line_range?.start?.type;
-  if (startType === "old" || startType === "new") {
+  if (startType === 'old' || startType === 'new') {
     return startType;
   }
 
   const endType = position.line_range?.end?.type;
-  if (endType === "old" || endType === "new") {
+  if (endType === 'old' || endType === 'new') {
     return endType;
   }
 
   if (position.new_line != null) {
-    return "new";
+    return 'new';
   }
 
   if (position.old_line != null) {
-    return "old";
+    return 'old';
   }
 
   return null;
@@ -96,7 +94,9 @@ export const positionMatchesChange = (
   return positionPaths.some((path) => changePaths.includes(path));
 };
 
-export const getDiffLineKey = (position: GitLabNotePositionDC): string | null => {
+export const getDiffLineKey = (
+  position: GitLabNotePositionDC,
+): string | null => {
   if (position.new_line != null && position.new_path) {
     return `${normalizeDiffPath(position.new_path)}:new:${position.new_line}`;
   }
@@ -110,7 +110,7 @@ export const getDiffLineKey = (position: GitLabNotePositionDC): string | null =>
 
 const buildLineKey = (
   path: string,
-  side: "old" | "new",
+  side: 'old' | 'new',
   line: number,
 ): string => `${path}:${side}:${line}`;
 
@@ -141,24 +141,24 @@ export const getDiffLineKeysForChange = (
     toLineNumber(rangeStart?.old_line) ??
     toLineNumber(rangeEnd?.old_line);
 
-  if (side === "new" || (!side && newLine !== null)) {
+  if (side === 'new' || (!side && newLine !== null)) {
     if (newLine !== null) {
-      keys.add(buildLineKey(change.new_path, "new", newLine));
+      keys.add(buildLineKey(change.new_path, 'new', newLine));
     }
   }
 
-  if (side === "old" || (!side && oldLine !== null)) {
+  if (side === 'old' || (!side && oldLine !== null)) {
     if (oldLine !== null) {
-      keys.add(buildLineKey(change.old_path, "old", oldLine));
+      keys.add(buildLineKey(change.old_path, 'old', oldLine));
     }
   }
 
   if (keys.size === 0 && newLine !== null) {
-    keys.add(buildLineKey(change.new_path, "new", newLine));
+    keys.add(buildLineKey(change.new_path, 'new', newLine));
   }
 
   if (keys.size === 0 && oldLine !== null) {
-    keys.add(buildLineKey(change.old_path, "old", oldLine));
+    keys.add(buildLineKey(change.old_path, 'old', oldLine));
   }
 
   return [...keys];
@@ -171,16 +171,16 @@ export const getLineKeysFromDiffLine = (
 ): string[] => {
   const keys = new Set<string>();
 
-  if (line.type === "add" && line.newLine !== null) {
-    keys.add(buildLineKey(newPath, "new", line.newLine));
-  } else if (line.type === "delete" && line.oldLine !== null) {
-    keys.add(buildLineKey(oldPath, "old", line.oldLine));
-  } else if (line.type === "context") {
+  if (line.type === 'add' && line.newLine !== null) {
+    keys.add(buildLineKey(newPath, 'new', line.newLine));
+  } else if (line.type === 'delete' && line.oldLine !== null) {
+    keys.add(buildLineKey(oldPath, 'old', line.oldLine));
+  } else if (line.type === 'context') {
     if (line.newLine !== null) {
-      keys.add(buildLineKey(newPath, "new", line.newLine));
+      keys.add(buildLineKey(newPath, 'new', line.newLine));
     }
     if (line.oldLine !== null) {
-      keys.add(buildLineKey(oldPath, "old", line.oldLine));
+      keys.add(buildLineKey(oldPath, 'old', line.oldLine));
     }
   }
 

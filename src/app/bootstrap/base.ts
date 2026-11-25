@@ -1,13 +1,13 @@
-import { configure } from "mobx";
-import { enableStaticRendering } from "mobx-react-lite";
-import { queryClient } from "mobx-tanstack-query/preset";
+import { configure } from 'mobx';
+import { enableStaticRendering } from 'mobx-react-lite';
+import { queryClient } from 'mobx-tanstack-query/preset';
 
 queryClient.setDefaultOptions({
   queries: {
     refetchOnWindowFocus: false,
-  }
+  },
 });
 
-configure({ enforceActions: "never" });
+configure({ enforceActions: 'never' });
 
-enableStaticRendering(typeof window === "undefined");
+enableStaticRendering(typeof window === 'undefined');

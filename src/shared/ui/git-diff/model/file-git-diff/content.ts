@@ -1,12 +1,12 @@
-import { actionBound, computed, observable, reaction, runInAction } from "mobx";
+import { actionBound, computed, observable, reaction, runInAction } from 'mobx';
 import {
   buildDeletedFileUnifiedDiff,
   buildModifiedFileUnifiedDiff,
   buildNewFileUnifiedDiff,
-} from "@/shared/lib/build-synthetic-diff";
-import { parseUnifiedDiff } from "@/shared/lib/parse-unified-diff";
-import { DisposableModel } from "./disposable";
-import type { FileGitDiff } from ".";
+} from '@/shared/lib/build-synthetic-diff';
+import { parseUnifiedDiff } from '@/shared/lib/parse-unified-diff';
+import type { FileGitDiff } from '.';
+import { DisposableModel } from './disposable';
 
 const shouldStartExpanded = (file: FileGitDiff) => !file.meta.isAutoCollapsed;
 
@@ -29,12 +29,10 @@ export class FileGitDiffContent extends DisposableModel {
     const { meta } = this.file;
 
     if (meta.isImage || meta.isDiffContentHidden) {
-      return "";
+      return '';
     }
 
-    return (
-      meta.change.diff || this.expandedDiff || this.resolvedDiff || ""
-    );
+    return meta.change.diff || this.expandedDiff || this.resolvedDiff || '';
   }
 
   @computed
@@ -97,7 +95,10 @@ export class FileGitDiffContent extends DisposableModel {
         this.expandedDiff = buildNewFileUnifiedDiff(change.new_path, content);
       } else if (change.deleted_file && baseRef) {
         const content = await loadFileContent(change.old_path, baseRef);
-        this.expandedDiff = buildDeletedFileUnifiedDiff(change.old_path, content);
+        this.expandedDiff = buildDeletedFileUnifiedDiff(
+          change.old_path,
+          content,
+        );
       } else if (headRef && baseRef) {
         const [oldContent, newContent] = await Promise.all([
           loadFileContent(change.old_path, baseRef),
@@ -115,7 +116,7 @@ export class FileGitDiffContent extends DisposableModel {
     } catch (error) {
       runInAction(() => {
         this.collapsedExpandError =
-          error instanceof Error ? error.message : "Не удалось загрузить diff";
+          error instanceof Error ? error.message : 'Не удалось загрузить diff';
       });
     } finally {
       this.isLoadingCollapsedExpand = false;
@@ -224,8 +225,7 @@ export class FileGitDiffContent extends DisposableModel {
           let cancelled = false;
           this.isResolvingDiff = true;
 
-          void source
-            .loadFileContent!(path, ref)
+          void source.loadFileContent!(path, ref)
             .then((content) => {
               if (cancelled) {
                 return;

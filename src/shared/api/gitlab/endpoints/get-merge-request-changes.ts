@@ -1,12 +1,12 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { buildUnifiedDiffFromGitlabLines } from "@/shared/lib/gitlab/build-unified-diff-from-gitlab-lines";
+import { buildUnifiedDiffFromGitlabLines } from '@/shared/lib/gitlab/build-unified-diff-from-gitlab-lines';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
 import {
   buildGitlabPath,
   buildMergeRequestWebPath,
   fetchGitlabJson,
   gitlabFetch,
   gitlabWebFetch,
-} from "../client";
+} from '../client';
 import type {
   GitLabDiffsBatchFileDC,
   GitLabDiffsBatchResponseDC,
@@ -14,8 +14,8 @@ import type {
   GitLabMergeRequestDC,
   GitLabMergeRequestVersionDC,
   GitLabProjectDC,
-} from "../data-contracts";
-import { getMergeRequestDetail } from "./get-merge-request-detail";
+} from '../data-contracts';
+import { getMergeRequestDetail } from './get-merge-request-detail';
 
 interface GitLabCompareDiffDC {
   old_path: string;
@@ -47,7 +47,7 @@ const mapCompareDiffToChange = (
 ): GitLabMergeRequestChangeDC => ({
   old_path: diff.old_path,
   new_path: diff.new_path,
-  diff: diff.diff ?? "",
+  diff: diff.diff ?? '',
   new_file: Boolean(diff.new_file),
   renamed_file: Boolean(diff.renamed_file),
   deleted_file: Boolean(diff.deleted_file),
@@ -56,7 +56,7 @@ const mapCompareDiffToChange = (
 const mapBatchFileToChange = (
   file: GitLabDiffsBatchFileDC,
 ): GitLabMergeRequestChangeDC => {
-  let diff = file.diff ?? "";
+  let diff = file.diff ?? '';
   if (!diff && file.highlighted_diff_lines?.length) {
     diff = buildUnifiedDiffFromGitlabLines(file.highlighted_diff_lines);
   }
@@ -87,14 +87,17 @@ const fetchAllMergeRequestDiffs = async (
   const basePath = `/projects/${project.id}/merge_requests/${mergeRequestIid}`;
 
   if (versionId !== undefined) {
-    const version = await fetchGitlabJson<{ diffs: GitLabMergeRequestChangeDC[] }>(
-      connection,
-      `${basePath}/versions/${versionId}`,
-      { query: { unidiff: true }, signal },
-    );
+    const version = await fetchGitlabJson<{
+      diffs: GitLabMergeRequestChangeDC[];
+    }>(connection, `${basePath}/versions/${versionId}`, {
+      query: { unidiff: true },
+      signal,
+    });
 
     if (!Array.isArray(version.diffs)) {
-      throw new Error("GitLab did not return diffs for this merge request version");
+      throw new Error(
+        'GitLab did not return diffs for this merge request version',
+      );
     }
 
     return version.diffs;
@@ -106,21 +109,21 @@ const fetchAllMergeRequestDiffs = async (
   while (true) {
     const params = new URLSearchParams({
       page: String(page),
-      per_page: "100",
-      unidiff: "true",
+      per_page: '100',
+      unidiff: 'true',
     });
 
     const response = await gitlabFetch(
       connection,
       `${basePath}/diffs?${params}`,
       signal,
-      { cache: "no-store" },
+      { cache: 'no-store' },
     );
 
     const pageDiffs = (await response.json()) as GitLabMergeRequestChangeDC[];
     allDiffs.push(...pageDiffs);
 
-    const nextPage = response.headers.get("x-next-page");
+    const nextPage = response.headers.get('x-next-page');
     if (!nextPage) {
       break;
     }
@@ -197,12 +200,12 @@ const fetchMergeRequestDiffsBatch = async (
     const path = buildMergeRequestWebPath(
       project.path_with_namespace,
       mergeRequestIid,
-      "diffs_batch.json",
+      'diffs_batch.json',
     );
 
     const queryParams: Record<string, string | number | boolean> = {
       w: 0,
-      view: "inline",
+      view: 'inline',
       page,
       per_page: 100,
     };
@@ -217,7 +220,7 @@ const fetchMergeRequestDiffsBatch = async (
       connection,
       buildGitlabPath(path, queryParams),
       signal,
-      versionId === undefined ? { cache: "no-store" } : undefined,
+      versionId === undefined ? { cache: 'no-store' } : undefined,
     );
 
     const payload = (await response.json()) as GitLabDiffsBatchResponseDC;
@@ -226,7 +229,7 @@ const fetchMergeRequestDiffsBatch = async (
       allDiffs.push(mapBatchFileToChange(file));
     }
 
-    const nextPage = Number(response.headers.get("x-next-page"));
+    const nextPage = Number(response.headers.get('x-next-page'));
     if (nextPage > page) {
       page = nextPage;
     } else if (page < (payload.pagination?.total_pages ?? 0)) {
@@ -262,7 +265,7 @@ const fetchMergeRequestChangesViaCompare = async (
   );
 
   if (payload.compare_timeout) {
-    throw new Error("GitLab compare timeout");
+    throw new Error('GitLab compare timeout');
   }
 
   return (payload.diffs ?? []).map(mapCompareDiffToChange);
@@ -315,17 +318,19 @@ export const getMergeRequestChanges = async (
     startSha = version.start_commit_sha;
     headSha = version.head_commit_sha;
   } else if (resolvedVersionId === undefined) {
-    const mergeRequest = detail ?? (await getMergeRequestDetail(
-      connection,
-      project,
-      mergeRequestIid,
-      signal,
-    ));
+    const mergeRequest =
+      detail ??
+      (await getMergeRequestDetail(
+        connection,
+        project,
+        mergeRequestIid,
+        signal,
+      ));
     const refs = mergeRequest.diff_refs ?? {};
     startSha = refs.start_sha;
     headSha = refs.head_sha;
     targetBranch = mergeRequest.target_branch;
-    isOpen = mergeRequest.state === "opened";
+    isOpen = mergeRequest.state === 'opened';
   }
 
   if (isOpen && !version && targetBranch && headSha) {
@@ -336,7 +341,7 @@ export const getMergeRequestChanges = async (
         targetBranch,
         headSha,
         signal,
-        "no-store",
+        'no-store',
       );
 
       return enrichChangesFromDiffsApi(
@@ -375,5 +380,5 @@ export const getMergeRequestChanges = async (
     }
   }
 
-  throw new Error("Failed to fetch merge request changes");
+  throw new Error('Failed to fetch merge request changes');
 };

@@ -1,13 +1,9 @@
-import { ViewModelsProvider } from "mobx-view-model-react";
-import { useMemo } from "react";
-import { Globals } from "@/globals";
-import { Routing } from "./routing";
+import { ViewModelsProvider } from 'mobx-view-model-react';
 
-export function App() {
-  const globals = useMemo(() => new Globals(), []);
+import type { AppWorkspace } from './model/app-workspace';
+import { Routing } from './routing';
 
-  console.info('[globals]', globals)
-
+export function App({ globals }: { globals: AppWorkspace }) {
   return (
     <ViewModelsProvider value={globals.stores.viewModels}>
       <Routing globals={globals} />

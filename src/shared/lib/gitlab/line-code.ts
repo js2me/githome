@@ -1,12 +1,12 @@
-import type { DiffDisplayLine } from "@/shared/lib/parse-unified-diff";
+import type { DiffDisplayLine } from '@/shared/lib/parse-unified-diff';
 
 const sha1Hex = async (value: string): Promise<string> => {
   const data = new TextEncoder().encode(value);
-  const hash = await crypto.subtle.digest("SHA-1", data);
+  const hash = await crypto.subtle.digest('SHA-1', data);
 
   return Array.from(new Uint8Array(hash))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
 };
 
 export const buildGitLabLineCode = async (
@@ -15,28 +15,28 @@ export const buildGitLabLineCode = async (
   newLine: number | null,
 ): Promise<string> => {
   const hash = await sha1Hex(filePath);
-  return `${hash}_${oldLine ?? ""}_${newLine ?? ""}`;
+  return `${hash}_${oldLine ?? ''}_${newLine ?? ''}`;
 };
 
-export const getDiffLineSide = (line: DiffDisplayLine): "old" | "new" =>
-  line.type === "delete" ? "old" : "new";
+export const getDiffLineSide = (line: DiffDisplayLine): 'old' | 'new' =>
+  line.type === 'delete' ? 'old' : 'new';
 
 export interface GitLabDiffLinePoint {
   oldLine: number | null;
   newLine: number | null;
-  type: "old" | "new";
+  type: 'old' | 'new';
 }
 
 export interface GitLabDiffLineRangePayload {
   start: {
     line_code: string;
-    type: "old" | "new";
+    type: 'old' | 'new';
     old_line?: number;
     new_line?: number;
   };
   end: {
     line_code: string;
-    type: "old" | "new";
+    type: 'old' | 'new';
     old_line?: number;
     new_line?: number;
   };
@@ -54,8 +54,7 @@ const buildLinePointPayload = async (
 
 const isGitLabDiffLinePoint = (
   value: GitLabDiffLinePoint | DiffDisplayLine,
-): value is GitLabDiffLinePoint =>
-  value.type === "old" || value.type === "new";
+): value is GitLabDiffLinePoint => value.type === 'old' || value.type === 'new';
 
 export const buildGitLabLineRangePayload = async ({
   filePath,

@@ -1,6 +1,6 @@
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabFetch } from "../client";
-import type { GitLabBranchDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import { gitlabFetch } from '../client';
+import type { GitLabBranchDC } from '../data-contracts';
 
 export const getProjectBranches = async (
   connection: GitLabConnection,
@@ -8,7 +8,7 @@ export const getProjectBranches = async (
   signal?: AbortSignal,
 ): Promise<GitLabBranchDC[]> => {
   const params = new URLSearchParams({
-    per_page: "100",
+    per_page: '100',
   });
 
   const response = await gitlabFetch(

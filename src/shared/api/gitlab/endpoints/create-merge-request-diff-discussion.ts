@@ -1,8 +1,8 @@
-import { buildGitLabLineRangePayload } from "@/shared/lib/gitlab/line-code";
-import type { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
-import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
-import { gitlabPost } from "../client";
-import type { GitLabDiscussionDC, GitLabProjectDC } from "../data-contracts";
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/diff-comment';
+import { buildGitLabLineRangePayload } from '@/shared/lib/gitlab/line-code';
+import { gitlabPost } from '../client';
+import type { GitLabDiscussionDC, GitLabProjectDC } from '../data-contracts';
 
 export const createMergeRequestDiffDiscussion = async (
   connection: GitLabConnection,
@@ -25,9 +25,7 @@ export const createMergeRequestDiffDiscussion = async (
     : undefined;
 
   const isFileComment =
-    input.oldLine === null &&
-    input.newLine === null &&
-    !lineRange;
+    input.oldLine === null && input.newLine === null && !lineRange;
 
   const discussion = await gitlabPost<GitLabDiscussionDC>(
     connection,
@@ -35,7 +33,7 @@ export const createMergeRequestDiffDiscussion = async (
     {
       body: input.body,
       position: {
-        position_type: isFileComment ? "file" : "text",
+        position_type: isFileComment ? 'file' : 'text',
         base_sha: diffRefs.base_sha,
         head_sha: diffRefs.head_sha,
         start_sha: diffRefs.start_sha,

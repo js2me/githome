@@ -1,104 +1,39 @@
-import { withViewModel } from "mobx-view-model-react";
-import { LoadingState } from "@/shared/ui/loading-state";
-import { StatusMessage } from "@/shared/ui/status-message";
-import { MergeRequestPageVM } from "../model";
-import { MergeRequestDetail } from "./components/merge-request-detail";
-import { PipelineCard } from "@/widgets/pipeline-card";
+import { withViewModel } from 'mobx-view-model-react';
+import { LoadingState } from '@/shared/ui/loading-state';
+import { StatusMessage } from '@/shared/ui/status-message';
+import { MergeRequestPageVM } from '../model';
+import { MergeRequestDetail } from './components/merge-request-detail';
 
-export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) => {
-  const detailView = model.mrInfo.detailView;
-  const connection = model.globals.stores.settings.activeConnection;
-  const projectPath = model.project?.path_with_namespace ?? "";
-  const markdownScope = {
-    connection,
-    projectPath,
-    projectId: model.project?.id ?? 0,
-  };
+export const MergeRequestPage = withViewModel(
+  MergeRequestPageVM,
+  ({ model }) => {
+    const detailView = model.mrInfo.detailView;
+    return (
+      <section>
+        {model.mrInfo.isLoading && !detailView && (
+          <LoadingState>Загружаем Merge Request</LoadingState>
+        )}
 
-  return (
-    <section>
-      {model.mrInfo.isLoading && !detailView && (
-        <LoadingState>Загружаем Merge Request</LoadingState>
-      )}
+        {model.mrInfo.showLoadError && (
+          <StatusMessage error>{model.mrInfo.errorMessage}</StatusMessage>
+        )}
 
-      {model.mrInfo.showLoadError && (
-        <StatusMessage error>{model.mrInfo.errorMessage}</StatusMessage>
-      )}
-
-      {detailView && (
-        <MergeRequestDetail
-          markdownScope={markdownScope}
-          mergeRequest={detailView.mergeRequest}
-          jiraLinks={model.jiraLinks}
-          changes={detailView.changes}
-          changesError={detailView.changesError}
-          isPreparingDiffs={detailView.isPreparingDiffs}
-          diffRevision={detailView.diffRevision}
-          discussions={detailView.discussions}
-          approvals={detailView.approvals}
-          canComment={detailView.canCommentOnDiff}
-          isSubmittingComment={model.mrInfo.isSubmittingDiffComment}
-          submitCommentError={model.mrInfo.submitDiffCommentError}
-          onAddComment={model.mrInfo.submitDiffComment}
-          onClearSubmitError={model.mrInfo.clearSubmitDiffCommentError}
-          canCommentOnMr={detailView.mergeRequest.state === "opened"}
-          isSubmittingMrComment={model.mrInfo.isSubmittingMrComment}
-          submitMrCommentError={model.mrInfo.submitMrCommentError}
-          onSubmitMrComment={model.mrInfo.submitMrComment}
-          onClearSubmitMrCommentError={model.mrInfo.clearSubmitMrCommentError}
-          loadFileContent={model.mrInfo.loadDiffFileContent}
-          loadFileImage={model.mrInfo.gitDiff.loadFileImage}
-          onResolveDiscussion={model.mrInfo.resolveDiscussion}
-          resolvingDiscussionId={model.mrInfo.resolvingDiscussionId}
-          resolveDiscussionError={model.mrInfo.resolveDiscussionError}
-          onReplyDiscussion={model.mrInfo.replyToDiscussion}
-          replyingDiscussionId={model.mrInfo.replyingDiscussionId || null}
-          replyDiscussionErrorKey={model.mrInfo.replyDiscussionErrorKey || null}
-          replyDiscussionError={model.mrInfo.replyDiscussionError || null}
-          onClearReplyDiscussionError={model.mrInfo.clearReplyDiscussionError}
-          currentUserId={model.mrInfo.currentUserId}
-          onUpdateDiscussionNote={model.mrInfo.updateDiscussionNote}
-          onDeleteDiscussionNote={model.mrInfo.deleteDiscussionNote}
-          updatingNoteKey={model.mrInfo.updatingNoteKey || null}
-          deletingNoteKey={model.mrInfo.deletingNoteKey || null}
-          updateNoteError={model.mrInfo.updateNoteError || null}
-          deleteNoteErrorKey={model.mrInfo.deleteNoteErrorKey || null}
-          deleteNoteError={model.mrInfo.deleteNoteError || null}
-          onClearUpdateNoteError={model.mrInfo.clearUpdateNoteError}
-          onClearDeleteNoteError={model.mrInfo.clearDeleteNoteError}
-          reviewActionInProgress={model.mrInfo.reviewActionInProgress}
-          reviewActionError={model.mrInfo.reviewActionError}
-          onApprove={model.mrInfo.approve}
-          onUnapprove={model.mrInfo.unapprove}
-          onRequestChanges={model.mrInfo.requestChanges}
-          onCancelRequestChanges={model.mrInfo.cancelRequestChanges}
-          diffVersions={detailView.diffVersions}
-          selectedDiffVersionId={detailView.selectedDiffVersionId}
-          selectedDiffVersion={detailView.selectedDiffVersion}
-          onSelectDiffVersion={model.mrInfo.selectDiffVersion}
-          pipelineCard={
-            detailView.mergeRequest.head_pipeline && markdownScope.projectId > 0 ? (
-              <PipelineCard
-                payload={{
-                  projectId: markdownScope.projectId,
-                  pipelineId: detailView.mergeRequest.head_pipeline.id,
-                  permissions: model.project?.permissions,
-                }}
-              />
-            ) : null
-          }
-        />
-      )}
-
-      {detailView && model.mrInfo.isRefreshing && (
-        <div className="pointer-events-none fixed bottom-4 right-4 z-50 rounded-full border border-slate-200 bg-canvas-overlay p-2 shadow-lg dark:border-slate-700">
-          <div
-            className="size-5 animate-spin rounded-full border-2 border-slate-200 border-t-brand dark:border-slate-600"
-            role="status"
-            aria-label="Обновление Merge Request"
+        {detailView && (
+          <MergeRequestDetail
+            key={`${model.globals.stores.settings.activeId}/${detailView.mergeRequest.id}`}
           />
-        </div>
-      )}
-    </section>
-  );
-});
+        )}
+
+        {detailView && model.mrInfo.isRefreshing && (
+          <div className="pointer-events-none fixed right-4 bottom-4 z-50 rounded-full border border-slate-200 bg-canvas-overlay p-2 shadow-lg dark:border-slate-700">
+            <div
+              className="size-5 animate-spin rounded-full border-2 border-slate-200 border-t-brand dark:border-slate-600"
+              role="status"
+              aria-label="Обновление Merge Request"
+            />
+          </div>
+        )}
+      </section>
+    );
+  },
+);
