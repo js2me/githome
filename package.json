@@ -91,9 +91,6 @@
       "repo": "githome"
     },
     "asar": true,
-    "asarUnpack": [
-      "dist/**"
-    ],
     "directories": {
       "output": "release",
       "buildResources": "resources"
