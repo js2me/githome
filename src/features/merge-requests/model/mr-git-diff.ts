@@ -1,7 +1,8 @@
-import { actionBound, computed, observable, reaction, runInAction } from "mobx";
+import { actionBound, computed, observableRef, reaction } from "mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type {
   GitLabMergeRequestChangeDC,
+  GitLabMergeRequestDC,
   GitLabMergeRequestVersionDC,
   GitLabProjectDC,
 } from "@/shared/api/gitlab";
@@ -17,95 +18,118 @@ export interface MergeRequestGitDiffParams {
   globals: Globals;
   readonly abortSignal: AbortSignal;
   readonly params: () => MergeRequestGitDiffContext | false;
+  readonly getMergeRequestDetail: () => GitLabMergeRequestDC | null;
 }
 
 export class MergeRequestGitDiff {
   changesQuery;
   versionsQuery;
 
-  @observable accessor selectedVersionId: number | null = null;
+  @observableRef private accessor selection: {
+    scope: string;
+    version: GitLabMergeRequestVersionDC;
+  } | null = null;
 
   constructor(private readonly options: MergeRequestGitDiffParams) {
     this.changesQuery = createGitlabApiQuery<
       GitLabMergeRequestChangeDC[],
       MergeRequestGitDiffContext & {
-        versionId: number | null;
+        revision: string;
         version: GitLabMergeRequestVersionDC | null;
+        detail: GitLabMergeRequestDC | null;
       }
     >({
       globals: options.globals,
       abortSignal: options.abortSignal,
+      queryOptions: { retry: 1 },
       params: () => {
         const mr = options.params();
-        if (!mr) {
+        const version = this.selectedVersion;
+        const revision = this.revision;
+        if (!mr || !revision) {
           return false;
         }
 
         return {
           ...mr,
-          versionId: this.selectedVersionId,
-          version: this.selectedVersion,
+          revision,
+          version,
+          detail: version ? null : options.getMergeRequestDetail(),
         };
       },
-      queryKey: ({ connection, project, mergeRequestIid, versionId }) =>
-        [
-          "merge-request-changes",
-          "compare",
-          connection.gitlabUrl,
-          project.id,
-          mergeRequestIid,
-          versionId ?? "latest",
-        ] as const,
-      queryFn: ({ connection, project, mergeRequestIid, versionId, version, signal }) =>
+      queryKey: ({ revision }) => ["merge-request-changes", revision],
+      queryFn: ({ connection, project, mergeRequestIid, version, detail, signal }) =>
         gitlabApi.getMergeRequestChanges(
           connection,
           project,
           mergeRequestIid,
-          versionId,
+          version?.id ?? null,
           version,
           signal,
+          detail ?? undefined,
         ),
     });
 
     this.versionsQuery = createGitlabApiQuery<
       GitLabMergeRequestVersionDC[],
-      MergeRequestGitDiffContext
+      MergeRequestGitDiffContext & { revision: string; scope: string }
     >({
       globals: options.globals,
       abortSignal: options.abortSignal,
-      params: () => options.params(),
-      queryKey: ({ connection, project, mergeRequestIid }) =>
-        [
-          "merge-request-versions",
-          connection.gitlabUrl,
-          project.id,
-          mergeRequestIid,
-        ] as const,
-      queryFn: async ({ connection, project, mergeRequestIid, signal }) => {
-        try {
-          return await gitlabApi.getMergeRequestVersions(
-            connection,
-            project,
-            mergeRequestIid,
-            signal,
-          );
-        } catch {
-          return [] as GitLabMergeRequestVersionDC[];
-        }
+      queryOptions: {
+        retry: 1,
+        placeholderData: (previousVersions, previousQuery) =>
+          previousQuery?.queryKey[1] === this.scope ? previousVersions : undefined,
       },
+      params: () => {
+        const mr = options.params();
+        const scope = this.scope;
+        const revision = this.latestRevision;
+        return mr && scope && revision ? { ...mr, revision, scope } : false;
+      },
+      queryKey: ({ scope, revision }) => ["merge-request-versions", scope, revision],
+      queryFn: ({ connection, project, mergeRequestIid, signal }) =>
+        gitlabApi.getMergeRequestVersions(connection, project, mergeRequestIid, signal),
     });
 
     reaction(
+      () => this.scope,
       () => {
-        const mr = options.params();
-        return mr ? `${mr.project.id}:${mr.mergeRequestIid}` : "";
+        this.selection = null;
       },
-      () => {
-        runInAction(() => {
-          this.selectedVersionId = null;
-        });
-      },
+      { signal: options.abortSignal },
     );
+  }
+
+  @computed
+  private get scope(): string {
+    const mr = this.options.params();
+    const connection = this.options.globals.stores.settings.activeConnection;
+    return mr && connection
+      ? JSON.stringify([connection.id, connection.gitlabUrl, mr.project.id, mr.mergeRequestIid])
+      : "";
+  }
+
+  @computed
+  private get latestRevision(): string {
+    const detail = this.options.getMergeRequestDetail();
+    if (!detail) {
+      return "";
+    }
+
+    const refs = detail.diff_refs;
+    return refs?.head_sha
+      ? JSON.stringify([refs.base_sha, refs.start_sha, refs.head_sha])
+      : detail.updated_at;
+  }
+
+  @computed
+  get revision(): string {
+    const version = this.selectedVersion;
+    const latest = version ? "" : this.latestRevision;
+    return this.scope && (version || latest)
+      ? JSON.stringify([this.scope, version ? ["version", version.id] : ["latest", latest]])
+      : "";
   }
 
   @computed
@@ -120,25 +144,17 @@ export class MergeRequestGitDiff {
 
   @computed
   get selectedVersion(): GitLabMergeRequestVersionDC | null {
-    if (this.selectedVersionId === null) {
-      return null;
-    }
+    return this.selection?.scope === this.scope ? this.selection.version : null;
+  }
 
-    return this.versions.find((v) => v.id === this.selectedVersionId) ?? null;
+  @computed
+  get selectedVersionId(): number | null {
+    return this.selectedVersion?.id ?? null;
   }
 
   @computed
   get isLoading() {
-    return this.changesQuery.isLoading || this.changesQuery.isFetching;
-  }
-
-  @computed
-  get isReady() {
-    return (
-      this.changes !== null ||
-      this.changesQuery.isError ||
-      (this.changesQuery.isFetched && this.changesQuery.isFetching)
-    );
+    return this.changes === null && (this.changesQuery.isPending || this.changesQuery.isFetching);
   }
 
   @computed
@@ -155,7 +171,8 @@ export class MergeRequestGitDiff {
 
   @actionBound
   selectVersion(id: number | null) {
-    this.selectedVersionId = id;
+    const version = id === null ? null : this.versions.find((item) => item.id === id);
+    this.selection = version ? { scope: this.scope, version } : null;
   }
 
   @actionBound

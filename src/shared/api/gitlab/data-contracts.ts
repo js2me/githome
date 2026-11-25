@@ -141,6 +141,7 @@ export interface GitLabMergeRequestVersionDC {
 
 export interface GitLabDiffsBatchResponseDC {
   diff_files: GitLabDiffsBatchFileDC[];
+  pagination?: { total_pages: number };
 }
 
 export interface GitLabNotePositionLinePointDC {

@@ -11,6 +11,7 @@ import type {
 } from "@/shared/api/gitlab";
 import type { CreateDiffCommentInput } from "@/shared/lib/gitlab/diff-comment";
 import {
+  createGitlabApiQuery,
   createGitlabQuery,
   createInfiniteGitlabQuery,
 } from "@/shared/lib/gitlab/create-query";
@@ -80,32 +81,40 @@ export class MrInfoModel {
   @observable accessor locallyCreatedDiscussions: GitLabDiscussionDC[] = [];
 
   constructor(private readonly options: MrInfoModelParams) {
-    this.mergeRequestDetailQuery = createGitlabQuery<GitLabMergeRequestDC>({
+    this.mergeRequestDetailQuery = createGitlabApiQuery<GitLabMergeRequestDC, MrInfoModelContext>({
       globals: options.globals,
       abortSignal: options.abortSignal,
-      queryOptions: MR_POLL_QUERY_OPTIONS,
-      params: () => {
-        const mr = options.params();
-        if (!mr) {
-          return false;
-        }
-
-        return {
-          path: `/projects/${mr.project.id}/merge_requests/${mr.mergeRequestIid}`,
-        };
+      queryOptions: {
+        ...MR_POLL_QUERY_OPTIONS,
+        refetchOnWindowFocus: "always",
       },
+      params: options.params,
+      queryKey: ({ connection, project, mergeRequestIid }) =>
+        ["merge-request-detail", connection.id, connection.gitlabUrl, project.id, mergeRequestIid],
+      queryFn: ({ connection, project, mergeRequestIid, signal }) =>
+        gitlabApi.getMergeRequestDetail(connection, project, mergeRequestIid, signal),
     });
 
     this.gitDiff = new MergeRequestGitDiff({
       globals: options.globals,
       abortSignal: options.abortSignal,
       params: () => options.params(),
+      getMergeRequestDetail: () => this.mergeRequestDetail,
     });
 
     this.diffComment = new CreateMrComment({
       globals: options.globals,
       params: () => options.params(),
-      getMergeRequestDetail: () => this.mergeRequestDetail,
+      getDiffRefs: () => {
+        const version = this.gitDiff.selectedVersion;
+        return version
+          ? {
+              base_sha: version.base_commit_sha,
+              head_sha: version.head_commit_sha,
+              start_sha: version.start_commit_sha,
+            }
+          : this.mergeRequestDetail?.diff_refs;
+      },
       onDiscussionCreated: (discussion) => this.addLocalDiscussion(discussion),
     });
 
@@ -193,7 +202,6 @@ export class MrInfoModel {
   private get viewQueries() {
     return [
       this.mergeRequestDetailQuery,
-      this.gitDiff.changesQuery,
       this.mergeRequestDiscussionsQuery,
       this.currentUserQuery,
       this.mergeRequestApprovalsQuery,
@@ -301,14 +309,9 @@ export class MrInfoModel {
 
   @computed
   get isRefreshing() {
-    return this.viewQueries.some((query) => query.isFetching);
-  }
-
-  @computed
-  get showPreparingDiffs() {
     return (
-      this.gitDiff.isLoading &&
-      !this.viewQueries.some((query) => !query.isFetched && query.isPending)
+      this.viewQueries.some((query) => query.isFetching) ||
+      this.gitDiff.changesQuery.isFetching
     );
   }
 
@@ -346,7 +349,6 @@ export class MrInfoModel {
     return (
       !this.errorMessage &&
       this.mergeRequestDetail !== null &&
-      this.gitDiff.isReady &&
       this.mergeRequestDiscussions !== null &&
       this.mergeRequestApprovals !== null
     );
@@ -366,6 +368,10 @@ export class MrInfoModel {
       approvals: this.mergeRequestApprovals!,
       diffVersions: this.diffVersions,
       selectedDiffVersionId: this.selectedDiffVersionId,
+      selectedDiffVersion: this.gitDiff.selectedVersion,
+      diffRevision: this.gitDiff.revision,
+      isPreparingDiffs: this.gitDiff.isLoading,
+      canCommentOnDiff: this.mergeRequestChanges !== null && this.diffComment.canComment,
     };
   }
 
@@ -398,8 +404,8 @@ export class MrInfoModel {
   }
 
   @actionBound
-  submitDiffComment(input: CreateDiffCommentInput) {
-    return this.diffComment.submit(input);
+  async submitDiffComment(input: CreateDiffCommentInput) {
+    return this.mergeRequestChanges === null ? false : this.diffComment.submit(input);
   }
 
   @actionBound

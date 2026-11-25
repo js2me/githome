@@ -12,6 +12,7 @@ export const getMergeRequestDetail = async (
     connection,
     `/projects/${project.id}/merge_requests/${mergeRequestIid}`,
     signal,
+    { cache: "no-store" },
   );
 
   return (await response.json()) as GitLabMergeRequestDC;

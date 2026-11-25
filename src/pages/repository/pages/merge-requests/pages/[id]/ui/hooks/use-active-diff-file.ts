@@ -36,7 +36,7 @@ const getActiveDiffFileKey = (files: DiffFileAnchor[]) => {
   return files[Math.max(0, low - 1)].key;
 };
 
-export const useActiveDiffFile = (changes: GitLabMergeRequestChangeDC[]) => {
+export const useActiveDiffFile = (changes: GitLabMergeRequestChangeDC[], diffRevision: string) => {
   const [activeFile] = useState(() => observable.box<string | null>(null));
   const selectedScrollY = useRef<number | null>(null);
 
@@ -95,7 +95,7 @@ export const useActiveDiffFile = (changes: GitLabMergeRequestChangeDC[]) => {
       window.removeEventListener("scroll", scheduleSync);
       window.removeEventListener("resize", scheduleSync);
     };
-  }, [activeFile, changes]);
+  }, [activeFile, changes, diffRevision]);
 
   return { activeFile, selectActiveFile, jumpToFile };
 };

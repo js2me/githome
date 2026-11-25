@@ -11,6 +11,7 @@ import type {
   GitLabDiffsBatchFileDC,
   GitLabDiffsBatchResponseDC,
   GitLabMergeRequestChangeDC,
+  GitLabMergeRequestDC,
   GitLabMergeRequestVersionDC,
   GitLabProjectDC,
 } from "../data-contracts";
@@ -76,19 +77,31 @@ const mapBatchFileToChange = (
   };
 };
 
-const fetchMergeRequestDiffMetadata = async (
+const fetchAllMergeRequestDiffs = async (
   connection: GitLabConnection,
   project: GitLabProjectDC,
   mergeRequestIid: number,
   versionId: number | undefined,
   signal?: AbortSignal,
-): Promise<Map<string, GitLabDiffFileMetadataDC>> => {
-  const metadata = new Map<string, GitLabDiffFileMetadataDC>();
-  let page = 1;
+): Promise<GitLabMergeRequestChangeDC[]> => {
+  const basePath = `/projects/${project.id}/merge_requests/${mergeRequestIid}`;
 
-  const diffsPath = versionId
-    ? `/projects/${project.id}/merge_requests/${mergeRequestIid}/versions/${versionId}`
-    : `/projects/${project.id}/merge_requests/${mergeRequestIid}/diffs`;
+  if (versionId !== undefined) {
+    const version = await fetchGitlabJson<{ diffs: GitLabMergeRequestChangeDC[] }>(
+      connection,
+      `${basePath}/versions/${versionId}`,
+      { query: { unidiff: true }, signal },
+    );
+
+    if (!Array.isArray(version.diffs)) {
+      throw new Error("GitLab did not return diffs for this merge request version");
+    }
+
+    return version.diffs;
+  }
+
+  const allDiffs: GitLabMergeRequestChangeDC[] = [];
+  let page = 1;
 
   while (true) {
     const params = new URLSearchParams({
@@ -99,23 +112,13 @@ const fetchMergeRequestDiffMetadata = async (
 
     const response = await gitlabFetch(
       connection,
-      `${diffsPath}?${params}`,
+      `${basePath}/diffs?${params}`,
       signal,
+      { cache: "no-store" },
     );
 
-    const pageDiffs = (await response.json()) as Array<
-      GitLabDiffFileMetadataDC & { old_path: string; new_path: string }
-    >;
-
-    for (const file of pageDiffs) {
-      metadata.set(getDiffFileMetadataKey(file.old_path, file.new_path), {
-        generated_file: file.generated_file,
-        collapsed: file.collapsed,
-        too_large: file.too_large,
-        added_lines: file.added_lines,
-        removed_lines: file.removed_lines,
-      });
-    }
+    const pageDiffs = (await response.json()) as GitLabMergeRequestChangeDC[];
+    allDiffs.push(...pageDiffs);
 
     const nextPage = response.headers.get("x-next-page");
     if (!nextPage) {
@@ -125,7 +128,7 @@ const fetchMergeRequestDiffMetadata = async (
     page = Number(nextPage);
   }
 
-  return metadata;
+  return allDiffs;
 };
 
 const enrichChangesWithDiffMetadata = (
@@ -160,12 +163,18 @@ const enrichChangesFromDiffsApi = async (
   signal?: AbortSignal,
 ): Promise<GitLabMergeRequestChangeDC[]> => {
   try {
-    const metadata = await fetchMergeRequestDiffMetadata(
+    const diffs = await fetchAllMergeRequestDiffs(
       connection,
       project,
       mergeRequestIid,
       versionId,
       signal,
+    );
+    const metadata = new Map(
+      diffs.map((file) => [
+        getDiffFileMetadataKey(file.old_path, file.new_path),
+        file,
+      ]),
     );
 
     return enrichChangesWithDiffMetadata(changes, metadata);
@@ -198,7 +207,7 @@ const fetchMergeRequestDiffsBatch = async (
       per_page: 100,
     };
 
-    if (versionId) {
+    if (versionId !== undefined) {
       queryParams.diff_id = versionId;
     } else {
       queryParams.diff_head = true;
@@ -208,6 +217,7 @@ const fetchMergeRequestDiffsBatch = async (
       connection,
       buildGitlabPath(path, queryParams),
       signal,
+      versionId === undefined ? { cache: "no-store" } : undefined,
     );
 
     const payload = (await response.json()) as GitLabDiffsBatchResponseDC;
@@ -216,12 +226,14 @@ const fetchMergeRequestDiffsBatch = async (
       allDiffs.push(mapBatchFileToChange(file));
     }
 
-    const nextPage = response.headers.get("x-next-page");
-    if (!nextPage) {
+    const nextPage = Number(response.headers.get("x-next-page"));
+    if (nextPage > page) {
+      page = nextPage;
+    } else if (page < (payload.pagination?.total_pages ?? 0)) {
+      page += 1;
+    } else {
       break;
     }
-
-    page = Number(nextPage);
   }
 
   return allDiffs;
@@ -233,6 +245,7 @@ const fetchMergeRequestChangesViaCompare = async (
   from: string,
   to: string,
   signal?: AbortSignal,
+  cache?: RequestCache,
 ): Promise<GitLabMergeRequestChangeDC[]> => {
   const payload = await fetchGitlabJson<GitLabCompareResponseDC>(
     connection,
@@ -244,6 +257,7 @@ const fetchMergeRequestChangesViaCompare = async (
         unidiff: true,
       },
       signal,
+      cache,
     },
   );
 
@@ -254,47 +268,6 @@ const fetchMergeRequestChangesViaCompare = async (
   return (payload.diffs ?? []).map(mapCompareDiffToChange);
 };
 
-const fetchAllMergeRequestDiffs = async (
-  connection: GitLabConnection,
-  project: GitLabProjectDC,
-  mergeRequestIid: number,
-  versionId: number | undefined,
-  signal?: AbortSignal,
-): Promise<GitLabMergeRequestChangeDC[]> => {
-  const allDiffs: GitLabMergeRequestChangeDC[] = [];
-  let page = 1;
-
-  const diffsPath = versionId
-    ? `/projects/${project.id}/merge_requests/${mergeRequestIid}/versions/${versionId}`
-    : `/projects/${project.id}/merge_requests/${mergeRequestIid}/diffs`;
-
-  while (true) {
-    const params = new URLSearchParams({
-      page: String(page),
-      per_page: "100",
-      unidiff: "true",
-    });
-
-    const response = await gitlabFetch(
-      connection,
-      `${diffsPath}?${params}`,
-      signal,
-    );
-
-    const pageDiffs = (await response.json()) as GitLabMergeRequestChangeDC[];
-    allDiffs.push(...pageDiffs);
-
-    const nextPage = response.headers.get("x-next-page");
-    if (!nextPage) {
-      break;
-    }
-
-    page = Number(nextPage);
-  }
-
-  return allDiffs;
-};
-
 export const getMergeRequestChanges = async (
   connection: GitLabConnection,
   project: GitLabProjectDC,
@@ -302,30 +275,9 @@ export const getMergeRequestChanges = async (
   versionId?: number | null,
   version?: GitLabMergeRequestVersionDC | null,
   signal?: AbortSignal,
+  detail?: GitLabMergeRequestDC,
 ): Promise<GitLabMergeRequestChangeDC[]> => {
   const resolvedVersionId = versionId ?? undefined;
-
-  let startSha: string | undefined;
-  let headSha: string | undefined;
-  let targetBranch: string | undefined;
-  let isOpen = false;
-
-  if (version) {
-    startSha = version.start_commit_sha;
-    headSha = version.head_commit_sha;
-  } else {
-    const mergeRequest = await getMergeRequestDetail(
-      connection,
-      project,
-      mergeRequestIid,
-      signal,
-    );
-    const refs = mergeRequest.diff_refs ?? {};
-    startSha = refs.start_sha;
-    headSha = refs.head_sha;
-    targetBranch = mergeRequest.target_branch;
-    isOpen = mergeRequest.state === "opened";
-  }
 
   // 1. diffs_batch.json — web UI, совпадает с поведением GitLab (collapsed/generated)
   try {
@@ -354,6 +306,28 @@ export const getMergeRequestChanges = async (
   }
 
   // 3. repository/compare — работает с PAT; обогащаем метаданными из /diffs
+  let startSha: string | undefined;
+  let headSha: string | undefined;
+  let targetBranch: string | undefined;
+  let isOpen = false;
+
+  if (version) {
+    startSha = version.start_commit_sha;
+    headSha = version.head_commit_sha;
+  } else if (resolvedVersionId === undefined) {
+    const mergeRequest = detail ?? (await getMergeRequestDetail(
+      connection,
+      project,
+      mergeRequestIid,
+      signal,
+    ));
+    const refs = mergeRequest.diff_refs ?? {};
+    startSha = refs.start_sha;
+    headSha = refs.head_sha;
+    targetBranch = mergeRequest.target_branch;
+    isOpen = mergeRequest.state === "opened";
+  }
+
   if (isOpen && !version && targetBranch && headSha) {
     try {
       const changes = await fetchMergeRequestChangesViaCompare(
@@ -362,6 +336,7 @@ export const getMergeRequestChanges = async (
         targetBranch,
         headSha,
         signal,
+        "no-store",
       );
 
       return enrichChangesFromDiffsApi(

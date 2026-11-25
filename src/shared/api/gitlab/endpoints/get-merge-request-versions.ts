@@ -21,6 +21,7 @@ export const getMergeRequestVersions = async (
       connection,
       `/projects/${project.id}/merge_requests/${mergeRequestIid}/versions?${params}`,
       signal,
+      { cache: "no-store" },
     );
 
     const pageVersions =

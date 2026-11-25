@@ -270,13 +270,18 @@ export const buildGitlabPath = (
   }
 
   const queryString = params.toString();
-  return queryString ? `${path}?${queryString}` : path;
+  if (!queryString) {
+    return path;
+  }
+
+  return `${path}${path.includes("?") ? "&" : "?"}${queryString}`;
 };
 
 export const gitlabFetch = async (
   connection: GitLabConnection,
   path: string,
   signal?: AbortSignal,
+  options?: Pick<RequestInit, "cache">,
 ) => {
   const response = await fetch(
     resolveGitlabRequestUrl(connection.gitlabUrl, `/api/v4${path}`),
@@ -284,6 +289,7 @@ export const gitlabFetch = async (
       headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
         "PRIVATE-TOKEN": connection.gitToken,
       }),
+      ...options,
       signal,
     },
   );
@@ -423,12 +429,14 @@ export const fetchGitlabJson = async <T>(
   options?: {
     query?: Record<string, string | number | boolean | null | undefined>;
     signal?: AbortSignal;
+    cache?: RequestCache;
   },
 ): Promise<T> => {
   const response = await gitlabFetch(
     connection,
     buildGitlabPath(path, options?.query),
     options?.signal,
+    options?.cache ? { cache: options.cache } : undefined,
   );
 
   return (await response.json()) as T;
@@ -438,6 +446,7 @@ export const gitlabWebFetch = async (
   connection: GitLabConnection,
   path: string,
   signal?: AbortSignal,
+  options?: Pick<RequestInit, "cache">,
 ) => {
   const response = await fetch(
     resolveGitlabRequestUrl(
@@ -451,6 +460,7 @@ export const gitlabWebFetch = async (
         "X-Requested-With": "XMLHttpRequest",
       }),
       redirect: "manual",
+      ...options,
       signal,
     },
   );

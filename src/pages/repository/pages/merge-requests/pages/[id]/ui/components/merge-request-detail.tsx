@@ -172,6 +172,8 @@ export const MergeRequestDetail = ({
   mergeRequest,
   changes,
   changesError = null,
+  isPreparingDiffs,
+  diffRevision,
   discussions,
   canComment,
   isSubmittingComment,
@@ -212,6 +214,7 @@ export const MergeRequestDetail = ({
   onCancelRequestChanges,
   diffVersions = [],
   selectedDiffVersionId = null,
+  selectedDiffVersion,
   onSelectDiffVersion,
   pipelineCard,
 }: {
@@ -219,6 +222,8 @@ export const MergeRequestDetail = ({
   mergeRequest: GitLabMergeRequestDC;
   changes: GitLabMergeRequestChangeDC[];
   changesError?: string | null;
+  isPreparingDiffs: boolean;
+  diffRevision: string;
   discussions: GitLabDiscussionDC[];
   canComment: boolean;
   isSubmittingComment: boolean;
@@ -266,6 +271,7 @@ export const MergeRequestDetail = ({
   onCancelRequestChanges: () => void;
   diffVersions?: GitLabMergeRequestVersionDC[];
   selectedDiffVersionId?: number | null;
+  selectedDiffVersion: GitLabMergeRequestVersionDC | null;
   onSelectDiffVersion: (id: number | null) => void;
   pipelineCard?: ReactNode;
 }) => {
@@ -275,8 +281,13 @@ export const MergeRequestDetail = ({
   const userNotesCount = mergeRequest.user_notes_count ?? 0;
   const labels = mergeRequest.labels ?? [];
   const description = mergeRequest.description ?? "";
-  const { activeFile, selectActiveFile, jumpToFile } = useActiveDiffFile(changes);
-  const selectedDiffVersion = diffVersions.find(({ id }) => id === selectedDiffVersionId);
+  const { activeFile, selectActiveFile, jumpToFile } = useActiveDiffFile(changes, diffRevision);
+  const headRef = selectedDiffVersionId === null
+    ? mergeRequest.diff_refs?.head_sha
+    : selectedDiffVersion?.head_commit_sha;
+  const baseRef = selectedDiffVersionId === null
+    ? mergeRequest.diff_refs?.base_sha || mergeRequest.diff_refs?.start_sha
+    : selectedDiffVersion?.base_commit_sha || selectedDiffVersion?.start_commit_sha;
   const showChangesTree = changes.length > 0;
   const activityDiscussions = useMemo(
     () => filterDiscussionsForActivity(discussions),
@@ -478,77 +489,88 @@ export const MergeRequestDetail = ({
               {changes.length}
             </span>
           )}
-          {diffVersions.length > 1 && (
+          {diffVersions.length > 1 ? (
             <DiffVersionPicker
               versions={diffVersions}
               selectedVersionId={selectedDiffVersionId}
               onSelectVersion={onSelectDiffVersion}
             />
+          ) : selectedDiffVersionId !== null && (
+            <button
+              className="rounded-md border border-slate-300 px-2 py-0.5 text-xs font-medium dark:border-slate-700"
+              type="button"
+              onClick={() => onSelectDiffVersion(null)}
+            >
+              К последней версии
+            </button>
           )}
         </h3>
         {changesError && <StatusMessage error>{changesError}</StatusMessage>}
-        <GitDiff
-          markdownScope={markdownScope}
-          changes={changes}
-          discussions={discussions}
-          canComment={canComment}
-          isSubmittingComment={isSubmittingComment}
-          submitCommentError={submitCommentError}
-          onAddComment={onAddComment}
-          onClearSubmitError={onClearSubmitError}
-          headBranch={mergeRequest.source_branch ?? null}
-          headRef={selectedDiffVersion?.head_commit_sha || mergeRequest.diff_refs?.head_sha || null}
-          baseRef={
-            selectedDiffVersion?.base_commit_sha ||
-            selectedDiffVersion?.start_commit_sha ||
-            mergeRequest.diff_refs?.base_sha ||
-            mergeRequest.diff_refs?.start_sha ||
-            null
-          }
-          loadFileContent={loadFileContent}
-          loadFileImage={loadFileImage}
-          onResolveThread={onResolveDiscussion}
-          resolvingDiscussionId={resolvingDiscussionId}
-          onReplyThread={onReplyDiscussion}
-          replyingDiscussionId={replyingDiscussionId}
-          replyErrorDiscussionId={replyDiscussionErrorKey}
-          replyError={replyDiscussionError}
-          onClearReplyError={onClearReplyDiscussionError}
-          currentUserId={currentUserId}
-          onUpdateDiscussionNote={onUpdateDiscussionNote}
-          onDeleteDiscussionNote={onDeleteDiscussionNote}
-          updatingNoteKey={updatingNoteKey}
-          deletingNoteKey={deletingNoteKey}
-          updateNoteError={updateNoteError}
-          deleteNoteErrorKey={deleteNoteErrorKey}
-          deleteNoteError={deleteNoteError}
-          onClearUpdateNoteError={onClearUpdateNoteError}
-          onClearDeleteNoteError={onClearDeleteNoteError}
-          activeFile={activeFile}
-          onActiveFileChange={selectActiveFile}
-        />
+        {isPreparingDiffs ? (
+          <div className="flex items-center gap-2 py-4 text-sm text-fg-muted" role="status">
+            <span
+              className="size-4 animate-spin rounded-full border-2 border-slate-200 border-t-brand dark:border-slate-700"
+              aria-hidden="true"
+            />
+            Подготавливаем diff...
+          </div>
+        ) : (changes.length > 0 || !changesError) && (
+          <GitDiff
+            key={diffRevision}
+            markdownScope={markdownScope}
+            changes={changes}
+            discussions={discussions}
+            canComment={canComment}
+            isSubmittingComment={isSubmittingComment}
+            submitCommentError={submitCommentError}
+            onAddComment={onAddComment}
+            onClearSubmitError={onClearSubmitError}
+            headBranch={mergeRequest.source_branch ?? null}
+            headRef={headRef ?? null}
+            baseRef={baseRef ?? null}
+            loadFileContent={loadFileContent}
+            loadFileImage={loadFileImage}
+            onResolveThread={onResolveDiscussion}
+            resolvingDiscussionId={resolvingDiscussionId}
+            onReplyThread={onReplyDiscussion}
+            replyingDiscussionId={replyingDiscussionId}
+            replyErrorDiscussionId={replyDiscussionErrorKey}
+            replyError={replyDiscussionError}
+            onClearReplyError={onClearReplyDiscussionError}
+            currentUserId={currentUserId}
+            onUpdateDiscussionNote={onUpdateDiscussionNote}
+            onDeleteDiscussionNote={onDeleteDiscussionNote}
+            updatingNoteKey={updatingNoteKey}
+            deletingNoteKey={deletingNoteKey}
+            updateNoteError={updateNoteError}
+            deleteNoteErrorKey={deleteNoteErrorKey}
+            deleteNoteError={deleteNoteError}
+            onClearUpdateNoteError={onClearUpdateNoteError}
+            onClearDeleteNoteError={onClearDeleteNoteError}
+            activeFile={activeFile}
+            onActiveFileChange={selectActiveFile}
+          />
+        )}
       </section>
     </div>
   );
 
-  if (!showChangesTree) {
-    return mainContent;
-  }
-
   return (
-    <DiffSearchProvider findBarVisibility="always">
+    <DiffSearchProvider findBarVisibility={showChangesTree ? "always" : "toggle"}>
       <div className="flex flex-col gap-4">
         <ChangesTreeLayout
           changes={changes}
           tree={
-            <ChangesFileTree
-              changes={changes}
-              discussions={discussions}
-              activeFile={activeFile}
-              onSelectFile={jumpToFile}
-            />
+            showChangesTree ? (
+              <ChangesFileTree
+                changes={changes}
+                discussions={discussions}
+                activeFile={activeFile}
+                onSelectFile={jumpToFile}
+              />
+            ) : null
           }
-          connector={<ChangesActiveFileLink activeFile={activeFile} />}
+          connector={showChangesTree && <ChangesActiveFileLink activeFile={activeFile} />}
         >
           {mainContent}
         </ChangesTreeLayout>

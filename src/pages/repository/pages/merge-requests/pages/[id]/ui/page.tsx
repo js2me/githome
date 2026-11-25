@@ -18,11 +18,7 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
   return (
     <section>
       {model.mrInfo.isLoading && !detailView && (
-        <LoadingState>
-          {model.mrInfo.showPreparingDiffs
-            ? "Подготавливаем diff..."
-            : "Загружаем Merge Request"}
-        </LoadingState>
+        <LoadingState>Загружаем Merge Request</LoadingState>
       )}
 
       {model.mrInfo.showLoadError && (
@@ -35,9 +31,11 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
           mergeRequest={detailView.mergeRequest}
           changes={detailView.changes}
           changesError={detailView.changesError}
+          isPreparingDiffs={detailView.isPreparingDiffs}
+          diffRevision={detailView.diffRevision}
           discussions={detailView.discussions}
           approvals={detailView.approvals}
-          canComment={detailView.mergeRequest.diff_refs != null}
+          canComment={detailView.canCommentOnDiff}
           isSubmittingComment={model.mrInfo.isSubmittingDiffComment}
           submitCommentError={model.mrInfo.submitDiffCommentError}
           onAddComment={model.mrInfo.submitDiffComment}
@@ -75,6 +73,7 @@ export const MergeRequestPage = withViewModel(MergeRequestPageVM, ({ model }) =>
           onCancelRequestChanges={model.mrInfo.cancelRequestChanges}
           diffVersions={detailView.diffVersions}
           selectedDiffVersionId={detailView.selectedDiffVersionId}
+          selectedDiffVersion={detailView.selectedDiffVersion}
           onSelectDiffVersion={model.mrInfo.selectDiffVersion}
           pipelineCard={
             detailView.mergeRequest.head_pipeline && markdownScope.projectId > 0 ? (

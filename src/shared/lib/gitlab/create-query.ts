@@ -1,5 +1,5 @@
-import { createQuery } from "mobx-tanstack-query/preset";
-import type { DefaultError } from "@tanstack/query-core";
+import { createQuery, queryClient } from "mobx-tanstack-query/preset";
+import { skipToken, type DefaultError, type QueryObserverOptions } from "@tanstack/query-core";
 import type { Globals } from "@/globals";
 import { buildGitlabRequestHeaders, resolveGitlabRequestUrl } from "@/shared/api/gitlab";
 import type { GitLabConnection } from "@/shared/lib/gitlab/connection";
@@ -63,6 +63,8 @@ export type CreateGitlabApiQueryOptions<TData, TParams extends object> = {
   globals: Globals;
   abortSignal: AbortSignal;
   params: () => MaybeFalsy<TParams>;
+  queryOptions?: FetchQueryDynamicOptions<TData> &
+    Pick<QueryObserverOptions<TData>, "placeholderData">;
   queryKey: (resolved: { connection: GitLabConnection } & TParams) => readonly unknown[];
   queryFn: (
     resolved: { connection: GitLabConnection; signal: AbortSignal } & TParams,
@@ -72,31 +74,29 @@ export type CreateGitlabApiQueryOptions<TData, TParams extends object> = {
 export const createGitlabApiQuery = <TData, TParams extends object>(
   options: CreateGitlabApiQueryOptions<TData, TParams>,
 ) => {
-  return createQuery<TData, DefaultError, TData>({
-    abortSignal: options.abortSignal,
-    options: () => {
-      const connection = options.globals.stores.settings.activeConnection;
-      const params = options.params();
+  return createQuery<TData, DefaultError, TData>(queryClient, () => {
+    const connection = options.globals.stores.settings.activeConnection;
+    const params = options.params();
 
-      if (!connection || !params) {
-        return { enabled: false, queryKey: ["gitlab-api", null] as const };
-      }
-
+    if (!connection || !params) {
       return {
-        enabled: true,
-        queryKey: options.queryKey({ connection, ...params }),
+        abortSignal: options.abortSignal,
+        enabled: false,
+        queryKey: ["gitlab-api", null] as const,
+        queryFn: skipToken,
+        ...options.queryOptions,
       };
-    },
-    queryFn: async ({ signal }) => {
-      const connection = options.globals.stores.settings.activeConnection;
-      const params = options.params();
+    }
 
-      if (!connection || !params) {
-        throw new Error("GitLab API query is not configured");
-      }
-
-      return options.queryFn({ connection, signal, ...params });
-    },
+    // Keep the request parameters tied to the key even when a fetch is retried.
+    const resolved = { connection, ...params };
+    return {
+      abortSignal: options.abortSignal,
+      enabled: true,
+      queryKey: options.queryKey(resolved),
+      queryFn: ({ signal }) => options.queryFn({ ...resolved, signal }),
+      ...options.queryOptions,
+    };
   });
 };
 

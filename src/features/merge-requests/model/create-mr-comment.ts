@@ -16,7 +16,7 @@ export type CreateMrCommentContext = {
 export interface CreateMrCommentParams {
   globals: Globals;
   readonly params: () => CreateMrCommentContext | false;
-  readonly getMergeRequestDetail: () => GitLabMergeRequestDC | null;
+  readonly getDiffRefs: () => GitLabMergeRequestDC["diff_refs"];
   readonly onDiscussionCreated: (discussion: GitLabDiscussionDC) => void;
 }
 
@@ -28,7 +28,8 @@ export class CreateMrComment {
 
   @computed
   get canComment() {
-    return this.options.getMergeRequestDetail()?.diff_refs != null;
+    const refs = this.options.getDiffRefs();
+    return Boolean(refs?.base_sha && refs.head_sha && refs.start_sha);
   }
 
   @actionBound
@@ -40,7 +41,7 @@ export class CreateMrComment {
   async submit(input: CreateDiffCommentInput) {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();
-    const diffRefs = this.options.getMergeRequestDetail()?.diff_refs;
+    const diffRefs = this.options.getDiffRefs();
 
     if (!connection || !mr) {
       this.submitError = "Merge request не выбран";
