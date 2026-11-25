@@ -56,6 +56,9 @@ const createWindow = async () => {
   appOrigin = new URL(pageUrl).origin;
   mainWindow = new BrowserWindow({
     title: "GitHome",
+    icon: process.platform === "linux"
+      ? path.join(app.isPackaged ? process.resourcesPath : path.join(__dirname, "..", "resources"), "icon.png")
+      : undefined,
     width: 1024,
     height: 720,
     show: false,

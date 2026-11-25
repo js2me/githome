@@ -103,6 +103,9 @@
       "package.json"
     ],
     "linux": {
+      "extraResources": [
+        { "from": "resources/icon.png", "to": "icon.png" }
+      ],
       "target": [
         "deb",
         "AppImage"

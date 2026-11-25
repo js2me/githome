@@ -154,7 +154,7 @@ const CopyMergeRequestLink = ({ url }: { url: string }) => {
   return (
     <>
       <button
-        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-[13px] font-semibold text-fg-default transition hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+        className="glass-control inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold"
         type="button"
         aria-label="Скопировать ссылку на MR"
         onClick={() => void handleCopy()}
@@ -171,7 +171,7 @@ const BranchLabel = ({ branch, label }: { branch: string; label: string }) => {
   const { copyStatus, handleCopy } = useCopyText(branch);
 
   return (
-    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 py-1 pl-2 pr-1 dark:border-slate-700 dark:bg-slate-950">
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-[var(--glass-border)] bg-[var(--glass-control)] py-1 pr-1 pl-2">
       <span className="min-w-0 truncate text-fg-default">{branch}</span>
       <button
         className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 disabled:cursor-wait dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
@@ -335,19 +335,19 @@ export const MergeRequestDetail = ({
       {resolveDiscussionError && (
         <StatusMessage error>{resolveDiscussionError}</StatusMessage>
       )}
-      <header className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-canvas-overlay px-5 py-4 dark:border-slate-800">
+      <header className="glass-panel flex flex-col gap-3 rounded-2xl px-4 py-4 sm:px-5">
         <div className="flex flex-wrap items-start gap-2.5">
-          <span className="shrink-0 text-[22px] font-bold text-fg-muted">
+          <span className="shrink-0 pt-1 font-mono text-base font-semibold text-fg-muted">
             !{mergeRequest.iid}
           </span>
-          <h2 className="m-0 min-w-0 flex-1 text-[22px] leading-snug text-fg-default">
+          <h2 className="m-0 min-w-[min(12rem,100%)] flex-1 text-[22px] leading-snug font-semibold break-words tracking-tight text-fg-default">
             {mergeRequest.title}
           </h2>
           <MrStateBadge mergeRequest={mergeRequest} size="md" />
           <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2.5">
             <CopyMergeRequestLink key={mergeRequest.web_url} url={mergeRequest.web_url} />
             <a
-              className="shrink-0 rounded-lg bg-orange-50 px-3 py-2 text-[13px] font-semibold text-orange-700 no-underline hover:bg-orange-100 dark:bg-orange-950 dark:text-orange-300 dark:hover:bg-orange-900"
+              className="glass-control shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-[var(--glass-accent)] no-underline"
               href={mergeRequest.web_url}
               target="_blank"
               rel="noreferrer"
@@ -396,7 +396,7 @@ export const MergeRequestDetail = ({
         {(mergeRequest.has_conflicts || mergeRequest.merge_status) && (
           <div className="flex flex-wrap items-center gap-2 text-[13px]">
             {mergeRequest.has_conflicts && (
-              <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 dark:bg-red-950 dark:text-red-200">
+              <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 dark:bg-red-950 dark:text-red-300">
                 Есть конфликты
               </span>
             )}
@@ -458,7 +458,7 @@ export const MergeRequestDetail = ({
             Описание
           </button>
           {descriptionExpanded && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900">
+            <div className="glass-panel rounded-2xl p-4">
               <GitLabMarkdown
                 {...markdownScope}
                 text={description}
@@ -534,7 +534,7 @@ export const MergeRequestDetail = ({
             />
           ) : selectedDiffVersionId !== null && (
             <button
-              className="rounded-md border border-slate-300 px-2 py-0.5 text-xs font-medium dark:border-slate-700"
+              className="glass-control rounded-md px-2 py-0.5 text-xs font-medium"
               type="button"
               onClick={() => onSelectDiffVersion(null)}
             >

@@ -1,31 +1,26 @@
-import { action, actionBound, computed, observable, reaction } from "mobx";
+import { action, actionBound, computed, observable } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
+import { createRef } from "yummies/mobx";
 import type { Globals } from "@/globals";
 import type { GitLabProjectDC } from "@/shared/api/gitlab";
 import { isConnectionDraftValid } from "@/shared/lib/gitlab/connection";
+import type { GitLabConnectionItem } from "@/shared/lib/storage";
 import { VM } from "@/shared/lib/view-models/vm";
 import { AppSettings } from "./app-settings";
 
 export class LayoutVM extends VM {
   readonly appSettings: AppSettings;
+  readonly connectionDialog = createRef<HTMLDialogElement>();
+  readonly connectionUrlInput = createRef<HTMLInputElement>();
 
+  @observable accessor draftConnectionId: string | null = null;
   @observable accessor draftGitlabUrl = "";
   @observable accessor draftGitToken = "";
-  @observable accessor isConnectionPopupOpen = false;
 
   constructor(globals: Globals, params: ViewModelParams) {
     super(globals, params);
 
     this.appSettings = new AppSettings(globals);
-
-    reaction(
-      () => this.globals.stores.settings.activeItem,
-      (item) => {
-        this.draftGitlabUrl = item?.gitlabUrl ?? "";
-        this.draftGitToken = item?.gitToken ?? "";
-      },
-      { fireImmediately: true },
-    );
   }
 
   willMount() {
@@ -33,18 +28,8 @@ export class LayoutVM extends VM {
   }
 
   @computed
-  get canAdd() {
+  get canSubmitConnection() {
     return isConnectionDraftValid(this.draftGitlabUrl, this.draftGitToken);
-  }
-
-  @computed
-  get canSave() {
-    return Boolean(this.globals.stores.settings.activeId) && this.canAdd;
-  }
-
-  @computed
-  get canRemove() {
-    return Boolean(this.globals.stores.settings.activeId);
   }
 
   @computed
@@ -98,36 +83,15 @@ export class LayoutVM extends VM {
   }
 
   @computed
-  get isFilesOpen() {
-    return this.globals.routes.files.isOpened;
-  }
-
-  @computed
-  get isFilesNavActive() {
-    return this.isFilesOpen;
-  }
-
-  @computed
-  get isMergeRequestsOpen() {
-    return (
-      this.globals.routes.mergeRequests.isOpened ||
-      this.isMergeRequestDetailOpen
-    );
-  }
-
-  @computed
-  get isMergeRequestsNavActive() {
-    return this.isMergeRequestsOpen && !this.isMergeRequestDetailOpen;
-  }
-
-  @computed
-  get isPipelinesOpen() {
-    return this.globals.routes.pipelines.isOpened;
-  }
-
-  @computed
-  get isAnalyticsOpen() {
-    return this.globals.routes.analytics.isOpened;
+  get currentSection() {
+    const { routes } = this.globals;
+    if (routes.mergeRequests.isOpened || this.isMergeRequestDetailOpen) {
+      return { label: "Merge requests", open: this.openMergeRequests };
+    }
+    if (routes.files.isOpened) return { label: "Files", open: this.openFiles };
+    if (routes.pipelines.isOpened) return { label: "Pipelines", open: this.openPipelines };
+    if (routes.analytics.isOpened) return { label: "Аналитика", open: this.openAnalytics };
+    return null;
   }
 
   @computed
@@ -169,78 +133,56 @@ export class LayoutVM extends VM {
     this.draftGitToken = value;
   }
 
-  @action
+  @actionBound
   openConnectionPopup() {
-    this.isConnectionPopupOpen = true;
-  }
-
-  @action
-  closeConnectionPopup() {
-    this.isConnectionPopupOpen = false;
+    this.setConnectionDraft(this.globals.stores.settings.activeItem);
+    this.connectionDialog.current?.showModal();
+    if (!this.draftConnectionId) this.connectionUrlInput.current?.focus();
   }
 
   @actionBound
-  toggleConnectionPopup() {
-    this.isConnectionPopupOpen = !this.isConnectionPopupOpen;
+  closeConnectionPopup() {
+    this.connectionDialog.current?.close();
   }
 
   @actionBound
   selectConnection(id: string) {
-    if (!id) {
-      this.globals.stores.settings.setActiveConnection(null);
-      return;
-    }
-
-    this.globals.stores.settings.setActiveConnection(id);
+    const settings = this.globals.stores.settings;
+    settings.setActiveConnection(id);
+    this.setConnectionDraft(settings.activeItem);
   }
 
   @actionBound
   selectNewConnection() {
-    this.selectConnection("");
-  }
-
-  @actionBound
-  addConnection() {
-    if (!this.canAdd) {
-      return;
-    }
-
-    this.globals.stores.settings.addConnection(
-      this.draftGitlabUrl,
-      this.draftGitToken,
-    );
+    this.setConnectionDraft(null);
+    this.connectionUrlInput.current?.focus();
   }
 
   @actionBound
   saveConnection() {
-    const activeId = this.globals.stores.settings.activeId;
-
-    if (!activeId || !this.canSave) {
-      return;
+    if (!this.canSubmitConnection) return;
+    const settings = this.globals.stores.settings;
+    if (this.draftConnectionId) {
+      settings.updateConnection(this.draftConnectionId, this.draftGitlabUrl, this.draftGitToken);
+    } else {
+      settings.addConnection(this.draftGitlabUrl, this.draftGitToken);
     }
-
-    this.globals.stores.settings.updateConnection(
-      activeId,
-      this.draftGitlabUrl,
-      this.draftGitToken,
-    );
+    this.closeConnectionPopup();
   }
 
   @actionBound
   removeConnection() {
-    const activeId = this.globals.stores.settings.activeId;
-
-    if (!activeId) {
-      return;
-    }
-
-    this.globals.stores.settings.removeConnection(activeId);
+    if (!this.draftConnectionId) return;
+    const settings = this.globals.stores.settings;
+    settings.removeConnection(this.draftConnectionId);
+    this.setConnectionDraft(settings.activeItem);
   }
 
   @action
-  clearDraft() {
-    this.draftGitlabUrl = "";
-    this.draftGitToken = "";
+  private setConnectionDraft(item: GitLabConnectionItem | null) {
+    this.draftConnectionId = item?.id ?? null;
+    this.draftGitlabUrl = item?.gitlabUrl ?? "";
+    this.draftGitToken = item?.gitToken ?? "";
   }
 
   @actionBound

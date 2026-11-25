@@ -1,3 +1,5 @@
+import { BookOpen, ChartLine, Code, CodePullRequest, Timeline } from "@gravity-ui/icons";
+import { ProjectAvatar } from "@/shared/ui/project-avatar";
 import { withViewModel } from "mobx-view-model-react";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { GitLabMarkdown } from "@/shared/ui/gitlab-markdown/gitlab-markdown";
@@ -49,7 +51,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
       <RouteView route={model.globals.routes.mergeRequest} view={MergeRequestPage} />
       <RouteView route={model.globals.routes.pipelines} view={PipelinesPage} />
       <RouteView route={model.globals.routes.analytics} view={AnalyticsPage} />
-      <section>
+      <section className="mx-auto max-w-[1180px]">
         {model.isLoading && !project && (
           <StatusMessage>Загружаем репозиторий...</StatusMessage>
         )}
@@ -60,42 +62,36 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
 
         {project && (
           <>
-            <h2 className="mb-4 text-[22px] font-semibold">{project.name}</h2>
-            <p className="mb-4 break-all text-sm text-slate-500 sm:break-normal">{project.path_with_namespace}</p>
-
-            <div className="mb-4 flex flex-wrap gap-2">
-              <button
-                className="cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
-                type="button"
-                onClick={model.openFiles}
-              >
-                Files
-              </button>
-
-              <button
-                className="cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
-                type="button"
-                onClick={model.openMergeRequests}
-              >
-                Merge requests
-              </button>
-
-              <button
-                className="cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
-                type="button"
-                onClick={model.openPipelines}
-              >
-                Pipelines
-              </button>
-
-              <button
-                className="cursor-pointer rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950"
-                type="button"
-                onClick={model.openAnalytics}
-              >
-                Аналитика
-              </button>
-            </div>
+            <header className="glass-panel mb-5 flex flex-wrap items-center justify-between gap-5 rounded-2xl p-5 sm:p-6">
+              <div className="flex min-w-0 items-center gap-4">
+                <ProjectAvatar
+                  className="size-12 shrink-0 rounded-xl object-cover"
+                  id={project.id}
+                  avatarUrl={project.avatar_url}
+                  name={project.name}
+                />
+                <div className="min-w-0">
+                  <h2 className="break-words text-2xl leading-tight font-semibold tracking-tight">{project.name}</h2>
+                  <p className="mt-1 truncate text-sm text-fg-muted" title={projectPath}>{projectPath}</p>
+                </div>
+              </div>
+              <nav aria-label="Разделы проекта" className="flex flex-wrap gap-2">
+                <button type="button" onClick={model.openMergeRequests} className="glass-primary inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold">
+                  <CodePullRequest className="size-4" aria-hidden />
+                  <span>Merge requests</span>
+                </button>
+                {[
+                  { label: "Files", Icon: Code, open: model.openFiles },
+                  { label: "Pipelines", Icon: Timeline, open: model.openPipelines },
+                  { label: "Аналитика", Icon: ChartLine, open: model.openAnalytics },
+                ].map(({ label, Icon, open }) => (
+                  <button key={label} type="button" onClick={open} className="glass-control inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold">
+                    <Icon className="size-4" aria-hidden />
+                    {label}
+                  </button>
+                ))}
+              </nav>
+            </header>
 
             {model.isReadmeLoading && (
               <StatusMessage>Загружаем README...</StatusMessage>
@@ -110,8 +106,8 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
             )}
 
             {model.readme && (
-              <article className="mt-2 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900">
-                <h3 className="mb-3 text-sm text-slate-500">{model.readme.file_name}</h3>
+              <article className="glass-panel mt-2 rounded-2xl p-5 sm:p-6">
+                <h3 className="mb-4 flex items-center gap-2 border-b border-[var(--glass-border)] pb-3 text-sm font-medium text-fg-muted"><BookOpen className="size-4" aria-hidden />{model.readme.file_name}</h3>
                 <GitLabMarkdown
                   connection={connection}
                   projectPath={projectPath}

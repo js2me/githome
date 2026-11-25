@@ -31,7 +31,7 @@ export const AppUpdatePanel = observer(({ model }: { model: AppUpdates }) => {
       <h3 id="settings-updates" className="text-lg font-semibold">Обновления GitHome</h3>
       <p className="mt-1 mb-5 text-sm text-fg-muted">Последняя стабильная версия с GitHub Releases.</p>
 
-      <div className="rounded-xl border border-border-default p-4 sm:p-5">
+      <div className="glass-panel rounded-xl p-4 sm:p-5">
         <dl className="grid gap-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-fg-muted">Установленная версия</dt>
@@ -64,7 +64,7 @@ export const AppUpdatePanel = observer(({ model }: { model: AppUpdates }) => {
               type="button"
               disabled={model.isBusy}
               onClick={() => void model.perform()}
-              className="rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover disabled:cursor-wait disabled:opacity-60"
+              className="glass-primary rounded-lg px-3.5 py-2 text-sm font-semibold"
             >
               {model.isAndroid && status === "ready" ? "Установить обновление"
                 : updateActions[status] ?? "Проверить обновления"}

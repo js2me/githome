@@ -8,16 +8,16 @@ export const LoadingState = ({
   children: React.ReactNode;
 }) => (
   <div
+    role="status"
     className={cn(
-      "flex min-h-[60vh] flex-col items-center justify-center",
+      "glass-panel flex min-h-52 flex-col items-center justify-center gap-3 rounded-2xl p-8",
       className,
     )}
   >
     <div
-      className="size-32 animate-spin rounded-full border-4 border-slate-200 border-t-brand dark:border-slate-700"
-      role="status"
-      aria-label="Загрузка"
+      className="size-6 rounded-full border-2 border-[var(--glass-border)] border-t-[var(--glass-accent)] motion-safe:animate-spin"
+      aria-hidden
     />
-    <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">{children}</p>
+    <p className="text-sm text-fg-muted">{children}</p>
   </div>
 );

@@ -159,7 +159,7 @@ const DiscussionNote = ({
     <article
       className={cn(
         "flex gap-3 px-4 py-3.5",
-        note.system && "bg-slate-50 dark:bg-slate-950",
+        note.system && "bg-[var(--glass-control)]",
         isReply && "pb-3.5 pl-[52px] pt-0",
       )}
     >
@@ -247,7 +247,7 @@ const DiscussionNote = ({
 
             <div className="mt-2.5 flex gap-2">
               <button
-                className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 text-[13px] font-semibold text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="glass-primary rounded-lg px-3.5 py-2 text-[13px] font-semibold"
                 type="button"
                 disabled={isSaving || !editBody.trim()}
                 onClick={() => {
@@ -257,7 +257,7 @@ const DiscussionNote = ({
                 {isSaving ? "Сохранение..." : "Сохранить"}
               </button>
               <button
-                className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
+                className="glass-control rounded-lg px-3.5 py-2 text-[13px] font-semibold"
                 type="button"
                 disabled={isSaving}
                 onClick={handleCancelEdit}
@@ -339,7 +339,7 @@ const DiscussionThread = ({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-gray-900",
+        "glass-panel overflow-hidden rounded-xl",
         resolved && "border-green-200 dark:border-green-900",
       )}
     >
@@ -347,7 +347,7 @@ const DiscussionThread = ({
         <div className="flex items-center justify-between gap-3 border-b border-green-200 bg-green-50 px-3.5 py-2 text-xs font-bold text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
           <span>Тред разрешён</span>
           <button
-            className="cursor-pointer rounded-md border border-green-200 bg-white px-2 py-1 text-[11px] font-semibold text-green-800 transition hover:bg-green-100 dark:border-green-800 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900"
+            className="glass-control rounded-md px-2 py-1 text-[11px] font-semibold text-green-800 dark:text-green-300"
             type="button"
             aria-expanded={expanded}
             onClick={() => setExpanded((value) => !value)}

@@ -10,7 +10,7 @@ const diffFileCopyButtonVariants = cva(
       compact: {
         true: "h-5 w-5 text-[var(--color-fg-subtle)] hover:bg-[var(--color-accent-emphasis-hover)] hover:text-[var(--diff-code-text)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)] [&_svg]:h-3 [&_svg]:w-3",
         false:
-          "h-7 w-7 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800",
+          "glass-control size-7",
       },
     },
     defaultVariants: {

@@ -5,7 +5,7 @@ import type { FilesPageVM } from "../../model";
 import { CommitsVirtualList } from "./commits-virtual-list";
 
 const pickerButtonClassName =
-  "inline-flex max-w-[min(100vw-12rem,320px)] items-center gap-1.5 rounded-[10px] border px-3 py-1.5 text-sm font-semibold transition";
+  "glass-control inline-flex max-w-[min(100vw-12rem,320px)] items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-sm font-semibold";
 
 export const CommitPicker = observer(({ model }: { model: FilesPageVM }) => {
   const { commitsModel } = model;
@@ -22,9 +22,7 @@ export const CommitPicker = observer(({ model }: { model: FilesPageVM }) => {
             ref={setTriggerRef}
             className={cn(
               pickerButtonClassName,
-              model.isCommitPickerOpen
-                ? "border-brand bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
-                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950",
+              model.isCommitPickerOpen && "border-[var(--glass-accent)] bg-[var(--glass-selected)] text-[var(--glass-accent)]",
             )}
             type="button"
             onClick={model.toggleCommitPicker}

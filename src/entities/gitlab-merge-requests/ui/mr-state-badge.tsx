@@ -2,14 +2,14 @@ import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
 import { cva, type VariantProps } from "yummies/css";
 
 export const mrStateBadgeVariants = cva(
-  "shrink-0 rounded-full font-bold uppercase",
+  "inline-flex shrink-0 items-center rounded-full border font-semibold leading-none",
   {
     variants: {
       state: {
-        draft: "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-        opened: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-        merged: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-        closed: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+        draft: "border-[var(--glass-border)] bg-[var(--glass-control)] text-fg-muted",
+        opened: "border-green-700/20 bg-green-100/55 text-green-800 dark:border-green-300/25 dark:bg-green-900/35 dark:text-green-300",
+        merged: "border-blue-700/20 bg-blue-100/55 text-blue-700 dark:border-blue-300/25 dark:bg-blue-950/35 dark:text-blue-300",
+        closed: "border-red-700/20 bg-red-100/55 text-red-800 dark:border-red-300/25 dark:bg-red-950/35 dark:text-red-300",
       },
       size: {
         sm: "px-2 py-1 text-[11px]",

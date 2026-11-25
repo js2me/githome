@@ -164,8 +164,8 @@ export const resolveGitlabRequestUrl = (
     return `${baseUrl}${path}`;
   }
 
-  const { host } = getGitlabOrigin(gitlabUrl);
-  return `${GIT_PROXY_PREFIX}/${host}${path}`;
+  const { host, pathname } = new URL(baseUrl);
+  return `${GIT_PROXY_PREFIX}/${host}${pathname.replace(/\/+$/, "")}${path}`;
 };
 
 export const buildGitlabRequestHeaders = (

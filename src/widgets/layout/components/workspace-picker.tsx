@@ -119,7 +119,7 @@ export const WorkspacePicker = observer(
         <button
           ref={triggerRef}
           className={cn(
-            "relative z-10 inline-flex h-8 cursor-pointer items-center gap-2 rounded-full border border-border-default bg-canvas-overlay px-3 text-xs font-semibold text-fg-default hover:text-brand focus-visible:outline-2 focus-visible:outline-brand",
+            "glass-control relative z-10 inline-flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-semibold",
             isExpanded && "rounded-b-none border-b-transparent",
           )}
           type="button"
@@ -129,6 +129,7 @@ export const WorkspacePicker = observer(
         >
           <Layers className="size-3.5 text-fg-muted" aria-hidden="true" />
           Рабочая область
+          <span aria-hidden className="rounded-md bg-[var(--glass-selected)] px-1.5 text-[11px] text-[var(--glass-accent)]">{store.items.length}</span>
           <ChevronDown
             className={cn("size-3 text-fg-muted motion-safe:transition-transform", isExpanded && "rotate-180")}
             aria-hidden="true"
@@ -139,12 +140,12 @@ export const WorkspacePicker = observer(
           <nav
             id={navigationId}
             aria-label="Навигационное дерево"
-            className="absolute top-full left-0 -mt-px flex max-h-[min(55dvh,24rem)] w-80 max-w-[calc(100vw-1.5rem)] origin-top-left flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl rounded-tl-none border border-border-default bg-canvas-overlay p-3 shadow-xl motion-safe:transition-[opacity,scale] motion-safe:duration-150 motion-safe:starting:scale-y-95 motion-safe:starting:opacity-0"
+            className="absolute top-full left-0 -mt-px flex max-h-[min(55dvh,24rem)] w-80 max-w-[calc(100vw-1.5rem)] origin-top-left flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain glass-overlay rounded-2xl rounded-tl-none p-3 motion-safe:transition-[opacity,scale] motion-safe:duration-150 motion-safe:starting:scale-y-95 motion-safe:starting:opacity-0"
           >
             {groups.map((group) => (
               <section className="min-w-0 shrink-0" key={group.id}>
                 <h3
-                  className="mb-1 truncate px-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500"
+                  className="mb-1 truncate px-2 text-[11px] font-semibold text-fg-muted"
                   title={group.title}
                 >
                   {group.kind ? (
@@ -174,8 +175,8 @@ export const WorkspacePicker = observer(
                           className={cn(
                             "group flex items-center rounded-lg transition",
                             isActive
-                              ? "bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-200"
-                              : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+                              ? "bg-[var(--glass-selected)] text-[var(--glass-accent)]"
+                              : "text-fg-default hover:bg-[var(--glass-hover)]",
                           )}
                         >
                           <button

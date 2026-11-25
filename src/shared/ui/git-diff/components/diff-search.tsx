@@ -248,7 +248,7 @@ class DiffSearchHighlightStore {
 }
 
 const diffSearchControlButtonClassName =
-  "inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-[var(--color-border-default)] bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-[var(--color-canvas-muted)]";
+  "glass-control inline-flex size-7 shrink-0 items-center justify-center rounded-md";
 
 const DiffSearchInput = memo(
   ({
@@ -273,13 +273,13 @@ const DiffSearchInput = memo(
     return (
       <span
         className={cn(
-          "inline-grid max-w-full",
-          isMini ? "min-w-[80px]" : "min-w-[180px]",
+          "inline-grid min-w-0 max-w-full flex-1 grid-cols-[minmax(0,1fr)]",
+          isMini ? "sm:min-w-20" : "sm:min-w-60",
         )}
       >
         <span
           className={cn(
-            "invisible col-start-1 row-start-1 whitespace-pre border border-transparent font-mono",
+            "invisible col-start-1 row-start-1 overflow-hidden whitespace-pre border border-transparent font-mono",
             isMini ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-sm",
           )}
           aria-hidden
@@ -289,10 +289,11 @@ const DiffSearchInput = memo(
         <input
           ref={inputRef}
           className={cn(
-            "col-start-1 row-start-1 w-full min-w-0 rounded-md border border-[var(--color-border-default)] bg-white font-mono text-[var(--color-fg-default)] outline-none focus:border-brand focus:shadow-[0_0_0_2px_var(--color-brand-focus-shadow)] dark:bg-canvas-default",
+            "glass-input col-start-1 row-start-1 w-full min-w-0 rounded-md font-mono",
             isMini ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-sm",
           )}
           placeholder={isMini ? undefined : "Поиск по файлам и коду..."}
+          aria-label="Поиск по файлам и коду"
           type="search"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
@@ -352,20 +353,11 @@ const DiffSearchControls = memo(
           onNext={onNext}
           onPrevious={onPrevious}
         />
-        <span
-          className={cn(
-            "shrink-0 text-slate-500 dark:text-slate-400",
-            isMini ? "text-[11px]" : "text-xs",
-          )}
-        >
-          {query.trim()
-            ? matchCount > 0
-              ? `${activeIndex + 1} / ${matchCount}`
-              : "Нет совпадений"
-            : isMini
-              ? null
-              : "Введите текст"}
-        </span>
+        {query.trim() && (
+          <span className={cn("shrink-0 text-fg-muted", isMini ? "text-[11px]" : "text-xs")}>
+            {matchCount > 0 ? `${activeIndex + 1} / ${matchCount}` : "Нет совпадений"}
+          </span>
+        )}
         <button
           className={cn(
             diffSearchControlButtonClassName,
@@ -419,7 +411,7 @@ const DiffSearchFindBar = memo(
   }) => (
     <div
       ref={barRef}
-      className="mb-5 flex w-fit max-w-[60vw] items-center gap-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-canvas-subtle)] px-3 py-2"
+      className="glass-panel mb-5 flex w-full max-w-full items-center gap-1.5 rounded-xl p-2 sm:w-fit sm:max-w-[60vw] sm:gap-2"
     >
       <DiffSearchControls
         variant="full"
@@ -450,8 +442,8 @@ export const DiffSearchStickyMiniBar = memo(() => {
   }
 
   return (
-    <div className="pointer-events-none fixed right-8 top-[62px] z-40">
-      <div className="pointer-events-auto flex w-fit max-w-[60vw] items-center gap-1.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-canvas-subtle)] px-2 py-1.5">
+    <div className="pointer-events-none fixed top-[62px] right-3 z-40 sm:right-8">
+      <div className="glass-overlay pointer-events-auto flex w-fit max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-lg px-2 py-1.5 sm:max-w-[60vw]">
         <DiffSearchControls
           variant="mini"
           query={ui.query}

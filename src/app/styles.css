@@ -90,4 +90,113 @@
   select {
     font: inherit;
   }
+
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--glass-accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .glass-canvas {
+    background-color: var(--glass-canvas);
+    background-image:
+      radial-gradient(ellipse 60rem 36rem at 5% -10rem, var(--glass-glow-indigo), transparent),
+      radial-gradient(ellipse 54rem 40rem at 100% 5rem, var(--glass-glow-teal), transparent);
+    background-repeat: no-repeat;
+  }
+
+  .glass-panel,
+  .glass-overlay,
+  .glass-control,
+  .glass-input {
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px var(--glass-highlight);
+  }
+
+  .glass-panel {
+    background-color: var(--glass-surface);
+    box-shadow: inset 0 1px var(--glass-highlight), var(--glass-shadow);
+  }
+
+  .glass-bar,
+  .glass-overlay {
+    backdrop-filter: blur(18px) saturate(125%);
+  }
+
+  .glass-bar {
+    background-color: var(--glass-bar);
+    border-color: var(--glass-border);
+  }
+
+  .glass-overlay {
+    background-color: var(--glass-overlay);
+    box-shadow: inset 0 1px var(--glass-highlight), var(--glass-float-shadow);
+  }
+
+  dialog.glass-overlay::backdrop {
+    background-color: rgb(17 23 37 / 0.5);
+  }
+
+  .glass-control,
+  .glass-input {
+    background-color: var(--glass-control);
+    color: var(--color-fg-default);
+  }
+
+  .glass-control,
+  .glass-primary {
+    cursor: pointer;
+    transition: background-color 140ms, border-color 140ms, box-shadow 140ms;
+  }
+
+  .glass-primary {
+    border: 1px solid transparent;
+    background: linear-gradient(160deg, var(--glass-primary-top), var(--glass-primary-bottom));
+    color: var(--glass-primary-text);
+    box-shadow: inset 0 1px rgb(255 255 255 / 0.24), 0 2px 5px rgb(114 53 24 / 0.16);
+  }
+
+  @media (hover: hover) {
+    .glass-control:not(:disabled):hover {
+      background-color: var(--glass-hover);
+    }
+
+    .glass-primary:not(:disabled):hover {
+      box-shadow: inset 0 0 0 100vmax rgb(0 0 0 / 0.07), inset 0 1px rgb(255 255 255 / 0.24);
+    }
+  }
+
+  .glass-input::placeholder {
+    color: var(--color-fg-subtle);
+    opacity: 1;
+  }
+
+  .glass-input:focus-within {
+    border-color: var(--glass-accent);
+    outline: 2px solid var(--color-brand-focus-shadow);
+  }
+
+  :is(.glass-control, .glass-primary, .glass-input):disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .glass-bar,
+    .glass-overlay,
+    .glass-panel,
+    .glass-control,
+    .glass-input {
+      background-color: var(--color-canvas-overlay);
+      backdrop-filter: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glass-control,
+    .glass-primary {
+      transition: none;
+    }
+  }
 }

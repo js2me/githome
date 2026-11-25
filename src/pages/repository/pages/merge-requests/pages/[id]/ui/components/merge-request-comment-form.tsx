@@ -41,7 +41,7 @@ export const MergeRequestCommentForm = ({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-gray-900">
+    <div className="glass-panel overflow-hidden rounded-xl">
       <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
         <h3 className="m-0 text-sm font-semibold text-slate-800 dark:text-slate-200">
           Комментарий к merge request
@@ -67,7 +67,7 @@ export const MergeRequestCommentForm = ({
 
         <div className="mt-3">
           <button
-            className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 text-[13px] font-semibold text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="glass-primary rounded-lg px-3.5 py-2 text-[13px] font-semibold"
             type="button"
             disabled={isSubmitting || !body.trim()}
             onClick={() => {

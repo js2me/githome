@@ -13,6 +13,7 @@ export interface GitLabProjectDC {
 }
 
 export interface GitLabMergeRequestDC {
+  project_id?: number;
   id: number;
   iid: number;
   title: string;

@@ -176,7 +176,7 @@ const AuthorChangesChart = ({
 };
 
 const METRIC_CARD_CLASS =
-  "rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900";
+  "glass-panel rounded-2xl p-4";
 
 export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
   const { commits, mergedMergeRequests } = model.analytics;
@@ -196,7 +196,7 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
         <label className="flex flex-col gap-1 text-xs font-semibold text-slate-500">
           Период
           <select
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-gray-900 dark:text-slate-200"
+            className="glass-input rounded-lg px-3 py-2 text-sm"
             value={model.period}
             onChange={(event) => model.setPeriod(event.target.value)}
           >
@@ -258,7 +258,7 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
             </article>
           </div>
 
-          <article className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900 sm:p-5">
+          <article className="glass-panel rounded-2xl p-4 sm:p-5">
             <div className="mb-2">
               <h3 className="m-0 text-base font-semibold text-slate-900 dark:text-slate-100">
                 Активность по времени
@@ -273,7 +273,7 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
             />
           </article>
 
-          <article className="mt-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900 sm:p-5">
+          <article className="mt-4 glass-panel rounded-2xl p-4 sm:p-5">
             <div className="mb-2">
               <h3 className="m-0 text-base font-semibold text-slate-900 dark:text-slate-100">
                 Изменённые файлы по авторам

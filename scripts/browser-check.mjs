@@ -19,7 +19,7 @@
  * - scroll and select files in a 255-file merge request
  * - compare PNG and JPEG revisions and open either side in the zoom viewer
  * - submit a file-level comment and render the new thread on the file
- * - copy the GitLab URL from the MR header
+ * - copy the GitLab URL from the MR header and open an MR by a pasted URL
  * - avatar titles map to the right authors, zero page/console errors
  */
 import puppeteer from 'puppeteer-core';
@@ -654,6 +654,22 @@ try {
     mr(156, 'Image MR', AUTHORS[0]).web_url);
 } catch (error) {
   check('copying the MR link', false, String(error));
+}
+
+try {
+  const dialog = 'dialog[open][aria-labelledby="open-mr-title"]';
+  await page.click('button[aria-label="Открыть MR"]');
+  await page.waitForSelector(dialog);
+  check('open MR dialog focuses the link field', await page.$eval(
+    dialog + ' input', input => input === document.activeElement,
+  ));
+  await page.keyboard.type('https://gitlab.mock/group/alpha/-/merge_requests/3/diffs#note_42');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => location.pathname === '/repository/1/merge-requests/3' &&
+    [...document.querySelectorAll('main h2')].some(heading => heading.textContent === 'Mock MR #3'));
+  check('pasted GitLab link opens its MR inside GitHome', !(await page.$(dialog)));
+} catch (error) {
+  check('opening a GitLab MR by URL', false, String(error));
 }
 
 check('no page errors', pageErrors.length === 0, pageErrors[0]?.slice(0, 150));

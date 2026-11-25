@@ -17,10 +17,8 @@ export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
           <button
             ref={setTriggerRef}
             className={cn(
-              "inline-flex max-w-[min(100vw-12rem,320px)] items-center gap-1.5 rounded-[10px] border px-3 py-1.5 text-sm font-semibold transition",
-              model.isBranchPickerOpen
-                ? "border-brand bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
-                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-950",
+              "glass-control inline-flex max-w-[min(100vw-12rem,320px)] items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-sm font-semibold",
+              model.isBranchPickerOpen && "border-[var(--glass-accent)] bg-[var(--glass-selected)] text-[var(--glass-accent)]",
             )}
             type="button"
             onClick={model.toggleBranchPicker}

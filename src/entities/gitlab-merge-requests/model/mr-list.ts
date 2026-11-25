@@ -1,39 +1,57 @@
-import { actionBound, computed } from "mobx";
+import { actionBound, computed, observable } from "mobx";
 import { gitlabApi } from "@/shared/api/gitlab";
 import type { GitLabMergeRequestDC, GitLabProjectDC } from "@/shared/api/gitlab";
 import {
   createGitlabApiQuery,
   createInfiniteGitlabQuery,
 } from "@/shared/lib/gitlab/create-query";
-import { Globals } from "@/globals";
+import type { Globals } from "@/globals";
+
+export const MR_STATES = [
+  { id: "opened", label: "Открытые", empty: "Открытых merge requests пока нет" },
+  { id: "merged", label: "Слитые", empty: "Слитых merge requests пока нет" },
+  { id: "closed", label: "Закрытые", empty: "Закрытых merge requests пока нет" },
+] as const;
+
+type MrState = (typeof MR_STATES)[number];
 
 export interface MrListParams {
   globals: Globals;
-  readonly abortSignal: AbortSignal;
+  readonly unmountSignal: AbortSignal;
   readonly projectId: number | null;
   readonly selectedProject: GitLabProjectDC | null;
   readonly mergeRequestIid: number | null;
 }
 
-
 export class MrList {
   mergeRequestsQuery;
   mergeRequestApprovalCountsQuery;
+  @observable accessor searchText: string;
+  private searchTimer?: ReturnType<typeof setTimeout>;
 
   constructor(private params: MrListParams) {
+    this.searchText = this.appliedSearch;
+    params.unmountSignal.addEventListener("abort", () => clearTimeout(this.searchTimer), { once: true });
+
     this.mergeRequestsQuery = createInfiniteGitlabQuery<GitLabMergeRequestDC>({
       globals: params.globals,
-      abortSignal: params.abortSignal,
+      abortSignal: params.unmountSignal,
       params: () => {
         const projectId = params.projectId;
-        if (projectId === null) {
+        if (projectId === null || !params.globals.routes.mergeRequests.isOpened) {
           return false;
         }
 
+        const search = this.appliedSearch;
+        const iid = search.match(/^!?(\d+)$/)?.[1];
+        const title = iid ? undefined : search || undefined;
         return {
           path: `/projects/${projectId}/merge_requests`,
           query: {
-            state: "opened",
+            state: this.activeState.id,
+            "iids[]": iid,
+            search: title,
+            in: title ? "title" : undefined,
             order_by: "updated_at",
             sort: "desc",
             per_page: 20,
@@ -47,7 +65,7 @@ export class MrList {
       { project: GitLabProjectDC; mergeRequestIids: number[] }
     >({
       globals: params.globals,
-      abortSignal: params.abortSignal,
+      abortSignal: params.unmountSignal,
       params: () => {
         const project = params.selectedProject;
         const mergeRequestIids = this.mergeRequests.map(
@@ -75,6 +93,26 @@ export class MrList {
           signal,
         ),
     });
+  }
+
+  @computed
+  get appliedSearch() {
+    const search = this.params.globals.query.data.q;
+    return typeof search === "string" ? search.trim() : "";
+  }
+
+  @computed
+  get activeState() {
+    const state = this.params.globals.query.data.state;
+    return MR_STATES.find(({ id }) => id === state) ?? MR_STATES[0];
+  }
+
+  @computed
+  get resultCount() {
+    const pages = this.mergeRequestsQuery.data?.pages;
+    if (!pages?.length) return null;
+    const count = this.mergeRequests.length;
+    return pages[0].total ?? (this.canLoadMore ? `${count}+` : count);
   }
 
   @computed
@@ -146,6 +184,43 @@ export class MrList {
   }
 
   @actionBound
+  setSearchText(value: string) {
+    this.searchText = value;
+    clearTimeout(this.searchTimer);
+    if (value.trim()) {
+      this.searchTimer = setTimeout(this.applySearch, 250);
+    } else {
+      this.applySearch();
+    }
+  }
+
+  @actionBound
+  applySearch() {
+    if (this.searchText.trim() !== this.appliedSearch) {
+      this.setState(this.activeState);
+    }
+  }
+
+  @actionBound
+  setState(state: MrState) {
+    clearTimeout(this.searchTimer);
+    if (!this.params.globals.routes.mergeRequests.isOpened) return;
+    this.params.globals.query.update({
+      state: state.id === "opened" ? null : state.id,
+      q: this.searchText.trim() || null,
+    }, true);
+  }
+
+  @actionBound
+  retry() {
+    if (this.mergeRequestsQuery.isFetchNextPageError) {
+      this.loadMore();
+    } else {
+      void this.mergeRequestsQuery.refetch();
+    }
+  }
+
+  @actionBound
   loadMore() {
     if (this.canLoadMore && !this.isFetching) {
       void this.mergeRequestsQuery.fetchNextPage();
@@ -157,7 +232,15 @@ export class MrList {
     const projectId = this.params.projectId;
     const project = this.params.selectedProject;
     const connectionId = this.params.globals.stores.settings.activeId;
-    if (projectId === null || !project || !connectionId) {
+    if (projectId === null || !connectionId) {
+      return;
+    }
+
+    if (!project) {
+      void this.params.globals.routes.mergeRequest.open({
+        projectId: String(projectId),
+        mergeRequestIid: String(mergeRequest.iid),
+      });
       return;
     }
 

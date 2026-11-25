@@ -8,6 +8,25 @@
   --color-brand-border-accent: rgb(252 109 38 / 0.7);
   --color-card-hover-shadow: rgb(15 23 42 / 0.06);
 
+  /* Application chrome. Diff and syntax colors below remain opaque. */
+  --glass-canvas: #f1f3f8;
+  --glass-glow-indigo: rgb(154 162 229 / 0.27);
+  --glass-glow-teal: rgb(132 204 201 / 0.24);
+  --glass-surface: rgb(255 255 255 / 0.66);
+  --glass-overlay: rgb(250 252 255 / 0.94);
+  --glass-bar: rgb(250 252 255 / 0.76);
+  --glass-control: rgb(255 255 255 / 0.55);
+  --glass-hover: rgb(226 232 243 / 0.8);
+  --glass-border: rgb(71 89 122 / 0.19);
+  --glass-highlight: rgb(255 255 255 / 0.94);
+  --glass-shadow: 0 6px 24px -14px rgb(34 49 79 / 0.22);
+  --glass-float-shadow: 0 14px 46px -12px rgb(34 49 79 / 0.27);
+  --glass-selected: rgb(255 225 204 / 0.8);
+  --glass-accent: #a43d11;
+  --glass-primary-top: #c94c1b;
+  --glass-primary-bottom: #af3e16;
+  --glass-primary-text: #fff;
+
   /* Brand palette (orange — не зависит от UI-темы) */
   --color-orange-50: #fff7ed;
   --color-orange-100: #ffedd5;
@@ -32,9 +51,9 @@
   --color-border-subtle: #b8bac4;
 
   /* Text */
-  --color-fg-default: #343b58;
-  --color-fg-muted: #6c6e75;
-  --color-fg-subtle: #9da0ab;
+  --color-fg-default: #202c40;
+  --color-fg-muted: #526078;
+  --color-fg-subtle: #616f83;
   --color-fg-on-emphasis: #e6e7ed;
   --color-fg-link: #2959aa;
   --color-fg-code: #343b58;
@@ -180,6 +199,24 @@
 
 /* Тёмная тема — только через класс .dark (ThemeManager в Globals) */
 .dark {
+  --glass-canvas: #151923;
+  --glass-glow-indigo: rgb(98 95 158 / 0.28);
+  --glass-glow-teal: rgb(52 120 126 / 0.21);
+  --glass-surface: rgb(36 42 57 / 0.78);
+  --glass-overlay: rgb(37 43 57 / 0.95);
+  --glass-bar: rgb(28 34 47 / 0.82);
+  --glass-control: rgb(63 72 92 / 0.45);
+  --glass-hover: rgb(79 91 119 / 0.46);
+  --glass-border: rgb(181 198 229 / 0.18);
+  --glass-highlight: rgb(255 255 255 / 0.07);
+  --glass-shadow: 0 6px 24px -14px rgb(3 6 14 / 0.45);
+  --glass-float-shadow: 0 14px 46px -12px rgb(2 5 12 / 0.64);
+  --glass-selected: rgb(184 87 40 / 0.21);
+  --glass-accent: #ffb18a;
+  --glass-primary-top: #ffae81;
+  --glass-primary-bottom: #fa935d;
+  --glass-primary-text: #38190b;
+
   /* Canvas & surfaces — Dracula Official (dracula-theme.theme-dracula) */
   --color-canvas-default: #282a36;
   --color-canvas-subtle: #21222c;
@@ -192,9 +229,9 @@
   --color-border-muted: #44475a;
   --color-border-subtle: #191a21;
 
-  --color-fg-default: #f8f8f2;
-  --color-fg-muted: #6272a4;
-  --color-fg-subtle: #6272a4;
+  --color-fg-default: #f1f3fa;
+  --color-fg-muted: #adb8ce;
+  --color-fg-subtle: #98a4bc;
   --color-fg-on-emphasis: #282a36;
   --color-fg-link: #8be9fd;
   --color-fg-code: #f8f8f2;

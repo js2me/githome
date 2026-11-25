@@ -4,6 +4,7 @@ import { useViewModel } from "mobx-view-model-react";
 import { useRef, useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import { codeFontSizes } from "@/shared/lib/code-view-preferences";
+import { GlassDialog } from "@/shared/ui/glass-dialog";
 import { LayoutVM } from "../model/layout-vm";
 import { AppUpdatePanel } from "./app-update-panel";
 
@@ -14,7 +15,7 @@ const sections = [
 ] as const;
 
 const iconButtonClassName =
-  "grid size-9 shrink-0 place-items-center rounded-lg text-fg-muted transition hover:bg-slate-100 hover:text-fg-default dark:hover:bg-slate-800";
+  "glass-control grid size-9 shrink-0 place-items-center rounded-xl text-fg-muted";
 
 export const SettingsDialog = observer(() => {
   const { appSettings } = useViewModel<LayoutVM>();
@@ -33,13 +34,10 @@ export const SettingsDialog = observer(() => {
         <Gear className="size-[18px]" aria-hidden />
       </button>
 
-      <dialog
+      <GlassDialog
         ref={dialog}
         aria-labelledby="settings-title"
-        className="fixed inset-0 m-auto h-[35rem] max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-[50rem] overflow-hidden rounded-2xl border border-border-default bg-canvas-overlay p-0 text-fg-default shadow-2xl backdrop:bg-slate-950/55 sm:max-h-[calc(100dvh-3rem)] sm:w-[calc(100%-3rem)]"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) event.currentTarget.close();
-        }}
+        className="h-[35rem] max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-[50rem] overflow-hidden p-0 sm:max-h-[calc(100dvh-3rem)] sm:w-[calc(100%-3rem)]"
       >
         <div className="flex h-full min-h-0 flex-col">
           <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border-default px-4 py-4 sm:px-6">
@@ -57,7 +55,7 @@ export const SettingsDialog = observer(() => {
           <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
             <nav
               aria-label="Разделы настроек"
-              className="grid shrink-0 grid-cols-3 gap-1 border-b border-border-default bg-canvas-subtle p-2 sm:flex sm:w-48 sm:flex-col sm:border-r sm:border-b-0 sm:p-3"
+              className="grid shrink-0 grid-cols-3 gap-1 border-b border-border-default bg-[var(--glass-control)] p-2 sm:flex sm:w-48 sm:flex-col sm:border-r sm:border-b-0 sm:p-3"
             >
               {sections.map(({ id, label, Icon }) => (
                 <button
@@ -67,8 +65,8 @@ export const SettingsDialog = observer(() => {
                   className={cn(
                     "flex min-w-0 items-center justify-center gap-2 rounded-lg px-1 py-2 text-xs font-semibold transition sm:justify-start sm:px-3 sm:text-sm",
                     section === id
-                      ? "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
-                      : "text-fg-muted hover:bg-slate-100 hover:text-fg-default dark:hover:bg-slate-800",
+                      ? "bg-[var(--glass-selected)] text-[var(--glass-accent)]"
+                      : "text-fg-muted hover:bg-[var(--glass-hover)] hover:text-fg-default",
                   )}
                   onClick={() => setSection(id)}
                 >
@@ -92,8 +90,8 @@ export const SettingsDialog = observer(() => {
                         className={cn(
                           "flex items-center gap-2 rounded-xl border px-3 py-3 text-left text-sm font-semibold sm:flex-col sm:items-start sm:py-4",
                           appSettings.activeTheme === id
-                            ? "border-orange-600 bg-orange-50 text-orange-700 dark:border-orange-700 dark:bg-orange-950 dark:text-orange-300"
-                            : "border-border-default hover:bg-canvas-subtle",
+                            ? "border-[var(--glass-accent)] bg-[var(--glass-selected)] text-[var(--glass-accent)]"
+                            : "glass-control",
                         )}
                         onClick={() => appSettings.setThemePreference(id)}
                       >
@@ -109,11 +107,11 @@ export const SettingsDialog = observer(() => {
                 <section aria-labelledby="settings-code">
                   <h3 id="settings-code" className="text-lg font-semibold">Просмотр кода</h3>
                   <p className="mt-1 mb-5 text-sm text-fg-muted">Эти параметры применяются к файлам в репозитории.</p>
-                  <div className="divide-y divide-border-default rounded-xl border border-border-default">
+                  <div className="glass-panel divide-y divide-border-default rounded-xl">
                     <label className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 text-sm font-semibold">
                       Размер шрифта
                       <select
-                        className="rounded-lg border border-border-default bg-canvas-default px-2.5 py-1.5 text-sm"
+                        className="glass-input rounded-lg px-2.5 py-1.5 text-sm"
                         value={appSettings.codeFontSize}
                         onChange={(event) => {
                           const size = codeFontSizes.find((option) => String(option) === event.target.value);
@@ -143,7 +141,7 @@ export const SettingsDialog = observer(() => {
             </div>
           </div>
         </div>
-      </dialog>
+      </GlassDialog>
     </>
   );
 });

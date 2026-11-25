@@ -57,7 +57,7 @@ const ReviewerRow = ({ reviewer }: { reviewer: GitLabMergeRequestReviewerDC }) =
       <span
         className={
           requestedChanges
-            ? "rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-200"
+            ? "rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300"
             : isApproved
               ? "rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700 dark:bg-green-950 dark:text-green-300"
               : "rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -70,7 +70,7 @@ const ReviewerRow = ({ reviewer }: { reviewer: GitLabMergeRequestReviewerDC }) =
 };
 
 const actionButtonClass =
-  "inline-flex cursor-pointer items-center justify-center rounded-lg px-3.5 py-2 text-[13px] font-semibold transition disabled:cursor-wait disabled:opacity-50";
+  "glass-control inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:cursor-wait";
 
 const isDraft = (mergeRequest: GitLabMergeRequestDC) =>
   mergeRequest.draft ?? mergeRequest.work_in_progress ?? false;
@@ -107,7 +107,7 @@ export const MrReviewActions = ({
         : null;
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-gray-900">
+    <section className="glass-panel flex flex-col gap-3 rounded-2xl px-4 py-4 sm:px-5">
       {reviewActionError && (
         <StatusMessage error className="mt-0">
           {reviewActionError}
@@ -133,7 +133,7 @@ export const MrReviewActions = ({
           {approvals.current_user_requested_changes ? (
             <button
               type="button"
-              className={`${actionButtonClass} border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-950 dark:text-red-200 dark:hover:bg-red-900`}
+              className={`${actionButtonClass} border-red-300 bg-red-50/80 text-red-700 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/70 dark:text-red-300 dark:hover:bg-red-900`}
               disabled={isBusy}
               onClick={onCancelRequestChanges}
             >
@@ -144,7 +144,7 @@ export const MrReviewActions = ({
           ) : (
             <button
               type="button"
-              className={`${actionButtonClass} border border-red-300 bg-white text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-canvas-default dark:text-red-300 dark:hover:bg-red-950`}
+              className={`${actionButtonClass} text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950`}
               disabled={isBusy}
               onClick={onRequestChanges}
             >
@@ -158,7 +158,7 @@ export const MrReviewActions = ({
             (approvals.current_user_approved ? (
               <button
                 type="button"
-                className={`${actionButtonClass} border border-green-300 bg-green-50 text-green-800 hover:bg-green-100 dark:border-green-800 dark:bg-green-950 dark:text-green-200 dark:hover:bg-green-900`}
+                className={`${actionButtonClass} border-green-300 bg-green-50/80 text-green-800 hover:bg-green-100 dark:border-green-900 dark:bg-green-950/70 dark:text-green-300 dark:hover:bg-green-900`}
                 disabled={isBusy}
                 onClick={onUnapprove}
               >
@@ -169,7 +169,7 @@ export const MrReviewActions = ({
             ) : (
               <button
                 type="button"
-                className={`${actionButtonClass} border-none bg-success-emphasis text-white hover:bg-success-emphasis-hover`}
+                className={`${actionButtonClass} border-transparent bg-success-emphasis text-white hover:bg-success-emphasis-hover`}
                 disabled={isBusy}
                 onClick={onApprove}
               >

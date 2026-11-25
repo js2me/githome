@@ -1,205 +1,100 @@
+import { Check, ChevronDown, LogoGitlab, Plus, Xmark } from "@gravity-ui/icons";
 import { observer } from "mobx-react-lite";
-import { useEffect, useRef } from "react";
 import { useViewModel } from "mobx-view-model-react";
 import { getConnectionLabel } from "@/shared/lib/gitlab/connection";
-import { cn } from "@/shared/lib/cn";
+import { GlassDialog } from "@/shared/ui/glass-dialog";
 import { LayoutVM } from "../model/layout-vm";
-
-const inputClassName =
-  "w-full rounded-[10px] border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none transition focus:border-brand focus:shadow-[0_0_0_3px_var(--color-brand-focus-shadow)] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200";
-
-const buttonClassName =
-  "rounded-[10px] px-3.5 py-2.5 text-sm font-semibold transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45";
-
-const navLinkClassName =
-  "cursor-pointer rounded-lg border-none bg-transparent px-3 py-2 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200";
 
 export const ConnectionPicker = observer(() => {
   const model = useViewModel<LayoutVM>();
   const settings = model.globals.stores.settings;
-  const popupRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLDivElement>(null);
-
-  const buttonLabel = settings.activeItem
-    ? getConnectionLabel(settings.activeItem)
-    : "Новая связка";
-
-  useEffect(() => {
-    if (!model.isConnectionPopupOpen) {
-      return;
-    }
-
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-
-      if (
-        popupRef.current?.contains(target) ||
-        triggerRef.current?.contains(target)
-      ) {
-        return;
-      }
-
-      model.closeConnectionPopup();
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        model.closeConnectionPopup();
-      }
-    };
-
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [model, model.isConnectionPopupOpen]);
-
-  const activeClassName =
-    model.isConnectionPopupOpen &&
-    "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-200";
+  const label = settings.activeItem ? getConnectionLabel(settings.activeItem) : "Подключить GitLab";
 
   return (
-    <div className="relative">
-      <div ref={triggerRef} className="inline-flex items-stretch">
-        <button
-          className={cn(navLinkClassName, "rounded-r-none", activeClassName)}
-          type="button"
-          onClick={model.openHome}
-        >
-          {buttonLabel}
-        </button>
-        <button
-          className={cn(
-            navLinkClassName,
-            "rounded-l-none px-1.5 text-slate-400 dark:text-slate-500",
-            activeClassName,
-          )}
-          type="button"
-          aria-expanded={model.isConnectionPopupOpen}
-          aria-haspopup="dialog"
-          aria-label="Управление связками GitLab"
-          onClick={model.toggleConnectionPopup}
-        >
-          <svg
-            aria-hidden
-            className="h-4 w-4"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-          >
-            <path d="M4.427 6.427a.75.75 0 0 1 1.06 0L8 8.94l2.513-2.513a.75.75 0 1 1 1.06 1.06l-3.043 3.043a.75.75 0 0 1-1.06 0L4.427 7.487a.75.75 0 0 1 0-1.06Z" />
-          </svg>
-        </button>
-      </div>
-
-      {model.isConnectionPopupOpen && (
-        <div
-          ref={popupRef}
-          className="absolute left-0 top-[calc(100%+6px)] z-50 w-[min(420px,calc(100vw-2.5rem))] rounded-xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-gray-900"
-          role="dialog"
-          aria-label="Связки GitLab"
-        >
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Связки
-          </p>
-
-          <ul className="mb-4 max-h-48 overflow-y-auto rounded-[10px] border border-slate-200 dark:border-slate-700">
-            <li>
-              <button
-                className={cn(
-                  "flex w-full items-center border-none bg-transparent px-3 py-2.5 text-left text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800",
-                  !settings.activeId &&
-                    "bg-orange-50 font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-                )}
-                type="button"
-                onClick={model.selectNewConnection}
-              >
-                Новая связка
-              </button>
-            </li>
-            {settings.connectionOptions.map((option) => (
-              <li key={option.id}>
-                <button
-                  className={cn(
-                    "flex w-full items-center border-none bg-transparent px-3 py-2.5 text-left text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800",
-                    settings.activeId === option.id &&
-                      "bg-orange-50 font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-                  )}
-                  type="button"
-                  onClick={() => model.selectConnection(option.id)}
-                >
-                  {option.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          <div className="flex flex-col gap-3">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-slate-500">
-                GitLab URL
-              </span>
-              <input
-                className={inputClassName}
-                type="url"
-                placeholder="https://gitlab.com"
-                value={model.draftGitlabUrl}
-                onChange={(event) => model.setDraftGitlabUrl(event.target.value)}
-                autoComplete="off"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-slate-500">
-                Git Token
-              </span>
-              <input
-                className={inputClassName}
-                type="password"
-                placeholder="glpat-..."
-                value={model.draftGitToken}
-                onChange={(event) => model.setDraftGitToken(event.target.value)}
-                autoComplete="off"
-              />
-            </label>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              className={cn(buttonClassName, "border-none bg-brand text-white")}
-              type="button"
-              disabled={!model.canAdd}
-              onClick={model.addConnection}
-            >
-              Добавить
-            </button>
-            <button
-              className={cn(
-                buttonClassName,
-                "border-none bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-slate-200",
-              )}
-              type="button"
-              disabled={!model.canSave}
-              onClick={model.saveConnection}
-            >
-              Сохранить
-            </button>
-            <button
-              className={cn(
-                buttonClassName,
-                "border-none bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-200",
-              )}
-              type="button"
-              disabled={!model.canRemove}
-              onClick={model.removeConnection}
-            >
-              Удалить
-            </button>
-          </div>
+    <>
+      <button
+        type="button"
+        className="glass-control inline-flex h-9 min-w-0 items-center gap-2 rounded-xl px-2.5 text-sm font-semibold sm:px-3"
+        aria-label={`Подключения GitLab · ${label}`}
+        title={label}
+        aria-haspopup="dialog"
+        onClick={model.openConnectionPopup}
+      >
+        <LogoGitlab className="size-4 shrink-0 text-[var(--glass-accent)]" aria-hidden />
+        <span className="hidden max-w-40 truncate min-[480px]:inline">{label}</span>
+        <ChevronDown className="hidden size-3 shrink-0 min-[480px]:block" aria-hidden />
+      </button>
+      <GlassDialog
+        ref={model.connectionDialog}
+        aria-labelledby="connections-title"
+        className="max-h-[calc(100dvh-2rem)] w-[min(27rem,calc(100%-2rem))] overflow-y-auto p-5 sm:p-6"
+      >
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 id="connections-title" className="text-xl font-bold tracking-tight">Подключения GitLab</h2>
+          <button type="button" className="glass-control grid size-8 place-items-center rounded-lg" aria-label="Закрыть подключения" onClick={model.closeConnectionPopup}>
+            <Xmark className="size-4" aria-hidden />
+          </button>
         </div>
-      )}
-    </div>
+        {settings.connections.length > 0 && (
+          <div className="mb-5 flex max-h-44 flex-col gap-1 overflow-y-auto border-b border-[var(--glass-border)] pb-4">
+            {settings.connectionOptions.map((option) => (
+              <button
+                key={option.id}
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]"
+                type="button"
+                aria-pressed={model.draftConnectionId === option.id}
+                onClick={() => model.selectConnection(option.id)}
+              >
+                <LogoGitlab className="size-4 shrink-0" aria-hidden />
+                <span className="flex-1 truncate">{option.label}</span>
+                {model.draftConnectionId === option.id && <Check className="size-4 text-[var(--glass-accent)]" aria-hidden />}
+              </button>
+            ))}
+            <button type="button" aria-pressed={!model.draftConnectionId} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[var(--glass-accent)] hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]" onClick={model.selectNewConnection}>
+              <Plus className="size-4" aria-hidden /> Новое подключение
+            </button>
+          </div>
+        )}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            model.saveConnection();
+          }}
+        >
+          <label className="mb-4 grid gap-1.5 text-sm font-semibold">
+            Адрес GitLab
+            <input
+              ref={model.connectionUrlInput}
+              className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
+              type="text"
+              inputMode="url"
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder="https://gitlab.com"
+              value={model.draftGitlabUrl}
+              onChange={(event) => model.setDraftGitlabUrl(event.target.value)}
+            />
+          </label>
+          <label className="grid gap-1.5 text-sm font-semibold">
+            Токен доступа
+            <input
+              className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
+              type="password"
+              autoComplete="off"
+              placeholder="glpat-…"
+              value={model.draftGitToken}
+              onChange={(event) => model.setDraftGitToken(event.target.value)}
+            />
+          </label>
+          <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+            {model.draftConnectionId && <button className="glass-control mr-auto rounded-xl px-3 py-2 text-sm text-red-700 dark:text-red-300" type="button" onClick={model.removeConnection}>Удалить</button>}
+            <button className="glass-primary rounded-xl px-4 py-2 text-sm font-semibold" type="submit" disabled={!model.canSubmitConnection}>
+              {model.draftConnectionId ? "Сохранить" : "Подключить"}
+            </button>
+          </div>
+        </form>
+      </GlassDialog>
+    </>
   );
 });

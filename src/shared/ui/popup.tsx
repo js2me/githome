@@ -9,7 +9,7 @@ import {
 import { cn } from "@/shared/lib/cn";
 
 const panelClassName =
-  "absolute top-[calc(100%+6px)] z-50 rounded-xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-gray-900";
+  "glass-overlay absolute top-[calc(100%+6px)] z-50 rounded-xl p-4";
 
 interface PopupContextValue {
   isOpen: boolean;

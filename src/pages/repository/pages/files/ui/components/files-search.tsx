@@ -25,10 +25,8 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
           <label
             ref={setTriggerRef}
             className={cn(
-              "flex items-center gap-2 rounded-[10px] border px-3 py-1.5 transition",
-              searchModel.isPanelOpen
-                ? "border-brand bg-orange-50 dark:bg-orange-950"
-                : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-gray-900 dark:hover:border-slate-600",
+              "glass-input flex items-center gap-2 rounded-[10px] px-3 py-1.5",
+              searchModel.isPanelOpen && "border-[var(--glass-accent)]",
             )}
           >
             <Magnifier
@@ -38,6 +36,7 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
             />
             <input
               className={searchInputClassName}
+              aria-label="Поиск файлов и содержимого"
               placeholder="Поиск файлов и содержимого..."
               type="search"
               value={searchModel.searchQuery}

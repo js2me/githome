@@ -84,7 +84,7 @@ const ToolbarButton = memo(
     children: ReactNode;
   }) => (
     <button
-      className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-600 transition hover:bg-slate-200/80 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100"
+      className="inline-flex size-7 cursor-pointer items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-[var(--glass-hover)] hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
       type="button"
       title={title}
       aria-label={title}
@@ -211,7 +211,7 @@ const GitlabCommentEditorToolbar = memo(
 
     return (
       <>
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-slate-200 px-2 py-1.5 dark:border-slate-700">
+        <div className="flex flex-wrap items-center gap-0.5 border-b border-[var(--glass-border)] bg-[var(--glass-surface)] px-2 py-1.5">
           <ToolbarButton
             title="Жирный"
             disabled={isDisabled}
@@ -441,7 +441,7 @@ export const GitlabCommentEditor = ({
     <div className={wrapperClassName}>
       <div
         className={cn(
-          "overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-canvas-default",
+          "glass-input overflow-hidden rounded-xl",
           isDisabled && "opacity-60",
           editorClassName,
         )}
@@ -458,7 +458,7 @@ export const GitlabCommentEditor = ({
           {...textareaProps}
           ref={mergeRefs(textareaRef)}
           className={cn(
-            "min-h-[72px] w-full resize-y border-0 bg-transparent px-3 py-2.5 text-slate-900 outline-none focus:ring-0 disabled:cursor-not-allowed dark:text-slate-200",
+            "min-h-[72px] w-full resize-y border-0 bg-transparent px-3 py-2.5 text-fg-default outline-none disabled:cursor-not-allowed",
             className,
           )}
           value={isControlled ? value : undefined}

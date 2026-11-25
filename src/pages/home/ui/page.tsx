@@ -1,3 +1,13 @@
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronRight,
+  CircleCheck,
+  CodePullRequest,
+  Folders,
+  LogoGitlab,
+  Person,
+} from "@gravity-ui/icons";
 import { withViewModel } from "mobx-view-model-react";
 import { cn } from "@/shared/lib/cn";
 import { formatProjectCount } from "@/shared/lib/gitlab/format-project-count";
@@ -5,111 +15,212 @@ import { LoadMoreSentinel } from "@/shared/ui/load-more-sentinel";
 import { ProjectAvatar } from "@/shared/ui/project-avatar";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { HomePageVM } from "../model";
+import type { ProjectListTab } from "../model/gitlab-projects-list";
+import "./page.css";
+
+const BranchDiagram = () => (
+  <div className="home-branch-diagram" aria-hidden="true">
+    <div className="home-branch-rail">
+      <i className="home-branch-fork" />
+      <i className="home-branch-node home-branch-node--start" />
+      <i className="home-branch-node home-branch-node--fork" />
+      <i className="home-branch-node home-branch-node--commit" />
+      <i className="home-branch-node home-branch-node--merge" />
+    </div>
+  </div>
+);
 
 export const HomePage = withViewModel(
   HomePageVM,
   ({ model }) => {
-    const { gitlabProjectsList } = model;
+    const { gitlabProjectsList, reviewInbox } = model;
+
+    if (!model.isConfigured) {
+      return (
+        <section className="home-welcome glass-panel mx-auto max-w-[1180px] rounded-3xl">
+          <div className="relative z-10 max-w-lg">
+            <LogoGitlab className="mb-6 size-9 text-[var(--glass-accent)]" aria-hidden />
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Подключите GitLab</h2>
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-fg-muted sm:text-base">
+              Укажите адрес сервера и токен доступа, чтобы открыть свои проекты и мерж-реквесты.
+            </p>
+            <button
+              type="button"
+              className="glass-primary mt-6 inline-flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold"
+              onClick={model.parentViewModel.openConnectionPopup}
+            >
+              Настроить подключение <ArrowRight className="size-4" aria-hidden />
+            </button>
+          </div>
+          <BranchDiagram />
+        </section>
+      );
+    }
 
     return (
-      <section className="max-w-[960px]">
-        <h2 className="mb-4 text-2xl font-semibold">Проекты</h2>
-
-        {model.isConfigured && (
-          <nav
-            aria-label="Категории проектов"
-            className="flex flex-wrap gap-x-5 gap-y-2 border-b border-slate-200 dark:border-slate-800"
-          >
-            {model.tabs.map((tab) => (
-              <button
-                key={tab.id}
-                aria-current={tab.isActive ? "page" : undefined}
-                className={cn(
-                  "relative mb-[-1px] flex items-center gap-1.5 border-b-2 pb-2.5 text-sm transition",
-                  tab.isActive
-                    ? "border-[var(--color-accent-blue)] font-semibold text-slate-900 dark:text-slate-100"
-                    : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200",
-                )}
-                type="button"
-                onClick={() => model.setActiveTab(tab.id)}
+      <div className="home-dashboard mx-auto grid max-w-[1180px] items-start gap-5">
+        <section className="glass-panel min-w-0 rounded-2xl" aria-labelledby="home-reviews-title">
+          <header className="home-review-header relative overflow-hidden rounded-t-2xl px-5 pt-6 sm:px-7 sm:pt-8">
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <h2 id="home-reviews-title" className="text-[clamp(1.65rem,3vw,2.15rem)] leading-tight font-semibold tracking-tight">
+                Мерж-реквесты
+              </h2>
+              <a
+                href="#home-projects-title"
+                className="glass-control inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold min-[960px]:hidden"
               >
-                {tab.label}
-                {tab.count != null && (
-                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-normal text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                    {formatProjectCount(tab.count)}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-        )}
-
-        {model.showConfigurePrompt && (
-          <StatusMessage className="mt-4">
-            Добавьте связку GitLab URL + токен в шапке.
-          </StatusMessage>
-        )}
-
-        {model.showProjectsLoading && (
-          <StatusMessage className="mt-4">Загружаем проекты...</StatusMessage>
-        )}
-
-        {model.showProjectsError && (
-          <StatusMessage className="mt-4" error>
-            {gitlabProjectsList.errorMessage}
-          </StatusMessage>
-        )}
-
-        {model.showProjectsEmpty && (
-          <StatusMessage className="mt-4">
-            Проекты не найдены для {model.connectionLabel}.
-          </StatusMessage>
-        )}
-
-        {model.showProjectsList && (
-          <ul className="mt-1 flex list-none flex-col p-0">
-            {gitlabProjectsList.projects.map((project) => (
-              <li
-                key={project.data.id}
-                className="border-b border-slate-200 last:border-b-0 dark:border-slate-800"
-              >
+                Проекты <ChevronDown className="size-3" aria-hidden />
+              </a>
+            </div>
+            <div className="relative z-10 mt-5 mb-5 inline-flex gap-1 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-control)] p-1" role="group" aria-label="Мои мерж-реквесты">
+              {(["reviewer", "author"] as const).map((scope) => (
                 <button
-                  className="flex w-full cursor-pointer items-center gap-2.5 px-1 py-2 text-left text-inherit transition hover:bg-slate-50 dark:hover:bg-slate-900/60"
+                  key={scope}
                   type="button"
-                  onClick={() => model.openProject(project)}
+                  aria-pressed={reviewInbox.scope === scope}
+                  className={cn(
+                    "home-scope rounded-lg px-3 py-1.5 text-sm font-semibold",
+                    reviewInbox.scope === scope && "glass-control",
+                  )}
+                  onClick={() => reviewInbox.setScope(scope)}
                 >
-                  <ProjectAvatar
-                    className="h-7 w-7 shrink-0 rounded-md object-cover"
-                    id={project.data.id}
-                    avatarUrl={project.data.avatar_url}
-                    name={project.name}
-                  />
-
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="truncate text-sm font-semibold text-slate-900 dark:text-slate-200">
-                      {project.name}
-                    </span>
-                    <span className="truncate text-xs text-slate-500">
-                      {project.data.path_with_namespace}
-                    </span>
-                  </span>
+                  {scope === "reviewer" ? "На моё ревью" : "Мои MR"}
                 </button>
-              </li>
-            ))}
-            <LoadMoreSentinel
-              disabled={!model.canLoadMoreProjects}
-              onLoadMore={() => model.loadMoreProjects()}
-            />
-          </ul>
-        )}
+              ))}
+            </div>
+            <BranchDiagram />
+          </header>
 
-        {model.showProjectsLoadingMore && (
-          <StatusMessage className="mt-2">Загружаем ещё...</StatusMessage>
-        )}
-      </section>
+          {reviewInbox.isLoading && (
+            <p className="home-empty-state" role="status">Загружаем мерж-реквесты…</p>
+          )}
+          {reviewInbox.requests.length > 0 && (
+            <ul className="list-none px-2 py-2 sm:px-3">
+              {reviewInbox.requests.map((request) => (
+                <li key={request.id} className="home-list-item">
+                  <button
+                    className="home-request-row group flex w-full min-w-0 items-center gap-3 rounded-xl px-3 py-3.5 text-left sm:gap-4 sm:px-4"
+                    type="button"
+                    onClick={() => reviewInbox.openRequest(request)}
+                  >
+                    <span className="home-request-icon grid size-9 shrink-0 place-items-center rounded-xl sm:size-10" aria-hidden>
+                      <CodePullRequest className="size-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex min-w-0 items-baseline gap-2 text-xs">
+                        <span className="shrink-0 font-mono font-semibold text-[var(--glass-accent)]">!{request.iid}</span>
+                        <span className="truncate text-fg-muted" title={request.projectPath}>{request.projectPath}</span>
+                      </span>
+                      <span className="mt-1 block text-[15px] leading-snug font-semibold break-words">{request.title}</span>
+                      {request.author?.name && (
+                        <span className="mt-1.5 flex items-center gap-1.5 text-xs text-fg-muted">
+                          <Person className="size-3" aria-hidden />
+                          <span className="truncate">{request.author.name}</span>
+                        </span>
+                      )}
+                    </span>
+                    <ChevronRight className="size-4 shrink-0 text-fg-muted group-hover:text-[var(--glass-accent)]" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {reviewInbox.error ? (
+            <StatusMessage className="mx-4 mb-4" error>
+              Не удалось загрузить мерж-реквесты.{" "}
+              <button className="font-semibold underline" type="button" onClick={reviewInbox.retry}>
+                Повторить
+              </button>
+            </StatusMessage>
+          ) : reviewInbox.query.hasNextPage ? (
+            <div className="px-5 pb-5 text-center">
+              <button
+                type="button"
+                className="glass-control inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium"
+                disabled={reviewInbox.query.isFetching}
+                onClick={reviewInbox.loadMore}
+              >
+                {reviewInbox.query.isFetchingNextPage ? "Загружаем…" : "Показать ещё"}
+                <ChevronDown className="size-3.5" aria-hidden />
+              </button>
+            </div>
+          ) : null}
+          {!reviewInbox.isLoading && !reviewInbox.error && reviewInbox.requests.length === 0 && (
+            <div className="home-empty-state" role="status">
+              <CircleCheck className="mx-auto mb-3 size-7 text-[var(--color-success-fg)]" aria-hidden />
+              {reviewInbox.scope === "reviewer" ? "Нет мерж-реквестов, где вы назначены ревьюером." : "У вас пока нет открытых мерж-реквестов."}
+            </div>
+          )}
+        </section>
+
+        <section className="glass-panel min-w-0 rounded-2xl" aria-labelledby="home-projects-title">
+          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--glass-border)] px-4 py-4 sm:px-5">
+            <h2 id="home-projects-title" tabIndex={-1} className="flex scroll-mt-4 items-center gap-2.5 text-lg font-semibold tracking-tight">
+              <Folders className="size-5 text-fg-muted" aria-hidden />
+              Проекты
+            </h2>
+            <div className="relative min-w-0">
+              <select
+                aria-label="Категория проектов"
+                className="glass-control max-w-full appearance-none rounded-lg py-2 pr-8 pl-3 text-xs font-medium"
+                value={gitlabProjectsList.activeTab}
+                onChange={(event) => model.setActiveTab(event.target.value as ProjectListTab)}
+              >
+                {model.tabs.map((tab) => (
+                  <option key={tab.id} value={tab.id}>
+                    {tab.label}{tab.count != null ? ` · ${formatProjectCount(tab.count)}` : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-3 -translate-y-1/2 text-fg-muted" aria-hidden />
+            </div>
+          </header>
+          {model.showProjectsLoading && <p className="home-empty-state" role="status">Загружаем проекты…</p>}
+          {model.showProjectsError && <StatusMessage className="mx-4 mb-4" error>{gitlabProjectsList.errorMessage}</StatusMessage>}
+          {model.showProjectsEmpty && <p className="home-empty-state">Проекты не найдены для {model.connectionLabel}.</p>}
+          {model.showProjectsList && (
+            <>
+              <ul className="list-none px-2 py-1">
+                {gitlabProjectsList.projects.map((project) => (
+                  <li key={project.data.id} className="home-list-item flex min-w-0 items-center gap-1 px-1 py-1">
+                    <button
+                      className="home-project-row flex min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-2.5 text-left"
+                      type="button"
+                      onClick={() => model.openProject(project)}
+                    >
+                      <ProjectAvatar
+                        className="size-8 shrink-0 rounded-lg object-cover"
+                        id={project.data.id}
+                        avatarUrl={project.data.avatar_url}
+                        name={project.name}
+                      />
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="truncate text-sm font-semibold">{project.name}</span>
+                        <span className="truncate text-xs text-fg-muted" title={project.data.path_with_namespace}>
+                          {project.data.path_with_namespace}
+                        </span>
+                      </span>
+                    </button>
+                    <button
+                      className="glass-control mr-1 inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold"
+                      type="button"
+                      aria-label={`Мерж-реквесты проекта ${project.data.path_with_namespace}`}
+                      title={`Мерж-реквесты проекта ${project.name}`}
+                      onClick={() => model.openProjectMergeRequests(project)}
+                    >
+                      <CodePullRequest className="size-3.5" aria-hidden />
+                      MR
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <LoadMoreSentinel disabled={!model.canLoadMoreProjects} onLoadMore={model.loadMoreProjects} />
+            </>
+          )}
+          {model.showProjectsLoadingMore && <p className="home-empty-state" role="status">Загружаем ещё проекты…</p>}
+        </section>
+      </div>
     );
   },
-  {
-    id: "home",
-  },
+  { id: "home" },
 );

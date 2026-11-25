@@ -1,5 +1,4 @@
 import { actionBound, computed, reaction } from "mobx";
-import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import type {
   GitLabProjectDC,
@@ -8,15 +7,13 @@ import type {
 import { createGitlabQuery } from "@/shared/lib/gitlab/create-query";
 import { VM } from "@/shared/lib/view-models/vm";
 import { ProjectReadmeModel } from "./project-readme";
-import { MaybePromise } from "yummies/types";
 
 export class RepositoryPageVM extends VM {
-  projectQuery;
-  readmeModel;
+  private projectQuery!: ReturnType<typeof createGitlabQuery<GitLabProjectDC>>;
+  private readmeModel!: ProjectReadmeModel;
 
-  constructor(globals: Globals, params: ViewModelParams) {
-    super(globals, params);
-    console.log("KEK RepositoryPageVM create");
+  protected willMount() {
+    const { globals } = this;
 
     this.projectQuery = createGitlabQuery<GitLabProjectDC>({
       globals,
@@ -47,6 +44,7 @@ export class RepositoryPageVM extends VM {
           globals.stores.repository.setProject(project);
         }
       },
+      { signal: this.unmountSignal, fireImmediately: true },
     );
   }
 
@@ -60,10 +58,6 @@ export class RepositoryPageVM extends VM {
 
     const iid = Number(mergeRequestIid);
     return Number.isNaN(iid) ? null : iid;
-  }
-
-  protected willMount(): MaybePromise<void> {
-    console.log("KEK RepositoryPageVM willMount");
   }
 
   @computed

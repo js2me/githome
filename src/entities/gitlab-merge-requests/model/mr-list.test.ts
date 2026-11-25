@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createMemoryHistory, createQueryParams } from "mobx-location-history";
 import type { Globals } from "@/globals";
 import type { GitLabMergeRequestDC } from "@/shared/api/gitlab";
 import {
   createGitlabApiQuery,
   createInfiniteGitlabQuery,
 } from "@/shared/lib/gitlab/create-query";
-import { MrList } from "./mr-list";
+import { MR_STATES, MrList } from "./mr-list";
 
 vi.mock("@/shared/lib/gitlab/create-query", () => ({
   createGitlabApiQuery: vi.fn(),
@@ -51,14 +52,33 @@ describe("MrList pagination", () => {
     );
   });
 
-  const createList = () =>
-    new MrList({
-      globals: {} as Globals,
-      abortSignal: new AbortController().signal,
+  const createList = (url = "/repository/1/merge-requests") => {
+    const history = createMemoryHistory({ initialEntries: [url] });
+    return new MrList({
+      globals: {
+        query: createQueryParams({ history }),
+        routes: { mergeRequests: { isOpened: true } },
+      } as unknown as Globals,
+      unmountSignal: new AbortController().signal,
       projectId: 1,
       selectedProject: null,
       mergeRequestIid: null,
     });
+  };
+
+  it("restores the filter from the URL and searches the GitLab list by title or IID", () => {
+    const list = createList("/repository/1/merge-requests?state=closed&q=!42");
+    const getParams = vi.mocked(createInfiniteGitlabQuery).mock.lastCall![0].params;
+    expect(list.searchText).toBe("!42");
+    expect(getParams()).toMatchObject({ query: { state: "closed", "iids[]": "42", search: undefined } });
+
+    list.setSearchText("fix menu");
+    list.setState(MR_STATES[1]);
+    expect(getParams()).toMatchObject({ query: { state: "merged", search: "fix menu", in: "title", "iids[]": undefined } });
+    list.setSearchText("");
+    list.setState(MR_STATES[0]);
+    expect(getParams()).toMatchObject({ query: { state: "opened", search: undefined, "iids[]": undefined } });
+  });
 
   it("keeps the first page while loading more and combines subsequent pages", () => {
     const list = createList();

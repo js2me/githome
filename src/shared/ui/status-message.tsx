@@ -10,11 +10,12 @@ export const StatusMessage = ({
   children: React.ReactNode;
 }) => (
   <div
+    role={error ? "alert" : "status"}
     className={cn(
-      "mt-5 rounded-xl border px-4 py-3.5 text-sm",
+      "glass-panel mt-5 rounded-xl px-4 py-3.5 text-sm",
       error
-        ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/60 dark:text-red-200"
-        : "border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300",
+        ? "border-red-200 bg-red-50/85 text-red-700 dark:border-red-900 dark:bg-red-950/85 dark:text-red-300"
+        : "text-fg-muted",
       className,
     )}
   >

@@ -2,21 +2,22 @@ import { actionBound, computed } from "mobx";
 import type { ViewModelParams } from "mobx-view-model";
 import type { Globals } from "@/globals";
 import type { GitlabProjectInfo } from "@/entities/gitlab-projects/model/gitlab-project-info";
-import {
-    GitlabProjectsList,
-    type ProjectListTab,
-} from "./gitlab-projects-list";
 import { VM } from "@/shared/lib/view-models/vm";
+import type { LayoutVM } from "@/widgets/layout/model/layout-vm";
+import { GitlabProjectsList, type ProjectListTab } from "./gitlab-projects-list";
+import { ReviewInbox } from "./review-inbox";
 
-export class HomePageVM extends VM {
+export class HomePageVM extends VM<{}, LayoutVM> {
   readonly gitlabProjectsList: GitlabProjectsList;
+  readonly reviewInbox: ReviewInbox;
 
-  constructor(globals: Globals, params: ViewModelParams) {
+  constructor(globals: Globals, params: ViewModelParams<{}, LayoutVM>) {
     super(globals, params);
     this.gitlabProjectsList = new GitlabProjectsList({
       globals,
       abortSignal: this.unmountSignal,
     });
+    this.reviewInbox = new ReviewInbox(globals, this.unmountSignal, this.gitlabProjectsList);
   }
 
   @computed
@@ -32,11 +33,6 @@ export class HomePageVM extends VM {
   @computed
   get tabs() {
     return this.gitlabProjectsList.tabs;
-  }
-
-  @computed
-  get showConfigurePrompt() {
-    return !this.isConfigured;
   }
 
   @computed
@@ -92,6 +88,14 @@ export class HomePageVM extends VM {
   openProject(project: GitlabProjectInfo) {
     this.globals.stores.repository.setProject(project.data);
     void this.globals.routes.repository.open({
+      projectId: String(project.data.id),
+    });
+  }
+
+  @actionBound
+  openProjectMergeRequests(project: GitlabProjectInfo) {
+    this.globals.stores.repository.setProject(project.data);
+    void this.globals.routes.mergeRequests.open({
       projectId: String(project.data.id),
     });
   }

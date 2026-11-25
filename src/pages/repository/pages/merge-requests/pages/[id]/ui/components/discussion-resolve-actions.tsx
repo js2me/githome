@@ -39,7 +39,7 @@ export const DiscussionResolveActions = memo(
     return (
       <div className={cn("flex items-center justify-end gap-2", className)}>
         <button
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+          className="glass-control inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold disabled:cursor-wait"
           type="button"
           disabled={isResolving}
           onClick={() => onResolve(discussionId, !resolved)}

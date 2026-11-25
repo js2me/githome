@@ -1,158 +1,59 @@
+import { ChevronRight } from "@gravity-ui/icons";
 import { observer } from "mobx-react-lite";
 import { useViewModel } from "mobx-view-model-react";
-import { cn } from "@/shared/lib/cn";
+import logo from "../../../../resources/icons/128x128.png";
 import { ProjectAvatar } from "@/shared/ui/project-avatar";
 import { LayoutVM } from "../model/layout-vm";
 import { ConnectionPicker } from "./connection-picker";
+import { OpenMergeRequestDialog } from "./open-merge-request-dialog";
 import { SettingsDialog } from "./settings-dialog";
-
-const navLinkClassName =
-  "cursor-pointer rounded-lg border-none bg-transparent px-3 py-2 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200";
 
 export const AppNav = observer(() => {
   const model = useViewModel<LayoutVM>();
-
+  const project = model.repositoryBreadcrumb;
+  const section = model.currentSection;
   return (
-    <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-200 bg-white px-3 py-2.5 dark:border-slate-800 dark:bg-gray-900 sm:px-4 @min-[64rem]:flex-nowrap @min-[64rem]:gap-4 @min-[64rem]:px-5 @min-[64rem]:py-3">
-      <div className="order-1 flex shrink-0 items-center gap-2.5 @min-[64rem]:order-none">
-        <div
-          className="grid h-[25px] w-[25px] place-items-center rounded-[10px] bg-gradient-to-br from-brand to-brand-gradient-to text-xs font-bold text-white"
-          aria-hidden
+    <header className="glass-bar relative z-40 border-b px-3 sm:px-5 lg:px-7">
+      <div className="flex min-h-16 min-w-0 flex-wrap items-center gap-x-2 gap-y-1 py-2.5 sm:gap-x-4">
+        <button
+          className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-lg"
+          type="button"
+          aria-label="GitHome — на главную"
+          onClick={model.openHome}
         >
-          GH
-        </div>
-        <h1 className="m-0 text-lg font-bold tracking-tight">GitHome</h1>
-      </div>
-
-      <div
-        className="hidden h-6 w-px shrink-0 bg-slate-200 dark:bg-slate-700 @min-[64rem]:block"
-        aria-hidden
-      />
-
-      <nav className="order-3 flex basis-full min-w-0 flex-wrap items-center gap-1 @min-[64rem]:order-none @min-[64rem]:basis-auto @min-[64rem]:flex-1 @min-[64rem]:flex-nowrap">
-        <ConnectionPicker />
-
-        {model.repositoryBreadcrumb && (
-          <>
-            <span className="select-none text-sm text-slate-300 dark:text-slate-600">
-              /
-            </span>
-
+          <img src={logo} alt="" className="size-7 sm:size-8" />
+          <span className="text-lg font-bold tracking-tight sm:text-xl">GitHome</span>
+        </button>
+        {project && (
+          <nav aria-label="Путь к проекту" className="order-last flex w-full min-w-0 items-center gap-1 py-1 text-xs font-medium text-fg-muted sm:text-sm lg:order-none lg:w-auto lg:flex-1 lg:border-l lg:border-[var(--glass-border)] lg:pl-4">
             <button
-              className={cn(navLinkClassName, "min-w-0 max-w-full")}
               type="button"
+              title={project.path_with_namespace}
               onClick={model.openRepository}
+              className="flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 hover:bg-[var(--glass-hover)]"
             >
-              <span className="flex min-w-0 items-center gap-2.5 px-2 py-0.5">
-                <ProjectAvatar
-                  className="h-[25px] w-[25px] shrink-0 rounded-lg object-cover"
-                  id={model.repositoryBreadcrumb.id}
-                  avatarUrl={model.repositoryBreadcrumb.avatar_url}
-                  name={model.repositoryBreadcrumb.name}
-                />
-                <span className="min-w-0 truncate text-[15px] font-bold text-slate-900 dark:text-slate-200">
-                  {model.repositoryBreadcrumb.name}{" "}
-                  <span className="font-normal text-slate-500">
-                    ({model.repositoryBreadcrumb.path_with_namespace})
-                  </span>
-                </span>
-              </span>
+              <ProjectAvatar className="size-5 shrink-0 rounded-md" id={project.id} avatarUrl={project.avatar_url} name={project.name} />
+              <span className="truncate">{project.path_with_namespace}</span>
             </button>
-
-            {model.isFilesOpen && (
+            {section && (
               <>
-                <span className="select-none text-sm text-slate-300 dark:text-slate-600">
-                  /
-                </span>
-
-                <button
-                  className={cn(
-                    navLinkClassName,
-                    model.isFilesNavActive &&
-                      "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-                  )}
-                  type="button"
-                  onClick={model.openFiles}
-                >
-                  Files
-                </button>
+                <ChevronRight className="size-3 shrink-0" aria-hidden />
+                <button type="button" onClick={section.open} className="shrink-0 cursor-pointer rounded-md px-1.5 py-1 text-fg-default hover:bg-[var(--glass-hover)]">{section.label}</button>
               </>
             )}
-
-            {model.isMergeRequestsOpen && (
+            {model.showMergeRequestBreadcrumb && (
               <>
-                <span className="select-none text-sm text-slate-300 dark:text-slate-600">
-                  /
-                </span>
-
-                <button
-                  className={cn(
-                    navLinkClassName,
-                    model.isMergeRequestsNavActive &&
-                      "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-                  )}
-                  type="button"
-                  onClick={model.openMergeRequests}
-                >
-                  Merge Requests
-                </button>
-
-                {model.showMergeRequestBreadcrumb && (
-                  <>
-                    <span className="select-none text-sm text-slate-300 dark:text-slate-600">
-                      /
-                    </span>
-                    <span className="max-w-80 truncate px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200">
-                      !{model.mergeRequestIid}
-                    </span>
-                  </>
-                )}
+                <ChevronRight className="size-3 shrink-0" aria-hidden />
+                <span aria-current="page" className="font-mono text-xs font-semibold">!{model.mergeRequestIid}</span>
               </>
             )}
-
-            {model.isPipelinesOpen && (
-              <>
-                <span className="select-none text-sm text-slate-300 dark:text-slate-600">
-                  /
-                </span>
-
-                <button
-                  className={cn(
-                    navLinkClassName,
-                    "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-                  )}
-                  type="button"
-                  onClick={model.openPipelines}
-                >
-                  Pipelines
-                </button>
-              </>
-            )}
-
-            {model.isAnalyticsOpen && (
-              <>
-                <span className="select-none text-sm text-slate-300 dark:text-slate-600">
-                  /
-                </span>
-
-                <button
-                  className={cn(
-                    navLinkClassName,
-                    "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-                  )}
-                  type="button"
-                  onClick={model.openAnalytics}
-                >
-                  Аналитика
-                </button>
-              </>
-            )}
-          </>
+          </nav>
         )}
-      </nav>
-
-      <div className="order-2 ml-auto @min-[64rem]:order-none @min-[64rem]:ml-0">
-        <SettingsDialog />
+        <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
+          {model.globals.stores.settings.connections.length > 0 && <OpenMergeRequestDialog />}
+          <ConnectionPicker />
+          <SettingsDialog />
+        </div>
       </div>
     </header>
   );

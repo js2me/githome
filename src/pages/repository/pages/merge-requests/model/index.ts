@@ -1,13 +1,10 @@
-import type { ViewModelParams } from "mobx-view-model";
-import type { Globals } from "@/globals";
+import { computed, observableRef } from "mobx";
 import { MrList } from "@/entities/gitlab-merge-requests/model/mr-list";
-import { RepositoryPageVM } from "@/pages/repository/model/page-vm";
+import type { RepositoryPageVM } from "@/pages/repository/model/page-vm";
 import { VM } from "@/shared/lib/view-models/vm";
-import { computed } from "mobx";
-import { MaybePromise } from "yummies/types";
 
 export class MergeRequestsPageVM extends VM<{}, RepositoryPageVM> {
-  mrList;
+  @observableRef accessor mrList: MrList | null = null;
 
   @computed
   get projectId() {
@@ -16,7 +13,7 @@ export class MergeRequestsPageVM extends VM<{}, RepositoryPageVM> {
 
   @computed
   get selectedProject() {
-    return this.parentViewModel.selectedProject
+    return this.parentViewModel.selectedProject;
   }
 
   @computed
@@ -24,15 +21,7 @@ export class MergeRequestsPageVM extends VM<{}, RepositoryPageVM> {
     return this.parentViewModel.mergeRequestIid;
   }
 
-  protected willMount(): MaybePromise<void> {
-    console.log("KEK MergeRequestsPageVM willMount");
-  }
-
-  constructor(globals: Globals, params: ViewModelParams<{}, RepositoryPageVM>) {
-    super(globals, params);
-
-    console.log("KEK MergeRequestsPageVM create");
-
+  protected willMount() {
     this.mrList = new MrList(this);
   }
 }

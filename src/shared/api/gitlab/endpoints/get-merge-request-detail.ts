@@ -4,13 +4,13 @@ import type { GitLabMergeRequestDC, GitLabProjectDC } from "../data-contracts";
 
 export const getMergeRequestDetail = async (
   connection: GitLabConnection,
-  project: GitLabProjectDC,
+  project: GitLabProjectDC | string,
   mergeRequestIid: number,
   signal?: AbortSignal,
 ): Promise<GitLabMergeRequestDC> => {
   const response = await gitlabFetch(
     connection,
-    `/projects/${project.id}/merge_requests/${mergeRequestIid}`,
+    `/projects/${typeof project === "string" ? encodeURIComponent(project) : project.id}/merge_requests/${mergeRequestIid}`,
     signal,
     { cache: "no-store" },
   );

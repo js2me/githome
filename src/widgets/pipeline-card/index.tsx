@@ -34,7 +34,7 @@ const JobRow = ({
   const isBusy = model.busyJobId === job.id;
 
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-950">
+    <li className="flex flex-wrap items-center gap-3 rounded-lg bg-[var(--glass-control)] px-3 py-2.5">
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
           {job.name}
@@ -43,7 +43,7 @@ const JobRow = ({
 
       {job.web_url && (
         <a
-          className="text-xs font-semibold text-brand hover:underline"
+          className="text-xs font-semibold text-[var(--glass-accent)] hover:underline"
           href={job.web_url}
           target="_blank"
           rel="noreferrer"
@@ -56,7 +56,7 @@ const JobRow = ({
 
       {model.canRun(job) && (
         <button
-          className="cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-brand hover:text-brand disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-gray-900 dark:text-slate-200"
+          className="glass-control rounded-lg px-3 py-1.5 text-xs font-semibold disabled:cursor-wait"
           type="button"
           disabled={model.busyJobId !== null}
           onClick={() => void model.runJob(job)}
@@ -79,7 +79,7 @@ export const PipelineCard = withViewModel(
     const pipeline = model.pipeline;
 
     return (
-      <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/50">
+      <section className="flex flex-col gap-3 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-control)] p-3">
         <div className="flex flex-wrap items-center gap-2 text-[13px]">
           <span className="text-fg-muted">Последний pipeline:</span>
           {pipeline?.web_url ? (
@@ -126,7 +126,7 @@ export const PipelineCard = withViewModel(
             {model.stages.map((stage) => (
               <section
                 key={stage.name}
-                className="min-w-0 rounded-lg border border-slate-200 bg-white p-2.5 dark:border-slate-800 dark:bg-gray-900"
+                className="min-w-0 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-surface)] p-2.5"
               >
                 <h3 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-slate-500">
                   {stage.name}

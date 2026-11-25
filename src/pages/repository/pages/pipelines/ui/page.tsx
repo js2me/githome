@@ -40,7 +40,7 @@ const STATUS_OPTIONS = [
 ] as const;
 
 const BUTTON_CLASS =
-  "cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand hover:text-brand disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-gray-900 dark:text-slate-200";
+  "glass-control rounded-lg px-3 py-2 text-sm font-semibold disabled:cursor-wait";
 
 const formatDate = (value: string) => {
   const date = new Date(value);
@@ -119,7 +119,7 @@ const JobRow = ({
   const isBusy = model.busyJobId === job.id;
 
   return (
-    <li className="rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-950">
+    <li className="rounded-lg bg-[var(--glass-control)] px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-3">
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
@@ -132,7 +132,7 @@ const JobRow = ({
 
         {job.web_url && (
           <a
-            className="text-xs font-semibold text-brand hover:underline"
+            className="text-xs font-semibold text-[var(--glass-accent)] hover:underline"
             href={job.web_url}
             target="_blank"
             rel="noreferrer"
@@ -232,7 +232,7 @@ const PipelineRow = ({
   const mergeRequest = model.mergeRequestForPipeline(pipeline);
 
   return (
-    <li className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-gray-900">
+    <li className="glass-panel overflow-hidden rounded-xl">
       <div className="flex flex-wrap items-center gap-2 px-4 py-3.5">
         <button
           aria-expanded={isExpanded}
@@ -269,7 +269,7 @@ const PipelineRow = ({
         </button>
 
         <a
-          className="text-xs font-semibold text-brand hover:underline"
+          className="text-xs font-semibold text-[var(--glass-accent)] hover:underline"
           href={pipeline.web_url}
           target="_blank"
           rel="noreferrer"
@@ -316,7 +316,7 @@ const PipelineRow = ({
               Stages и jobs
             </h3>
             <a
-              className="text-xs font-semibold text-brand hover:underline"
+              className="text-xs font-semibold text-[var(--glass-accent)] hover:underline"
               href={pipeline.web_url}
               target="_blank"
               rel="noreferrer"
@@ -585,7 +585,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
 
       {pipelineList.isCreateFormOpen && (
         <form
-          className="mb-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-gray-900"
+          className="mb-4 flex flex-col gap-3 glass-panel rounded-2xl p-4"
           onSubmit={(event) => {
             event.preventDefault();
             void pipelineList.createPipeline();
@@ -595,7 +595,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
             Ветка, тег или commit SHA
             <input
               autoComplete="off"
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal dark:border-slate-700 dark:bg-gray-950"
+              className="glass-input rounded-lg px-3 py-2 font-normal"
               required
               value={pipelineList.pipelineRef}
               onChange={(event) => pipelineList.setPipelineRef(event.target.value)}
@@ -605,7 +605,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
           <label className="flex flex-col gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
             Variables (по одной KEY=VALUE на строку)
             <textarea
-              className="min-h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm font-normal dark:border-slate-700 dark:bg-gray-950"
+              className="glass-input min-h-24 rounded-lg px-3 py-2 font-mono text-sm font-normal"
               placeholder={"ENV=staging\nRUN_E2E=true"}
               value={pipelineList.variablesText}
               onChange={(event) => pipelineList.setVariablesText(event.target.value)}
@@ -642,7 +642,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
         <label className="flex flex-col gap-1 text-xs font-semibold text-slate-500">
           Статус
           <select
-            className="min-w-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-gray-900 dark:text-slate-200"
+            className="min-w-40 glass-input rounded-lg px-3 py-2 text-sm"
             value={pipelineList.statusFilter}
             onChange={(event) => pipelineList.setStatusFilter(event.target.value)}
           >
@@ -664,7 +664,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
           <label className="flex flex-col gap-1 text-xs font-semibold text-slate-500">
             Ветка или тег
             <input
-              className="min-w-52 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-gray-900 dark:text-slate-200"
+              className="min-w-52 glass-input rounded-lg px-3 py-2 text-sm"
               placeholder="Например, main"
               value={pipelineList.refSearch}
               onChange={(event) => pipelineList.setRefSearch(event.target.value)}

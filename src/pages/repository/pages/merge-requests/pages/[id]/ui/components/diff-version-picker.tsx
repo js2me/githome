@@ -107,10 +107,8 @@ export const DiffVersionPicker = observer(
         <button
           ref={triggerRef}
           className={cn(
-            "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium transition",
-            isOpen
-              ? "border-brand bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
-              : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700",
+            "glass-control inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium",
+            isOpen && "border-[var(--glass-accent)] bg-[var(--glass-selected)] text-[var(--glass-accent)]",
           )}
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
@@ -131,7 +129,7 @@ export const DiffVersionPicker = observer(
         {isOpen && (
           <div
             ref={popupRef}
-            className="absolute left-0 top-[calc(100%+4px)] z-50 min-w-[200px] rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-gray-900"
+            className="glass-overlay absolute top-[calc(100%+4px)] left-0 z-50 min-w-[200px] rounded-lg p-1"
             role="listbox"
           >
             {versions.map((version, index) => {
@@ -143,9 +141,9 @@ export const DiffVersionPicker = observer(
                 <button
                   key={version.id}
                   className={cn(
-                    "flex w-full items-center border-none bg-transparent px-3 py-1.5 text-left text-xs transition hover:bg-slate-50 dark:hover:bg-slate-800",
+                    "flex w-full items-center rounded-md px-3 py-1.5 text-left text-xs transition hover:bg-[var(--glass-hover)]",
                     isSelected &&
-                      "bg-orange-50 font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+                      "bg-[var(--glass-selected)] font-semibold text-[var(--glass-accent)]",
                   )}
                   type="button"
                   role="option"

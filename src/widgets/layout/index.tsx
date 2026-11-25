@@ -15,10 +15,8 @@ export const Layout = withViewModel(LayoutVM, ({ model, children }: LayoutProps)
 
   return (
     <GitLabConnectionProvider connection={stores.settings.activeConnection}>
-      <div className="flex min-h-screen min-w-0 flex-col bg-canvas-default">
-        <div className="@container">
-          <AppNav />
-        </div>
+      <div className="glass-canvas flex min-h-screen min-w-0 flex-col">
+        <AppNav />
         <WorkspacePicker
           store={navTree}
           activeItemId={navigation.mergeRequests.activeItemId}
