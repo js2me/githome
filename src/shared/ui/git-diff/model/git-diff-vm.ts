@@ -101,10 +101,15 @@ export class GitDiffVM extends VM<GitDiffPayload> {
   }
 
   @computed
+  private get changes() {
+    return this.payload.changes;
+  }
+
+  @computed
   get filesGitDiffs(): FileGitDiff[] {
     const activeKeys = new Set<string>();
 
-    const models = this.payload.changes.map((change) => {
+    const models = this.changes.map((change) => {
       const key = getDiffFileKey(change.old_path, change.new_path);
       activeKeys.add(key);
 

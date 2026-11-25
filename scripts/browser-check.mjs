@@ -17,6 +17,7 @@
  * - open multiple MR tabs across repositories, switch between them, and close one
  * - scroll and select files in a 255-file merge request
  * - compare PNG and JPEG revisions and open either side in the zoom viewer
+ * - submit a file-level comment and render the new thread on the file
  * - avatar titles map to the right authors, zero page/console errors
  */
 import puppeteer from 'puppeteer-core';
@@ -134,6 +135,10 @@ const imageResponses = new Map([
   ['base-sha:assets/deleted.png', pngBefore],
 ]);
 const imageRequests = [];
+const imageMrDiffRefs = { base_sha: 'base-sha', start_sha: 'incorrect-parent', head_sha: 'head-sha' };
+const fileDiscussionPath = '/git-proxy/gitlab.mock/api/v4/projects/1/merge_requests/156/discussions';
+const isFileDiscussionPost = (req) =>
+  req.method() === 'POST' && new URL(req.url()).pathname === fileDiscussionPath;
 
 const route = (url) => {
   const p = new URL(url).pathname.replace('/git-proxy/gitlab.mock', '');
@@ -150,7 +155,7 @@ const route = (url) => {
   if (p.endsWith('/merge_requests/156')) {
     return {
       ...mr(156, 'Image MR', AUTHORS[0]),
-      diff_refs: { base_sha: 'base-sha', start_sha: 'incorrect-parent', head_sha: 'head-sha' },
+      diff_refs: imageMrDiffRefs,
     };
   }
   if (/merge_requests\/\d+\/(versions|discussions|reviewers)$/.test(p)) return [];
@@ -224,6 +229,19 @@ page.on('request', (req) => {
   const url = req.url();
   if (url.includes('/git-proxy/')) {
     const requestUrl = new URL(url);
+    if (isFileDiscussionPost(req)) {
+      const { body, position } = JSON.parse(req.postData() ?? '{}');
+      req.respond({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'file-thread',
+          individual_note: false,
+          notes: [{ id: 1, body, position, author: user(1, 'Test User'), created_at: new Date().toISOString() }],
+        }),
+      });
+      return;
+    }
     const imagePath = requestUrl.pathname.match(/\/repository\/files\/([^/]+)\/raw$/)?.[1];
     if (imagePath && decodeURIComponent(imagePath).startsWith('assets/')) {
       const key = `${requestUrl.searchParams.get('ref')}:${decodeURIComponent(imagePath)}`;
@@ -545,6 +563,36 @@ try {
   await page.waitForSelector(afterViewer, { hidden: true });
 } catch (error) {
   check('image diff previews', false, String(error));
+}
+
+try {
+  const card = '.git-diff > article:first-child';
+  const editor = `${card} textarea[placeholder="Оставьте комментарий к файлу"]`;
+  const submit = `${card} ::-p-xpath(.//button[normalize-space(.)="Отправить"])`;
+  const body = 'Looks good at file level';
+  await page.click(`${card} header ::-p-xpath(.//button[normalize-space(.)="Комментарий к файлу"])`);
+  await page.waitForSelector(editor, { timeout: 3000 });
+  check('file comment cannot be submitted while empty', await page.$eval(submit, button => button.disabled));
+  await page.type(editor, body);
+  check('typing enables the submit button', await page.$eval(submit, button => !button.disabled));
+  const [request] = await Promise.all([
+    page.waitForRequest(isFileDiscussionPost, { timeout: 3000 }),
+    page.click(submit),
+  ]);
+  const payload = JSON.parse(request.postData() ?? '{}');
+  check('submit sends a file-level discussion on the renamed file',
+    payload.body === body && payload.position?.position_type === 'file' &&
+    payload.position.old_path === 'assets/old screenshot.PNG' &&
+    payload.position.new_path === 'assets/new screenshot.png' &&
+    Object.entries(imageMrDiffRefs).every(([key, value]) => payload.position[key] === value) &&
+    !('old_line' in payload.position) && !('new_line' in payload.position),
+  );
+  await page.waitForFunction((selector, text) =>
+    document.querySelector(selector)?.textContent?.includes(text), { timeout: 3000 }, card, body);
+  await page.waitForSelector(editor, { hidden: true, timeout: 3000 });
+  check('the new comment appears on the file and closes the form', true);
+} catch (error) {
+  check('submitting a file-level comment', false, String(error));
 }
 
 check('no page errors', pageErrors.length === 0, pageErrors[0]?.slice(0, 150));

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { getDiffFileElementId, getDiffFileHeaderRowId } from "@/shared/lib/diff-search";
 import { cn } from "@/shared/lib/cn";
@@ -70,22 +70,7 @@ const FileCommentForm = ({
 }) => {
   const { comments, parent } = model;
   const { markdownScope } = parent.payload;
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const submitButtonRef = useRef<HTMLButtonElement | null>(null);
-
-  const syncSubmitDisabled = useCallback(() => {
-    const button = submitButtonRef.current;
-    const textarea = textareaRef.current;
-    if (!button || !textarea) {
-      return;
-    }
-
-    button.disabled = isSubmitting || !textarea.value.trim();
-  }, [isSubmitting]);
-
-  useEffect(() => {
-    syncSubmitDisabled();
-  }, [isSubmitting, syncSubmitDisabled]);
+  const [body, setBody] = useState("");
 
   return (
     <div className="border-b border-slate-200 bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
@@ -93,16 +78,15 @@ const FileCommentForm = ({
         Комментарий к файлу
       </div>
       <GitlabCommentEditor
-        inputRef={textareaRef}
         projectId={markdownScope?.projectId ?? null}
         editorClassName="border-orange-300 dark:border-orange-800"
         placeholder="Оставьте комментарий к файлу"
-        defaultValue=""
-        onInput={syncSubmitDisabled}
+        value={body}
+        onChange={setBody}
         disabled={isSubmitting}
       />
       {submitError && (
-        <div className="mt-2 text-xs text-red-600 dark:text-red-300">
+        <div className="mt-2 text-xs text-red-600 dark:text-red-300" role="alert">
           {submitError}
         </div>
       )}
@@ -116,15 +100,14 @@ const FileCommentForm = ({
           Отмена
         </button>
         <button
-          ref={submitButtonRef}
           className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
           type="button"
-          disabled
+          disabled={isSubmitting || !body.trim()}
           onClick={() => {
-            void comments.submitFileComment(textareaRef.current?.value ?? "");
+            void comments.submitFileComment(body);
           }}
         >
-          Отправить
+          {isSubmitting ? "Отправка..." : "Отправить"}
         </button>
       </div>
     </div>
