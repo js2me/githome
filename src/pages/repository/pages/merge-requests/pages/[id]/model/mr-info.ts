@@ -44,11 +44,7 @@ export type MrReviewAction =
   | 'requestChanges'
   | 'cancelRequestChanges';
 
-type MrLifecycleAction = 'merge' | 'close';
-export type MrAction = MrReviewAction | MrLifecycleAction;
-
-const isLifecycleAction = (action: MrAction | null) =>
-  action === 'merge' || action === 'close';
+export type MrAction = MrReviewAction | 'close';
 
 export type MrInfoModelContext = {
   project: GitLabProjectDC;
@@ -138,13 +134,13 @@ export class MrInfoModel {
   @observable private accessor actionErrorValue: Error | null = null;
 
   get reviewActionError() {
-    return isLifecycleAction(this.failedAction)
+    return this.failedAction === 'close'
       ? ''
       : (this.actionErrorValue?.message ?? '');
   }
 
   get lifecycleActionError() {
-    return isLifecycleAction(this.failedAction)
+    return this.failedAction === 'close'
       ? (this.actionErrorValue?.message ?? '')
       : '';
   }
@@ -289,28 +285,6 @@ export class MrInfoModel {
   @computed
   get mergeRequestDetail(): GitLabMergeRequestDC | null {
     return this.mergeRequestDetailQuery.data ?? null;
-  }
-
-  private get mergeRequestHeadSha() {
-    return (
-      this.mergeRequestDetail?.sha ||
-      this.mergeRequestDetail?.diff_refs?.head_sha
-    );
-  }
-
-  get canMerge() {
-    const mr = this.mergeRequestDetail;
-    return (
-      mr?.state === 'opened' &&
-      !mr.draft &&
-      !mr.work_in_progress &&
-      !mr.has_conflicts &&
-      mr.user?.can_merge !== false &&
-      Boolean(this.mergeRequestHeadSha) &&
-      (mr.detailed_merge_status
-        ? mr.detailed_merge_status === 'mergeable'
-        : mr.merge_status === 'can_be_merged')
-    );
   }
 
   @computed
@@ -747,23 +721,6 @@ export class MrInfoModel {
         }
       });
     }
-  }
-
-  @actionBound
-  async merge() {
-    const connection = this.options.globals.stores.settings.activeConnection;
-    const mr = this.options.params();
-    const sha = this.mergeRequestHeadSha;
-    if (!connection || !mr || !sha || !this.canMerge) return false;
-
-    return this.runMrAction('merge', () =>
-      gitlabApi.mergeMergeRequest(
-        connection,
-        mr.project.id,
-        mr.mergeRequestIid,
-        sha,
-      ),
-    );
   }
 
   @actionBound

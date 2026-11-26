@@ -43,8 +43,6 @@ export interface GitLabMergeRequestDC {
   detailed_merge_status?: string;
   reviewers?: GitLabUserDC[];
   has_conflicts?: boolean;
-  sha?: string | null;
-  user?: { can_merge?: boolean } | null;
   user_notes_count?: number;
   changes_count?: string;
   author?: {

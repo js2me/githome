@@ -1,4 +1,4 @@
-import { CodeFork, Xmark } from '@gravity-ui/icons';
+import { ArrowUpRightFromSquare, Xmark } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
 import { useId } from 'react';
 import { cn } from '@/shared/lib/cn';
@@ -17,20 +17,18 @@ export const MrLifecycleActions = observer(
 
     const action = info.actionInProgress;
     const busy = action !== null;
-    const canMerge = info.canMerge;
 
     return (
       <>
-        <button
-          type="button"
-          className="glass-primary inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 font-semibold text-xs"
-          disabled={busy || !canMerge}
-          title={!canMerge ? t('review.mergeUnavailable') : undefined}
-          onClick={() => void info.merge()}
+        <a
+          className="glass-primary inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 font-semibold text-xs no-underline"
+          href={mr.web_url}
+          target="_blank"
+          rel="noreferrer"
         >
-          <CodeFork aria-hidden className="size-3.5" />
-          {t(action === 'merge' ? 'review.merging' : 'review.merge')}
-        </button>
+          {t('review.mergeInGitLab')}
+          <ArrowUpRightFromSquare aria-hidden className="size-3.5" />
+        </a>
         <button
           type="button"
           className={cn(actionClass, 'text-[var(--color-danger-fg)]')}
