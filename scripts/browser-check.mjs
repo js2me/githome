@@ -168,6 +168,14 @@ const tsxChange = {
   ].join('\n'),
 };
 
+const generatedPath = 'packages/feature-14/__generated__/schema.ts';
+const generatedChange = {
+  old_path: generatedPath,
+  new_path: generatedPath,
+  diff: '@@ -1 +1 @@\n-export const schemaVersion = 1;\n+export const schemaVersion = 2;\n',
+  generated_file: true,
+};
+
 const largeMrChanges = Array.from({ length: 255 }, (_, index) => {
   if (index === 254) return tsxChange;
   const directory = String(Math.floor(index / 17)).padStart(2, '0');
@@ -268,7 +276,7 @@ const route = (url, postData, token) => {
   }
   if (p.endsWith('/diffs_batch.json')) {
     if (p.includes('/155/')) return { diff_files: largeMrChanges };
-    if (p.includes('/157/')) return { diff_files: [tsxChange] };
+    if (p.includes('/157/')) return { diff_files: [tsxChange, generatedChange] };
     return { diff_files: p.includes('/156/') ? imageMrChanges : [] };
   }
   if (p.endsWith('/merge_requests/155')) return mr(155, 'Large MR', AUTHORS[0]);
@@ -766,36 +774,89 @@ try {
 
   await page.goto(`${BASE}/repository/1/merge-requests/157`, { waitUntil: 'domcontentloaded' });
   const card = '.git-diff > article:first-child';
+  const generatedCard = '.git-diff > article:nth-child(2)';
+  const expandButton = `${generatedCard} button[aria-busy="false"]`;
+  const copyContentButton = `${card} button[aria-label="копировать содержимое"]`;
   await page.waitForSelector(card);
+  await page.waitForSelector(expandButton);
   await page.$eval(card, element => element.scrollIntoView({ block: 'center' }));
   await checkTsxColors(card, 'TSX additions and changed words retain their syntax colors');
   for (const theme of ['dark', 'light']) {
-    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }]);
+    await page.mouse.move(0, 0);
+    await page.emulateMediaFeatures([
+      { name: 'prefers-color-scheme', value: theme },
+      { name: 'prefers-reduced-motion', value: 'reduce' },
+    ]);
     await page.waitForFunction(dark => document.documentElement.classList.contains('dark') === dark, {}, theme === 'dark');
-    const minimumContrast = await page.$eval(card, element => {
+    const measureContrast = () => page.$eval(card, (element, expandSelector) => {
       const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
-      const luminance = color => {
-        ctx.fillStyle = color;
-        ctx.fillRect(0, 0, 1, 1);
+      const luminance = (...colors) => {
+        ctx.clearRect(0, 0, 1, 1);
+        for (const color of colors) {
+          ctx.fillStyle = color;
+          ctx.fillRect(0, 0, 1, 1);
+        }
         const rgb = Array.from(ctx.getImageData(0, 0, 1, 1).data).slice(0, 3).map(value => {
           const s = value / 255;
           return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
         });
         return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
       };
+      const contrast = (bg, fg) => (Math.max(bg, fg) + 0.05) / (Math.min(bg, fg) + 0.05);
       const styles = [...element.querySelectorAll('.git-diff-code .git-diff-token, .git-diff-line-num, .git-diff-prefix')]
         .filter(node => node.textContent.trim());
-      return Math.min(...styles.map(node => {
+      const minimumContrast = Math.min(...styles.map(node => {
         const style = getComputedStyle(node);
         const bg = style.backgroundColor === 'rgba(0, 0, 0, 0)'
           ? getComputedStyle(node.closest('.git-diff-code')).backgroundColor : style.backgroundColor;
-        const [low, high] = [luminance(bg), luminance(style.color)].sort((a, b) => a - b);
-        return (high + 0.05) / (low + 0.05);
+        return contrast(luminance(bg), luminance(style.color));
       }));
-    });
+      const button = document.querySelector(expandSelector);
+      const style = getComputedStyle(button);
+      const surface = getComputedStyle(button.parentElement).backgroundColor;
+      const header = element.querySelector('header');
+      const headerSurface = getComputedStyle(header).backgroundColor;
+      const getCopyIconContrast = copyButton => contrast(
+          luminance(headerSurface, getComputedStyle(copyButton).backgroundColor),
+          luminance(getComputedStyle(copyButton.querySelector('svg')).stroke),
+      );
+      const copyButtons = [...header.querySelectorAll('button[aria-label^="копировать"]')];
+      const hoveredCopyButton = copyButtons.find(copyButton => copyButton.matches(':hover'));
+      return {
+        minimumContrast,
+        copyIconContrast: Math.min(...copyButtons.map(getCopyIconContrast)),
+        hoveredCopyContrast: hoveredCopyButton ? getCopyIconContrast(hoveredCopyButton) : 0,
+        buttonContrast: contrast(luminance(surface, style.backgroundColor), luminance(style.color)),
+      };
+    }, expandButton);
+    const { minimumContrast, buttonContrast, copyIconContrast } = await measureContrast();
     check(`diff text, change markers and line numbers retain contrast in ${theme} mode`,
       minimumContrast >= 4.5 && Number.isFinite(minimumContrast), minimumContrast.toFixed(2));
+    check(`expand button text is readable in ${theme} mode`,
+      buttonContrast >= 4.5, buttonContrast.toFixed(2));
+    await page.hover(copyContentButton);
+    const hoverContrast = (await measureContrast()).hoveredCopyContrast;
+    check(`diff copy icons stay readable in ${theme} mode, including on hover`,
+      Math.min(copyIconContrast, hoverContrast) >= 4.5,
+      `${copyIconContrast.toFixed(2)} / ${hoverContrast.toFixed(2)}`);
   }
+  await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]);
+  const originalViewport = page.viewport();
+  await page.setViewport({ ...originalViewport, width: 320 });
+  check('generated notice keeps the expand button visible without horizontal scrolling at 320px',
+    await page.$eval(expandButton, button => {
+      const scroll = button.closest('.git-diff-body-scroll');
+      const viewport = scroll.getBoundingClientRect();
+      const bounds = button.getBoundingClientRect();
+      return scroll.scrollWidth === scroll.clientWidth &&
+        bounds.left >= viewport.left && bounds.right <= viewport.right;
+    }));
+  await page.setViewport(originalViewport);
+  await page.$eval(expandButton, button => button.focus());
+  await page.keyboard.press('Enter');
+  await page.waitForSelector(`${generatedCard} .git-diff-code`);
+  check('generated file expands from the banner button via the keyboard', !(await page.$(expandButton)));
+  await page.$eval(card, element => element.scrollIntoView({ block: 'center' }));
   await page.keyboard.down('Control');
   await page.keyboard.press('f');
   await page.keyboard.up('Control');

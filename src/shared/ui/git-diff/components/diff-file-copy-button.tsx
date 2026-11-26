@@ -5,12 +5,13 @@ import { CopiedIcon } from './icons/copied-icon';
 import { CopyFailedIcon } from './icons/copy-failed-icon';
 
 const diffFileCopyButtonVariants = cva(
-  'inline-flex cursor-pointer items-center justify-center rounded transition disabled:cursor-wait disabled:opacity-60',
+  'inline-flex shrink-0 items-center justify-center rounded-md enabled:cursor-pointer enabled:hover:bg-brand-tint enabled:hover:text-brand-ink',
   {
     variants: {
       compact: {
-        true: 'h-5 w-5 text-[var(--color-fg-subtle)] hover:bg-[var(--color-accent-emphasis-hover)] hover:text-[var(--diff-code-text)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)] [&_svg]:h-3 [&_svg]:w-3',
-        false: 'glass-control size-7',
+        true: 'size-5 text-fg-muted [&_svg]:size-3.5',
+        false:
+          'size-7 border border-border-default bg-canvas-subtle text-fg-default',
       },
     },
     defaultVariants: {

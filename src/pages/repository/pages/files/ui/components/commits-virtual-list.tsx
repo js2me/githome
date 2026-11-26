@@ -34,9 +34,10 @@ const CommitRow = ({
 }) => (
   <button
     className={cn(
-      'flex w-full flex-col gap-0.5 border-none bg-transparent px-3 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800',
-      isSelected &&
-        'bg-orange-50 hover:bg-orange-50 dark:bg-orange-950 dark:hover:bg-orange-950',
+      'flex w-full flex-col gap-0.5 border-none px-3 py-2 text-left transition',
+      isSelected
+        ? 'bg-brand-tint hover:bg-brand-selection'
+        : 'bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800',
     )}
     type="button"
     role="option"
@@ -48,7 +49,7 @@ const CommitRow = ({
         className={cn(
           'shrink-0 font-mono text-xs',
           isSelected
-            ? 'font-semibold text-orange-700 dark:text-orange-300'
+            ? 'font-semibold text-brand-ink'
             : 'text-slate-600 dark:text-slate-400',
         )}
       >
@@ -63,7 +64,7 @@ const CommitRow = ({
         className={cn(
           'min-w-0 truncate text-sm',
           isSelected
-            ? 'font-semibold text-orange-700 dark:text-orange-300'
+            ? 'font-semibold text-brand-ink'
             : 'text-slate-800 dark:text-slate-200',
         )}
       >

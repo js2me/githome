@@ -91,7 +91,7 @@
         "constant.other.caps"
       ],
       "settings": {
-        "foreground": "#965027"
+        "foreground": "#175e62"
       }
     },
     {
@@ -303,7 +303,7 @@
         "constant.other.haskell"
       ],
       "settings": {
-        "foreground": "#8f5e15"
+        "foreground": "#4d478e"
       }
     },
     {
@@ -412,7 +412,7 @@
         "meta.function.parameter variable"
       ],
       "settings": {
-        "foreground": "#8f5e15"
+        "foreground": "#4d478e"
       }
     },
     {
@@ -533,7 +533,7 @@
         "entity.name.tag.reference"
       ],
       "settings": {
-        "foreground": "#8f5e15"
+        "foreground": "#4d478e"
       }
     },
     {
@@ -549,7 +549,7 @@
         "meta.property-list meta.at-rule.else"
       ],
       "settings": {
-        "foreground": "#965027"
+        "foreground": "#175e62"
       }
     },
     {
@@ -602,7 +602,7 @@
     {
       "scope": "support.constant.property-value",
       "settings": {
-        "foreground": "#965027"
+        "foreground": "#175e62"
       }
     },
     {
@@ -729,7 +729,7 @@
         "punctuation.definition.character-class.regexp"
       ],
       "settings": {
-        "foreground": "#8f5e15"
+        "foreground": "#4d478e"
       }
     },
     {
@@ -802,7 +802,7 @@
         "source.json meta.structure.dictionary.json meta.structure.dictionary.value.json meta.structure.dictionary.json meta.structure.dictionary.value.json meta.structure.dictionary.json meta.structure.dictionary.value.json meta.structure.dictionary.json meta.structure.dictionary.value.json meta.structure.dictionary.json support.type.property-name.json"
       ],
       "settings": {
-        "foreground": "#8f5e15"
+        "foreground": "#4d478e"
       }
     },
     {

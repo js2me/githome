@@ -74,7 +74,7 @@ const TreeNode = observer(
         className={cn(
           'flex w-full min-w-0 cursor-pointer items-center gap-1.5 rounded-md border-none px-2 py-1.5 text-left text-sm transition',
           isActive
-            ? 'bg-orange-50 font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+            ? 'bg-brand-tint font-semibold text-brand-ink'
             : 'bg-transparent text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}

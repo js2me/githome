@@ -10,11 +10,11 @@ export const DiffFileCopyIcon = ({
 }) => (
   <svg
     aria-hidden="true"
-    className={cn('h-3.5 w-3.5', className)}
+    className={cn('size-4', className)}
     viewBox="0 0 16 16"
     fill="none"
     stroke="currentColor"
-    strokeWidth="1.6"
+    strokeWidth="1.75"
     strokeLinecap="round"
     strokeLinejoin="round"
   >

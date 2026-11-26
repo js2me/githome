@@ -1,8 +1,12 @@
+import { ChevronDown } from '@gravity-ui/icons';
 import { memo } from 'react';
 import type { GitLabMergeRequestChangeDC } from '@/shared/api/gitlab';
 
 const GENERATED_DOCS_URL =
   'https://docs.gitlab.com/ee/user/project/merge_requests/changes.html#collapse-generated-files';
+
+const bannerClassName =
+  'flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 border-info-border border-b bg-info-surface px-4 py-3 text-fg-default text-sm';
 
 export const DiffFileCollapseBanner = memo(
   ({
@@ -16,7 +20,7 @@ export const DiffFileCollapseBanner = memo(
   }) => {
     if (change.too_large) {
       return (
-        <div className="border-[var(--color-border-default)] border-b bg-orange-50 px-4 py-4 text-[var(--color-fg-default)] text-sm dark:bg-[var(--color-collapse-bg)]">
+        <div className={bannerClassName}>
           <p className="m-0">
             Diff слишком большой для отображения в этом интерфейсе.
           </p>
@@ -28,12 +32,12 @@ export const DiffFileCollapseBanner = memo(
       <>
         Сгенерированные файлы по умолчанию свёрнуты. Чтобы изменить это
         поведение, отредактируйте файл{' '}
-        <code className="rounded bg-black/10 px-1 py-0.5 font-mono text-[13px] dark:bg-white/10">
+        <code className="rounded bg-canvas-subtle px-1 py-0.5 font-mono text-[13px]">
           .gitattributes
         </code>
         .{' '}
         <a
-          className="text-[var(--color-fg-link)] hover:underline"
+          className="text-fg-link hover:underline"
           href={GENERATED_DOCS_URL}
           rel="noopener noreferrer"
           target="_blank"
@@ -49,15 +53,24 @@ export const DiffFileCollapseBanner = memo(
     );
 
     return (
-      <div className="border-[var(--color-border-default)] border-b bg-orange-50 px-4 py-4 text-[var(--color-fg-default)] text-sm dark:bg-[var(--color-collapse-bg)]">
+      <div className={bannerClassName}>
         <p className="m-0">{message}</p>
         <button
-          className="mt-3 cursor-pointer rounded-md border border-[var(--color-collapse-btn-border)] bg-[var(--color-collapse-btn-bg)] px-3 py-1.5 font-semibold text-[13px] text-white transition enabled:hover:bg-[var(--color-collapse-btn-bg-hover)] disabled:cursor-wait disabled:opacity-60"
+          className="glass-control inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 font-semibold text-xs disabled:cursor-wait"
           type="button"
+          aria-busy={isLoading}
           disabled={isLoading}
           onClick={onExpand}
         >
-          {isLoading ? 'Загружаем...' : 'Развернуть файл'}
+          {isLoading ? (
+            <span
+              aria-hidden="true"
+              className="size-3.5 rounded-full border border-current border-t-transparent motion-safe:animate-spin"
+            />
+          ) : (
+            <ChevronDown aria-hidden="true" className="size-3.5" />
+          )}
+          {isLoading ? 'Загружаем…' : 'Развернуть файл'}
         </button>
       </div>
     );

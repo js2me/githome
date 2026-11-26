@@ -69,9 +69,10 @@ export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
               <button
                 key={branch.name}
                 className={cn(
-                  'flex w-full items-center border-none bg-transparent px-3 py-2 text-left text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800',
-                  isSelected &&
-                    'bg-orange-50 font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+                  'flex w-full items-center border-none px-3 py-2 text-left text-sm transition',
+                  isSelected
+                    ? 'bg-brand-tint font-semibold text-brand-ink hover:bg-brand-selection'
+                    : 'bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800',
                 )}
                 type="button"
                 role="option"

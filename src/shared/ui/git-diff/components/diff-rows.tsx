@@ -383,9 +383,7 @@ export const DiffLineRow = observer(
           className={cn(
             'git-diff-line-num git-diff-line-num--old-border',
             surface.oldNum,
-            hasVisibleThreads &&
-              !isSelected &&
-              'bg-orange-50 dark:bg-orange-950',
+            hasVisibleThreads && !isSelected && 'bg-info-surface',
             selectionClassName,
             lineNumInteractionClassName,
             isSelectionStart &&
@@ -576,7 +574,7 @@ const InlineThreadNote = withPropsViewModel(InlineNoteVM, ({ model }) => {
 
             <div className="mt-2.5 flex gap-2">
               <button
-                className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 font-semibold text-[13px] text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 font-semibold text-[13px] text-brand-on enabled:hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
                 type="button"
                 disabled={isSaving || !editBody.trim()}
                 onClick={() => {
@@ -736,7 +734,7 @@ export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
                     )}
                     <div className="mt-2.5 flex gap-2">
                       <button
-                        className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 font-semibold text-[13px] text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 font-semibold text-[13px] text-brand-on enabled:hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
                         type="button"
                         disabled={isSubmittingReply || !replyBody.trim()}
                         onClick={() => void model.submitReply()}
@@ -818,7 +816,7 @@ export const DiffCommentFormRow = withPropsViewModel(
     const { body, setBody, textareaRef } = model;
     return (
       <div className="w-full min-w-0 max-w-full overflow-hidden">
-        <div className="border-slate-200 border-t bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
+        <div className="border-slate-200 border-t bg-info-surface px-3.5 py-3 dark:border-[var(--color-border-default)]">
           {rangeLabel && (
             <div className="mb-2 font-semibold text-blue-700 text-xs dark:text-blue-300">
               Комментарий к строкам {rangeLabel}
@@ -827,7 +825,7 @@ export const DiffCommentFormRow = withPropsViewModel(
           <GitlabCommentEditor
             inputRef={textareaRef}
             projectId={markdownScope?.projectId ?? null}
-            editorClassName="border-orange-300 dark:border-orange-800"
+            editorClassName="border-info-border"
             placeholder="Напишите комментарий..."
             value={body}
             onChange={setBody}
@@ -843,7 +841,7 @@ export const DiffCommentFormRow = withPropsViewModel(
 
           <div className="mt-2.5 flex gap-2">
             <button
-              className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 font-semibold text-[13px] text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-lg border border-brand bg-brand px-3.5 py-2 font-semibold text-[13px] text-brand-on enabled:hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
               disabled={isSubmitting || !body.trim()}
               onClick={() => onSubmit(body)}

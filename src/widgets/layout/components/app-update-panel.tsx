@@ -66,7 +66,7 @@ export const AppUpdatePanel = observer(({ model }: { model: AppUpdates }) => {
           {status === 'downloading' && (
             <progress
               aria-label="Загрузка обновления"
-              className="mt-3 h-2 w-full accent-orange-600"
+              className="mt-3 h-2 w-full accent-brand"
               max={100}
               value={progress ?? 0}
             />

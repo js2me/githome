@@ -1,11 +1,18 @@
 :root {
   /* Brand */
-  --color-brand: #fc6d26;
-  --color-brand-hover: #e95d1f;
-  --color-brand-gradient-to: #e24329;
-  --color-brand-focus-shadow: rgb(252 109 38 / 0.15);
-  --color-brand-selection-shadow: rgb(252 109 38 / 0.12);
-  --color-brand-border-accent: rgb(252 109 38 / 0.7);
+  --color-brand: #514ab5;
+  --color-brand-hover: #403995;
+  --color-brand-on: #fff;
+  --color-brand-tint: #e3e2f6;
+  --color-brand-selection: #d9d7f3;
+  --color-brand-ink: #403995;
+  --color-brand-focus-shadow: rgb(81 74 181 / 0.15);
+  --color-brand-border-accent: rgb(81 74 181 / 0.7);
+
+  /* Information and review context */
+  --color-info-surface: #dcecea;
+  --color-info-border: #8cb8b4;
+  --color-info-ink: #175e62;
   --color-card-hover-shadow: rgb(15 23 42 / 0.06);
 
   /* Application chrome. Diff and syntax colors below remain opaque. */
@@ -21,21 +28,11 @@
   --glass-highlight: rgb(255 255 255 / 0.94);
   --glass-shadow: 0 6px 24px -14px rgb(34 49 79 / 0.22);
   --glass-float-shadow: 0 14px 46px -12px rgb(34 49 79 / 0.27);
-  --glass-selected: rgb(255 225 204 / 0.8);
-  --glass-accent: #a43d11;
-  --glass-primary-top: #c94c1b;
-  --glass-primary-bottom: #af3e16;
+  --glass-selected: rgb(191 187 244 / 0.38);
+  --glass-accent: #514ab5;
+  --glass-primary-top: #5951bc;
+  --glass-primary-bottom: #443d9f;
   --glass-primary-text: #fff;
-
-  /* Brand palette (orange — не зависит от UI-темы) */
-  --color-orange-50: #fff7ed;
-  --color-orange-100: #ffedd5;
-  --color-orange-300: #fdba74;
-  --color-orange-600: var(--color-brand-hover);
-  --color-orange-700: #c2410c;
-  --color-orange-800: #9a3412;
-  --color-orange-900: #7c2d12;
-  --color-orange-950: #431407;
 
   /* Canvas & surfaces (Tokyo Night Light) */
   --color-canvas-default: #e6e7ed;
@@ -77,17 +74,12 @@
   --color-stats-removed: #914c54;
 
   /* Comment button */
-  --color-comment-btn-hover-bg: var(--color-orange-50);
-  --color-comment-btn-hover-fg: var(--color-orange-700);
-
-  /* Collapse banner */
-  --color-collapse-btn-border: #868686;
-  --color-collapse-btn-bg: #333238;
-  --color-collapse-btn-bg-hover: #44434a;
+  --color-comment-btn-hover-bg: var(--color-info-surface);
+  --color-comment-btn-hover-fg: var(--color-info-ink);
 
   /* File status icons */
   --color-file-renamed: #2563eb;
-  --color-file-modified: #c17d00;
+  --color-file-modified: var(--color-info-ink);
 
   /* Diff (Tokyo Night Light) */
   --diff-border: #c7c9d4;
@@ -111,9 +103,9 @@
   --diff-stats-added: #166775;
   --diff-stats-removed: #914c54;
   --diff-canvas: var(--color-canvas-default);
-  --diff-search-active-bg: #fbbf24;
+  --diff-search-active-bg: #80d9d0;
   --diff-search-active-fg: #1e293b;
-  --diff-search-inactive-bg: #fde68a;
+  --diff-search-inactive-bg: #bde6e1;
   --diff-search-inactive-fg: #334155;
 
   /* File tree */
@@ -143,7 +135,7 @@
   --syntax-keyword: #8c4351;
   --syntax-type: #006c86;
   --syntax-function: #2959aa;
-  --syntax-number: #965027;
+  --syntax-number: #175e62;
   --syntax-attr: #5a3e8e;
   --syntax-literal: #0f4b6e;
 
@@ -198,6 +190,19 @@
 
 /* Тёмная тема — только через класс .dark (ThemeManager) */
 .dark {
+  --color-brand: #b5abfa;
+  --color-brand-hover: #cec6ff;
+  --color-brand-on: #262148;
+  --color-brand-tint: #353350;
+  --color-brand-selection: #413b60;
+  --color-brand-ink: #d7d0ff;
+  --color-brand-focus-shadow: rgb(181 171 250 / 0.22);
+  --color-brand-border-accent: rgb(181 171 250 / 0.7);
+
+  --color-info-surface: #243941;
+  --color-info-border: #476e73;
+  --color-info-ink: #a2e5de;
+
   --glass-canvas: #151923;
   --glass-glow-indigo: rgb(98 95 158 / 0.28);
   --glass-glow-teal: rgb(52 120 126 / 0.21);
@@ -210,11 +215,11 @@
   --glass-highlight: rgb(255 255 255 / 0.07);
   --glass-shadow: 0 6px 24px -14px rgb(3 6 14 / 0.45);
   --glass-float-shadow: 0 14px 46px -12px rgb(2 5 12 / 0.64);
-  --glass-selected: rgb(184 87 40 / 0.21);
-  --glass-accent: #ffb18a;
-  --glass-primary-top: #ffae81;
-  --glass-primary-bottom: #fa935d;
-  --glass-primary-text: #38190b;
+  --glass-selected: rgb(171 161 255 / 0.2);
+  --glass-accent: #c2baff;
+  --glass-primary-top: #c4bcff;
+  --glass-primary-bottom: #a8a0f3;
+  --glass-primary-text: #262148;
 
   /* Canvas & surfaces — Dracula Official (dracula-theme.theme-dracula) */
   --color-canvas-default: #282a36;
@@ -250,14 +255,6 @@
   --color-danger-fg: #ff5555;
   --color-stats-removed: #ff5555;
 
-  --color-comment-btn-hover-bg: var(--color-orange-950);
-  --color-comment-btn-hover-fg: var(--color-orange-300);
-
-  --color-collapse-bg: var(--color-orange-950);
-  --color-collapse-btn-border: #6272a4;
-  --color-collapse-btn-bg: #21222c;
-  --color-collapse-btn-bg-hover: #343746;
-
   --color-card-hover-shadow: rgb(0 0 0 / 0.24);
 
   /* Diff */
@@ -280,7 +277,7 @@
   --diff-stats-added: #50fa7b;
   --diff-stats-removed: #ff5555;
   --diff-canvas: var(--color-canvas-default);
-  --diff-search-active-bg: #ffb86c;
+  --diff-search-active-bg: #80d9d0;
   --diff-search-active-fg: #282a36;
   --diff-search-inactive-bg: #6272a4;
   --diff-search-inactive-fg: #f8f8f2;
@@ -342,7 +339,7 @@
   --syntax-keyword: #ff79c6;
   --syntax-type: #8be9fd;
   --syntax-function: #50fa7b;
-  --syntax-number: #ffb86c;
+  --syntax-number: #80d9d0;
   --syntax-attr: #8be9fd;
-  --syntax-literal: #ffb86c;
+  --syntax-literal: #80d9d0;
 }

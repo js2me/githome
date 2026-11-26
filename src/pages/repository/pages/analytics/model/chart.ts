@@ -15,7 +15,7 @@ import type { AnalyticsPageVM } from './index';
 const CHART_SERIES = [
   { key: 'commits', name: 'Коммиты', color: '#6366f1' },
   { key: 'mergeRequests', name: 'Смерженные MR', color: '#10b981' },
-  { key: 'jiraMergeRequests', name: 'MR с JIRA-ID', color: '#f59e0b' },
+  { key: 'jiraMergeRequests', name: 'MR с JIRA-ID', color: '#0891b2' },
 ] as const;
 
 echarts.use([

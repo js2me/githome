@@ -71,7 +71,7 @@ export function ReviewStatuses({
             badgeClass,
             resolved
               ? positiveClass
-              : 'border-amber-600/25 bg-amber-500/10 text-amber-800 dark:text-amber-300',
+              : 'border-brand/25 bg-brand-tint text-brand-ink',
           )}
           title={`Закрыто обсуждений: ${discussions.resolved} из ${discussions.total}`}
         >

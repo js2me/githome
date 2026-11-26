@@ -78,13 +78,13 @@ const FileCommentForm = observer(
     const { fileCommentBody: body, setFileCommentBody: setBody } = comments;
 
     return (
-      <div className="border-slate-200 border-b bg-orange-50 px-3.5 py-3 dark:border-[var(--color-border-default)] dark:bg-orange-950">
+      <div className="border-slate-200 border-b bg-info-surface px-3.5 py-3 dark:border-[var(--color-border-default)]">
         <div className="mb-2 font-semibold text-blue-700 text-xs dark:text-blue-300">
           Комментарий к файлу
         </div>
         <GitlabCommentEditor
           projectId={markdownScope?.projectId ?? null}
-          editorClassName="border-orange-300 dark:border-orange-800"
+          editorClassName="border-info-border"
           placeholder="Оставьте комментарий к файлу"
           value={body}
           onChange={setBody}
@@ -108,7 +108,7 @@ const FileCommentForm = observer(
             Отмена
           </button>
           <button
-            className="rounded-md bg-brand px-3 py-1.5 font-semibold text-white text-xs transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-brand px-3 py-1.5 font-semibold text-brand-on text-xs transition enabled:hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             disabled={isSubmitting || !body.trim()}
             onClick={() => {
@@ -436,7 +436,10 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       ) : (
         <div className="git-diff-body-scroll">
           <div
-            className="w-max min-w-full"
+            className={cn(
+              'min-w-full',
+              showTooLargeBanner || isDiffContentHidden ? 'w-full' : 'w-max',
+            )}
             style={
               reservedBodyMinHeight
                 ? { minHeight: reservedBodyMinHeight }

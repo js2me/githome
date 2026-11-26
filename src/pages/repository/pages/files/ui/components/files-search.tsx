@@ -61,7 +61,7 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
               className={cn(
                 modeButtonClassName,
                 searchModel.searchMode === mode
-                  ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+                  ? 'bg-brand-selection text-brand-ink'
                   : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
               )}
               type="button"

@@ -160,7 +160,7 @@ export const SettingsDialog = observer(() => {
                       </span>
                       <input
                         type="checkbox"
-                        className="size-4 shrink-0 accent-orange-600"
+                        className="size-4 shrink-0 accent-brand"
                         checked={appSettings.wrapSourceCode}
                         onChange={(event) =>
                           appSettings.setWrapSourceCode(event.target.checked)

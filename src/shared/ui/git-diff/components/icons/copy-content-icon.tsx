@@ -2,9 +2,7 @@ import { DiffFileCopyIcon } from './diff-file-copy-icon';
 
 export const CopyContentIcon = () => (
   <DiffFileCopyIcon>
-    <path d="M6 4.5h7v9H6z" />
-    <path d="M3 11.5v-9h7" />
-    <path d="M8 7.5h3" />
-    <path d="M8 10.5h3" />
+    <rect x="6" y="5" width="7.5" height="9" rx="1" />
+    <path d="M2.5 11V3a1 1 0 0 1 1-1H10" />
   </DiffFileCopyIcon>
 );

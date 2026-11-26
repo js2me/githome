@@ -5,7 +5,7 @@ const syntaxColorFallbacks = {
   '--syntax-keyword': '#8c4351',
   '--syntax-type': '#006c86',
   '--syntax-function': '#2959aa',
-  '--syntax-number': '#965027',
+  '--syntax-number': '#175e62',
   '--syntax-attr': '#5a3e8e',
   '--syntax-literal': '#0f4b6e',
 } as const;

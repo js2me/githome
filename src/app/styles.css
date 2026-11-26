@@ -10,7 +10,13 @@
 @theme inline {
   --color-brand: var(--color-brand);
   --color-brand-hover: var(--color-brand-hover);
-  --color-brand-gradient-to: var(--color-brand-gradient-to);
+  --color-brand-on: var(--color-brand-on);
+  --color-brand-tint: var(--color-brand-tint);
+  --color-brand-selection: var(--color-brand-selection);
+  --color-brand-ink: var(--color-brand-ink);
+  --color-info-surface: var(--color-info-surface);
+  --color-info-border: var(--color-info-border);
+  --color-info-ink: var(--color-info-ink);
   --color-canvas-default: var(--color-canvas-default);
   --color-canvas-subtle: var(--color-canvas-subtle);
   --color-canvas-overlay: var(--color-canvas-overlay);
@@ -36,15 +42,6 @@
   --color-slate-950: var(--color-slate-950);
 
   --color-gray-900: var(--color-gray-900);
-
-  --color-orange-50: var(--color-orange-50);
-  --color-orange-100: var(--color-orange-100);
-  --color-orange-300: var(--color-orange-300);
-  --color-orange-600: var(--color-orange-600);
-  --color-orange-700: var(--color-orange-700);
-  --color-orange-800: var(--color-orange-800);
-  --color-orange-900: var(--color-orange-900);
-  --color-orange-950: var(--color-orange-950);
 
   --color-green-50: var(--color-green-50);
   --color-green-100: var(--color-green-100);
@@ -158,7 +155,7 @@
     border: 1px solid transparent;
     background: linear-gradient(160deg, var(--glass-primary-top), var(--glass-primary-bottom));
     color: var(--glass-primary-text);
-    box-shadow: inset 0 1px rgb(255 255 255 / 0.24), 0 2px 5px rgb(114 53 24 / 0.16);
+    box-shadow: inset 0 1px rgb(255 255 255 / 0.24), 0 2px 5px rgb(57 46 122 / 0.16);
   }
 
   @media (hover: hover) {
