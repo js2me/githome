@@ -14,6 +14,7 @@ export type ExtendedSyntaxLanguage =
   | 'fsharp'
   | 'gdscript'
   | 'go'
+  | 'gritql'
   | 'groovy'
   | 'haskell'
   | 'hcl'
@@ -78,6 +79,7 @@ const EXTENSION_TO_LANGUAGE: Record<string, SyntaxLanguage> = {
   groovy: 'groovy',
   gql: 'graphql',
   graphql: 'graphql',
+  grit: 'gritql',
   h: 'c',
   haml: 'haml',
   handlebars: 'handlebars',
@@ -194,6 +196,7 @@ const GITLAB_LANGUAGE_ALIASES: Record<string, SyntaxLanguage> = {
   gdscript: 'gdscript',
   go: 'go',
   golang: 'go',
+  grit: 'gritql',
   groovy: 'groovy',
   haskell: 'haskell',
   hcl: 'hcl',

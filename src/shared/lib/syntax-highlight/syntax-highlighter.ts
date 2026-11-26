@@ -38,6 +38,7 @@ const EXTENDED_LANGUAGE_LOADERS: Record<string, LanguageLoader> = {
   fsharp: () => import('@shikijs/langs/fsharp'),
   gdscript: () => import('@shikijs/langs/gdscript'),
   go: () => import('@shikijs/langs/go'),
+  gritql: () => import('./languages/gritql'),
   groovy: () => import('@shikijs/langs/groovy'),
   haskell: () => import('@shikijs/langs/haskell'),
   hcl: () => import('@shikijs/langs/hcl'),
