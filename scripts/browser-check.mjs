@@ -30,6 +30,7 @@
  * - restore reviewed files from one plain MR note and reset only changed diffs
  * - copy the GitLab URL from the MR header and open an MR by a pasted URL
  * - follow Jira references from the MR overview with the keyboard and copy each branch
+ * - merge an MR and close a draft only after confirming
  * - identify and switch between two GitLab users on the same host
  * - avatar titles map to the right authors, zero page/console errors
  */
@@ -262,11 +263,22 @@ let reviewHead = 'head-sha';
 let reviewPatch = tsxChange.diff;
 let reviewNote;
 const reviewWrites = [];
+const lifecycleWrites = [];
 
 const route = (url, postData, token, method) => {
   const { pathname, searchParams } = new URL(url);
   const p = pathname.replace('/git-proxy/gitlab.mock', '');
   if (p === '/api/v4/user') return accountProfiles.get(token) ?? {};
+  const lifecyclePath = p.match(/^\/api\/v4\/projects\/1\/merge_requests\/(\d+)(\/merge)?$/);
+  if (method === 'PUT' && lifecyclePath) {
+    const [, iid, merge] = lifecyclePath;
+    const item = projectMrs.find(item => item.iid === Number(iid));
+    const body = JSON.parse(postData);
+    lifecycleWrites.push({ iid: Number(iid), merge: Boolean(merge), body });
+    if (merge && body.sha === item.sha) item.state = 'merged';
+    if (!merge && body.state_event === 'close') item.state = 'closed';
+    return item;
+  }
   if (p === '/api/v4/groups/oneui') return oneui;
   if (p === '/api/v4/groups/oneui%2Ffrontend') return frontend;
   if (p === '/api/v4/groups/401/subgroups') return [frontend];
@@ -1540,6 +1552,41 @@ try {
     new URL(page.url()).pathname === '/group/oneui');
 } catch (error) {
   check('group breadcrumb navigation', false, String(error));
+}
+
+try {
+  const header = 'header[aria-label="Сводка merge request"]';
+  const close = `${header} button[aria-haspopup="dialog"]`;
+  const merge = `${header} ::-p-aria([name="Смержить"][role="button"])`;
+  const waitForState = state => page.waitForFunction((selector, expected) =>
+    [...document.querySelectorAll(`${selector} span`)].some(el => el.textContent === expected),
+  { timeout: 5000 }, header, state);
+
+  await page.goto(BASE + '/repository/1/merge-requests/11', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector(close);
+  check('Merge is disabled for a draft MR', await page.$eval(merge, button => button.disabled));
+  await page.click(close);
+  await page.waitForSelector(`${header} dialog[open]`);
+  await page.locator(`${header} dialog ::-p-aria([name="Отмена"][role="button"])`).click();
+  await page.waitForSelector(`${header} dialog[open]`, { hidden: true });
+  check('Cancel does not close the MR', lifecycleWrites.length === 0);
+  await page.click(close);
+  await page.locator(`${header} dialog ::-p-aria([name="Закрыть мерж-реквест"][role="button"])`).click();
+  await waitForState('Закрыт');
+  check('Close sends state_event only on confirmation and hides the MR actions',
+    lifecycleWrites.length === 1 &&
+    lifecycleWrites[0].iid === 11 && !lifecycleWrites[0].merge &&
+    lifecycleWrites[0].body.state_event === 'close' && await page.$(close) === null);
+
+  await page.goto(BASE + '/repository/1/merge-requests/5', { waitUntil: 'domcontentloaded' });
+  await page.locator(merge).click();
+  await waitForState('Влит');
+  check('Merge sends the head SHA and updates the MR state',
+    lifecycleWrites.length === 2 &&
+    lifecycleWrites[1].iid === 5 && lifecycleWrites[1].merge &&
+    lifecycleWrites[1].body.sha === 'abc123' && await page.$(merge) === null);
+} catch (error) {
+  check('merge request lifecycle actions', false, String(error));
 }
 
 try {

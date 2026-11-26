@@ -148,8 +148,7 @@ export class MergeRequestPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
           current.projectId !== previous.projectId ||
           current.mergeRequestIid !== previous.mergeRequestIid
         ) {
-          this.mrInfo.clearReviewActionError();
-          this.mrInfo.reviewActionInProgress = null;
+          this.mrInfo.resetMrAction();
         }
       },
     );

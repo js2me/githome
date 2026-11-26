@@ -47,6 +47,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
   loadedFiles,
   onShowFiles,
   onShowComments,
+  actions,
   children,
 }: {
   mergeRequest: GitLabMergeRequestDC;
@@ -55,6 +56,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
   loadedFiles: number;
   onShowFiles: () => void;
   onShowComments: () => void;
+  actions?: ReactNode;
   children?: ReactNode;
 }) {
   const mr = mergeRequest;
@@ -109,6 +111,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
             <MrStateBadge mergeRequest={mr} />
           </div>
           <div className="flex max-w-full flex-wrap items-center gap-1.5">
+            {actions}
             <CopyControl
               key={mr.web_url}
               value={mr.web_url}

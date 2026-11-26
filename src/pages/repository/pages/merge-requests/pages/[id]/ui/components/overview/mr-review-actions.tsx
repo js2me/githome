@@ -10,7 +10,7 @@ import type { MergeRequestApprovalView } from '@/shared/lib/gitlab/merge-request
 import { type MessageKey, t } from '@/shared/lib/i18n';
 import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
 import { StatusMessage } from '@/shared/ui/status-message';
-import type { MrReviewAction } from '../../../model/mr-info';
+import type { MrAction, MrReviewAction } from '../../../model/mr-info';
 import './mr-review-actions.css';
 import { ApprovalSummary } from './approval-summary';
 import { Reviewer } from './reviewer';
@@ -50,7 +50,7 @@ export const MrReviewActions = observer(
   }: {
     mergeRequest: GitLabMergeRequestDC;
     approvals: MergeRequestApprovalView;
-    reviewActionInProgress: MrReviewAction | null;
+    reviewActionInProgress: MrAction | null;
     reviewActionError: string | null;
     onApprove: () => void;
     onUnapprove: () => void;

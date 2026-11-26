@@ -14,6 +14,7 @@ import { DiffVersionPicker } from './changes/diff-version-picker';
 import { ReviewFileButton } from './changes/review-file-button';
 import { MergeRequestCommentForm } from './discussions/merge-request-comment-form';
 import { MergeRequestDiscussions } from './discussions/merge-request-discussions';
+import { MrLifecycleActions } from './overview/lifecycle/mr-lifecycle-actions';
 import { MergeRequestOverview } from './overview/merge-request-overview';
 import { MrReviewActions } from './overview/mr-review-actions';
 
@@ -59,6 +60,12 @@ export const MergeRequestDetail = withViewModel(
           jira={page.jiraSummary}
           projectPath={markdownScope.projectPath}
           loadedFiles={changes.length}
+          actions={
+            <MrLifecycleActions
+              key={`lifecycle-${mergeRequest.web_url}`}
+              model={model}
+            />
+          }
           onShowFiles={model.showFiles}
           onShowComments={model.showComments}
         >
@@ -72,10 +79,13 @@ export const MergeRequestDetail = withViewModel(
             />
           ) : null}
         </MergeRequestOverview>
+        {info.lifecycleActionError && (
+          <StatusMessage error>{info.lifecycleActionError}</StatusMessage>
+        )}
         <MrReviewActions
           mergeRequest={mergeRequest}
           approvals={approvals}
-          reviewActionInProgress={info.reviewActionInProgress}
+          reviewActionInProgress={info.actionInProgress}
           reviewActionError={info.reviewActionError}
           onApprove={info.approve}
           onUnapprove={info.unapprove}

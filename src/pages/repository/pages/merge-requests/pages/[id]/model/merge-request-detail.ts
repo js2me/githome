@@ -21,6 +21,7 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
   readonly fileNavigation = new ActiveDiffFile();
   readonly activityButton = createRef<HTMLButtonElement>();
   readonly changesHeading = createRef<HTMLHeadingElement>();
+  readonly closeMrDialog = createRef<HTMLDialogElement>();
   @observable accessor activityExpanded = false;
   @observable accessor descriptionExpanded = false;
   @observable accessor width = CHANGES_FILE_TREE_DEFAULT_WIDTH;
@@ -147,6 +148,22 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
   @actionBound
   toggleDescription() {
     this.descriptionExpanded = !this.descriptionExpanded;
+  }
+
+  @actionBound
+  showCloseMrDialog() {
+    this.closeMrDialog.current?.showModal();
+  }
+
+  @actionBound
+  dismissCloseMrDialog() {
+    this.closeMrDialog.current?.close();
+  }
+
+  @actionBound
+  confirmCloseMr() {
+    this.dismissCloseMrDialog();
+    void this.parentViewModel.mrInfo.close();
   }
 
   @actionBound
