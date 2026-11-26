@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LinkPlatform } from "./platform";
 import { SystemLinkRouter } from "./router";
 
-const mr = "https://gitlab.corp.mail.ru/oneui/frontend/nova-sdk/-/merge_requests/155";
+const mr = "https://gitlab.example.com/engineering/frontend/example-sdk/-/merge_requests/155";
 const chrome = "chrome.desktop";
 const firefox = "firefox.desktop";
 const gitHome = "githome.desktop";
@@ -40,15 +40,15 @@ function setup(overrides: Partial<LinkPlatform> = {}) {
 describe("system link routing", () => {
   it("handles only valid MRs under a configured GitLab base while enabled", async () => {
     const { router } = setup();
-    router.syncGitlabs(["gitlab.corp.mail.ru/oneui"]);
+    router.syncGitlabs(["gitlab.example.com/engineering"]);
     expect(await router.shouldOpenMergeRequest(mr)).toBe(false);
     expect(await router.setEnabled(true)).toEqual({ available: true, enabled: true });
     expect(await router.shouldOpenMergeRequest(`${mr}/diffs?view=parallel#note_6`)).toBe(true);
     for (const url of [
-      mr.replace("oneui/", "oneui-other/"),
-      mr.replace("gitlab.corp.mail.ru", "gitlab.corp.mail.ru.example"),
+      mr.replace("/engineering/", "/engineering-other/"),
+      mr.replace("gitlab.example.com", "gitlab.example.com.example.org"),
       mr.replace("merge_requests", "issues"),
-      mr.replace("nova-sdk", "%2E%2E%2Fproject"),
+      mr.replace("example-sdk", "%2E%2E%2Fproject"),
       mr.replace("/155", "/0"),
       mr.replace("https:", "http:"),
     ]) {
@@ -60,7 +60,7 @@ describe("system link routing", () => {
 
   it("remembers the browser before taking over and opens non-MRs there after restarting", async () => {
     const { router } = setup();
-    router.syncGitlabs(["https://gitlab.corp.mail.ru?secret=not-stored"]);
+    router.syncGitlabs(["https://gitlab.example.com?secret=not-stored"]);
     await router.setEnabled(true);
     expect(readFileSync(config, "utf8")).not.toContain("not-stored");
 
@@ -83,7 +83,7 @@ describe("system link routing", () => {
         if (scheme === "https") defaults.http = handler;
       },
     });
-    router.syncGitlabs(["gitlab.corp.mail.ru"]);
+    router.syncGitlabs(["gitlab.example.com"]);
     await router.setEnabled(true);
     expect(defaults).toEqual({ http: gitHome, https: gitHome });
     await router.openInBrowser("http://example.org/");
@@ -97,7 +97,7 @@ describe("system link routing", () => {
 
   it("does not override a browser selected after GitHome was enabled", async () => {
     const { router, platform } = setup();
-    router.syncGitlabs(["gitlab.corp.mail.ru"]);
+    router.syncGitlabs(["gitlab.example.com"]);
     await router.setEnabled(true);
     defaults.https = firefox;
     await router.setEnabled(false);
@@ -108,7 +108,7 @@ describe("system link routing", () => {
   it("does not take over the handler when there is no browser or GitLab configured", async () => {
     const { router, platform } = setup();
     await expect(router.setEnabled(true)).rejects.toThrow("No configured GitLab");
-    router.syncGitlabs(["gitlab.corp.mail.ru"]);
+    router.syncGitlabs(["gitlab.example.com"]);
     defaults.https = "";
     await expect(router.setEnabled(true)).rejects.toThrow("No default browser");
     expect(platform.setDefault).not.toHaveBeenCalled();
