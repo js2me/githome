@@ -227,6 +227,7 @@ export const MergeRequestDetail = withViewModel(
                     base={baseRef ?? null}
                   />
                 )}
+                mergeRequestIid={mergeRequest.iid}
                 headBranch={mergeRequest.source_branch ?? null}
                 headRef={headRef ?? null}
                 baseRef={baseRef ?? null}

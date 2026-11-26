@@ -20,6 +20,7 @@ export const ReviewFileButton = withPropsViewModel(
             'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
         )}
         aria-pressed={checked}
+        data-diff-review-toggle=""
         aria-busy={saving || verifying || undefined}
         aria-label={label}
         title={label}

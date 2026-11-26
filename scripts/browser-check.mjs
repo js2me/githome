@@ -23,6 +23,7 @@
  * - open multiple MR tabs across repositories, switch between them, and close one
  * - open the sticky workspace picker by pointer and keyboard without shifting the page
  * - scroll and select files in a 255-file merge request
+ * - open a file from an MR and return to the same MR from Files
  * - retain TSX token colors on changed words and newly added lines in small and large MRs
  * - compare PNG and JPEG revisions and open either side in the zoom viewer
  * - submit a file-level comment and render the new thread on the file
@@ -805,6 +806,36 @@ const checkTsxColors = async (cardSelector, label, search = false) => {
 };
 
 try {
+  const mrPath = '/repository/1/merge-requests/157';
+  const filesPath = '/repository/1/files';
+  const openFile = '.git-diff > article:first-child a[title="Открыть файл в Files"]';
+  const backToMr = `main a[href="${mrPath}"]`;
+  await page.goto(BASE + mrPath, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector(openFile, { visible: true });
+  const fileHref = await page.$eval(openFile, link => link.href);
+  const expectedFileQuery = new URL(fileHref).searchParams;
+  await page.click(openFile);
+  await page.waitForSelector(backToMr, { visible: true });
+  const filesUrl = new URL(page.url());
+  check('Files displays a return button for the originating MR',
+    filesUrl.pathname === filesPath &&
+    expectedFileQuery.has('file') &&
+    filesUrl.searchParams.get('file') === expectedFileQuery.get('file') &&
+    filesUrl.searchParams.get('commit') === expectedFileQuery.get('commit') &&
+    await page.$eval(backToMr, link => link.textContent?.trim()) === 'Назад к MR');
+  await page.click(backToMr);
+  await page.waitForSelector(openFile, { visible: true });
+  check('Files returns to the same MR without carrying the file query', page.url() === BASE + mrPath);
+
+  await page.goto(BASE + filesPath, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('main input[placeholder="Поиск файлов и содержимого..."]', { visible: true });
+  check('Files opened directly has no MR return button',
+    await page.$eval('main', main => !Array.from(main.querySelectorAll('a')).some(link => link.textContent?.trim() === 'Назад к MR')));
+} catch (error) {
+  check('navigation between the MR and Files', false, String(error));
+}
+
+try {
   // An MR without changed files opens a hidden find bar via the shortcut.
   await page.goto(`${BASE}/repository/1/merge-requests/158`, { waitUntil: 'networkidle0' });
   await page.waitForSelector('main h2');
@@ -1101,9 +1132,16 @@ try {
   const waitForReview = (index, checked) => page.waitForSelector(
     `${button(index)}[aria-pressed="${checked}"]:enabled`, { timeout: 5000 },
   );
+  const hasReviewedAccent = index => page.$eval(
+    `.git-diff > article:nth-child(${index}) .git-diff-file-reviewed-mark`,
+    mark => getComputedStyle(mark).display !== 'none' &&
+      getComputedStyle(mark.closest('header')).backgroundImage.startsWith('linear-gradient'),
+  );
   await page.goto(mrUrl, { waitUntil: 'domcontentloaded' });
   await (await waitForReview(1, false)).click();
   await waitForReview(1, true);
+  check('only a reviewed file gets a gradient and checkmark by its path',
+    await hasReviewedAccent(1) && !await hasReviewedAccent(2));
   await (await waitForReview(2, false)).click();
   await waitForReview(2, true);
   const payload = JSON.parse(reviewNote.body.match(/<!-- githome-reviewed-files:v1\n(.+)\n-->/)?.[1] ?? 'null');
@@ -1122,6 +1160,8 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForReview(1, false);
   await waitForReview(2, true);
+  check('the reviewed accent disappears when the diff changes',
+    !await hasReviewedAccent(1) && await hasReviewedAccent(2));
   check('a new commit clears only the mark for the modified diff', reviewWrites.length === 2);
 
   await (await waitForReview(2, true)).click();

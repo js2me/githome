@@ -200,6 +200,25 @@ export class FilesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
   }
 
   @computed
+  get mergeRequestHref() {
+    const { projectId } = this;
+    const mergeRequestIid = this.globals.query.data.fromMr;
+    if (
+      projectId === null ||
+      !mergeRequestIid ||
+      !/^[1-9]\d*$/.test(mergeRequestIid)
+    ) {
+      return null;
+    }
+
+    return this.globals.routes.mergeRequest.createUrl(
+      { projectId: String(projectId), mergeRequestIid },
+      null,
+      { omitQuery: true },
+    );
+  }
+
+  @computed
   get project() {
     return this.parentViewModel.project;
   }

@@ -1,4 +1,6 @@
+import { Check } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
+import { Link } from 'mobx-route/react';
 import type { CSSProperties } from 'react';
 import { cva } from 'yummies/css';
 import { cn } from '@/shared/lib/cn';
@@ -30,11 +32,13 @@ const buildFilesHref = ({
   commit,
   branch,
   filePath,
+  mergeRequestIid,
 }: {
   projectId: number;
   commit: string;
   branch?: string | null;
   filePath: string;
+  mergeRequestIid?: number;
 }) => {
   const query = new URLSearchParams();
   if (branch) {
@@ -42,6 +46,9 @@ const buildFilesHref = ({
   }
   query.set('commit', commit);
   query.set('file', filePath);
+  if (mergeRequestIid !== undefined) {
+    query.set('fromMr', String(mergeRequestIid));
+  }
   return `/repository/${projectId}/files?${query.toString()}`;
 };
 
@@ -133,6 +140,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
           commit: meta.fileRef,
           branch: headBranch ?? null,
           filePath: meta.filePath,
+          mergeRequestIid: payload.mergeRequestIid,
         })
       : null;
 
@@ -221,7 +229,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         navigation.setActive();
       }}
     >
-      <header className="sticky top-0 z-20 flex flex-wrap items-center gap-2.5 rounded-t-lg border-[var(--diff-border)] border-b bg-[var(--diff-header-bg)] px-3.5 py-2.5 sm:flex-nowrap">
+      <header className="git-diff-file-header sticky top-0 z-20 flex flex-wrap items-center gap-2.5 rounded-t-lg border-[var(--diff-border)] border-b bg-[var(--diff-header-bg)] px-3.5 py-2.5 sm:flex-nowrap">
         {isCollapsible && (
           <button
             className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--color-fg-subtle)] transition hover:bg-[var(--color-accent-emphasis-hover)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)]"
@@ -248,6 +256,11 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
           </button>
         )}
         <div className="flex min-w-0 flex-1 basis-[calc(100%-3rem)] items-center gap-0.5 sm:basis-0">
+          {payload.renderFileAction && (
+            <span className="git-diff-file-reviewed-mark" aria-hidden="true">
+              <Check className="size-3.5" />
+            </span>
+          )}
           <span className="min-w-0 truncate font-mono text-[13px] text-[var(--diff-code-text)]">
             {headerSearchHighlight.ranges.length > 0 ? (
               <SearchHighlightedText
@@ -303,7 +316,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
             />
           )}
           {openInFilesHref && (
-            <a
+            <Link
               className={cn(
                 diffFileHeaderTextButtonVariants(),
                 'ml-2 no-underline',
@@ -312,7 +325,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
               title="Открыть файл в Files"
             >
               открыть в files
-            </a>
+            </Link>
           )}
         </div>
 
