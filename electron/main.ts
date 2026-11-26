@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { setupAppUpdater } from "./app-updater";
 import { startAppServer } from "./app-server";
+import { readOpenMergeRequestArgument } from "./system-links/arguments";
 import { setupSystemLinks } from "./system-links/ipc";
 import { createLinkPlatform } from "./system-links/platform";
 import { SystemLinkRouter } from "./system-links/router";
@@ -24,7 +25,10 @@ let appOrigin: string | undefined;
 let creatingWindow: Promise<void> | undefined;
 let linkRouter: SystemLinkRouter | undefined;
 
-const gotSingleInstanceLock = app.requestSingleInstanceLock();
+const explicitMergeRequest = readOpenMergeRequestArgument(process.argv.slice(1));
+const gotSingleInstanceLock = app.requestSingleInstanceLock(
+  explicitMergeRequest === undefined ? undefined : { explicitMergeRequest },
+);
 if (!gotSingleInstanceLock) {
   app.quit();
 }
@@ -122,29 +126,41 @@ function ensureWindow() {
   return creatingWindow;
 }
 
-const webArgs = (argv: string[]) => argv.filter((arg) => Boolean(parseWebUrl(arg)));
+type IncomingLink = { url: string; explicit?: true };
+
+const webArgs = (argv: string[]): IncomingLink[] =>
+  argv.filter((arg) => Boolean(parseWebUrl(arg))).map((url) => ({ url }));
 
 if (gotSingleInstanceLock) {
-  let startupLinks = process.platform === "darwin" ? [] : webArgs(process.argv.slice(1));
-  let receiveLinks = (urls: string[]) => {
-    startupLinks.push(...urls);
+  let startupLinks: IncomingLink[] = explicitMergeRequest !== undefined
+    ? [{ url: explicitMergeRequest, explicit: true }]
+    : process.platform === "darwin" ? [] : webArgs(process.argv.slice(1));
+  let receiveLinks = (links: IncomingLink[]) => {
+    startupLinks.push(...links);
   };
   let openedNormally = false;
 
   app.on("open-url", (event, url) => {
     event.preventDefault();
-    if (parseWebUrl(url)) receiveLinks([url]);
+    if (parseWebUrl(url)) receiveLinks([{ url }]);
   });
 
   app.on("open-file", (event, file) => {
     if (!/\.html?$/i.test(file) || !path.isAbsolute(file)) return;
     event.preventDefault();
-    receiveLinks([pathToFileURL(file).href]);
+    receiveLinks([{ url: pathToFileURL(file).href }]);
   });
 
-  app.on("second-instance", (_event, argv) => {
-    const urls = webArgs(argv.slice(1));
-    if (urls.length) receiveLinks(urls);
+  app.on("second-instance", (_event, argv, _cwd, data) => {
+    const args = argv.slice(1);
+    const forwarded = data && typeof data === "object" && "explicitMergeRequest" in data
+      ? data.explicitMergeRequest
+      : undefined;
+    const explicit = typeof forwarded === "string"
+      ? readOpenMergeRequestArgument(["--open-mr", forwarded])
+      : readOpenMergeRequestArgument(args);
+    const links = explicit === undefined ? webArgs(args) : [{ url: explicit, explicit: true } as const];
+    if (links.length) receiveLinks(links);
     else {
       openedNormally = true;
       if (app.isReady()) void ensureWindow().then(focusWindow);
@@ -164,12 +180,17 @@ if (gotSingleInstanceLock) {
     const startedWithLink = startupLinks.length > 0;
     let dispatch = Promise.resolve();
     let generation = 0;
-    receiveLinks = (urls) => {
+    receiveLinks = (links) => {
       const batch = ++generation;
       dispatch = dispatch.then(async () => {
-        for (const url of urls) {
+        for (const { url, explicit } of links) {
           try {
-            if (await router.shouldOpenMergeRequest(url)) {
+            if (explicit && !url) {
+              dialog.showErrorBox("GitHome", "Use --open-mr followed by a GitLab merge request URL.");
+              continue;
+            }
+
+            if (explicit || await router.shouldOpenMergeRequest(url)) {
               enqueue(url);
               await ensureWindow();
               openedNormally = true;

@@ -1,7 +1,9 @@
 #!/bin/sh
 set -eu
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+# Debian runs this script through /usr/bin and update-alternatives symlinks.
+SCRIPT_PATH=$(readlink -f -- "$0")
+SCRIPT_DIR=$(dirname -- "$SCRIPT_PATH")
 REAL_EXECUTABLE="$SCRIPT_DIR/githome-bin"
 HAS_OZONE_PLATFORM=0
 
