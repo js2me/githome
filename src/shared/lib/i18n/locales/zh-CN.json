@@ -143,6 +143,7 @@
   "files.noBranchesFound": "未找到分支。",
   "files.noCommitsFound": "未找到提交。",
   "files.noFilesFound": "未找到文件。",
+  "files.findInFile": "在文件中查找",
   "files.noMatchesFound": "未找到匹配项。",
   "files.searchFilesAndContents": "搜索文件和内容",
   "files.searchFilesAndContents2": "搜索文件和内容…",

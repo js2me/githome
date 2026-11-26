@@ -152,6 +152,7 @@
   "files.noBranchesFound": "Ветки не найдены.",
   "files.noCommitsFound": "Коммиты не найдены.",
   "files.noFilesFound": "Файлы не найдены.",
+  "files.findInFile": "Найти в файле",
   "files.noMatchesFound": "Совпадений не найдено.",
   "files.searchFilesAndContents": "Поиск файлов и содержимого",
   "files.searchFilesAndContents2": "Поиск файлов и содержимого...",

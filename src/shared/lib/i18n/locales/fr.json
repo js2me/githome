@@ -146,6 +146,7 @@
   "files.noBranchesFound": "Aucune branche trouvée.",
   "files.noCommitsFound": "Aucun commit trouvé.",
   "files.noFilesFound": "Aucun fichier trouvé.",
+  "files.findInFile": "Rechercher dans le fichier",
   "files.noMatchesFound": "Aucun résultat trouvé.",
   "files.searchFilesAndContents": "Rechercher des fichiers et leur contenu",
   "files.searchFilesAndContents2": "Rechercher des fichiers et leur contenu…",

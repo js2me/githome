@@ -2,6 +2,7 @@ import {
   actionBound,
   computed,
   observable,
+  observableRef,
   observableShallow,
   reaction,
   runInAction,
@@ -10,6 +11,7 @@ import type { GitLabRepositoryTreeItemDC } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type { Globals } from '@/shared/model/globals';
+import type { FileSearchTarget } from '../lib/file-find';
 import { sortRepositoryTreeItems } from '../lib/repository-tree-utils';
 
 export interface RepositoryTreeParams {
@@ -28,6 +30,8 @@ export class RepositoryTreeModel {
   @observableShallow accessor loadingFolders = new Set<string>();
   @observableShallow accessor folderErrors = new Map<string, Error>();
   @observable accessor selectedFilePath: string | null = null;
+
+  @observableRef accessor fileSearchTarget: FileSearchTarget | null = null;
 
   private revision = 0;
 
@@ -116,6 +120,7 @@ export class RepositoryTreeModel {
   @actionBound
   private reset() {
     this.revision += 1;
+    this.fileSearchTarget = null;
     this.folderContents.clear();
     this.expandedPaths.clear();
     this.loadingFolders.clear();
@@ -123,7 +128,8 @@ export class RepositoryTreeModel {
   }
 
   @actionBound
-  selectFile(path: string) {
+  selectFile(path: string, target: FileSearchTarget | null = null) {
+    this.fileSearchTarget = target;
     if (this.selectedFilePath === path) {
       this.expandFilePath(path);
       return;
@@ -134,6 +140,7 @@ export class RepositoryTreeModel {
 
   @actionBound
   clearSelectedFile() {
+    this.fileSearchTarget = null;
     this.selectedFilePath = null;
   }
 

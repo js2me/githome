@@ -1,5 +1,6 @@
 import { actionBound, computed, observable, reaction } from 'mobx';
 import type { ViewModelParams } from 'mobx-view-model';
+import { createRef } from 'yummies/mobx';
 import type { Workspace } from '@/features/workspace-navigation';
 import { WorkspaceVM } from '@/features/workspace-navigation';
 import type { GitLabBranchDC } from '@/shared/api/gitlab';
@@ -30,6 +31,9 @@ export class FilesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
   @observable accessor isCommitPickerOpen = false;
 
   @observable accessor imageUrl: string | null = null;
+
+  readonly fileViewerContent = createRef<HTMLDivElement>();
+  readonly getFileViewerContent = () => this.fileViewerContent.current;
 
   private lastProjectId: number | null = null;
 

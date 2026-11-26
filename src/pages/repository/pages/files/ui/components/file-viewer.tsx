@@ -3,6 +3,7 @@ import { t } from '@/shared/lib/i18n';
 import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
 import { StatusMessage } from '@/shared/ui/status-message';
 import type { FilesPageVM } from '../../model';
+import { FileFind } from './file-find/file-find';
 import { HighlightedSourceCode } from './highlighted-source-code';
 
 export const FileViewer = observer(({ model }: { model: FilesPageVM }) => {
@@ -15,14 +16,31 @@ export const FileViewer = observer(({ model }: { model: FilesPageVM }) => {
   }
 
   return (
-    <article className="glass-panel flex min-h-[320px] min-w-0 flex-1 flex-col overflow-hidden rounded-xl">
-      <header className="border-slate-200 border-b px-4 py-3 dark:border-slate-800">
-        <h3 className="truncate font-semibold text-slate-700 text-sm dark:text-slate-300">
+    <article className="glass-panel flex min-h-[320px] min-w-0 flex-1 flex-col overflow-clip rounded-xl">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-slate-200 border-b bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="min-w-0 truncate font-semibold text-slate-700 text-sm dark:text-slate-300">
           {model.selectedFilePath}
         </h3>
+        {!model.isImageFile && (
+          <FileFind
+            key={JSON.stringify([
+              model.projectId,
+              model.ref,
+              model.selectedFilePath,
+            ])}
+            content={model.getFileViewerContent}
+            ready={!model.isFileContentLoading && model.fileContent !== null}
+            target={model.treeModel.fileSearchTarget}
+            isMarkdown={model.isMarkdownFile}
+            onOpen={model.searchModel.close}
+          />
+        )}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-auto bg-white p-4 dark:bg-gray-900">
+      <div
+        className="min-h-0 flex-1 overflow-auto bg-white p-4 dark:bg-gray-900"
+        ref={model.fileViewerContent}
+      >
         {model.isFileContentLoading && (
           <StatusMessage>{t('files.loadingFile')}</StatusMessage>
         )}

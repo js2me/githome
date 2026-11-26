@@ -1,0 +1,9 @@
+::highlight(githome-file-find) {
+  background-color: #facc15;
+  color: #1c1917;
+}
+
+::highlight(githome-file-find-current) {
+  background-color: #fb923c;
+  color: #1c1917;
+}

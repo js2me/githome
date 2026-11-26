@@ -7,8 +7,10 @@ import { gitlabApi } from '@/shared/api/gitlab';
 import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
 import { t } from '@/shared/lib/i18n';
 import type { Globals } from '@/shared/model/globals';
+import type { FileSearchTarget } from '../lib/file-find';
 
-const SEARCH_DEBOUNCE_MS = 400;
+const SEARCH_DEBOUNCE_MS = 250;
+const queryOptions = { staleTime: 30_000, retry: false };
 const MIN_QUERY_LENGTH = 2;
 const MAX_FILE_RESULTS = 50;
 
@@ -25,7 +27,7 @@ export interface RepositoryFilesSearchParams {
   projectId: () => number | null;
   ref: () => string | null | undefined;
   getLoadedFiles: () => GitLabRepositoryTreeItemDC[];
-  onSelectFile: (path: string) => void;
+  onSelectFile: (path: string, target?: FileSearchTarget) => void;
 }
 
 export class RepositoryFilesSearchModel {
@@ -46,10 +48,11 @@ export class RepositoryFilesSearchModel {
     >({
       globals: params.globals,
       abortSignal: params.abortSignal,
+      queryOptions,
       params: () => {
         const projectId = params.projectId();
         const ref = params.ref()?.trim();
-        const search = this.debouncedQuery;
+        const search = this.remoteQuery;
 
         if (
           projectId === null ||
@@ -70,6 +73,7 @@ export class RepositoryFilesSearchModel {
         [
           'project-file-search',
           connection.gitlabUrl,
+          connection.id,
           projectId,
           ref,
           search,
@@ -90,10 +94,11 @@ export class RepositoryFilesSearchModel {
     >({
       globals: params.globals,
       abortSignal: params.abortSignal,
+      queryOptions,
       params: () => {
         const projectId = params.projectId();
         const ref = params.ref()?.trim();
-        const search = this.debouncedQuery;
+        const search = this.remoteQuery;
 
         if (
           projectId === null ||
@@ -110,6 +115,7 @@ export class RepositoryFilesSearchModel {
         [
           'project-blob-search',
           connection.gitlabUrl,
+          connection.id,
           projectId,
           ref,
           search,
@@ -125,83 +131,92 @@ export class RepositoryFilesSearchModel {
     });
 
     reaction(
-      () => this.searchQuery,
+      () => this.searchQuery.trim(),
       (query) => {
-        if (this.debounceTimer) {
-          clearTimeout(this.debounceTimer);
-        }
-
-        const trimmed = query.trim();
-
-        if (!trimmed) {
-          runInAction(() => {
-            this.debouncedQuery = '';
-          });
+        if (this.debounceTimer) clearTimeout(this.debounceTimer);
+        if (query.length < MIN_QUERY_LENGTH) {
+          this.debouncedQuery = '';
           return;
         }
 
         this.debounceTimer = setTimeout(() => {
           runInAction(() => {
-            this.debouncedQuery = trimmed;
+            this.debouncedQuery = query;
           });
         }, SEARCH_DEBOUNCE_MS);
       },
+      { signal: params.abortSignal },
+    );
+    params.abortSignal.addEventListener(
+      'abort',
+      () => {
+        if (this.debounceTimer) clearTimeout(this.debounceTimer);
+      },
+      { once: true },
     );
   }
 
   @computed
-  get hasQuery() {
-    return this.debouncedQuery.length >= MIN_QUERY_LENGTH;
+  get remoteQuery() {
+    return this.isOpen && this.searchQuery.trim() === this.debouncedQuery
+      ? this.debouncedQuery
+      : '';
+  }
+
+  @computed
+  get isDebouncing() {
+    return (
+      this.isPanelOpen &&
+      !this.isQueryTooShort &&
+      this.searchQuery.trim() !== this.debouncedQuery
+    );
   }
 
   @computed
   get localFileResults(): FileSearchResult[] {
-    const query = this.debouncedQuery.toLowerCase();
+    const query = this.searchQuery.trim().toLowerCase();
+    const results: FileSearchResult[] = [];
+    if (query.length < MIN_QUERY_LENGTH) return results;
 
-    if (query.length < MIN_QUERY_LENGTH) {
-      return [];
+    for (const { path, name } of this.params.getLoadedFiles()) {
+      if (path.toLowerCase().includes(query)) {
+        results.push({ path, name });
+        if (results.length === MAX_FILE_RESULTS) break;
+      }
     }
-
-    return this.params
-      .getLoadedFiles()
-      .filter(
-        (item) =>
-          item.path.toLowerCase().includes(query) ||
-          item.name.toLowerCase().includes(query),
-      )
-      .slice(0, MAX_FILE_RESULTS)
-      .map((item) => ({ path: item.path, name: item.name }));
+    return results;
   }
 
   @computed
   get fileResults(): FileSearchResult[] {
-    if (!this.hasQuery) {
-      return [];
+    const results = new Map(
+      this.localFileResults.map((file) => [file.path, file]),
+    );
+
+    if (this.remoteQuery) {
+      for (const result of this.filesSearchQuery.data ?? []) {
+        if (results.size >= MAX_FILE_RESULTS) break;
+        results.set(result.path, {
+          path: result.path,
+          name: result.basename || result.path.split('/').pop() || result.path,
+        });
+      }
     }
 
-    const apiResults = this.filesSearchQuery.data;
-
-    if (apiResults && !this.filesSearchQuery.error) {
-      return apiResults.slice(0, MAX_FILE_RESULTS).map((result) => ({
-        path: result.path,
-        name: result.basename || result.path.split('/').pop() || result.path,
-      }));
-    }
-
-    return this.localFileResults;
+    return [...results.values()];
   }
 
   @computed
   get contentResults() {
-    return this.contentSearchQuery.data ?? [];
+    return this.remoteQuery ? (this.contentSearchQuery.data ?? []) : [];
   }
 
   @computed
   get isFilesLoading() {
     return (
       this.searchMode === 'files' &&
-      this.hasQuery &&
-      (this.filesSearchQuery.isLoading || this.filesSearchQuery.isFetching)
+      (this.isDebouncing ||
+        (Boolean(this.remoteQuery) && this.filesSearchQuery.isFetching))
     );
   }
 
@@ -209,8 +224,8 @@ export class RepositoryFilesSearchModel {
   get isContentLoading() {
     return (
       this.searchMode === 'content' &&
-      this.hasQuery &&
-      (this.contentSearchQuery.isLoading || this.contentSearchQuery.isFetching)
+      (this.isDebouncing ||
+        (Boolean(this.remoteQuery) && this.contentSearchQuery.isFetching))
     );
   }
 
@@ -301,8 +316,8 @@ export class RepositoryFilesSearchModel {
   }
 
   @actionBound
-  selectFile(path: string) {
-    this.params.onSelectFile(path);
+  selectFile(path: string, target?: FileSearchTarget) {
+    this.params.onSelectFile(path, target);
     this.searchQuery = '';
     this.debouncedQuery = '';
     this.isOpen = false;
@@ -310,6 +325,9 @@ export class RepositoryFilesSearchModel {
 
   @actionBound
   selectContentResult(result: GitLabSearchBlobDC) {
-    this.selectFile(result.path);
+    this.selectFile(result.path, {
+      query: this.remoteQuery,
+      startLine: result.startline,
+    });
   }
 }

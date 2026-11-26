@@ -23,7 +23,7 @@
  * - open multiple MR tabs across repositories, switch between them, and close one
  * - open the sticky workspace picker by pointer and keyboard without shifting the page
  * - scroll and select files in a 255-file merge request
- * - reveal a nested file in Files and return to the originating MR
+ * - reveal a nested file in Files, find text in it, and return to the originating MR
  * - retain TSX token colors on changed words and newly added lines in small and large MRs
  * - compare PNG and JPEG revisions and open either side in the zoom viewer
  * - submit a file-level comment and render the new thread on the file
@@ -236,6 +236,12 @@ const imageResponses = new Map([
   ['head-sha:assets/added.JPG', jpeg],
   ['base-sha:assets/deleted.png', pngBefore],
 ]);
+const fileSource = [
+  'const pattern = platform.set(0);',
+  ...Array.from({ length: 100 }, (_, i) => `// source line ${i}`),
+  'platform.set(1);',
+].join('\n');
+const repositorySearchRequests = [];
 const imageRequests = [];
 const imageMrDiffRefs = { base_sha: 'base-sha', start_sha: 'incorrect-parent', head_sha: 'head-sha' };
 const jiraBrowseUrl = 'https://tracker.example/jira/browse/';
@@ -360,6 +366,13 @@ const route = (url, postData, token, method) => {
   if (p.includes('merge_requests')) return mrs;
   if (p.includes('/repository/readme')) {
     return { file_name: 'README.md', file_path: 'README.md', content: '# alpha\n\nmock readme content' };
+  }
+  if (p === '/api/v4/projects/1/search') {
+    const query = searchParams.get('search');
+    repositorySearchRequests.push(query);
+    return query === 'platform.set'
+      ? [{ path: tsxChange.new_path, startline: 101, data: 'platform.set(1);' }]
+      : [];
   }
   if (p === '/api/v4/projects/1/repository/tree') {
     const path = searchParams.get('path') ?? '';
@@ -500,6 +513,10 @@ page.on('request', (req) => {
       return;
     }
     const imagePath = requestUrl.pathname.match(/\/repository\/files\/([^/]+)\/raw$/)?.[1];
+    if (imagePath && decodeURIComponent(imagePath) === tsxChange.new_path) {
+      req.respond({ status: 200, contentType: 'text/plain', body: fileSource });
+      return;
+    }
     if (imagePath && decodeURIComponent(imagePath).startsWith('assets/')) {
       const key = `${requestUrl.searchParams.get('ref')}:${decodeURIComponent(imagePath)}`;
       imageRequests.push(key);
@@ -901,6 +918,49 @@ try {
     await page.$eval(selectedFile, button => button.textContent?.trim()) === 'summary.tsx');
   check('Files opened directly has no MR return button',
     await page.$eval('main', main => !Array.from(main.querySelectorAll('a')).some(link => link.textContent?.trim() === 'Назад к MR')));
+
+  const findInFile = 'input[aria-label="Найти в файле"]';
+  const repositoryInput = 'input[aria-label="Поиск файлов и содержимого"]';
+  const searchPanel = 'main [role="dialog"]';
+  const modifiedKey = async (modifier, key) => {
+    await page.keyboard.down(modifier);
+    await page.keyboard.press(key);
+    await page.keyboard.up(modifier);
+  };
+  await page.waitForSelector('main article pre > code span');
+  await modifiedKey('Control', 'f');
+  await page.waitForFunction(selector => document.activeElement === document.querySelector(selector), {}, findInFile);
+  await page.keyboard.type('platform.set');
+  await page.waitForFunction(() => document.querySelector('main article output')?.textContent === '1/2');
+  check('Ctrl+F finds literal text across syntax tokens with no GitLab request',
+    repositorySearchRequests.length === 0 &&
+    await page.evaluate(() =>
+      Array.from(CSS.highlights.get('githome-file-find') ?? []).map(range => range.toString()).join(',') === 'platform.set,platform.set'));
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.querySelector('main article output')?.textContent === '2/2' && window.scrollY > 0);
+  await modifiedKey('Shift', 'Enter');
+  await page.waitForFunction(() => document.querySelector('main article output')?.textContent === '1/2');
+  await page.keyboard.press('Escape');
+  check('File search navigates in both directions and Escape clears highlights',
+    !await page.$(findInFile) &&
+    await page.evaluate(() => !CSS.highlights.has('githome-file-find')));
+
+  const searchCount = repositorySearchRequests.length;
+  await page.type(repositoryInput, 'summary');
+  await page.waitForFunction(selector => document.querySelector(selector)?.textContent.includes('summary.tsx'), {}, searchPanel);
+  check('File name results from the loaded tree appear before the network request',
+    repositorySearchRequests.length === searchCount);
+
+  await clickByText('Содержимое');
+  await page.click(repositoryInput);
+  await modifiedKey('Control', 'a');
+  await page.keyboard.type('platform.set');
+  await page.waitForFunction(selector => document.querySelector(selector)?.textContent.includes('platform.set(1);'), {}, searchPanel);
+  await clickByText('platform.set(1);');
+  await page.waitForFunction(() => document.querySelector('main article output')?.textContent === '2/2' && window.scrollY > 0);
+  check('Repository content result scrolls to the occurrence near its snippet line',
+    repositorySearchRequests.filter(query => query === 'platform.set').length === 1 &&
+    await page.$eval(findInFile, input => input.value) === 'platform.set');
 } catch (error) {
   check('navigation between the MR and Files', false, String(error));
 }
