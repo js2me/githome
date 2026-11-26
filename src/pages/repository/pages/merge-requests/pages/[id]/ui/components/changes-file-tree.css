@@ -1,6 +1,17 @@
 .changes-file-tree {
   width: 100%;
   --file-row-level-padding: 16px;
+  --changes-tree-added: #3b6258;
+  --changes-tree-removed: #79535a;
+  --changes-tree-renamed: #4b5f80;
+  --changes-tree-modified: #6e5b3d;
+}
+
+.dark .changes-file-tree {
+  --changes-tree-added: #9ebfac;
+  --changes-tree-removed: #e1adb3;
+  --changes-tree-renamed: #a4b9de;
+  --changes-tree-modified: #c3b69c;
 }
 
 .changes-file-tree__header {
@@ -126,6 +137,10 @@
   background: var(--file-tree-bg);
 }
 
+.changes-file-tree__row-icon img {
+  filter: saturate(0.55);
+}
+
 .changes-file-tree__row:hover .changes-file-tree__row-icon {
   background: var(--file-tree-hover);
 }
@@ -154,11 +169,11 @@
 }
 
 .changes-file-tree__stat-added {
-  color: var(--file-tree-stats-added);
+  color: var(--changes-tree-added);
 }
 
 .changes-file-tree__stat-removed {
-  color: var(--file-tree-stats-removed);
+  color: var(--changes-tree-removed);
 }
 
 .changes-file-tree__comment-icon {
@@ -186,19 +201,19 @@
 }
 
 .changes-file-tree__status-icon--added {
-  color: var(--file-tree-stats-added);
+  color: var(--changes-tree-added);
 }
 
 .changes-file-tree__status-icon--deleted {
-  color: var(--file-tree-stats-removed);
+  color: var(--changes-tree-removed);
 }
 
 .changes-file-tree__status-icon--renamed {
-  color: var(--color-file-renamed);
+  color: var(--changes-tree-renamed);
 }
 
 .changes-file-tree__status-icon--modified {
-  color: var(--color-file-modified);
+  color: var(--changes-tree-modified);
 }
 
 @media (max-width: 1023px) {
