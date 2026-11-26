@@ -10,6 +10,7 @@ import {
 } from '@/shared/lib/gitlab/connection';
 import type { GitLabConnectionItem } from '@/shared/lib/storage';
 import { AppSettings } from './app-settings';
+import { handleRefreshShortcut } from './refresh-shortcut';
 
 export class LayoutVM extends WorkspaceVM {
   readonly appSettings: AppSettings;
@@ -30,6 +31,9 @@ export class LayoutVM extends WorkspaceVM {
 
   willMount() {
     void this.appSettings.updates.connect(this.unmountSignal);
+    window.addEventListener('keydown', handleRefreshShortcut, {
+      signal: this.unmountSignal,
+    });
   }
 
   @computed
