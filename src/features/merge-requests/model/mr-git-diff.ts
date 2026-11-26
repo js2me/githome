@@ -6,7 +6,7 @@ import type {
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/create-query';
+import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
 import type { Globals } from '@/shared/model/globals';
 
 export type MergeRequestGitDiffContext = {

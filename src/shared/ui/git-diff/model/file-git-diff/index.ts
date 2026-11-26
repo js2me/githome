@@ -1,13 +1,13 @@
 import type { GitLabMergeRequestChangeDC } from '@/shared/api/gitlab';
 import type { GitDiffVM } from '../git-diff-vm';
-import { FileGitDiffComments } from './comments';
-import { FileGitDiffContent } from './content';
-import { FileGitDiffContextExpand } from './context-expand';
-import { FileDiffHighlighting } from './highlighting';
-import { FileGitDiffImages } from './images';
-import { FileGitDiffLineSelection } from './line-selection';
+import { FileGitDiffContent } from './content/content';
+import { FileGitDiffContextExpand } from './content/context-expand';
+import { FileDiffHighlighting } from './content/highlighting';
+import { FileGitDiffImages } from './content/images';
+import { FileGitDiffComments } from './interaction/comments';
+import { FileGitDiffLineSelection } from './interaction/line-selection';
+import { FileGitDiffNavigation } from './interaction/navigation';
 import { FileGitDiffMeta } from './meta';
-import { FileGitDiffNavigation } from './navigation';
 import { FileGitDiffRows } from './rows';
 
 export class FileGitDiff {

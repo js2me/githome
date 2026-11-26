@@ -3,8 +3,8 @@ import type { GitLabProjectReadmeDC } from '@/shared/api/gitlab';
 import {
   decodeProjectReadmeContent,
   README_FALLBACK_PATHS,
-} from '@/shared/api/gitlab/endpoints/get-project-readme';
-import { createGitlabQuery } from '@/shared/lib/gitlab/create-query';
+} from '@/shared/api/gitlab/endpoints/repository/get-project-readme';
+import { createGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
 import type { Globals } from '@/shared/model/globals';
 
 type ReadmeQuery = ReturnType<

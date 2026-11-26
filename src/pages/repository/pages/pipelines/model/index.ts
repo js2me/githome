@@ -7,7 +7,7 @@ import {
   type GitLabPipelineDC,
   gitlabApi,
 } from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/create-query';
+import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
 import type { RepositoryPageVM } from '../../../model/page-vm';
 import { isPipelineActive, PipelineList } from './pipeline-list';
 

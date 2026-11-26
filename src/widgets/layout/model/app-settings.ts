@@ -9,7 +9,7 @@ import {
   getCodeSyntaxTheme,
   wrapSourceCodeKey,
 } from '@/shared/lib/code-view-preferences';
-import type { ThemePreference } from '@/shared/lib/theme-manager';
+import type { ThemePreference } from '@/shared/lib/theme/theme-manager';
 import type { Globals } from '@/shared/model/globals';
 import { AppUpdates } from './app-updates';
 

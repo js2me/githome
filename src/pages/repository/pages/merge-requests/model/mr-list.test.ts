@@ -2,10 +2,10 @@ import { createMemoryHistory, createQueryParams } from 'mobx-location-history';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Workspace } from '@/features/workspace-navigation';
 import type { GitLabMergeRequestDC } from '@/shared/api/gitlab';
-import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/create-query';
+import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
 import { MrList } from './mr-list';
 
-vi.mock('@/shared/lib/gitlab/create-query', () => ({
+vi.mock('@/shared/lib/gitlab/connection/create-query', () => ({
   createInfiniteGitlabQuery: vi.fn(),
 }));
 

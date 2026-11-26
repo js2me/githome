@@ -1,11 +1,11 @@
 import { actionBound, computed, observable } from 'mobx';
 import type { GitLabMergeRequestChangeDC } from '@/shared/api/gitlab';
-import { getDiffFileKey } from '@/shared/lib/diff-search';
+import { getDiffFileKey } from '@/shared/lib/diff/diff-search';
+import { isImageChange } from '@/shared/lib/gitlab/diff/is-image-change';
 import {
   getFileLevelThreadsForChange,
   indexDiffDiscussionsForChange,
-} from '@/shared/lib/gitlab/diff-discussions';
-import { isImageChange } from '@/shared/lib/gitlab/is-image-change';
+} from '@/shared/lib/gitlab/discussions/diff-discussions';
 import type { FileGitDiff } from '.';
 import { getChangeBadge, getChangePath, getExpandFilePath } from './helpers';
 

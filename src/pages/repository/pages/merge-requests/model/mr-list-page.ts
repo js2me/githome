@@ -3,8 +3,8 @@ import {
   type GitLabProjectDC,
   gitlabApi,
 } from '@/shared/api/gitlab';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/create-query';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
 import { VM } from '@/shared/lib/view-models/vm';
 
 interface MrListPagePayload {

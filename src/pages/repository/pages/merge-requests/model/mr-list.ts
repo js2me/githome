@@ -4,7 +4,7 @@ import type {
   GitLabMergeRequestDC,
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
-import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/create-query';
+import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
 
 export const MR_FILTERS = [
   {

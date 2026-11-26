@@ -20,13 +20,13 @@ import type {
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
-import { createConnectionUserIdQuery } from '@/shared/lib/gitlab/connection-profile-query';
+import { createConnectionUserIdQuery } from '@/shared/lib/gitlab/connection/connection-profile-query';
 import {
   createGitlabApiQuery,
   createGitlabQuery,
   createInfiniteGitlabQuery,
-} from '@/shared/lib/gitlab/create-query';
-import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/diff-comment';
+} from '@/shared/lib/gitlab/connection/create-query';
+import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/discussions/diff-comment';
 import {
   buildMergeRequestApprovalView,
   type MergeRequestApprovalView,

@@ -1,6 +1,6 @@
 import type { ViewModelStore } from 'mobx-view-model';
-import type { SettingsStore } from '@/shared/lib/gitlab/settings';
-import type { ThemeManager } from '@/shared/lib/theme-manager';
+import type { SettingsStore } from '@/shared/lib/gitlab/connection/settings';
+import type { ThemeManager } from '@/shared/lib/theme/theme-manager';
 
 export interface Globals {
   readonly stores: {

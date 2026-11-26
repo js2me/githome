@@ -16,18 +16,7 @@ import { HomePageVM } from '../model';
 import type { ProjectListTab } from '../model/gitlab-projects-list';
 import { InboxPageRows } from './inbox-page-rows';
 import './page.css';
-
-const BranchDiagram = () => (
-  <div className="home-branch-diagram" aria-hidden="true">
-    <div className="home-branch-rail">
-      <i className="home-branch-fork" />
-      <i className="home-branch-node home-branch-node--start" />
-      <i className="home-branch-node home-branch-node--fork" />
-      <i className="home-branch-node home-branch-node--commit" />
-      <i className="home-branch-node home-branch-node--merge" />
-    </div>
-  </div>
-);
+import { BranchDiagram } from './components/branch-diagram';
 
 export const HomePage = withViewModel(
   HomePageVM,

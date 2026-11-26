@@ -1,7 +1,7 @@
 import { actionBound, computed, observable, reaction } from 'mobx';
 import type { GitLabDiscussionDC, GitLabNoteDC } from '@/shared/api/gitlab';
-import { isDiscussionResolved } from '@/shared/lib/gitlab/diff-discussions';
-import { DiscussionNoteEditor } from '@/shared/lib/gitlab/discussion-note-editor';
+import { isDiscussionResolved } from '@/shared/lib/gitlab/discussions/diff-discussions';
+import { DiscussionNoteEditor } from '@/shared/lib/gitlab/discussions/discussion-note-editor';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { GitlabMarkdownScope } from '@/shared/ui/gitlab-markdown/model';
 

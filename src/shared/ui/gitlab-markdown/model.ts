@@ -2,18 +2,18 @@ import DOMPurify from 'dompurify';
 import { actionBound, observable, reaction, runInAction } from 'mobx';
 import { createRef } from 'yummies/mobx';
 import { gitlabApi } from '@/shared/api/gitlab';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
-import { hydrateProxiedGitlabImages } from '@/shared/lib/gitlab/hydrate-gitlab-images';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { hydrateProxiedGitlabImages } from '@/shared/lib/gitlab/markdown/hydrate-gitlab-images';
 import {
   getCachedGitLabMarkdown,
   getGitLabMarkdownCacheKey,
   setCachedGitLabMarkdown,
-} from '@/shared/lib/gitlab/markdown-cache';
+} from '@/shared/lib/gitlab/markdown/markdown-cache';
 import {
   postProcessGitLabHtml,
   sanitizeGitlabCodeBlocks,
-} from '@/shared/lib/gitlab/post-process-html';
-import { enhanceMarkdownCodeBlocks } from '@/shared/lib/syntax-highlight/enhance-markdown-code-blocks';
+} from '@/shared/lib/gitlab/markdown/post-process-html';
+import { enhanceMarkdownCodeBlocks } from '@/shared/lib/syntax-highlight/rendering/enhance-markdown-code-blocks';
 import { VM } from '@/shared/lib/view-models/vm';
 
 export interface GitlabMarkdownScope {

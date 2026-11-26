@@ -2,14 +2,14 @@ import type { BundledLanguage, Highlighter } from 'shiki/bundle/web';
 import { bundledLanguages, createHighlighter } from 'shiki/bundle/web';
 import type { ThemeRegistration } from 'shiki/core';
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
-import type { ParsedFileDiff } from '@/shared/lib/parse-unified-diff';
+import type { ParsedFileDiff } from '@/shared/lib/diff/parse-unified-diff';
 import { getDiffLineTokenKey } from './diff-line-token-key';
-import type { SyntaxLanguage } from './supported-languages';
-import type { SyntaxTheme } from './theme-options';
+import type { SyntaxLanguage } from './languages/supported-languages';
+import type { SyntaxTheme } from './rendering/theme-options';
 import draculaOfficialTheme from './themes/dracula-official.json';
 import tokyoNightLightTheme from './themes/tokyo-night-light.json';
 
-export type { SyntaxTheme } from './theme-options';
+export type { SyntaxTheme } from './rendering/theme-options';
 
 export interface SyntaxToken {
   content: string;

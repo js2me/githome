@@ -1,4 +1,4 @@
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
 import { fetchGitlabJson } from '../client';
 import type { GitLabUserDC } from '../data-contracts';
 

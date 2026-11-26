@@ -3,7 +3,7 @@ import {
   type DiffSearchMatch,
   indexMatchesByRowId,
   type TextRange,
-} from '@/shared/lib/diff-search';
+} from '@/shared/lib/diff/diff-search';
 
 export interface RowSearchHighlightState {
   ranges: TextRange[];

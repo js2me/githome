@@ -2,7 +2,7 @@ import { appStorage } from './storage';
 import {
   darkSyntaxThemes,
   lightSyntaxThemes,
-} from './syntax-highlight/theme-options';
+} from './syntax-highlight/rendering/theme-options';
 
 export const codeFontSizes = [12, 13, 14, 16, 18] as const;
 export type CodeFontSize = (typeof codeFontSizes)[number];

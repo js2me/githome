@@ -7,13 +7,14 @@ import type { GitLabProjectDC } from '@/shared/api/gitlab';
 import {
   normalizeJiraBaseUrl,
   parseConnectionDraft,
-} from '@/shared/lib/gitlab/connection';
+} from '@/shared/lib/gitlab/connection/connection';
 import type { GitLabConnectionItem } from '@/shared/lib/storage';
 import { AppSettings } from './app-settings';
-import { handleRefreshShortcut } from './refresh-shortcut';
+import { RefreshShortcut } from './refresh-shortcut';
 
 export class LayoutVM extends WorkspaceVM {
   readonly appSettings: AppSettings;
+  readonly refreshShortcut = new RefreshShortcut();
   readonly connectionDialog = createRef<HTMLDialogElement>();
   readonly connectionUrlInput = createRef<HTMLInputElement>();
 
@@ -31,9 +32,7 @@ export class LayoutVM extends WorkspaceVM {
 
   willMount() {
     void this.appSettings.updates.connect(this.unmountSignal);
-    window.addEventListener('keydown', handleRefreshShortcut, {
-      signal: this.unmountSignal,
-    });
+    this.refreshShortcut.connect(window, this.unmountSignal);
   }
 
   @computed

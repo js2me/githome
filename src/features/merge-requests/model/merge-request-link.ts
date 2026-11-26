@@ -1,5 +1,5 @@
 import { normalizeGitlabBaseUrl } from '@/shared/api/gitlab/client';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
 
 export function resolveMergeRequestLink(
   input: string,

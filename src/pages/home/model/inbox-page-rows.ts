@@ -3,9 +3,9 @@ import {
   type GitLabMergeRequestReviewerDC,
   gitlabApi,
 } from '@/shared/api/gitlab';
-import { getMergeRequestReviewers } from '@/shared/api/gitlab/endpoints/get-merge-request-reviewers';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/create-query';
+import { getMergeRequestReviewers } from '@/shared/api/gitlab/endpoints/merge-requests/reviewers/get-merge-request-reviewers';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { InboxRow } from './review-inbox';
 

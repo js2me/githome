@@ -4,7 +4,7 @@ import type { Workspace } from '@/features/workspace-navigation';
 import { WorkspaceVM } from '@/features/workspace-navigation';
 import type { GitLabBranchDC } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/create-query';
+import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
 import { isImagePath } from '@/shared/lib/image-path';
 import type { RepositoryPageVM } from '../../../model/page-vm';
 import { isMarkdownPath } from '../lib/repository-tree-utils';

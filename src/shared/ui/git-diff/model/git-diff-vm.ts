@@ -8,14 +8,14 @@ import type {
   GitLabDiscussionDC,
   GitLabMergeRequestChangeDC,
 } from '@/shared/api/gitlab';
-import { getDiffFileKey } from '@/shared/lib/diff-search';
-import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/diff-comment';
+import { getDiffFileKey } from '@/shared/lib/diff/diff-search';
+import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/discussions/diff-comment';
 import type { DiffFileContentLoader } from '@/shared/lib/syntax-highlight/types';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { GitlabMarkdownScope } from '@/shared/ui/gitlab-markdown/model';
 import { FileGitDiff } from './file-git-diff';
-import type { FileGitDiffContent } from './file-git-diff/content';
-import type { DiffImageLoader } from './file-git-diff/images';
+import type { FileGitDiffContent } from './file-git-diff/content/content';
+import type { DiffImageLoader } from './file-git-diff/content/images';
 
 const MAX_CONCURRENT_COLLAPSED_EXPANDS = 2;
 

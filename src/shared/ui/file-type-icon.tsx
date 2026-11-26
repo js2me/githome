@@ -2,7 +2,7 @@ import { cn } from '@/shared/lib/cn';
 import {
   getFileTypeIconUrl,
   resolveFileTypeIcon,
-} from '@/shared/lib/file-type-icon';
+} from '@/shared/lib/file-tree/file-type-icon';
 
 interface FileTypeIconProps {
   path: string;

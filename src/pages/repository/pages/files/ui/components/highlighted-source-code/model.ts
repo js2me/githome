@@ -1,5 +1,5 @@
 import { actionBound, observableRef, reaction, runInAction } from 'mobx';
-import { getLanguageFromPath } from '@/shared/lib/syntax-highlight/language-from-path';
+import { getLanguageFromPath } from '@/shared/lib/syntax-highlight/languages/language-from-path';
 import type { SyntaxToken } from '@/shared/lib/syntax-highlight/shiki-highlighter';
 import { highlightCodeBlockTokens } from '@/shared/lib/syntax-highlight/shiki-highlighter';
 import { VM } from '@/shared/lib/view-models/vm';

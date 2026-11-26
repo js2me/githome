@@ -5,7 +5,7 @@ import type {
   GitLabProjectDC,
   GitLabProjectReadmeDC,
 } from '@/shared/api/gitlab';
-import { createGitlabQuery } from '@/shared/lib/gitlab/create-query';
+import { createGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
 import { ProjectReadmeModel } from './project-readme';
 
 export class RepositoryPageVM extends WorkspaceVM {

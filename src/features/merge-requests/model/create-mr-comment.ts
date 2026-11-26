@@ -5,7 +5,7 @@ import type {
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
-import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/diff-comment';
+import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/discussions/diff-comment';
 import type { Globals } from '@/shared/model/globals';
 
 export type CreateMrCommentContext = {

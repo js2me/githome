@@ -11,7 +11,7 @@ import {
   normalizeGitlabBaseUrl,
   resolveGitlabAssetUrl,
 } from '@/shared/api/gitlab';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
 import { VM } from '@/shared/lib/view-models/vm';
 
 export interface GitlabAvatarPayload {

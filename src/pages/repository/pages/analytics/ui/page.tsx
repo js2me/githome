@@ -1,18 +1,7 @@
-import { withPropsViewModel, withViewModel } from 'mobx-view-model-react';
+import { withViewModel } from 'mobx-view-model-react';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { AnalyticsPageVM } from '../model';
-import { AnalyticsChartVM } from '../model/chart';
-
-const AnalyticsChart = withPropsViewModel(AnalyticsChartVM, ({ model }) => (
-  <div
-    ref={model.container}
-    className={
-      model.payload.kind === 'activity'
-        ? 'h-[320px] w-full sm:h-[360px]'
-        : 'h-[300px] w-full sm:h-[360px]'
-    }
-  />
-));
+import { AnalyticsChart } from './analytics-chart';
 
 const METRIC_CARD_CLASS = 'glass-panel rounded-2xl p-4';
 

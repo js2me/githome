@@ -1,7 +1,7 @@
 import { actionBound, computed, observable, reaction } from 'mobx';
 import { createRef } from 'yummies/mobx';
 import type { GitLabCommitDC } from '@/shared/api/gitlab';
-import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/create-query';
+import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
 import type { Globals } from '@/shared/model/globals';
 
 const COMMITS_PER_PAGE = 30;

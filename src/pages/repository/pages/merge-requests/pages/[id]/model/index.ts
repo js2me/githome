@@ -3,13 +3,13 @@ import type { ViewModelParams } from 'mobx-view-model';
 import type { Workspace } from '@/features/workspace-navigation';
 import { WorkspaceVM } from '@/features/workspace-navigation';
 import { gitlabApi } from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/create-query';
+import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
 import {
   extractJiraLinks,
   findJiraKeys,
   getJiraProjectUrl,
   splitJiraText,
-} from '@/shared/lib/gitlab/jira-links';
+} from '@/shared/lib/gitlab/markdown/jira-links';
 import type { RepositoryPageVM } from '../../../../../model/page-vm';
 import { MrInfoModel } from './mr-info';
 

@@ -6,7 +6,7 @@ import type {
 } from 'react';
 import { createRef } from 'yummies/mobx';
 import { gitlabApi } from '@/shared/api/gitlab';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
 import {
   insertMarkdownAtSelection,
   insertMarkdownCode,

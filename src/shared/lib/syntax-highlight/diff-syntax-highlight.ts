@@ -1,6 +1,6 @@
-import type { ParsedFileDiff } from '@/shared/lib/parse-unified-diff';
+import type { ParsedFileDiff } from '@/shared/lib/diff/parse-unified-diff';
 import { getDiffLineTokenKey } from './diff-line-token-key';
-import { getLanguageFromPath } from './language-from-path';
+import { getLanguageFromPath } from './languages/language-from-path';
 import {
   type SyntaxTheme,
   type SyntaxToken,

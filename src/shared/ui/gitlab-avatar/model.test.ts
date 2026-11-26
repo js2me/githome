@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
 import type { Globals } from '@/shared/model/globals';
 import { type GitlabAvatarPayload, GitlabAvatarVM } from './model';
 

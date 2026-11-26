@@ -6,14 +6,14 @@ import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { PipelineCard } from '@/widgets/pipeline-card';
 import { MergeRequestDetailVM } from '../../model/merge-request-detail';
-import { ChangesActiveFileLink } from './changes-active-file-link';
-import { ChangesFileTree } from './changes-file-tree';
-import { ChangesTreeLayout } from './changes-tree-layout';
-import { DiffVersionPicker } from './diff-version-picker';
-import { MergeRequestCommentForm } from './merge-request-comment-form';
-import { MergeRequestDiscussions } from './merge-request-discussions';
-import { MergeRequestOverview } from './merge-request-overview';
-import { MrReviewActions } from './mr-review-actions';
+import { ChangesActiveFileLink } from './changes/changes-active-file-link';
+import { ChangesFileTree } from './changes/changes-file-tree';
+import { ChangesTreeLayout } from './changes/changes-tree-layout';
+import { DiffVersionPicker } from './changes/diff-version-picker';
+import { MergeRequestCommentForm } from './discussions/merge-request-comment-form';
+import { MergeRequestDiscussions } from './discussions/merge-request-discussions';
+import { MergeRequestOverview } from './overview/merge-request-overview';
+import { MrReviewActions } from './overview/mr-review-actions';
 
 export const MergeRequestDetail = withViewModel(
   MergeRequestDetailVM,

@@ -8,8 +8,8 @@ import {
 } from 'mobx';
 import { createRef } from 'yummies/mobx';
 import type { GitLabNoteDC } from '@/shared/api/gitlab';
-import type { InlineDiffThread } from '@/shared/lib/gitlab/diff-discussions';
-import { DiscussionNoteEditor } from '@/shared/lib/gitlab/discussion-note-editor';
+import type { InlineDiffThread } from '@/shared/lib/gitlab/discussions/diff-discussions';
+import { DiscussionNoteEditor } from '@/shared/lib/gitlab/discussions/discussion-note-editor';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { GitlabMarkdownScope } from '@/shared/ui/gitlab-markdown/model';
 

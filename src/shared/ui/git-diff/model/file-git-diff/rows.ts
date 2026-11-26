@@ -1,10 +1,10 @@
 import { actionBound, computed, observable, reaction } from 'mobx';
-import { buildDiffVirtualRows } from '@/shared/lib/build-diff-virtual-rows';
+import { buildDiffVirtualRows } from '@/shared/lib/diff/build-diff-virtual-rows';
 import {
   getOrderedCommentableLineKeys,
   getSelectionEndKey,
   getSelectionLineRangeLabel,
-} from '@/shared/lib/diff-line-selection';
+} from '@/shared/lib/diff/diff-line-selection';
 import type { FileGitDiff } from '.';
 
 export class FileGitDiffRows {

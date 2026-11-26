@@ -1,4 +1,4 @@
-import type { FetchQueryParams } from '@/shared/lib/create-fetch-query';
+import type { FetchQueryParams } from '@/shared/lib/query/create-fetch-query';
 
 export const PROJECT_LIST_TABS = [
   { id: 'contributed', label: 'Участие' },

@@ -3,8 +3,8 @@ import { createQuery, queryClient } from 'mobx-tanstack-query/preset';
 import {
   type GitLabConnection,
   getConnectionLabel,
-} from '@/shared/lib/gitlab/connection';
-import { connectionProfileOptions } from '@/shared/lib/gitlab/connection-profile-query';
+} from '@/shared/lib/gitlab/connection/connection';
+import { connectionProfileOptions } from '@/shared/lib/gitlab/connection/connection-profile-query';
 import { VM } from '@/shared/lib/view-models/vm';
 
 interface ConnectionButtonPayload {

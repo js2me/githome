@@ -1,10 +1,10 @@
 import { Repository } from '@/entities/gitlab-repositories';
 import type { Workspace } from '@/features/workspace-navigation';
 import { MergeRequestNavAdapter } from '@/features/workspace-navigation';
-import { SettingsStore } from '@/shared/lib/gitlab/settings';
+import { SettingsStore } from '@/shared/lib/gitlab/connection/settings';
 import { NavTreeStore } from '@/shared/lib/navigation/nav-tree';
 import { Router } from '@/shared/lib/navigation/router';
-import { ThemeManager } from '@/shared/lib/theme-manager';
+import { ThemeManager } from '@/shared/lib/theme/theme-manager';
 import { VMStore } from './vm-store';
 
 export class AppWorkspace extends Router implements Workspace {

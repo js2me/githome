@@ -1,6 +1,6 @@
 import { action, computed } from 'mobx';
 import type { GitLabProjectDC } from '@/shared/api/gitlab';
-import type { SettingsStore } from '@/shared/lib/gitlab/settings';
+import type { SettingsStore } from '@/shared/lib/gitlab/connection/settings';
 import { appStorage } from '@/shared/lib/storage';
 
 type ProjectsByConnection = Record<string, GitLabProjectDC>;

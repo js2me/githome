@@ -1,7 +1,8 @@
 import { type ViewModelProps, withViewModel } from 'mobx-view-model-react';
 import { type ReactNode, Suspense } from 'react';
-import { GitLabConnectionProvider } from '@/shared/lib/gitlab/connection-context';
+import { GitLabConnectionProvider } from '@/shared/lib/gitlab/connection/connection-context';
 import { AppNav } from './components/app-nav';
+import { RefreshNotice } from './components/refresh-notice';
 import { WorkspacePicker } from './components/workspace-picker';
 import { LayoutVM } from './model/layout-vm';
 
@@ -19,6 +20,7 @@ export const Layout = withViewModel(
         <div className="glass-canvas flex min-h-screen min-w-0 flex-col">
           <AppNav />
           <WorkspacePicker />
+          <RefreshNotice model={model.refreshShortcut} />
           <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6">
             <Suspense fallback={null}>{children}</Suspense>
           </main>

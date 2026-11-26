@@ -14,7 +14,15 @@
           "options": {
             "paths": {
               "react": {
-                "importNames": ["useRef", "useState", "useEffect"],
+                "importNames": [
+                  "useRef",
+                  "useState",
+                  "useEffect",
+                  "useCallback",
+                  "useLayoutEffect",
+                  "useReducer",
+                  "useMemo"
+                ],
                 "message": "Храните состояние, DOM-ссылки и эффекты в VM."
               }
             }

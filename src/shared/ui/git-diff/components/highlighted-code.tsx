@@ -1,6 +1,6 @@
 import { type CSSProperties, memo, type ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
-import type { WordDiffSegment } from '@/shared/lib/compute-word-diff';
+import type { WordDiffSegment } from '@/shared/lib/diff/compute-word-diff';
 import { mapTokensToGitlabDiffSyntax } from '@/shared/lib/gitlab/syntax/diff-syntax';
 import type { SyntaxToken } from '@/shared/lib/syntax-highlight/shiki-highlighter';
 import {

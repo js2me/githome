@@ -8,7 +8,7 @@ import {
   type DiffSearchMatch,
   getDiffFileElementId,
   isDiffFileHeaderRowId,
-} from '@/shared/lib/diff-search';
+} from '@/shared/lib/diff/diff-search';
 import { registerFindShortcutHandler } from '@/shared/lib/find-shortcut';
 import { VM } from '@/shared/lib/view-models/vm';
 import { DiffSearchHighlightStore } from './search-highlights';

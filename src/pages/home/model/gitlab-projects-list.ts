@@ -1,11 +1,11 @@
 import { actionBound, computed, observable } from 'mobx';
 import { GitlabProjectInfo } from '@/entities/gitlab-projects';
 import type { GitLabProjectDC } from '@/shared/api/gitlab';
-import { createConnectionUserIdQuery } from '@/shared/lib/gitlab/connection-profile-query';
+import { createConnectionUserIdQuery } from '@/shared/lib/gitlab/connection/connection-profile-query';
 import {
   createGitlabListQuery,
   createInfiniteGitlabQuery,
-} from '@/shared/lib/gitlab/create-query';
+} from '@/shared/lib/gitlab/connection/create-query';
 import type { Globals } from '@/shared/model/globals';
 import {
   buildProjectListParams,

@@ -7,41 +7,15 @@ import {
 } from '@gravity-ui/icons';
 import { RouteView, RouteViewGroup } from 'mobx-route/react';
 import { withViewModel } from 'mobx-view-model-react';
-import { lazy } from 'react';
 import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
 import { ProjectAvatar } from '@/shared/ui/project-avatar';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { RepositoryPageVM } from '../model/page-vm';
-
-const MergeRequestsPage = lazy(() =>
-  import('../pages/merge-requests/ui/page').then((module) => ({
-    default: module.MergeRequestsPage,
-  })),
-);
-
-const FilesPage = lazy(() =>
-  import('../pages/files/ui/page').then((module) => ({
-    default: module.FilesPage,
-  })),
-);
-
-const PipelinesPage = lazy(() =>
-  import('../pages/pipelines/ui/page').then((module) => ({
-    default: module.PipelinesPage,
-  })),
-);
-
-const AnalyticsPage = lazy(() =>
-  import('../pages/analytics/ui/page').then((module) => ({
-    default: module.AnalyticsPage,
-  })),
-);
-
-const MergeRequestPage = lazy(() =>
-  import('../pages/merge-requests/pages/[id]/ui/page').then((module) => ({
-    default: module.MergeRequestPage,
-  })),
-);
+import { AnalyticsPage } from './routes/analytics-page';
+import { FilesPage } from './routes/files-page';
+import { MergeRequestPage } from './routes/merge-request-page';
+import { MergeRequestsPage } from './routes/merge-requests-page';
+import { PipelinesPage } from './routes/pipelines-page';
 
 export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
   const project = model.project;

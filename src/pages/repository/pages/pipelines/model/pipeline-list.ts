@@ -17,7 +17,7 @@ import { gitlabApi } from '@/shared/api/gitlab';
 import {
   createGitlabApiQuery,
   createInfiniteGitlabQuery,
-} from '@/shared/lib/gitlab/create-query';
+} from '@/shared/lib/gitlab/connection/create-query';
 
 export interface PipelineListParams {
   globals: Workspace;

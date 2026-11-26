@@ -4,7 +4,7 @@ import {
   CirclePlusFill,
   Pencil,
 } from '@gravity-ui/icons';
-import type { ChangeFileStatus } from '@/shared/lib/build-changes-tree';
+import type { ChangeFileStatus } from '@/shared/lib/file-tree/build-changes-tree';
 
 const fileStatuses = {
   added: { Icon: CirclePlusFill, label: 'Добавлен' },

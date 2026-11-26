@@ -11,10 +11,10 @@ import {
   CHANGES_FILE_TREE_DEFAULT_WIDTH,
   clampChangesFileTreeWidth,
   estimateChangesFileTreeWidth,
-} from '@/shared/lib/changes-file-tree-width';
-import { filterDiscussionsForActivity } from '@/shared/lib/gitlab/diff-discussions';
+} from '@/shared/lib/file-tree/changes-file-tree-width';
+import { filterDiscussionsForActivity } from '@/shared/lib/gitlab/discussions/diff-discussions';
 import { VM } from '@/shared/lib/view-models/vm';
-import { ActiveDiffFile } from './active-diff-file';
+import { ActiveDiffFile } from './changes/active-diff-file';
 import type { MergeRequestPageVM } from './index';
 
 export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {

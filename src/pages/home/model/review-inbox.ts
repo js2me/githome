@@ -1,7 +1,7 @@
 import { actionBound, computed, observable } from 'mobx';
 import type { Workspace } from '@/features/workspace-navigation';
 import type { GitLabMergeRequestDC } from '@/shared/api/gitlab';
-import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/create-query';
+import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
 import type { GitlabProjectsList } from './gitlab-projects-list';
 
 type InboxScope = 'reviewer' | 'author';

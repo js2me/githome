@@ -1,4 +1,4 @@
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection';
+import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
 
 interface GraphQLResponse<T> {
   data?: T;

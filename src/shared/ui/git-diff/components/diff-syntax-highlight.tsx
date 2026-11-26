@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { createContext, type ReactNode, useContext } from 'react';
-import type { FileDiffHighlighting } from '../model/file-git-diff/highlighting';
+import type { FileDiffHighlighting } from '../model/file-git-diff/content/highlighting';
 
 const DiffSyntaxHighlightContext = createContext<
   FileDiffHighlighting['tokens'] | null

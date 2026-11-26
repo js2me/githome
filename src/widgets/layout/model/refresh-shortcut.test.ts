@@ -1,7 +1,7 @@
 import { QueryObserver } from '@tanstack/query-core';
 import { queryClient } from 'mobx-tanstack-query/preset';
-import { afterEach, expect, it, vi } from 'vitest';
-import { handleRefreshShortcut } from './refresh-shortcut';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { RefreshShortcut } from './refresh-shortcut';
 
 const keydown = (options: KeyboardEventInit = {}) =>
   Object.assign(new Event('keydown', { cancelable: true }), {
@@ -10,8 +10,21 @@ const keydown = (options: KeyboardEventInit = {}) =>
     ...options,
   }) as KeyboardEvent;
 
+let shortcut: RefreshShortcut;
+let target: EventTarget;
+let lifecycle: AbortController;
+
+beforeEach(() => {
+  shortcut = new RefreshShortcut();
+  target = new EventTarget();
+  lifecycle = new AbortController();
+  shortcut.connect(target, lifecycle.signal);
+});
+
 afterEach(() => {
+  lifecycle.abort();
   queryClient.clear();
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -32,9 +45,10 @@ it('refreshes all active queries, including fresh ones, without reloading', asyn
 
   try {
     const event = keydown();
-    handleRefreshShortcut(event);
+    target.dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(true);
+    expect(shortcut.isVisible).toBe(true);
     await vi.waitFor(() => {
       for (const { queryKey } of active) {
         expect(queryClient.getQueryData(queryKey)).toBe('refreshed');
@@ -57,17 +71,59 @@ it('supports Cmd+R, preserves other shortcuts, and ignores key repeats', () => {
     { isComposing: true },
   ]) {
     const event = keydown(options);
-    handleRefreshShortcut(event);
+    target.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(false);
   }
 
   const repeat = keydown({ repeat: true });
-  handleRefreshShortcut(repeat);
+  target.dispatchEvent(repeat);
   expect(repeat.defaultPrevented).toBe(true);
   expect(refetch).not.toHaveBeenCalled();
+  expect(shortcut.isVisible).toBe(false);
 
   const cmd = keydown({ ctrlKey: false, metaKey: true });
-  handleRefreshShortcut(cmd);
+  target.dispatchEvent(cmd);
   expect(cmd.defaultPrevented).toBe(true);
+  expect(refetch).toHaveBeenCalledOnce();
+});
+
+it('shows the notice for at least a second even if the refresh is instant', async () => {
+  vi.useFakeTimers();
+  target.dispatchEvent(keydown());
+
+  expect(shortcut.isVisible).toBe(true);
+  await vi.advanceTimersByTimeAsync(999);
+  expect(shortcut.isVisible).toBe(true);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(shortcut.isVisible).toBe(false);
+});
+
+it('keeps the notice visible until slow queries finish, without starting a second refresh', async () => {
+  vi.useFakeTimers();
+  const pending = Promise.withResolvers<void>();
+  const refetch = vi
+    .spyOn(queryClient, 'refetchQueries')
+    .mockReturnValue(pending.promise);
+
+  target.dispatchEvent(keydown());
+  await vi.advanceTimersByTimeAsync(2_000);
+  expect(shortcut.isVisible).toBe(true);
+  target.dispatchEvent(keydown());
+  expect(refetch).toHaveBeenCalledOnce();
+
+  pending.resolve();
+  await pending.promise;
+  expect(shortcut.isVisible).toBe(false);
+});
+
+it('removes the listener and notice when the layout unmounts', () => {
+  const refetch = vi.spyOn(queryClient, 'refetchQueries');
+  target.dispatchEvent(keydown());
+
+  lifecycle.abort();
+  const event = keydown();
+  target.dispatchEvent(event);
+  expect(event.defaultPrevented).toBe(false);
+  expect(shortcut.isVisible).toBe(false);
   expect(refetch).toHaveBeenCalledOnce();
 });

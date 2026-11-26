@@ -9,7 +9,7 @@ import { gitlabApi } from '@/shared/api/gitlab';
 import {
   createGitlabApiQuery,
   createGitlabQuery,
-} from '@/shared/lib/gitlab/create-query';
+} from '@/shared/lib/gitlab/connection/create-query';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { Globals } from '@/shared/model/globals';
 

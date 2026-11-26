@@ -1,20 +1,10 @@
 import { observer } from 'mobx-react-lite';
 import { RouteView, RouteViewGroup } from 'mobx-route/react';
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import type { Workspace } from '@/features/workspace-navigation';
 import { Layout } from '@/widgets/layout';
-
-const HomePage = lazy(() =>
-  import('@/pages/home').then((module) => ({
-    default: module.HomePage,
-  })),
-);
-
-const RepositoryPage = lazy(() =>
-  import('@/pages/repository').then((module) => ({
-    default: module.RepositoryPage,
-  })),
-);
+import { HomePage } from './routes/home-page';
+import { RepositoryPage } from './routes/repository-page';
 
 export const Routing = observer(({ globals }: { globals: Workspace }) => {
   return (
