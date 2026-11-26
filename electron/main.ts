@@ -3,7 +3,11 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { setupAppUpdater } from "./app-updater";
 import { startAppServer } from "./app-server";
-import { readOpenMergeRequestArgument } from "./system-links/arguments";
+import {
+  readExplicitMergeRequest,
+  readGitHomeLink,
+  readOpenMergeRequestArgument,
+} from "./system-links/arguments";
 import { setupSystemLinks } from "./system-links/ipc";
 import { createLinkPlatform } from "./system-links/platform";
 import { SystemLinkRouter } from "./system-links/router";
@@ -25,7 +29,7 @@ let appOrigin: string | undefined;
 let creatingWindow: Promise<void> | undefined;
 let linkRouter: SystemLinkRouter | undefined;
 
-const explicitMergeRequest = readOpenMergeRequestArgument(process.argv.slice(1));
+const explicitMergeRequest = readExplicitMergeRequest(process.argv.slice(1));
 const gotSingleInstanceLock = app.requestSingleInstanceLock(
   explicitMergeRequest === undefined ? undefined : { explicitMergeRequest },
 );
@@ -142,7 +146,9 @@ if (gotSingleInstanceLock) {
 
   app.on("open-url", (event, url) => {
     event.preventDefault();
-    if (parseWebUrl(url)) receiveLinks([{ url }]);
+    const explicit = readGitHomeLink(url);
+    if (explicit !== undefined) receiveLinks([{ url: explicit, explicit: true }]);
+    else if (parseWebUrl(url)) receiveLinks([{ url }]);
   });
 
   app.on("open-file", (event, file) => {
@@ -158,7 +164,7 @@ if (gotSingleInstanceLock) {
       : undefined;
     const explicit = typeof forwarded === "string"
       ? readOpenMergeRequestArgument(["--open-mr", forwarded])
-      : readOpenMergeRequestArgument(args);
+      : readExplicitMergeRequest(args);
     const links = explicit === undefined ? webArgs(args) : [{ url: explicit, explicit: true } as const];
     if (links.length) receiveLinks(links);
     else {
@@ -169,6 +175,9 @@ if (gotSingleInstanceLock) {
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
+    if (app.isPackaged && process.platform === "win32" && !app.isDefaultProtocolClient("githome")) {
+      app.setAsDefaultProtocolClient("githome");
+    }
     setupAppUpdater(() => appOrigin);
     const router = new SystemLinkRouter(
       path.join(app.getPath("userData"), "system-links.json"),
@@ -186,7 +195,7 @@ if (gotSingleInstanceLock) {
         for (const { url, explicit } of links) {
           try {
             if (explicit && !url) {
-              dialog.showErrorBox("GitHome", "Use --open-mr followed by a GitLab merge request URL.");
+              dialog.showErrorBox("GitHome", "This link does not open a GitLab merge request.");
               continue;
             }
 

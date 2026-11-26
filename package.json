@@ -97,6 +97,13 @@
       "repo": "githome"
     },
     "asar": true,
+    "protocols": [
+      {
+        "name": "GitHome merge request",
+        "schemes": ["githome"],
+        "role": "Viewer"
+      }
+    ],
     "directories": {
       "output": "release",
       "buildResources": "resources"

@@ -1,0 +1,39 @@
+:root {
+  color-scheme: light dark;
+  font: 15px/1.45 system-ui, sans-serif;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+}
+main {
+  box-sizing: border-box;
+  margin: 1rem auto;
+  max-width: 34rem;
+  padding: 0 1.25rem;
+}
+h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+label { display: block; }
+input:not([type="checkbox"]) {
+  box-sizing: border-box;
+  margin: .3rem 0 .7rem;
+  padding: .5rem;
+  width: 100%;
+}
+.check { display: flex; gap: .4rem; }
+.actions:not([hidden]) { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .85rem; }
+button, .primary {
+  border-radius: .45rem;
+  cursor: pointer;
+  font: inherit;
+  padding: .45rem .75rem;
+}
+.primary {
+  background: #d87011;
+  color: #151009;
+  text-decoration: none;
+}
+#target { overflow-wrap: anywhere; }

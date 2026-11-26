@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "GitHome",
+  "version": "1.0.0",
+  "description": "Открывает ссылки на merge requests из выбранного GitLab в GitHome.",
+  "permissions": ["storage", "declarativeNetRequestWithHostAccess"],
+  "optional_host_permissions": ["https://*/*"],
+  "action": { "default_popup": "setup.html", "default_title": "GitHome" },
+  "options_ui": { "page": "setup.html", "open_in_tab": true },
+  "background": { "service_worker": "background.js" },
+  "web_accessible_resources": [{ "resources": ["open.html"], "matches": ["https://*/*"] }]
+}

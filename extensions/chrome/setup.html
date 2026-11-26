@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GitHome</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <h1>GitHome</h1>
+    <p>Открывайте merge requests в GitHome. Chrome останется браузером по умолчанию.</p>
+    <form>
+      <label for="origin">Адрес GitLab</label>
+      <input id="origin" name="origin" required placeholder="gitlab.example.com" spellcheck="false">
+      <label class="check"><input id="auto" type="checkbox" checked> Открывать автоматически</label>
+      <div class="actions">
+        <button type="submit">Сохранить</button>
+        <button type="button" id="disable" hidden>Отключить</button>
+      </div>
+      <p id="status" role="status"></p>
+    </form>
+  </main>
+  <script type="module" src="setup.js"></script>
+</body>
+</html>

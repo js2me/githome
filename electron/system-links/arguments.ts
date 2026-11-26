@@ -15,3 +15,22 @@ export function readOpenMergeRequestArgument(argv: readonly string[]): string | 
   ).trim();
   return parseMergeRequestLocation(url) ? url : "";
 }
+
+export function readGitHomeLink(input: string): string | undefined {
+  if (!/^githome:/i.test(input)) return;
+  if (!URL.canParse(input)) return "";
+  const link = new URL(input);
+  if (
+    link.host !== "open-mr" || (link.pathname && link.pathname !== "/") ||
+    link.username || link.password || link.hash || link.searchParams.size !== 1
+  ) return "";
+  const url = link.searchParams.get("url") ?? "";
+  return parseMergeRequestLocation(url) ? url : "";
+}
+
+export function readExplicitMergeRequest(argv: readonly string[]): string | undefined {
+  const flag = readOpenMergeRequestArgument(argv);
+  if (flag !== undefined) return flag;
+  const link = argv.find((arg) => /^githome:/i.test(arg));
+  return link === undefined ? undefined : readGitHomeLink(link);
+}
