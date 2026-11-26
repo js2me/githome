@@ -29,22 +29,40 @@ export class RepositoryTreeModel {
   @observableShallow accessor folderErrors = new Map<string, Error>();
   @observable accessor selectedFilePath: string | null = null;
 
+  private revision = 0;
+
   constructor(private readonly params: RepositoryTreeParams) {
     reaction(
-      () => {
-        const projectId = params.projectId();
-        const ref = params.ref()?.trim();
-        return projectId !== null && ref ? `${projectId}:${ref}` : null;
-      },
-      (key) => {
-        if (!key) {
+      () => ({
+        projectId: params.projectId(),
+        ref: params.ref()?.trim(),
+        connection: params.globals.stores.settings.activeConnection,
+        filePath: this.selectedFilePath,
+      }),
+      ({ projectId, ref, connection, filePath }, previous) => {
+        const repositoryChanged =
+          !previous ||
+          previous.projectId !== projectId ||
+          previous.ref !== ref ||
+          previous.connection !== connection;
+
+        if (repositoryChanged) {
+          this.reset();
+        }
+
+        if (projectId === null || !ref || !connection) {
           return;
         }
 
-        this.reset();
-        void this.loadFolder('');
+        if (repositoryChanged) {
+          void this.loadFolder('');
+        }
+
+        if (filePath && (repositoryChanged || previous.filePath !== filePath)) {
+          this.expandFilePath(filePath);
+        }
       },
-      { fireImmediately: true },
+      { fireImmediately: true, signal: params.abortSignal },
     );
   }
 
@@ -96,7 +114,8 @@ export class RepositoryTreeModel {
   }
 
   @actionBound
-  reset() {
+  private reset() {
+    this.revision += 1;
     this.folderContents.clear();
     this.expandedPaths.clear();
     this.loadingFolders.clear();
@@ -105,6 +124,11 @@ export class RepositoryTreeModel {
 
   @actionBound
   selectFile(path: string) {
+    if (this.selectedFilePath === path) {
+      this.expandFilePath(path);
+      return;
+    }
+
     this.selectedFilePath = path;
   }
 
@@ -113,20 +137,15 @@ export class RepositoryTreeModel {
     this.selectedFilePath = null;
   }
 
-  @actionBound
-  async revealFile(path: string) {
-    this.selectedFilePath = path;
-
+  private expandFilePath(path: string) {
     const segments = path.split('/');
     let current = '';
 
     for (let index = 0; index < segments.length - 1; index += 1) {
       current = current ? `${current}/${segments[index]}` : segments[index];
 
-      if (!this.expandedPaths.has(current)) {
-        this.expandedPaths.add(current);
-        await this.loadFolder(current);
-      }
+      this.expandedPaths.add(current);
+      void this.loadFolder(current);
     }
   }
 
@@ -155,6 +174,7 @@ export class RepositoryTreeModel {
       return;
     }
 
+    const revision = this.revision;
     this.loadingFolders.add(path);
     this.folderErrors.delete(path);
 
@@ -168,10 +188,14 @@ export class RepositoryTreeModel {
       );
 
       runInAction(() => {
-        this.folderContents.set(path, items);
+        if (revision === this.revision) {
+          this.folderContents.set(path, items);
+        }
       });
     } catch (error) {
       runInAction(() => {
+        if (revision !== this.revision) return;
+
         this.folderErrors.set(
           path,
           error instanceof Error
@@ -181,7 +205,9 @@ export class RepositoryTreeModel {
       });
     } finally {
       runInAction(() => {
-        this.loadingFolders.delete(path);
+        if (revision === this.revision) {
+          this.loadingFolders.delete(path);
+        }
       });
     }
   }

@@ -23,7 +23,7 @@
  * - open multiple MR tabs across repositories, switch between them, and close one
  * - open the sticky workspace picker by pointer and keyboard without shifting the page
  * - scroll and select files in a 255-file merge request
- * - open a file from an MR and return to the same MR from Files
+ * - reveal a nested file in Files and return to the originating MR
  * - retain TSX token colors on changed words and newly added lines in small and large MRs
  * - compare PNG and JPEG revisions and open either side in the zoom viewer
  * - submit a file-level comment and render the new thread on the file
@@ -360,6 +360,18 @@ const route = (url, postData, token, method) => {
   if (p.includes('merge_requests')) return mrs;
   if (p.includes('/repository/readme')) {
     return { file_name: 'README.md', file_path: 'README.md', content: '# alpha\n\nmock readme content' };
+  }
+  if (p === '/api/v4/projects/1/repository/tree') {
+    const path = searchParams.get('path') ?? '';
+    const items = {
+      '': [['packages', 'tree'], ['assets', 'tree']],
+      packages: [['packages/feature-14', 'tree']],
+      'packages/feature-14': [[tsxChange.new_path, 'blob']],
+    };
+    return (items[path] ?? []).map(([path, type]) => ({
+      id: path, path, type, name: path.split('/').at(-1),
+      mode: type === 'tree' ? '040000' : '100644',
+    }));
   }
   if (p.includes('/repository/branches')) {
     return [
@@ -860,6 +872,7 @@ try {
   const filesPath = '/repository/1/files';
   const openFile = '.git-diff > article:first-child a[title="Открыть файл в Files"]';
   const backToMr = `main a[href="${mrPath}"]`;
+  const selectedFile = 'main aside nav button[aria-current="true"]';
   await page.goto(BASE + mrPath, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector(openFile, { visible: true });
   const fileHref = await page.$eval(openFile, link => link.href);
@@ -873,12 +886,19 @@ try {
     filesUrl.searchParams.get('file') === expectedFileQuery.get('file') &&
     filesUrl.searchParams.get('commit') === expectedFileQuery.get('commit') &&
     await page.$eval(backToMr, link => link.textContent?.trim()) === 'Назад к MR');
+  await page.waitForSelector(selectedFile, { visible: true });
+  check('Files expands only the folders leading to the file opened from the MR',
+    await page.$eval(selectedFile, button => button.textContent?.trim()) === 'summary.tsx' &&
+    await page.$$eval('main aside nav button[aria-expanded="true"]', buttons =>
+      buttons.map(button => button.textContent?.trim()).join('/')) === 'packages/feature-14');
   await page.click(backToMr);
   await page.waitForSelector(openFile, { visible: true });
   check('Files returns to the same MR without carrying the file query', page.url() === BASE + mrPath);
 
-  await page.goto(BASE + filesPath, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('main input[placeholder="Поиск файлов и содержимого..."]', { visible: true });
+  await page.goto(`${BASE}${filesPath}?${new URLSearchParams({ file: tsxChange.new_path })}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector(selectedFile, { visible: true });
+  check('Files reveals a deep-linked file after resolving the default branch',
+    await page.$eval(selectedFile, button => button.textContent?.trim()) === 'summary.tsx');
   check('Files opened directly has no MR return button',
     await page.$eval('main', main => !Array.from(main.querySelectorAll('a')).some(link => link.textContent?.trim() === 'Назад к MR')));
 } catch (error) {

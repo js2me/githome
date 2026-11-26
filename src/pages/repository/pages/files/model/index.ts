@@ -59,9 +59,7 @@ export class FilesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
       projectId: () => this.projectId,
       ref: () => this.ref,
       getLoadedFiles: () => this.treeModel.loadedBlobItems,
-      onSelectFile: (path) => {
-        void this.treeModel.revealFile(path);
-      },
+      onSelectFile: this.treeModel.selectFile,
     });
 
     this.branchesQuery = createGitlabApiQuery<
