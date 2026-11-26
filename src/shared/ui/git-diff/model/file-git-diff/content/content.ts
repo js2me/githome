@@ -5,6 +5,7 @@ import {
   buildNewFileUnifiedDiff,
 } from '@/shared/lib/diff/build-synthetic-diff';
 import { parseUnifiedDiff } from '@/shared/lib/diff/parse-unified-diff';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type { FileGitDiff } from '..';
 import { DisposableModel } from '../disposable';
 
@@ -13,7 +14,11 @@ const shouldStartExpanded = (file: FileGitDiff) => !file.meta.isAutoCollapsed;
 export class FileGitDiffContent extends DisposableModel {
   @observable accessor isFileExpanded = false;
   @observable accessor expandedDiff: string | null = null;
-  @observable accessor collapsedExpandError: string | null = null;
+  @observable private accessor collapsedExpandErrorValue: Error | null = null;
+
+  get collapsedExpandError() {
+    return this.collapsedExpandErrorValue?.message ?? null;
+  }
   @observable accessor isLoadingCollapsedExpand = false;
   @observable accessor resolvedDiff: string | null = null;
   @observable accessor isResolvingDiff = false;
@@ -87,7 +92,7 @@ export class FileGitDiffContent extends DisposableModel {
     }
 
     this.isLoadingCollapsedExpand = true;
-    this.collapsedExpandError = null;
+    this.collapsedExpandErrorValue = null;
 
     try {
       if (change.new_file && headRef) {
@@ -115,8 +120,10 @@ export class FileGitDiffContent extends DisposableModel {
       this.isFileExpanded = true;
     } catch (error) {
       runInAction(() => {
-        this.collapsedExpandError =
-          error instanceof Error ? error.message : 'Не удалось загрузить diff';
+        this.collapsedExpandErrorValue =
+          error instanceof Error
+            ? error
+            : new LocalizedError('diff.couldNotLoadDiff2');
       });
     } finally {
       this.isLoadingCollapsedExpand = false;
@@ -142,7 +149,7 @@ export class FileGitDiffContent extends DisposableModel {
   resetOnPathChange() {
     this.isFileExpanded = shouldStartExpanded(this.file);
     this.expandedDiff = null;
-    this.collapsedExpandError = null;
+    this.collapsedExpandErrorValue = null;
     this.resolvedDiff = null;
     this.isLoadingCollapsedExpand = false;
     this.isResolvingDiff = false;

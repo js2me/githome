@@ -18,6 +18,8 @@ import {
   createGitlabApiQuery,
   createInfiniteGitlabQuery,
 } from '@/shared/lib/gitlab/connection/create-query';
+import { t } from '@/shared/lib/i18n';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 
 export interface PipelineListParams {
   globals: Workspace;
@@ -37,12 +39,12 @@ const parsePipelineVariables = (input: string): GitLabPipelineVariableDC[] =>
     .map((line) => {
       const separatorIndex = line.indexOf('=');
       if (separatorIndex < 1) {
-        throw new Error(`Некорректная переменная: ${line}`);
+        throw new LocalizedError('pipelines.invalidVariable', { v1: line });
       }
 
       const key = line.slice(0, separatorIndex).trim();
       if (!key) {
-        throw new Error(`Некорректный ключ переменной: ${line}`);
+        throw new LocalizedError('pipelines.invalidVariableKey', { v1: line });
       }
 
       return {
@@ -82,12 +84,20 @@ export class PipelineList {
   @observableRef accessor openedRun: GitLabPipelineDC | null = null;
   @observable accessor busyPipelineId: number | null = null;
   @observable accessor busyJobId: number | null = null;
-  @observable accessor actionError: string | null = null;
+  @observable private accessor actionErrorValue: Error | null = null;
+
+  get actionError() {
+    return this.actionErrorValue?.message ?? null;
+  }
   @observable accessor isCreateFormOpen = false;
   @observable accessor pipelineRef = '';
   @observable accessor variablesText = '';
   @observable accessor isCreatingPipeline = false;
-  @observable accessor createPipelineError: string | null = null;
+  @observable private accessor createPipelineErrorValue: Error | null = null;
+
+  get createPipelineError() {
+    return this.createPipelineErrorValue?.message ?? null;
+  }
 
   constructor(private readonly params: PipelineListParams) {
     this.pipelinesQuery = createInfiniteGitlabQuery<GitLabPipelineDC>({
@@ -222,7 +232,7 @@ export class PipelineList {
     return error instanceof Error
       ? error.message
       : error
-        ? 'Не удалось загрузить пайплайны'
+        ? t('pipelines.couldNotLoadPipelines')
         : null;
   }
 
@@ -246,8 +256,8 @@ export class PipelineList {
     const loadedCount = this.pipelines.length;
     const total = this.pipelinesQuery.data?.pages[0]?.total;
     return total === null || total === undefined
-      ? `Загрузить ещё (${loadedCount})`
-      : `Загрузить ещё (${loadedCount} из ${total})`;
+      ? t('pipelines.loadMore', { v1: loadedCount })
+      : t('pipelines.loadMoreOf', { v1: loadedCount, v2: total });
   }
 
   mergeRequestForPipeline(pipeline: GitLabPipelineDC) {
@@ -309,7 +319,7 @@ export class PipelineList {
   @actionBound
   selectPipeline(pipeline: GitLabPipelineDC | null) {
     this.openedRun = pipeline;
-    this.actionError = null;
+    this.actionErrorValue = null;
   }
 
   @actionBound
@@ -347,7 +357,7 @@ export class PipelineList {
     }
 
     this.busyPipelineId = pipeline.id;
-    this.actionError = null;
+    this.actionErrorValue = null;
 
     try {
       if (actionType === 'cancel') {
@@ -369,10 +379,10 @@ export class PipelineList {
       await this.pipelinesQuery.refetch();
     } catch (error) {
       runInAction(() => {
-        this.actionError =
+        this.actionErrorValue =
           error instanceof Error
-            ? error.message
-            : 'Не удалось выполнить действие';
+            ? error
+            : new LocalizedError('common.couldNotCompleteTheAction');
       });
     } finally {
       runInAction(() => {
@@ -396,7 +406,7 @@ export class PipelineList {
     }
 
     this.busyJobId = job.id;
-    this.actionError = null;
+    this.actionErrorValue = null;
 
     try {
       if (!this.canRunJob(job) && !this.isJobCancelable(job)) {
@@ -431,10 +441,10 @@ export class PipelineList {
       await this.pipelinesQuery.refetch();
     } catch (error) {
       runInAction(() => {
-        this.actionError =
+        this.actionErrorValue =
           error instanceof Error
-            ? error.message
-            : 'Не удалось выполнить действие';
+            ? error
+            : new LocalizedError('common.couldNotCompleteTheAction');
       });
     } finally {
       runInAction(() => {
@@ -446,7 +456,7 @@ export class PipelineList {
   @actionBound
   toggleCreateForm() {
     this.isCreateFormOpen = !this.isCreateFormOpen;
-    this.createPipelineError = null;
+    this.createPipelineErrorValue = null;
     if (this.isCreateFormOpen && !this.pipelineRef.trim()) {
       this.pipelineRef = this.params.defaultBranch() ?? '';
     }
@@ -472,18 +482,23 @@ export class PipelineList {
     }
 
     if (projectId === null || !connection) {
-      this.createPipelineError = 'Нет активного подключения к GitLab.';
+      this.createPipelineErrorValue = new LocalizedError(
+        'pipelines.noActiveGitlabConnection',
+      );
       return;
     }
 
     if (!this.params.canManagePipelines()) {
-      this.createPipelineError =
-        'Для запуска пайплайна нужна роль Developer или выше.';
+      this.createPipelineErrorValue = new LocalizedError(
+        'pipelines.runningAPipelineRequiresTheDeveloperRole',
+      );
       return;
     }
 
     if (!ref) {
-      this.createPipelineError = 'Укажите ветку, тег или SHA коммита.';
+      this.createPipelineErrorValue = new LocalizedError(
+        'pipelines.enterABranchTagOrCommitSha',
+      );
       return;
     }
 
@@ -491,13 +506,15 @@ export class PipelineList {
     try {
       variables = parsePipelineVariables(this.variablesText);
     } catch (error) {
-      this.createPipelineError =
-        error instanceof Error ? error.message : 'Проверьте формат переменных';
+      this.createPipelineErrorValue =
+        error instanceof Error
+          ? error
+          : new LocalizedError('pipelines.checkTheVariableFormat');
       return;
     }
 
     this.isCreatingPipeline = true;
-    this.createPipelineError = null;
+    this.createPipelineErrorValue = null;
 
     try {
       await gitlabApi.createPipeline(
@@ -517,10 +534,10 @@ export class PipelineList {
       await this.pipelinesQuery.refetch();
     } catch (error) {
       runInAction(() => {
-        this.createPipelineError =
+        this.createPipelineErrorValue =
           error instanceof Error
-            ? error.message
-            : 'Не удалось запустить пайплайн';
+            ? error
+            : new LocalizedError('pipelines.couldNotRunThePipeline');
       });
     } finally {
       runInAction(() => {

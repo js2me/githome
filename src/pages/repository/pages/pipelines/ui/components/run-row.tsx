@@ -7,6 +7,7 @@ import {
 } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
 import { PipelineStatus } from '@/entities/gitlab-pipelines';
+import { t } from '@/shared/lib/i18n';
 import { getPipelineMergeRequestIid } from '../../model/pipeline-list';
 import { DateTime } from './date-time';
 import { RunAction } from './run-action';
@@ -16,7 +17,9 @@ export const RunRow = observer(({ model, run }: RunProps) => {
   const list = model.pipelineList;
   const iid = getPipelineMergeRequestIid(run);
   const mr = list.mergeRequestForPipeline(run);
-  const title = mr?.title || (iid !== null ? `Мерж-реквест !${iid}` : run.ref);
+  const title =
+    mr?.title ||
+    (iid !== null ? t('pipelines.mergeRequest2', { v1: iid }) : run.ref);
   const titleId = `pipeline-title-${run.id}`;
   const statusId = `pipeline-status-${run.id}`;
   const duration = durationLabel(run.duration);
@@ -32,7 +35,7 @@ export const RunRow = observer(({ model, run }: RunProps) => {
             className="pipeline-open"
             type="button"
             aria-haspopup="dialog"
-            aria-label={`Открыть пайплайн #${run.id}`}
+            aria-label={t('pipelines.openPipeline', { v1: run.id })}
             aria-describedby={`${titleId} ${statusId}`}
             onClick={() => model.openDetails(run)}
           >
@@ -69,8 +72,8 @@ export const RunRow = observer(({ model, run }: RunProps) => {
           <button
             className="pipeline-mr-link"
             type="button"
-            aria-label={`Открыть MR !${iid}`}
-            title={`Открыть мерж-реквест !${iid}`}
+            aria-label={t('pipelines.openMergeRequest2', { v1: iid })}
+            title={t('pipelines.openMergeRequest3', { v1: iid })}
             onClick={() => list.openMergeRequest(iid)}
           >
             <CodePullRequest width={14} height={14} aria-hidden />!{iid}
@@ -83,8 +86,8 @@ export const RunRow = observer(({ model, run }: RunProps) => {
             href={run.web_url}
             target="_blank"
             rel="noreferrer"
-            aria-label={`Открыть пайплайн #${run.id} в GitLab`}
-            title="Открыть в GitLab"
+            aria-label={t('pipelines.openPipelineInGitlab', { v1: run.id })}
+            title={t('common.openInGitLab')}
           >
             <ArrowUpRightFromSquare width={15} height={15} aria-hidden />
           </a>

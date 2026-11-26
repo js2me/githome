@@ -1,11 +1,26 @@
 import type { FetchQueryParams } from '@/shared/lib/query/create-fetch-query';
 
 export const PROJECT_LIST_TABS = [
-  { id: 'contributed', label: 'Участие' },
-  { id: 'starred', label: 'Избранные' },
-  { id: 'personal', label: 'Личные' },
-  { id: 'member', label: 'Участник' },
-  { id: 'inactive', label: 'Неактивные' },
+  {
+    id: 'contributed',
+    labelKey: 'home.contributed',
+  },
+  {
+    id: 'starred',
+    labelKey: 'home.starred',
+  },
+  {
+    id: 'personal',
+    labelKey: 'home.personal',
+  },
+  {
+    id: 'member',
+    labelKey: 'home.member',
+  },
+  {
+    id: 'inactive',
+    labelKey: 'home.inactive',
+  },
 ] as const;
 
 export type ProjectListTab = (typeof PROJECT_LIST_TABS)[number]['id'];

@@ -1,3 +1,23 @@
+export type UpdateMessageKey =
+  | 'updates.apkChecksumMismatch'
+  | 'updates.apkIncompatible'
+  | 'updates.apkMissing'
+  | 'updates.apkSignatureMismatch'
+  | 'updates.couldNotGetTheInstalledGithomeVersion'
+  | 'updates.couldNotUpdateGithomeCheckYourConnection'
+  | 'updates.desktopFetchFailed'
+  | 'updates.desktopInstallFailed'
+  | 'updates.desktopManualRelease'
+  | 'updates.desktopPackagedOnly'
+  | 'updates.downloadFailed'
+  | 'updates.installIncomplete'
+  | 'updates.installPermissionRequired'
+  | 'updates.installerAlreadyOpen'
+  | 'updates.installerOpenFailed'
+  | 'updates.installersForTheNewVersionAreAvailable'
+  | 'updates.invalidApk'
+  | 'updates.thisReleaseDoesNotHaveAnApk';
+
 export type AppUpdateStatus =
   | 'idle'
   | 'checking'
@@ -14,7 +34,7 @@ export interface AppUpdateState {
   version: string;
   nextVersion?: string;
   progress?: number;
-  message?: string;
+  messageKey?: UpdateMessageKey;
 }
 
 export interface AppUpdateApi {

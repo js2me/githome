@@ -1,5 +1,7 @@
+import { observer } from 'mobx-react-lite';
 import { cva, type VariantProps } from 'yummies/css';
 import type { GitLabMergeRequestDC } from '@/shared/api/gitlab';
+import { type MessageKey, t } from '@/shared/lib/i18n';
 
 export const mrStateBadgeVariants = cva(
   'inline-flex shrink-0 items-center rounded-full border font-semibold leading-none',
@@ -47,37 +49,40 @@ export const getMrStateBadgeState = (state: string): MrStateBadgeState => {
 const isDraft = (mergeRequest: GitLabMergeRequestDC) =>
   mergeRequest.draft ?? mergeRequest.work_in_progress ?? false;
 
-const stateLabels: Record<string, { en: string; ru: string }> = {
-  draft: { en: 'Draft', ru: 'Черновик' },
-  opened: { en: 'Open', ru: 'Открыт' },
-  merged: { en: 'Merged', ru: 'Влит' },
-  closed: { en: 'Closed', ru: 'Закрыт' },
-  locked: { en: 'Locked', ru: 'Заблокирован' },
-  reopened: { en: 'Reopened', ru: 'Открыт повторно' },
+const stateLabels: Record<string, MessageKey> = {
+  draft: 'review.draft',
+  opened: 'review.open',
+  merged: 'review.merged',
+  closed: 'review.closed',
+  locked: 'review.locked',
+  reopened: 'review.reopened',
 };
 
-export const MrStateBadge = ({
-  mergeRequest,
-  size = 'sm',
-  language = 'ru',
-}: {
-  mergeRequest: GitLabMergeRequestDC;
-  language?: 'en' | 'ru';
-  size?: NonNullable<VariantProps<typeof mrStateBadgeVariants>['size']>;
-}) => {
-  const stateKey =
-    mergeRequest.state === 'opened' && isDraft(mergeRequest)
-      ? 'draft'
-      : mergeRequest.state;
+export const MrStateBadge = observer(
+  ({
+    mergeRequest,
+    size = 'sm',
+  }: {
+    mergeRequest: GitLabMergeRequestDC;
+    size?: NonNullable<VariantProps<typeof mrStateBadgeVariants>['size']>;
+  }) => {
+    const stateKey =
+      mergeRequest.state === 'opened' && isDraft(mergeRequest)
+        ? 'draft'
+        : mergeRequest.state;
+    const labelKey = Object.hasOwn(stateLabels, stateKey)
+      ? stateLabels[stateKey]
+      : undefined;
 
-  return (
-    <span
-      className={mrStateBadgeVariants({
-        state: getMrStateBadgeState(stateKey),
-        size,
-      })}
-    >
-      {stateLabels[stateKey]?.[language] ?? stateKey}
-    </span>
-  );
-};
+    return (
+      <span
+        className={mrStateBadgeVariants({
+          state: getMrStateBadgeState(stateKey),
+          size,
+        })}
+      >
+        {labelKey ? t(labelKey) : stateKey}
+      </span>
+    );
+  },
+);

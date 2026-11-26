@@ -395,6 +395,44 @@ const browser = await puppeteer.launch({
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 });
 
+const localePage = await browser.newPage();
+try {
+  await localePage.setExtraHTTPHeaders({ 'Accept-Language': 'ru-RU' });
+  await localePage.goto(BASE);
+  await localePage.waitForFunction(() =>
+    document.querySelector('main')?.innerText.includes('Connect to GitLab'));
+  check('fresh sessions use English', await localePage.evaluate(() =>
+    document.documentElement.lang === 'en' &&
+    document.querySelector('main').innerText.includes('Connect to GitLab')));
+  await localePage.click('button[aria-label="Settings"]');
+  const picker = 'dialog[open] select';
+  for (const [lang, title, theme, home] of [
+    ['ru', 'Настройки', 'Светлая', 'Подключите GitLab'],
+    ['fr', 'Paramètres', 'Clair', 'Connexion à GitLab'],
+    ['zh-CN', '设置', '浅色', '连接到 GitLab'],
+    ['en', 'Settings', 'Light', 'Connect to GitLab'],
+  ]) {
+    await localePage.select(picker, lang);
+    await localePage.waitForFunction((lang, title, theme, home) =>
+      document.documentElement.lang === lang &&
+      document.querySelector('dialog[open] h2')?.textContent.trim() === title &&
+      Array.from(document.querySelectorAll('dialog[open] button')).some(button => button.innerText.trim() === theme) &&
+      document.querySelector('main').textContent.includes(home),
+    { timeout: 5000 }, lang, title, theme, home);
+    check(`settings and home switch immediately to ${lang}`, true);
+  }
+  await localePage.select(picker, 'zh-CN');
+  await localePage.reload();
+  await localePage.waitForSelector('button[aria-label="设置"]');
+  await localePage.click('button[aria-label="设置"]');
+  check('selected locale persists after reload', await localePage.$eval(picker,
+    select => select.value === 'zh-CN' && document.documentElement.lang === 'zh-CN'));
+} catch (error) {
+  check('interface language settings', false, String(error));
+} finally {
+  await localePage.close();
+}
+
 const page = await browser.newPage();
 const pageErrors = [];
 const consoleErrors = [];
@@ -406,6 +444,7 @@ page.on('console', (msg) => {
 });
 
 const { identifier: connectionSetup } = await page.evaluateOnNewDocument(connection => {
+  localStorage.setItem('githome.language', 'ru');
   if (!localStorage.getItem('githome:connections')) {
     localStorage.setItem('githome:connections', JSON.stringify({ items: [connection], activeId: connection.id }));
   }
@@ -507,13 +546,13 @@ try {
   const rows = '.home-request-row';
   await page.waitForFunction(selector => {
     const cards = Array.from(document.querySelectorAll(selector), row => row.innerText);
-    return cards.some(text => text.includes('group/alpha') && text.includes('Approved') && text.includes('Resolved 2/2')) &&
-      cards.some(text => text.includes('group/beta') && text.includes('Requested') && !text.includes('Approved'));
+    return cards.some(text => text.includes('group/alpha') && text.includes('Одобрено') && text.includes('Решено 2/2')) &&
+      cards.some(text => text.includes('group/beta') && text.includes('Запрошены правки') && !text.includes('Одобрено'));
   }, { timeout: 5000 }, rows);
   check('home review badges distinguish identical MR numbers in different projects', true);
   await page.click('button::-p-text(Мои MR)');
   await page.waitForFunction(selector => [...document.querySelectorAll(selector)].some(row =>
-    row.innerText.includes('Refine navigation') && row.innerText.includes('Unresolved')), { timeout: 5000 }, rows);
+    row.innerText.includes('Refine navigation') && row.innerText.includes('Не решено')), { timeout: 5000 }, rows);
   check('authored MRs on the dashboard also show review badges', true);
 } catch (error) {
   check('review badges in both dashboard tabs', false, String(error));
@@ -523,7 +562,7 @@ check('click project card', await clickByText('alpha'));
 await sleep(4000);
 check('repository page opened', page.url().includes('/repository/1'));
 
-check('click "Merge requests"', await clickByText('Merge requests'));
+check('click "Merge requests"', await clickByText('Мерж-реквесты'));
 await sleep(4000);
 await checkMrList('MR list');
 
@@ -536,12 +575,12 @@ await checkMrList('MR list after back/forward');
 const listViewport = page.viewport();
 try {
   const expectedStatuses = {
-    1: ['Approved · 1', 'Resolved 2/2'],
-    2: ['Одобрений 1', 'Unresolved · 1'],
-    3: ['Approved · 1'],
-    4: ['Одобрений 0', 'Resolved 1/1'],
+    1: ['Одобрено · 1', 'Решено 2/2'],
+    2: ['Одобрений 1', 'Не решено · 1'],
+    3: ['Одобрено · 1'],
+    4: ['Одобрений 0', 'Решено 1/1'],
     5: [],
-    11: ['Unresolved · 2'],
+    11: ['Не решено · 2'],
   };
   for (const width of [1280, 320]) {
     await page.setViewport({ width, height: 800 });
@@ -551,7 +590,7 @@ try {
       if (!summary || !row.contains(summary)) return false;
       const visible = [...summary.children]
         .map(badge => badge.innerText.trim().replace(/\s+/g, ' '))
-        .filter(text => /^(?:Approved|Resolved|Unresolved|Одобрений)(?:\s|$)/.test(text));
+        .filter(text => /^(?:Одобрено|Решено|Не решено|Одобрений)(?:\s|$)/.test(text));
       const bounds = row.getBoundingClientRect();
       return visible.length === statuses.length && statuses.every(status => visible.includes(status)) &&
         bounds.left >= 0 && bounds.right <= window.innerWidth && row.scrollWidth <= row.clientWidth;

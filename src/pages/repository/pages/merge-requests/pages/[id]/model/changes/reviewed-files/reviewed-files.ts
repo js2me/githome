@@ -10,6 +10,7 @@ import {
   type GitLabNoteDC,
   gitlabApi,
 } from '@/shared/api/gitlab';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type { MrInfoModel, MrInfoModelParams } from '../../mr-info';
 import {
   getFileReviewFingerprint,
@@ -33,7 +34,7 @@ export class ReviewedFiles {
   @observableRef private accessor failure: {
     scope: string;
     path: string;
-    message: string;
+    error: Error;
   } | null = null;
 
   constructor(
@@ -113,7 +114,10 @@ export class ReviewedFiles {
 
   @computed
   get error() {
-    return this.failure?.scope === this.scope ? this.failure : null;
+    const failure = this.failure;
+    return failure?.scope === this.scope
+      ? { ...failure, message: failure.error.message }
+      : null;
   }
 
   @actionBound
@@ -131,7 +135,7 @@ export class ReviewedFiles {
     return getFileReviewFingerprint(change, (side, path) => {
       const ref = side === 'old' ? base : head;
       if (!connection || !mr || !ref || !sourceProjectId) {
-        throw new Error('Нет данных о версии файла');
+        throw new LocalizedError('review.fileVersionIsUnavailable');
       }
 
       return gitlabApi.getRepositoryFileBlobId(
@@ -207,10 +211,10 @@ export class ReviewedFiles {
           this.failure = {
             scope,
             path,
-            message:
+            error:
               error instanceof Error
-                ? error.message
-                : 'Не удалось сохранить отметку',
+                ? error
+                : new LocalizedError('review.couldNotSaveTheViewedStatus'),
           };
         });
       }

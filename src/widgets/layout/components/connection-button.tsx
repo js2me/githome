@@ -1,5 +1,6 @@
 import { Check, ChevronDown, LogoGitlab } from '@gravity-ui/icons';
 import { withPropsViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
 import { ConnectionButtonVM } from '../model/connection-button';
 
@@ -18,7 +19,9 @@ export const ConnectionButton = withPropsViewModel(
             : 'flex w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]'
         }
         type="button"
-        aria-label={inHeader ? `Подключения GitLab · ${label}` : label}
+        aria-label={
+          inHeader ? t('connection.gitlabConnections', { v1: label }) : label
+        }
         aria-haspopup={inHeader ? 'dialog' : undefined}
         aria-pressed={inHeader ? undefined : selected}
         title={label}

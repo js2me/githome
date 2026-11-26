@@ -1,4 +1,5 @@
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import { buildGitlabPath, gitlabFetch } from './client';
 
 const perPage = 100;
@@ -6,7 +7,7 @@ const perPage = 100;
 const hasNextPage = (headers: Headers, page: number, count: number) => {
   const currentPage = headers.get('X-Page');
   if (currentPage && Number(currentPage) !== page)
-    throw new Error('GitLab вернул другую страницу');
+    throw new LocalizedError('gitlab.gitlabReturnedADifferentPage');
 
   const nextPage = headers.get('X-Next-Page');
   const link = headers.get('Link');
@@ -19,7 +20,7 @@ const hasNextPage = (headers: Headers, page: number, count: number) => {
       (nextPage && Number(nextPage) !== page + 1) ||
       (nextLink && Number(fromLink) !== page + 1)
     ) {
-      throw new Error('GitLab вернул некорректный номер следующей страницы');
+      throw new LocalizedError('gitlab.gitlabReturnedAnInvalidNextPageNumber');
     }
     return true;
   }
@@ -28,7 +29,7 @@ const hasNextPage = (headers: Headers, page: number, count: number) => {
   if (totalPages) {
     const total = Number(totalPages);
     if (!Number.isSafeInteger(total) || total < 0)
-      throw new Error('GitLab вернул некорректное число страниц');
+      throw new LocalizedError('gitlab.gitlabReturnedAnInvalidPageCount');
     return page < total;
   }
 
@@ -58,19 +59,20 @@ export const fetchPaginatedItems = async <T extends { id: string | number }>(
     const batch: T[] = await response.json();
     signal?.throwIfAborted();
     if (!Array.isArray(batch))
-      throw new Error('GitLab вернул некорректный список');
+      throw new LocalizedError('gitlab.gitlabReturnedAnInvalidList');
 
     const previousSize = items.size;
     for (const item of batch) {
-      if (!item?.id) throw new Error('В ответе GitLab отсутствует ID');
+      if (!item?.id)
+        throw new LocalizedError('gitlab.missingIdInTheGitlabResponse');
       items.set(item.id, item);
     }
     if (page > 1 && batch.length && items.size === previousSize) {
-      throw new Error('GitLab вернул повторную страницу');
+      throw new LocalizedError('gitlab.gitlabReturnedADuplicatePage');
     }
     if (!hasNextPage(response.headers, page, batch.length))
       return [...items.values()];
     if (!batch.length)
-      throw new Error('GitLab вернул пустую промежуточную страницу');
+      throw new LocalizedError('gitlab.gitlabReturnedAnEmptyIntermediatePage');
   }
 };

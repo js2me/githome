@@ -7,9 +7,11 @@ import {
   CircleXmarkFill,
   Clock,
 } from '@gravity-ui/icons';
+import { observer } from 'mobx-react-lite';
+import { type MessageKey, t } from '@/shared/lib/i18n';
 
 interface StatusAppearance {
-  label: string;
+  labelKey: MessageKey;
   icon: typeof Clock;
   color?: string;
 }
@@ -17,37 +19,74 @@ interface StatusAppearance {
 const waiting = { icon: Clock, color: 'text-[var(--glass-accent)]' };
 const statuses: Record<string, StatusAppearance> = {
   success: {
-    label: 'Успешно',
+    labelKey: 'pipelines.passed',
     icon: CircleCheckFill,
     color: 'text-[var(--color-success-fg)]',
   },
   failed: {
-    label: 'Ошибка',
+    labelKey: 'pipelines.failed',
     icon: CircleXmarkFill,
     color: 'text-[var(--color-danger-fg)]',
   },
   running: {
-    label: 'Выполняется',
+    labelKey: 'pipelines.running',
     icon: CirclePlay,
     color: 'text-[var(--color-accent-blue)]',
   },
-  canceled: { label: 'Отменено', icon: CircleMinus },
-  canceling: { label: 'Отменяется', icon: CircleMinus },
-  skipped: { label: 'Пропущено', icon: CircleMinus },
-  manual: { label: 'Ручной запуск', icon: CirclePause, color: waiting.color },
-  blocked: { label: 'Заблокировано', icon: CirclePause, color: waiting.color },
-  created: { label: 'Создано', ...waiting },
-  scheduled: { label: 'Запланировано', ...waiting },
-  preparing: { label: 'Подготовка', ...waiting },
-  pending: { label: 'В очереди', ...waiting },
-  waiting_for_resource: { label: 'Ожидание ресурса', ...waiting },
-  waiting_for_callback: { label: 'Ожидание ответа', ...waiting },
+  canceled: {
+    labelKey: 'pipelines.canceled',
+    icon: CircleMinus,
+  },
+  canceling: {
+    labelKey: 'pipelines.canceling',
+    icon: CircleMinus,
+  },
+  skipped: {
+    labelKey: 'pipelines.skipped',
+    icon: CircleMinus,
+  },
+  manual: {
+    labelKey: 'pipelines.manual',
+    icon: CirclePause,
+    color: waiting.color,
+  },
+  blocked: {
+    labelKey: 'pipelines.blocked',
+    icon: CirclePause,
+    color: waiting.color,
+  },
+  created: {
+    labelKey: 'pipelines.created',
+    ...waiting,
+  },
+  scheduled: {
+    labelKey: 'pipelines.scheduled',
+    ...waiting,
+  },
+  preparing: {
+    labelKey: 'pipelines.preparing',
+    ...waiting,
+  },
+  pending: {
+    labelKey: 'pipelines.pending',
+    ...waiting,
+  },
+  waiting_for_resource: {
+    labelKey: 'pipelines.waitingForResources',
+    ...waiting,
+  },
+  waiting_for_callback: {
+    labelKey: 'pipelines.waitingForCallback',
+    ...waiting,
+  },
 };
 
-export const pipelineStatusLabel = (status: string): string =>
-  statuses[status]?.label ?? status.replaceAll('_', ' ');
+export const pipelineStatusLabel = (status: string): string => {
+  const key = statuses[status]?.labelKey;
+  return key ? t(key) : status.replaceAll('_', ' ');
+};
 
-export const PipelineStatus = ({ status }: { status: string }) => {
+export const PipelineStatus = observer(({ status }: { status: string }) => {
   const { icon: Icon = CircleDashed, color = 'text-fg-muted' } =
     statuses[status] ?? {};
   return (
@@ -58,4 +97,4 @@ export const PipelineStatus = ({ status }: { status: string }) => {
       <span>{pipelineStatusLabel(status)}</span>
     </span>
   );
-};
+});

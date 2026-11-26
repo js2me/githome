@@ -104,7 +104,7 @@ describe('getMergeRequestChanges', () => {
 
     await expect(
       getMergeRequestChanges(connection, project, 13, 8),
-    ).rejects.toThrow('Failed to fetch merge request changes');
+    ).rejects.toThrow('Could not load merge request changes');
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 

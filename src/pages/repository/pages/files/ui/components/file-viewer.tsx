@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import { t } from '@/shared/lib/i18n';
 import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
 import { StatusMessage } from '@/shared/ui/status-message';
 import type { FilesPageVM } from '../../model';
@@ -8,7 +9,7 @@ export const FileViewer = observer(({ model }: { model: FilesPageVM }) => {
   if (!model.selectedFilePath) {
     return (
       <div className="glass-panel flex min-h-[320px] flex-1 items-center justify-center rounded-xl border-dashed p-6 text-fg-muted text-sm">
-        Выберите файл слева, чтобы посмотреть содержимое.
+        {t('files.selectAFileOnTheLeftTo')}
       </div>
     );
   }
@@ -23,7 +24,7 @@ export const FileViewer = observer(({ model }: { model: FilesPageVM }) => {
 
       <div className="min-h-0 flex-1 overflow-auto bg-white p-4 dark:bg-gray-900">
         {model.isFileContentLoading && (
-          <StatusMessage>Загружаем файл...</StatusMessage>
+          <StatusMessage>{t('files.loadingFile')}</StatusMessage>
         )}
 
         {model.fileContentErrorMessage && !model.isFileContentLoading && (
@@ -46,7 +47,7 @@ export const FileViewer = observer(({ model }: { model: FilesPageVM }) => {
           <div className="flex justify-center">
             <img
               src={model.imageUrl}
-              alt={model.selectedFileName ?? 'Предпросмотр изображения'}
+              alt={model.selectedFileName ?? t('files.imagePreview')}
               className="h-64 w-64 rounded-lg border border-slate-200 bg-slate-50 object-contain dark:border-slate-700 dark:bg-gray-950"
             />
           </div>

@@ -7,6 +7,8 @@ import type {
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
 import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { t } from '@/shared/lib/i18n';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type { Globals } from '@/shared/model/globals';
 
 export type MergeRequestGitDiffContext = {
@@ -195,7 +197,7 @@ export class MergeRequestGitDiff {
 
     return error instanceof Error
       ? error.message
-      : 'Не удалось загрузить изменения';
+      : t('review.couldNotLoadChanges');
   }
 
   @actionBound
@@ -211,7 +213,7 @@ export class MergeRequestGitDiff {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      throw new Error('Repository is not selected');
+      throw new LocalizedError('review.noRepositorySelected');
     }
 
     return gitlabApi.getRepositoryFileContent(
@@ -229,7 +231,7 @@ export class MergeRequestGitDiff {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      throw new Error('Repository is not selected');
+      throw new LocalizedError('review.noRepositorySelected');
     }
 
     return gitlabApi.getRepositoryFileImage(

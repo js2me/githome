@@ -10,10 +10,12 @@ import {
   Persons,
   TriangleExclamation,
 } from '@gravity-ui/icons';
+import { observer } from 'mobx-react-lite';
 import type { ReactNode } from 'react';
 import { MrStateBadge } from '@/entities/gitlab-merge-requests';
 import type { GitLabMergeRequestDC } from '@/shared/api/gitlab';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
 import type { MergeRequestPageVM } from '../../../model';
 import { actionClass, jumpClass } from './action-classes';
@@ -21,14 +23,24 @@ import { CopyControl } from './copy-control';
 import { Timestamp } from './timestamp';
 
 const mergeStates: Record<string, string> = {
-  can_be_merged: 'Без конфликтов',
-  cannot_be_merged: 'Слияние заблокировано',
-  cannot_be_merged_recheck: 'Повторная проверка слияния',
-  checking: 'Проверка слияния',
-  unchecked: 'Слияние ещё не проверено',
+  get can_be_merged() {
+    return t('review.noConflicts');
+  },
+  get cannot_be_merged() {
+    return t('review.mergeBlocked');
+  },
+  get cannot_be_merged_recheck() {
+    return t('review.recheckingMerge');
+  },
+  get checking() {
+    return t('review.checkingMerge');
+  },
+  get unchecked() {
+    return t('review.mergeNotCheckedYet');
+  },
 };
 
-export function MergeRequestOverview({
+export const MergeRequestOverview = observer(function MergeRequestOverview({
   mergeRequest,
   jira,
   projectPath,
@@ -55,7 +67,7 @@ export function MergeRequestOverview({
   const fileCount = mr.changes_count || loadedFiles || undefined;
   const blocked = mr.has_conflicts || mr.merge_status === 'cannot_be_merged';
   const mergeLabel = mr.has_conflicts
-    ? 'Есть конфликты'
+    ? t('review.hasConflicts')
     : mr.merge_status &&
       (mergeStates[mr.merge_status] ?? mr.merge_status.replaceAll('_', ' '));
   const MergeIcon = blocked
@@ -66,7 +78,7 @@ export function MergeRequestOverview({
 
   return (
     <header
-      aria-label="Сводка merge request"
+      aria-label={t('review.mergeRequestSummary')}
       className="@container glass-panel min-w-0 rounded-2xl"
     >
       <div className="flex min-w-0 flex-col gap-3 @md:px-5 px-3.5 @md:pt-4 pt-3.5 pb-3">
@@ -94,13 +106,13 @@ export function MergeRequestOverview({
             <span className="shrink-0 font-mono font-semibold text-fg-default">
               !{mr.iid}
             </span>
-            <MrStateBadge mergeRequest={mr} language="ru" />
+            <MrStateBadge mergeRequest={mr} />
           </div>
           <div className="flex max-w-full flex-wrap items-center gap-1.5">
             <CopyControl
               key={mr.web_url}
               value={mr.web_url}
-              label="Скопировать ссылку на MR"
+              label={t('review.copyMergeRequestLink')}
             />
             {Array.from(jiraProjects, ([url, projectKey]) => (
               <a
@@ -112,8 +124,8 @@ export function MergeRequestOverview({
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Открыть проект ${projectKey} в Jira`}
-                title={`Открыть проект ${projectKey} в Jira`}
+                aria-label={t('review.openProjectInJira', { v1: projectKey })}
+                title={t('review.openProjectInJira', { v1: projectKey })}
               >
                 <span className="truncate">Jira · {projectKey}</span>
                 <ArrowUpRightFromSquare
@@ -132,8 +144,8 @@ export function MergeRequestOverview({
               href={mr.web_url}
               target="_blank"
               rel="noreferrer"
-              aria-label="Открыть в GitLab"
-              title="Открыть в GitLab"
+              aria-label={t('common.openInGitLab')}
+              title={t('common.openInGitLab')}
             >
               <span className="sr-only @xs:not-sr-only">GitLab</span>
               <ArrowUpRightFromSquare
@@ -154,7 +166,7 @@ export function MergeRequestOverview({
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Открыть задачу ${key} в Jira`}
+                aria-label={t('review.openIssueInJira', { v1: key })}
               >
                 {text}
               </a>
@@ -176,7 +188,7 @@ export function MergeRequestOverview({
               key={`source-${mr.source_branch}`}
               branch="source"
               value={mr.source_branch}
-              label="Скопировать исходную ветку"
+              label={t('review.copySourceBranch')}
             />
             <ArrowRight
               aria-hidden="true"
@@ -188,7 +200,7 @@ export function MergeRequestOverview({
               key={`target-${mr.target_branch}`}
               branch="target"
               value={mr.target_branch}
-              label="Скопировать целевую ветку"
+              label={t('review.copyTargetBranch')}
             />
           </div>
           {branchIssues.map(({ key, url }) => (
@@ -198,7 +210,7 @@ export function MergeRequestOverview({
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`Открыть задачу ${key} в Jira`}
+              aria-label={t('review.openIssueInJira', { v1: key })}
             >
               {key}
               <ArrowUpRightFromSquare
@@ -257,7 +269,7 @@ export function MergeRequestOverview({
               )}
               {mr.created_at && (
                 <div>
-                  Создан <Timestamp value={mr.created_at} />
+                  {t('review.created')} <Timestamp value={mr.created_at} />
                 </div>
               )}
             </div>
@@ -265,7 +277,7 @@ export function MergeRequestOverview({
           {assignees && (
             <div
               className="inline-flex max-w-full items-center gap-1.5"
-              title="Ответственные"
+              title={t('review.assignees')}
             >
               <Persons
                 aria-hidden="true"
@@ -276,8 +288,8 @@ export function MergeRequestOverview({
               <span className="min-w-0">
                 <span className="block">
                   {mr.assignees?.length === 1
-                    ? 'Ответственный'
-                    : 'Ответственные'}
+                    ? t('review.assignee')
+                    : t('review.assignees')}
                 </span>
                 <span className="font-medium text-fg-default [overflow-wrap:anywhere]">
                   {assignees}
@@ -287,20 +299,22 @@ export function MergeRequestOverview({
           )}
           {mr.updated_at && (
             <span>
-              Обновлён <Timestamp value={mr.updated_at} />
+              {t('common.updated')} <Timestamp value={mr.updated_at} />
             </span>
           )}
         </div>
         <nav
           className="-ml-2 flex max-w-full flex-wrap items-center gap-x-1"
-          aria-label="Разделы merge request"
+          aria-label={t('review.mergeRequestSections')}
         >
           <button type="button" className={jumpClass} onClick={onShowFiles}>
-            <Files aria-hidden="true" width={15} height={15} /> Файлы{' '}
+            <Files aria-hidden="true" width={15} height={15} />{' '}
+            {t('common.files')}{' '}
             <span className="font-mono text-fg-muted">{fileCount}</span>
           </button>
           <button type="button" className={jumpClass} onClick={onShowComments}>
-            <Comments aria-hidden="true" width={15} height={15} /> Комментарии{' '}
+            <Comments aria-hidden="true" width={15} height={15} />{' '}
+            {t('review.comments')}{' '}
             <span className="font-mono text-fg-muted">
               {mr.user_notes_count ?? 0}
             </span>
@@ -310,4 +324,4 @@ export function MergeRequestOverview({
       {children && <div className="@md:px-5 px-3.5 pb-3">{children}</div>}
     </header>
   );
-}
+});

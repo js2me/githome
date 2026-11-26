@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { Popup } from '@/shared/ui/popup';
 import type { FilesPageVM } from '../../model';
 import { CommitsVirtualList } from './commits-virtual-list';
@@ -47,12 +48,12 @@ export const CommitPicker = observer(({ model }: { model: FilesPageVM }) => {
       </Popup.Trigger>
 
       <Popup.Panel
-        ariaLabel="Коммиты"
+        ariaLabel={t('analytics.commits')}
         className="left-0 w-[min(420px,calc(100vw-2.5rem))] p-1"
       >
         {commitsModel.isLoading && commitsModel.commits.length === 0 && (
           <p className="px-3 py-2 text-slate-500 text-sm">
-            Загружаем коммиты...
+            {t('files.loadingCommits')}
           </p>
         )}
 
@@ -68,7 +69,7 @@ export const CommitPicker = observer(({ model }: { model: FilesPageVM }) => {
           !commitsModel.errorMessage &&
           commitsModel.commits.length === 0 && (
             <p className="px-3 py-2 text-slate-500 text-sm">
-              Коммиты не найдены.
+              {t('files.noCommitsFound')}
             </p>
           )}
 

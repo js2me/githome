@@ -1,6 +1,7 @@
 import { Plus, Xmark } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
 import { useViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import { GlassDialog } from '@/shared/ui/glass-dialog';
 import type { LayoutVM } from '../model/layout-vm';
 import { ConnectionButton } from './connection-button';
@@ -27,12 +28,12 @@ export const ConnectionPicker = observer(() => {
             id="connections-title"
             className="font-bold text-xl tracking-tight"
           >
-            Подключения GitLab
+            {t('connection.gitlabConnections2')}
           </h2>
           <button
             type="button"
             className="glass-control grid size-8 place-items-center rounded-lg"
-            aria-label="Закрыть подключения"
+            aria-label={t('connection.closeConnections')}
             onClick={model.closeConnectionPopup}
           >
             <Xmark className="size-4" aria-hidden />
@@ -55,7 +56,8 @@ export const ConnectionPicker = observer(() => {
               className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 font-semibold text-[var(--glass-accent)] text-sm hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]"
               onClick={model.selectNewConnection}
             >
-              <Plus className="size-4" aria-hidden /> Новое подключение
+              <Plus className="size-4" aria-hidden />{' '}
+              {t('connection.newConnection')}
             </button>
           </div>
         )}
@@ -66,7 +68,7 @@ export const ConnectionPicker = observer(() => {
           }}
         >
           <label className="mb-4 grid gap-1.5 font-semibold text-sm">
-            Адрес GitLab
+            {t('connection.gitlabAddress')}
             <input
               ref={model.connectionUrlInput}
               className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
@@ -81,7 +83,7 @@ export const ConnectionPicker = observer(() => {
             />
           </label>
           <label className="grid gap-1.5 font-semibold text-sm">
-            Токен доступа
+            {t('connection.accessToken')}
             <input
               className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
               type="password"
@@ -93,8 +95,10 @@ export const ConnectionPicker = observer(() => {
           </label>
           <label className="mt-4 grid gap-1.5 font-semibold text-sm">
             <span>
-              Адрес Jira{' '}
-              <span className="font-normal text-fg-muted">(необязательно)</span>
+              {t('connection.jiraAddress')}{' '}
+              <span className="font-normal text-fg-muted">
+                {t('connection.optional')}
+              </span>
             </span>
             <input
               className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
@@ -111,8 +115,8 @@ export const ConnectionPicker = observer(() => {
           </label>
           <p id="connection-jira-hint" className="mt-1.5 text-fg-muted text-xs">
             {model.isDraftJiraUrlInvalid
-              ? 'Укажите полный адрес HTTP или HTTPS без логина и пароля.'
-              : 'Для ссылок на задачи и проекты, когда GitLab не указывает адрес Jira.'}
+              ? t('connection.enterAFullHttpOrHttpsAddress')
+              : t('connection.usedForIssueAndProjectLinksWhen')}
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
             {model.draftConnectionId && (
@@ -121,7 +125,7 @@ export const ConnectionPicker = observer(() => {
                 type="button"
                 onClick={model.removeConnection}
               >
-                Удалить
+                {t('review.delete')}
               </button>
             )}
             <button
@@ -129,7 +133,9 @@ export const ConnectionPicker = observer(() => {
               type="submit"
               disabled={!model.canSubmitConnection}
             >
-              {model.draftConnectionId ? 'Сохранить' : 'Подключить'}
+              {model.draftConnectionId
+                ? t('common.save')
+                : t('connection.connect')}
             </button>
           </div>
         </form>

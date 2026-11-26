@@ -7,6 +7,7 @@ import {
 } from '@gravity-ui/icons';
 import { withViewModel } from 'mobx-view-model-react';
 import { pipelineStatusLabel } from '@/entities/gitlab-pipelines';
+import { t } from '@/shared/lib/i18n';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { PipelinesPageVM } from '../model';
 import './styles.css';
@@ -49,18 +50,20 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
           >
             <Timeline width={21} height={21} />
           </span>
-          Пайплайны
+          {t('pipelines.pipelines')}
         </h2>
         <div className="flex flex-wrap items-center gap-2">
           <button
             className={control}
             type="button"
-            aria-label="Обновить пайплайны"
-            title="Обновить пайплайны"
+            aria-label={t('pipelines.refreshPipelines')}
+            title={t('pipelines.refreshPipelines')}
             onClick={list.refresh}
           >
             <ArrowsRotateRight width={15} height={15} aria-hidden />
-            <span className="hidden min-[480px]:inline">Обновить</span>
+            <span className="hidden min-[480px]:inline">
+              {t('pipelines.refresh')}
+            </span>
           </button>
           {list.canManagePipelines && (
             <button
@@ -70,7 +73,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
               onClick={list.toggleCreateForm}
             >
               <Play width={14} height={14} aria-hidden />
-              Запустить пайплайн
+              {t('pipelines.runPipeline')}
             </button>
           )}
         </div>
@@ -79,14 +82,14 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
       {list.isCreateFormOpen && (
         <form
           className="glass-panel mb-4 grid gap-3 rounded-2xl p-4"
-          aria-label="Запуск пайплайна"
+          aria-label={t('pipelines.runAPipeline')}
           onSubmit={(event) => {
             event.preventDefault();
             void list.createPipeline();
           }}
         >
           <label className="grid gap-1.5 font-semibold text-sm">
-            Ветка, тег или SHA коммита
+            {t('pipelines.branchTagOrCommitSha')}
             <input
               className="glass-input min-w-0 rounded-lg px-3 py-2 font-normal"
               autoComplete="off"
@@ -96,9 +99,9 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
             />
           </label>
           <label className="grid gap-1.5 font-semibold text-sm">
-            Переменные
+            {t('pipelines.variables')}
             <span className="font-normal text-fg-muted text-xs">
-              По одной паре KEY=VALUE на строку
+              {t('pipelines.oneKeyValuePairPerLine')}
             </span>
             <textarea
               className="glass-input min-h-20 min-w-0 rounded-lg px-3 py-2 font-mono font-normal"
@@ -118,7 +121,9 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
               type="submit"
               disabled={list.isCreatingPipeline}
             >
-              {list.isCreatingPipeline ? 'Запускаем…' : 'Запустить'}
+              {list.isCreatingPipeline
+                ? t('pipelines.starting')
+                : t('pipelines.run')}
             </button>
             <button
               className={control}
@@ -126,7 +131,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
               disabled={list.isCreatingPipeline}
               onClick={list.toggleCreateForm}
             >
-              Отмена
+              {t('common.cancel')}
             </button>
           </div>
         </form>
@@ -135,13 +140,13 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
       <div className="glass-panel pipeline-list overflow-hidden rounded-2xl">
         <div className="pipeline-toolbar">
           <label className="grid min-w-0 gap-1.5 font-semibold text-fg-muted text-xs">
-            Статус
+            {t('pipelines.status')}
             <select
               className="glass-input h-9 min-w-0 rounded-lg px-2 font-normal text-fg-default text-sm"
               value={list.statusFilter}
               onChange={(event) => list.setStatusFilter(event.target.value)}
             >
-              <option value="">Все статусы</option>
+              <option value="">{t('pipelines.allStatuses')}</option>
               {filterStatuses.map((status) => (
                 <option key={status} value={status}>
                   {pipelineStatusLabel(status)}
@@ -157,11 +162,11 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
             }}
           >
             <label className="grid min-w-0 flex-1 gap-1.5 font-semibold text-fg-muted text-xs">
-              Ветка или тег
+              {t('pipelines.branchOrTag')}
               <input
                 className="glass-input h-9 min-w-0 rounded-lg px-3 font-normal text-fg-default text-sm"
                 type="text"
-                placeholder="Например, main"
+                placeholder={t('pipelines.forExampleMain')}
                 value={list.refSearch}
                 onChange={(event) => list.setRefSearch(event.target.value)}
               />
@@ -169,8 +174,8 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
             <button
               className="glass-control grid size-9 shrink-0 place-items-center rounded-lg"
               type="submit"
-              aria-label="Применить фильтр ветки"
-              title="Применить фильтр ветки"
+              aria-label={t('pipelines.applyBranchFilter')}
+              title={t('pipelines.applyBranchFilter')}
             >
               <Magnifier width={16} height={16} aria-hidden />
             </button>
@@ -178,8 +183,8 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
               <button
                 className="glass-control grid size-9 shrink-0 place-items-center rounded-lg"
                 type="button"
-                aria-label="Сбросить фильтр ветки"
-                title="Сбросить фильтр ветки"
+                aria-label={t('pipelines.resetBranchFilter')}
+                title={t('pipelines.resetBranchFilter')}
                 onClick={() => {
                   list.setRefSearch('');
                   list.applyRefFilter();
@@ -192,7 +197,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
         </div>
         {list.isLoading && (
           <p className="p-8 text-center text-fg-muted text-sm" role="status">
-            Загружаем пайплайны…
+            {t('pipelines.loadingPipelines')}
           </p>
         )}
         {list.showLoadError && (
@@ -203,20 +208,20 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
         {list.showEmptyListMessage && (
           <p className="p-8 text-center text-fg-muted text-sm" role="status">
             {list.statusFilter || list.refFilter
-              ? 'По этим фильтрам пайплайнов нет'
-              : 'В проекте пока нет пайплайнов'}
+              ? t('pipelines.noPipelinesMatchTheseFilters')
+              : t('pipelines.thisProjectHasNoPipelinesYet')}
           </p>
         )}
         {list.pipelines.length > 0 && (
           <>
             <div className="pipeline-columns" aria-hidden>
-              <span>Запуск</span>
-              <span>Статус</span>
-              <span>Обновлён</span>
+              <span>{t('pipelines.run2')}</span>
+              <span>{t('pipelines.status')}</span>
+              <span>{t('common.updated')}</span>
             </div>
             <ul
               className="m-0 list-none divide-y divide-[var(--glass-border)] p-0"
-              aria-label="Запуски пайплайнов"
+              aria-label={t('pipelines.pipelineRuns')}
             >
               {list.pipelines.map((run) => (
                 <RunRow key={run.id} model={model} run={run} />
@@ -232,14 +237,16 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
               disabled={list.isFetchingNextPage}
               onClick={list.loadMore}
             >
-              {list.isFetchingNextPage ? 'Загружаем…' : list.canLoadMoreLabel}
+              {list.isFetchingNextPage
+                ? t('common.loading')
+                : list.canLoadMoreLabel}
             </button>
           </div>
         )}
       </div>
       {!list.canManagePipelines && (
         <p className="mt-3 text-fg-muted text-xs">
-          Для управления пайплайнами нужна роль Developer или выше.
+          {t('pipelines.managingPipelinesRequiresTheDeveloperRoleOr')}
         </p>
       )}
       {list.actionError && !selectedPipeline && (

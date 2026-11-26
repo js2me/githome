@@ -13,7 +13,23 @@ import {
   getLatestRelease,
   isNewerRelease,
 } from '@/shared/lib/app-update/github-release';
-import type { AppUpdateState } from '@/shared/lib/app-update/types';
+import type {
+  AppUpdateState,
+  UpdateMessageKey,
+} from '@/shared/lib/app-update/types';
+
+const androidMessages: Readonly<Record<string, UpdateMessageKey>> = {
+  INVALID_APK: 'updates.invalidApk',
+  DOWNLOAD_FAILED: 'updates.downloadFailed',
+  APK_CHECKSUM_MISMATCH: 'updates.apkChecksumMismatch',
+  APK_INCOMPATIBLE: 'updates.apkIncompatible',
+  APK_SIGNATURE_MISMATCH: 'updates.apkSignatureMismatch',
+  INSTALLER_ALREADY_OPEN: 'updates.installerAlreadyOpen',
+  APK_MISSING: 'updates.apkMissing',
+  INSTALLER_OPEN_FAILED: 'updates.installerOpenFailed',
+  INSTALL_PERMISSION_REQUIRED: 'updates.installPermissionRequired',
+  INSTALL_INCOMPLETE: 'updates.installIncomplete',
+};
 
 export class AppUpdates {
   @observableRef accessor state: AppUpdateState = {
@@ -60,7 +76,7 @@ export class AppUpdates {
         this.setState({
           status: 'error',
           version: this.state.version,
-          message: 'Не удалось получить текущую версию GitHome.',
+          messageKey: 'updates.couldNotGetTheInstalledGithomeVersion',
         });
       }
     } finally {
@@ -89,8 +105,13 @@ export class AppUpdates {
         this.setState(await this.desktop.getState());
       } else if (this.isAndroid && status === 'ready') {
         this.setState({ status: 'installing', version, nextVersion });
-        const { message } = await androidUpdater.install();
-        this.setState({ status: 'ready', version, nextVersion, message });
+        const { code } = await androidUpdater.install();
+        this.setState({
+          status: 'ready',
+          version,
+          nextVersion,
+          messageKey: code ? androidMessages[code] : undefined,
+        });
       } else if (this.isAndroid && status === 'available' && this.asset) {
         this.setState({
           status: 'downloading',
@@ -119,22 +140,24 @@ export class AppUpdates {
         await this.checkRelease(version);
       }
     } catch (error) {
-      const apkMissing =
-        error instanceof Error &&
+      const code =
+        error &&
+        typeof error === 'object' &&
         'code' in error &&
-        error.code === 'APK_MISSING';
+        typeof error.code === 'string'
+          ? error.code
+          : undefined;
+      const apkMissing = code === 'APK_MISSING';
       const androidInstallFailed =
         this.isAndroid && status === 'ready' && !apkMissing;
       this.setState({
         status: androidInstallFailed ? 'ready' : 'error',
         version,
         nextVersion,
-        message:
-          (this.isAndroid &&
-            (status === 'ready' || status === 'available') &&
-            error instanceof Error &&
-            error.message) ||
-          'Не удалось обновить GitHome. Проверьте соединение и попробуйте снова.',
+        messageKey:
+          (this.isAndroid && code && Object.hasOwn(androidMessages, code)
+            ? androidMessages[code]
+            : undefined) ?? 'updates.couldNotUpdateGithomeCheckYourConnection',
       });
     } finally {
       runInAction(() => {
@@ -161,9 +184,9 @@ export class AppUpdates {
             status: 'manual',
             version,
             nextVersion: latestVersion,
-            message: this.isAndroid
-              ? 'В этом релизе пока нет APK для обновления поверх установленной версии.'
-              : 'Установщики новой версии доступны на GitHub.',
+            messageKey: this.isAndroid
+              ? 'updates.thisReleaseDoesNotHaveAnApk'
+              : 'updates.installersForTheNewVersionAreAvailable',
           },
     );
   }

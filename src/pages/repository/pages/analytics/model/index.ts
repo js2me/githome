@@ -6,6 +6,7 @@ import type {
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
 import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { getLocale, t } from '@/shared/lib/i18n';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { Globals } from '@/shared/model/globals';
 import type { RepositoryPageVM } from '../../../model/page-vm';
@@ -182,7 +183,8 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
     >();
 
     for (const mergeRequest of this.analytics.mergedMergeRequests) {
-      const author = mergeRequest.author?.name?.trim() || 'Без имени';
+      const author =
+        mergeRequest.author?.name?.trim() || t('analytics.unnamed');
       const username = mergeRequest.author?.username?.trim().toLowerCase();
       const key = username || author.toLowerCase();
       const stats = changesByAuthor.get(key) ?? {
@@ -250,7 +252,7 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
 
       return {
         ...count,
-        label: date.toLocaleDateString('ru-RU', {
+        label: date.toLocaleDateString(getLocale(), {
           day: 'numeric',
           month: 'short',
           timeZone: 'UTC',
@@ -292,7 +294,7 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
     return error instanceof Error
       ? error.message
       : error
-        ? 'Не удалось загрузить аналитику репозитория'
+        ? t('analytics.couldNotLoadRepositoryAnalytics')
         : null;
   }
 

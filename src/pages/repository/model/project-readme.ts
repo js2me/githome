@@ -5,6 +5,7 @@ import {
   README_FALLBACK_PATHS,
 } from '@/shared/api/gitlab/endpoints/repository/get-project-readme';
 import { createGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { t } from '@/shared/lib/i18n';
 import type { Globals } from '@/shared/model/globals';
 
 type ReadmeQuery = ReturnType<
@@ -172,6 +173,6 @@ export class ProjectReadmeModel {
 
     return error instanceof Error
       ? error.message
-      : 'Не удалось загрузить README';
+      : t('repository.couldNotLoadTheReadme');
   }
 }

@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import { t } from '@/shared/lib/i18n';
 import { GitlabCommentEditor } from '@/shared/ui/gitlab-comment-editor';
 import type { FileGitDiff } from '../../model/file-git-diff';
 
@@ -19,12 +20,12 @@ export const FileCommentForm = observer(
     return (
       <div className="border-slate-200 border-b bg-info-surface px-3.5 py-3 dark:border-[var(--color-border-default)]">
         <div className="mb-2 font-semibold text-blue-700 text-xs dark:text-blue-300">
-          Комментарий к файлу
+          {t('diff.fileComment')}
         </div>
         <GitlabCommentEditor
           projectId={markdownScope?.projectId ?? null}
           editorClassName="border-info-border"
-          placeholder="Оставьте комментарий к файлу"
+          placeholder={t('diff.writeACommentOnThisFile')}
           value={body}
           onChange={setBody}
           disabled={isSubmitting}
@@ -44,7 +45,7 @@ export const FileCommentForm = observer(
             disabled={isSubmitting}
             onClick={comments.cancelFileComment}
           >
-            Отмена
+            {t('common.cancel')}
           </button>
           <button
             className="rounded-md bg-brand px-3 py-1.5 font-semibold text-brand-on text-xs transition enabled:hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
@@ -54,7 +55,7 @@ export const FileCommentForm = observer(
               void comments.submitFileComment(body);
             }}
           >
-            {isSubmitting ? 'Отправка...' : 'Отправить'}
+            {isSubmitting ? t('review.posting') : t('diff.post')}
           </button>
         </div>
       </div>

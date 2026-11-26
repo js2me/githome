@@ -1,5 +1,6 @@
 import { Link, Xmark } from '@gravity-ui/icons';
 import { withViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import { GlassDialog } from '@/shared/ui/glass-dialog';
 import { OpenMergeRequestVM } from '../model/open-merge-request';
 
@@ -11,14 +12,17 @@ export const OpenMergeRequestDialog = withViewModel(
         type="button"
         className="glass-primary inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 font-semibold text-sm sm:px-3.5"
         aria-haspopup="dialog"
-        aria-label="Открыть MR"
-        title="Открыть MR"
+        aria-label={t('navigation.openMergeRequest')}
+        title={t('navigation.openMergeRequest')}
         aria-keyshortcuts="Control+K Meta+K"
         onClick={model.open}
       >
         <Link className="size-4" aria-hidden />
         <span>
-          <span className="hidden min-[420px]:inline">Открыть </span>MR
+          <span className="hidden min-[420px]:inline">
+            {t('navigation.open')}{' '}
+          </span>
+          MR
         </span>
         <kbd
           aria-hidden
@@ -43,19 +47,19 @@ export const OpenMergeRequestDialog = withViewModel(
         >
           <div className="mb-5 flex items-center justify-between gap-3">
             <h2 id="open-mr-title" className="font-bold text-xl tracking-tight">
-              Открыть мерж-реквест
+              {t('navigation.openAMergeRequest')}
             </h2>
             <button
               type="button"
               className="glass-control grid size-8 place-items-center rounded-lg"
-              aria-label="Закрыть"
+              aria-label={t('common.close')}
               onClick={() => model.dialog.current?.close()}
             >
               <Xmark className="size-4" aria-hidden />
             </button>
           </div>
           <label className="grid gap-2 font-semibold text-sm">
-            Ссылка на MR в GitLab
+            {t('navigation.gitlabMergeRequestLink')}
             <input
               ref={model.input}
               className="glass-input min-w-0 rounded-xl px-3.5 py-3 font-normal text-sm"
@@ -87,7 +91,7 @@ export const OpenMergeRequestDialog = withViewModel(
               disabled={!model.link.trim() || model.pending}
               className="glass-primary rounded-xl px-4 py-2 font-semibold text-sm"
             >
-              {model.pending ? 'Открываем…' : 'Открыть'}
+              {model.pending ? t('navigation.opening') : t('navigation.open')}
             </button>
           </div>
         </form>

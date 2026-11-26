@@ -6,6 +6,7 @@ import {
   createGitlabListQuery,
   createInfiniteGitlabQuery,
 } from '@/shared/lib/gitlab/connection/create-query';
+import { t } from '@/shared/lib/i18n';
 import type { Globals } from '@/shared/model/globals';
 import {
   buildProjectListParams,
@@ -71,9 +72,9 @@ export class GitlabProjectsList {
 
   @computed
   get tabs() {
-    return PROJECT_LIST_TABS.map(({ id, label }) => ({
+    return PROJECT_LIST_TABS.map(({ id, labelKey }) => ({
       id,
-      label,
+      label: t(labelKey),
       count: this.countQueries[id].data?.total ?? null,
       isActive: this.activeTab === id,
     }));
@@ -115,7 +116,7 @@ export class GitlabProjectsList {
 
     return error instanceof Error
       ? error.message
-      : 'Не удалось загрузить проекты';
+      : t('home.couldNotLoadProjects');
   }
 
   @computed

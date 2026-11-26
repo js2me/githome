@@ -2,6 +2,7 @@ import { actionBound, computed, observable, reaction } from 'mobx';
 import { createRef } from 'yummies/mobx';
 import type { GitLabCommitDC } from '@/shared/api/gitlab';
 import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { t } from '@/shared/lib/i18n';
 import type { Globals } from '@/shared/model/globals';
 
 const COMMITS_PER_PAGE = 30;
@@ -88,7 +89,7 @@ export class RepositoryCommitsModel {
 
     return error instanceof Error
       ? error.message
-      : 'Не удалось загрузить коммиты';
+      : t('files.couldNotLoadCommits');
   }
 
   @computed
@@ -116,7 +117,7 @@ export class RepositoryCommitsModel {
   get buttonLabel() {
     const commit = this.activeCommit;
     if (!commit) {
-      return 'Коммит';
+      return t('common.commit');
     }
 
     return commit.short_id;

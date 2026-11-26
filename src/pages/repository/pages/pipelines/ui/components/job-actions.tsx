@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import type { GitLabJobDC } from '@/shared/api/gitlab';
+import { t } from '@/shared/lib/i18n';
 import type { PipelinesPageVM } from '../../model';
 import { control } from './run-presentation';
 
@@ -8,10 +9,10 @@ export const JobActions = observer(
     const list = model.pipelineList;
     const cancel = list.isJobCancelable(job);
     const label = cancel
-      ? 'Остановить'
+      ? t('common.cancel2')
       : job.status === 'manual'
-        ? 'Запустить'
-        : 'Повторить';
+        ? t('pipelines.run')
+        : t('common.retry');
     const open = model.traceJobId === job.id;
     return (
       <>
@@ -19,21 +20,21 @@ export const JobActions = observer(
           <button
             className={control}
             type="button"
-            aria-label={`${label} задание ${job.name}`}
+            aria-label={t('pipelines.job', { v1: label, v2: job.name })}
             disabled={list.busyPipelineId !== null || list.busyJobId !== null}
             onClick={() => void model.runJob(job)}
           >
-            {list.busyJobId === job.id ? 'Выполняем…' : label}
+            {list.busyJobId === job.id ? t('pipelines.working') : label}
           </button>
         )}
         <button
           className={control}
           type="button"
           aria-expanded={open}
-          aria-label={`Лог задания ${job.name}`}
+          aria-label={t('pipelines.logForJob', { v1: job.name })}
           onClick={() => model.toggleTrace(job.id)}
         >
-          {open ? 'Скрыть лог' : 'Лог'}
+          {open ? t('pipelines.hideLog') : t('pipelines.log')}
         </button>
       </>
     );

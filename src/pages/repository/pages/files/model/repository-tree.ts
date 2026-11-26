@@ -8,6 +8,7 @@ import {
 } from 'mobx';
 import type { GitLabRepositoryTreeItemDC } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type { Globals } from '@/shared/model/globals';
 import { sortRepositoryTreeItems } from '../lib/repository-tree-utils';
 
@@ -25,7 +26,7 @@ export class RepositoryTreeModel {
   >();
   @observableShallow accessor expandedPaths = new Set<string>();
   @observableShallow accessor loadingFolders = new Set<string>();
-  @observableShallow accessor folderErrors = new Map<string, string>();
+  @observableShallow accessor folderErrors = new Map<string, Error>();
   @observable accessor selectedFilePath: string | null = null;
 
   constructor(private readonly params: RepositoryTreeParams) {
@@ -59,7 +60,7 @@ export class RepositoryTreeModel {
 
   @computed
   get rootErrorMessage() {
-    return this.folderErrors.get('') ?? null;
+    return this.folderErrors.get('')?.message ?? null;
   }
 
   @computed
@@ -91,7 +92,7 @@ export class RepositoryTreeModel {
   }
 
   getFolderError(path: string) {
-    return this.folderErrors.get(path) ?? null;
+    return this.folderErrors.get(path)?.message ?? null;
   }
 
   @actionBound
@@ -174,8 +175,8 @@ export class RepositoryTreeModel {
         this.folderErrors.set(
           path,
           error instanceof Error
-            ? error.message
-            : 'Не удалось загрузить содержимое папки',
+            ? error
+            : new LocalizedError('files.couldNotLoadTheFolderContents'),
         );
       });
     } finally {

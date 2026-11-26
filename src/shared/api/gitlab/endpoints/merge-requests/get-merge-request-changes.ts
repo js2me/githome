@@ -1,5 +1,6 @@
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
 import { buildUnifiedDiffFromGitlabLines } from '@/shared/lib/gitlab/diff/build-unified-diff-from-gitlab-lines';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import {
   buildGitlabPath,
   buildMergeRequestWebPath,
@@ -101,9 +102,7 @@ const fetchAllMergeRequestDiffs = async (
     });
 
     if (!Array.isArray(version.diffs)) {
-      throw new Error(
-        'GitLab did not return diffs for this merge request version',
-      );
+      throw new LocalizedError('review.gitlabDidNotReturnDiffsForThis');
     }
 
     return version.diffs;
@@ -271,7 +270,7 @@ const fetchMergeRequestChangesViaCompare = async (
   );
 
   if (payload.compare_timeout) {
-    throw new Error('GitLab compare timeout');
+    throw new LocalizedError('review.theGitlabComparisonTimedOut');
   }
 
   return (payload.diffs ?? []).map(mapCompareDiffToChange);
@@ -386,5 +385,5 @@ export const getMergeRequestChanges = async (
     }
   }
 
-  throw new Error('Failed to fetch merge request changes');
+  throw new LocalizedError('review.couldNotLoadMergeRequestChanges');
 };

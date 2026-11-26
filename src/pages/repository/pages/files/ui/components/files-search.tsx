@@ -1,6 +1,7 @@
 import { Magnifier } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { FileTypeIcon } from '@/shared/ui/file-type-icon';
 import { Popup } from '@/shared/ui/popup';
 import type { FilesPageVM } from '../../model';
@@ -37,8 +38,8 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
             />
             <input
               className={searchInputClassName}
-              aria-label="Поиск файлов и содержимого"
-              placeholder="Поиск файлов и содержимого..."
+              aria-label={t('files.searchFilesAndContents')}
+              placeholder={t('files.searchFilesAndContents2')}
               type="search"
               value={searchModel.searchQuery}
               onChange={(event) =>
@@ -51,7 +52,7 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
       </Popup.Trigger>
 
       <Popup.Panel
-        ariaLabel="Поиск по репозиторию"
+        ariaLabel={t('files.searchTheRepository')}
         className="right-0 left-auto w-[min(480px,calc(100vw-2.5rem))] p-0"
       >
         <div className="flex gap-1 border-slate-200 border-b p-2 dark:border-slate-800">
@@ -67,7 +68,7 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
               type="button"
               onClick={() => searchModel.setSearchMode(mode)}
             >
-              {mode === 'files' ? 'Файлы' : 'Содержимое'}
+              {mode === 'files' ? t('common.files') : t('files.contents')}
             </button>
           ))}
         </div>
@@ -75,12 +76,14 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
         <div className="max-h-80 overflow-y-auto p-1">
           {searchModel.isQueryTooShort && (
             <p className="px-3 py-2 text-slate-500 text-sm">
-              Введите минимум 2 символа.
+              {t('files.enterAtLeast2Characters')}
             </p>
           )}
 
           {searchModel.isLoading && (
-            <p className="px-3 py-2 text-slate-500 text-sm">Ищем...</p>
+            <p className="px-3 py-2 text-slate-500 text-sm">
+              {t('files.searching')}
+            </p>
           )}
 
           {searchModel.errorMessage && !searchModel.isLoading && (
@@ -95,7 +98,7 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
             searchModel.searchMode === 'files' &&
             searchModel.fileResults.length === 0 && (
               <p className="px-3 py-2 text-slate-500 text-sm">
-                Файлы не найдены.
+                {t('files.noFilesFound')}
               </p>
             )}
 
@@ -105,7 +108,7 @@ export const FilesSearch = observer(({ model }: { model: FilesPageVM }) => {
             searchModel.searchMode === 'content' &&
             searchModel.contentResults.length === 0 && (
               <p className="px-3 py-2 text-slate-500 text-sm">
-                Совпадений не найдено.
+                {t('files.noMatchesFound')}
               </p>
             )}
 

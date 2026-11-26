@@ -160,13 +160,10 @@ export class MergeRequestNavAdapter {
       {
         connectionId,
         projectId,
-        projectPath:
-          details.projectPath ??
-          existing?.payload.projectPath ??
-          'Загрузка репозитория…',
+        projectPath: details.projectPath ?? existing?.payload.projectPath ?? '',
         mergeRequestIid,
       },
-      details.title || existing?.title || 'Merge Request',
+      details.title || existing?.title || '',
     );
   }
 
@@ -288,9 +285,9 @@ export class MergeRequestNavAdapter {
     this.upsertItem(
       {
         ...tab,
-        projectPath: projectPath ?? 'Загрузка репозитория…',
+        projectPath: projectPath ?? '',
       },
-      'Merge Request',
+      '',
     );
   }
 
@@ -378,7 +375,7 @@ export class MergeRequestNavAdapter {
         const payload: MergeRequestNavPayload = {
           connectionId: tab.connectionId,
           projectId: tab.projectId,
-          projectPath: tab.projectPath || 'Загрузка репозитория…',
+          projectPath: tab.projectPath || '',
           mergeRequestIid: tab.mergeRequestIid,
         };
         const itemId = createMergeRequestNavItemId(payload);

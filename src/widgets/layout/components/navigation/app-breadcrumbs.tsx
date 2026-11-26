@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { Link } from 'mobx-route/react';
 import { useViewModel } from 'mobx-view-model-react';
 import { Fragment } from 'react';
+import { t } from '@/shared/lib/i18n';
 import { ProjectAvatar } from '@/shared/ui/project-avatar';
 import type { LayoutVM } from '../../model/layout-vm';
 
@@ -23,7 +24,9 @@ export const AppBreadcrumbs = observer(() => {
 
   return (
     <nav
-      aria-label={project ? 'Путь к проекту' : 'Путь к группе'}
+      aria-label={
+        project ? t('navigation.projectPath') : t('navigation.groupPath')
+      }
       className="order-last flex w-full min-w-0 items-center gap-1 py-1 font-medium text-fg-muted text-xs sm:text-sm lg:order-none lg:w-auto lg:flex-1 lg:border-[var(--glass-border)] lg:border-l lg:pl-4"
     >
       {groups.map((name, i) => {

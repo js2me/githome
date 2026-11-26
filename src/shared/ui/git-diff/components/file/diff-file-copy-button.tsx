@@ -1,5 +1,6 @@
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { cva } from 'yummies/css';
+import { t } from '@/shared/lib/i18n';
 import { DiffFileCopyVM } from '../../model/copy-file';
 import { CopiedIcon } from '../icons/copied-icon';
 import { CopyFailedIcon } from '../icons/copy-failed-icon';
@@ -34,9 +35,9 @@ export const DiffFileCopyButton = withPropsViewModel(
         type="button"
         title={
           status === 'copied'
-            ? 'Скопировано'
+            ? t('review.copied')
             : status === 'failed'
-              ? 'Не удалось скопировать'
+              ? t('review.couldNotCopy')
               : label
         }
         aria-label={label}

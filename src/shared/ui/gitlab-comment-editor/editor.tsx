@@ -11,17 +11,18 @@ import {
 } from '@gravity-ui/icons';
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { GitlabCommentEditorVM } from './model';
 
 const toolbarButtons = [
-  ['bold', 'Жирный', Bold],
-  ['italic', 'Курсив', Italic],
-  ['strikethrough', 'Зачёркнутый', Strikethrough],
-  ['quote', 'Цитата', QuoteOpen],
-  ['code', 'Код', Code],
-  ['link', 'Ссылка', Link],
-  ['list', 'Маркированный список', ListUl],
-  ['orderedList', 'Нумерованный список', ListOl],
+  ['bold', 'common.bold', Bold],
+  ['italic', 'common.italic', Italic],
+  ['strikethrough', 'common.strikethrough', Strikethrough],
+  ['quote', 'common.quote', QuoteOpen],
+  ['code', 'common.code', Code],
+  ['link', 'review.link', Link],
+  ['list', 'common.bulletedList', ListUl],
+  ['orderedList', 'common.numberedList', ListOl],
 ] as const;
 
 const buttonClassName =
@@ -42,13 +43,13 @@ export const Editor = withPropsViewModel(
           )}
         >
           <div className="flex flex-wrap items-center gap-0.5 border-[var(--glass-border)] border-b bg-[var(--glass-surface)] px-2 py-1.5">
-            {toolbarButtons.map(([command, title, Icon]) => (
+            {toolbarButtons.map(([command, titleKey, Icon]) => (
               <button
                 key={command}
                 className={buttonClassName}
                 type="button"
-                title={title}
-                aria-label={title}
+                title={t(titleKey)}
+                aria-label={t(titleKey)}
                 disabled={model.toolbarDisabled}
                 onClick={() => model.formatSelection(command)}
               >
@@ -58,8 +59,8 @@ export const Editor = withPropsViewModel(
             <button
               className={buttonClassName}
               type="button"
-              title="Изображение"
-              aria-label="Изображение"
+              title={t('common.image')}
+              aria-label={t('common.image')}
               disabled={!model.canUploadImage}
               onClick={model.openFilePicker}
             >
@@ -75,7 +76,7 @@ export const Editor = withPropsViewModel(
           </div>
           {model.isUploadingImage && (
             <div className="px-3 pt-2 text-[13px] text-slate-500 dark:text-slate-400">
-              Загрузка изображения...
+              {t('common.loadingImage')}
             </div>
           )}
           {model.uploadError && (

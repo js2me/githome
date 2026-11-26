@@ -1,5 +1,5 @@
 import { ArrowDownToLine, ArrowUpToLine } from '@gravity-ui/icons';
-import { memo } from 'react';
+import { observer } from 'mobx-react-lite';
 import { cn } from '@/shared/lib/cn';
 import type {
   DiffExpandGap,
@@ -13,7 +13,7 @@ import {
 import { diffGridClassName } from '../grid-class';
 import { ExpandIconButton } from './expand-icon-button';
 
-export const DiffExpandRow = memo(
+export const DiffExpandRow = observer(
   ({
     gap,
     expandState,

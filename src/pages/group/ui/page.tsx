@@ -1,6 +1,7 @@
 import { Folder } from '@gravity-ui/icons';
 import { Link } from 'mobx-route/react';
 import { withViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import { ProjectAvatar } from '@/shared/ui/project-avatar';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { GroupPageVM } from '../model/page-vm';
@@ -15,12 +16,14 @@ export const GroupPage = withViewModel(GroupPageVM, ({ model }) => {
   return (
     <section className="mx-auto max-w-page">
       {!stores.settings.activeConnection && (
-        <StatusMessage>Подключите GitLab, чтобы открыть группу.</StatusMessage>
+        <StatusMessage>
+          {t('group.connectToGitlabToOpenTheGroup')}
+        </StatusMessage>
       )}
-      {isLoading && <StatusMessage>Загружаем группу...</StatusMessage>}
+      {isLoading && <StatusMessage>{t('group.loadingGroup')}</StatusMessage>}
       {error && (
         <StatusMessage error>
-          Не удалось загрузить группу. {error.message}
+          {t('group.couldNotLoadTheGroup')} {error.message}
         </StatusMessage>
       )}
       {data && (
@@ -40,7 +43,7 @@ export const GroupPage = withViewModel(GroupPageVM, ({ model }) => {
           </header>
           {data.subgroups.length > 0 && (
             <section className="mb-5">
-              <h2 className="mb-2 font-semibold">Подгруппы</h2>
+              <h2 className="mb-2 font-semibold">{t('group.subgroups')}</h2>
               <ul className="space-y-2">
                 {data.subgroups.map((group) => (
                   <li key={group.id}>
@@ -60,7 +63,7 @@ export const GroupPage = withViewModel(GroupPageVM, ({ model }) => {
           )}
           {data.projects.length > 0 && (
             <section>
-              <h2 className="mb-2 font-semibold">Репозитории</h2>
+              <h2 className="mb-2 font-semibold">{t('group.repositories')}</h2>
               <ul className="space-y-2">
                 {data.projects.map((project) => (
                   <li key={project.id}>
@@ -84,7 +87,9 @@ export const GroupPage = withViewModel(GroupPageVM, ({ model }) => {
             </section>
           )}
           {!data.subgroups.length && !data.projects.length && (
-            <StatusMessage>В группе нет подгрупп и репозиториев.</StatusMessage>
+            <StatusMessage>
+              {t('group.thisGroupHasNoSubgroupsOrRepositories')}
+            </StatusMessage>
           )}
         </>
       )}

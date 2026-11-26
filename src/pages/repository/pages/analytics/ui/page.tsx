@@ -1,4 +1,5 @@
 import { withViewModel } from 'mobx-view-model-react';
+import { getLocale, t } from '@/shared/lib/i18n';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { AnalyticsPageVM } from '../model';
 import { AnalyticsChart } from './analytics-chart';
@@ -13,39 +14,43 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
     <section>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="m-0 font-semibold text-[22px]">Аналитика</h2>
+          <h2 className="m-0 font-semibold text-[22px]">
+            {t('analytics.analytics')}
+          </h2>
           <p className="mt-1 mb-0 text-slate-500 text-sm">
-            Коммиты основной ветки и смерженные merge requests
+            {t('analytics.commitsOnTheDefaultBranchAndMerged')}
           </p>
         </div>
 
         <label className="flex flex-col gap-1 font-semibold text-slate-500 text-xs">
-          Период
+          {t('analytics.period')}
           <select
             className="glass-input rounded-lg px-3 py-2 text-sm"
             value={model.period}
             onChange={(event) => model.setPeriod(event.target.value)}
           >
-            <option value={30}>Последние 30 дней</option>
-            <option value={90}>Последние 90 дней</option>
-            <option value={180}>Последние 180 дней</option>
+            <option value={30}>{t('analytics.last30Days')}</option>
+            <option value={90}>{t('analytics.last90Days')}</option>
+            <option value={180}>{t('analytics.last180Days')}</option>
           </select>
         </label>
       </div>
 
       {!hasConnection && (
         <StatusMessage>
-          Подключите GitLab, чтобы загрузить аналитику.
+          {t('analytics.connectToGitlabToLoadAnalytics')}
         </StatusMessage>
       )}
 
       {model.isLoading && !model.hasAnalyticsData && (
-        <StatusMessage>Загружаем аналитику репозитория...</StatusMessage>
+        <StatusMessage>
+          {t('analytics.loadingRepositoryAnalytics')}
+        </StatusMessage>
       )}
 
       {model.isLoading && model.hasAnalyticsData && (
         <p className="mb-4 text-slate-500 text-sm" role="status">
-          Загружаем оставшиеся данные аналитики...
+          {t('analytics.loadingRemainingAnalyticsData')}
         </p>
       )}
 
@@ -57,33 +62,37 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
         <>
           <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <article className={METRIC_CARD_CLASS}>
-              <p className="m-0 font-medium text-slate-500 text-sm">Коммиты</p>
+              <p className="m-0 font-medium text-slate-500 text-sm">
+                {t('analytics.commits')}
+              </p>
               <p className="mt-2 mb-0 font-bold text-3xl text-slate-900 dark:text-slate-100">
-                {commits.length.toLocaleString('ru-RU')}
+                {commits.length.toLocaleString(getLocale())}
               </p>
             </article>
             <article className={METRIC_CARD_CLASS}>
               <p className="m-0 font-medium text-slate-500 text-sm">
-                Смерженные MR
+                {t('analytics.mergedRequests')}
               </p>
               <p className="mt-2 mb-0 font-bold text-3xl text-slate-900 dark:text-slate-100">
-                {mergedMergeRequests.length.toLocaleString('ru-RU')}
+                {mergedMergeRequests.length.toLocaleString(getLocale())}
               </p>
             </article>
             <article className={METRIC_CARD_CLASS}>
               <p className="m-0 font-medium text-slate-500 text-sm">
-                MR с JIRA-ID
+                {t('analytics.requestsWithAJiraIssueId')}
               </p>
               <p className="mt-2 mb-0 font-bold text-3xl text-slate-900 dark:text-slate-100">
-                {model.mergeRequestsWithJiraId.length.toLocaleString('ru-RU')}
+                {model.mergeRequestsWithJiraId.length.toLocaleString(
+                  getLocale(),
+                )}
               </p>
             </article>
             <article className={METRIC_CARD_CLASS}>
               <p className="m-0 font-medium text-slate-500 text-sm">
-                Изменённые файлы в MR
+                {t('analytics.filesChangedInMergeRequests')}
               </p>
               <p className="mt-2 mb-0 font-bold text-3xl text-slate-900 dark:text-slate-100">
-                {model.totalChangedFiles.toLocaleString('ru-RU')}
+                {model.totalChangedFiles.toLocaleString(getLocale())}
               </p>
             </article>
           </div>
@@ -91,10 +100,10 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
           <article className="glass-panel rounded-2xl p-4 sm:p-5">
             <div className="mb-2">
               <h3 className="m-0 font-semibold text-base text-slate-900 dark:text-slate-100">
-                Активность по времени
+                {t('analytics.activityOverTime')}
               </h3>
               <p className="mt-1 mb-0 text-slate-500 text-sm">
-                Количество событий за день или неделю
+                {t('analytics.numberOfEventsPerDayOrWeek')}
               </p>
             </div>
             <AnalyticsChart kind="activity" />
@@ -103,18 +112,17 @@ export const AnalyticsPage = withViewModel(AnalyticsPageVM, ({ model }) => {
           <article className="glass-panel mt-4 rounded-2xl p-4 sm:p-5">
             <div className="mb-2">
               <h3 className="m-0 font-semibold text-base text-slate-900 dark:text-slate-100">
-                Изменённые файлы по авторам
+                {t('analytics.changedFilesByAuthor')}
               </h3>
               <p className="mt-1 mb-0 text-slate-500 text-sm">
-                Сумма файловых изменений в смерженных MR за выбранный период;
-                один файл может учитываться в нескольких MR.
+                {t('analytics.fileChangesInRequestsMergedDuringThis')}
               </p>
             </div>
             {model.authorChanges.length > 0 ? (
               <AnalyticsChart kind="authors" />
             ) : (
               <p className="mt-5 mb-0 text-slate-500 text-sm">
-                Нет смерженных MR за выбранный период.
+                {t('analytics.noMergedRequestsInThisPeriod')}
               </p>
             )}
           </article>

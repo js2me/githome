@@ -1,6 +1,7 @@
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { cn } from '@/shared/lib/cn';
 import { isDiscussionResolvable } from '@/shared/lib/gitlab/discussions/diff-discussions';
+import { t } from '@/shared/lib/i18n';
 import { DiscussionThreadVM } from '../../../../model/merge-request-discussions';
 import { DiscussionResolveActions } from '../discussion-resolve-actions';
 import { DiscussionNote } from './discussion-note';
@@ -31,14 +32,14 @@ export const DiscussionThread = withPropsViewModel(
       >
         {resolved && (
           <div className="flex items-center justify-between gap-3 border-green-200 border-b bg-green-50 px-3.5 py-2 font-bold text-green-800 text-xs dark:border-green-900 dark:bg-green-950 dark:text-green-300">
-            <span>Тред разрешён</span>
+            <span>{t('review.threadResolved')}</span>
             <button
               className="glass-control rounded-md px-2 py-1 font-semibold text-[11px] text-green-800 dark:text-green-300"
               type="button"
               aria-expanded={expanded}
               onClick={model.toggle}
             >
-              {expanded ? 'Скрыть' : 'Показать'}
+              {expanded ? t('review.hide') : t('review.show')}
             </button>
           </div>
         )}

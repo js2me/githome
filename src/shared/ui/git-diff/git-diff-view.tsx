@@ -1,3 +1,4 @@
+import { t } from '@/shared/lib/i18n';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { GitDiffFile } from './components/file/git-diff-file';
 import './styles.css';
@@ -14,7 +15,9 @@ export const GitDiffView = withPropsViewModel(
   }) => {
     if (changes.length === 0) {
       return (
-        <StatusMessage>Изменения в merge request не найдены.</StatusMessage>
+        <StatusMessage>
+          {t('diff.noChangesFoundInThisMergeRequest')}
+        </StatusMessage>
       );
     }
 

@@ -1,6 +1,7 @@
 import { actionBound, computed, observable } from 'mobx';
 import { createRef } from 'yummies/mobx';
 import type { GitLabMergeRequestVersionDC } from '@/shared/api/gitlab';
+import { getLocale, t } from '@/shared/lib/i18n';
 import { VM } from '@/shared/lib/view-models/vm';
 
 const formatDate = (value: string) => {
@@ -9,7 +10,7 @@ const formatDate = (value: string) => {
     return value;
   }
 
-  return date.toLocaleString('ru-RU', {
+  return date.toLocaleString(getLocale(), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -24,11 +25,14 @@ export const getVersionLabel = (
   total: number,
 ) => {
   if (index === 0) {
-    return 'последняя версия';
+    return t('review.latestVersion');
   }
 
   const pushNumber = total - index;
-  return `push ${pushNumber} от ${formatDate(version.created_at)}`;
+  return t('review.pushOn', {
+    v1: pushNumber,
+    v2: formatDate(version.created_at),
+  });
 };
 
 interface DiffVersionPickerProps {
@@ -59,7 +63,7 @@ export class DiffVersionPickerVM extends VM<DiffVersionPickerProps> {
           selectedIndex,
           versions.length,
         )
-      : 'последняя версия';
+      : t('review.latestVersion');
   }
 
   @actionBound

@@ -1,10 +1,11 @@
 import { observer } from 'mobx-react-lite';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { Popup } from '@/shared/ui/popup';
 import type { FilesPageVM } from '../../model';
 
 export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
-  const currentLabel = model.branchRef ?? 'Ветка';
+  const currentLabel = model.branchRef ?? t('files.branch');
 
   return (
     <Popup
@@ -40,11 +41,13 @@ export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
       </Popup.Trigger>
 
       <Popup.Panel
-        ariaLabel="Ветки"
+        ariaLabel={t('files.branches')}
         className="left-0 w-[min(320px,calc(100vw-2.5rem))] p-1"
       >
         {model.isBranchesLoading && (
-          <p className="px-3 py-2 text-slate-500 text-sm">Загружаем ветки...</p>
+          <p className="px-3 py-2 text-slate-500 text-sm">
+            {t('files.loadingBranches')}
+          </p>
         )}
 
         {model.branchesErrorMessage && !model.isBranchesLoading && (
@@ -57,7 +60,7 @@ export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
           !model.branchesErrorMessage &&
           model.branchOptions.length === 0 && (
             <p className="px-3 py-2 text-slate-500 text-sm">
-              Ветки не найдены.
+              {t('files.noBranchesFound')}
             </p>
           )}
 
@@ -82,7 +85,7 @@ export const BranchPicker = observer(({ model }: { model: FilesPageVM }) => {
                 <span className="min-w-0 truncate">{branch.name}</span>
                 {branch.default && (
                   <span className="ml-2 shrink-0 font-normal text-slate-400 text-xs">
-                    default
+                    {t('files.default')}
                   </span>
                 )}
               </button>

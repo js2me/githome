@@ -2,6 +2,7 @@ import { ArrowUpRightFromSquare, Xmark } from '@gravity-ui/icons';
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { useId } from 'react';
 import { PipelineStatus } from '@/entities/gitlab-pipelines';
+import { t } from '@/shared/lib/i18n';
 import { GlassDialog } from '@/shared/ui/glass-dialog';
 import { PipelineDetailsDialogVM } from './model/details-dialog';
 
@@ -37,7 +38,7 @@ export const PipelineDetailsDialog = withPropsViewModel(
               id={titleId}
               className="break-words font-semibold text-lg tracking-tight"
             >
-              Пайплайн #{pipelineId}
+              {t('pipelines.pipelineNumber', { id: pipelineId })}
             </h2>
             {pipeline?.status && <PipelineStatus status={pipeline.status} />}
           </div>
@@ -45,7 +46,7 @@ export const PipelineDetailsDialog = withPropsViewModel(
             ref={model.closeButton}
             type="button"
             className="glass-control grid size-8 shrink-0 place-items-center rounded-lg"
-            aria-label="Закрыть детали пайплайна"
+            aria-label={t('pipelines.closePipelineDetails')}
             onClick={() => model.dialog.current?.close()}
           >
             <Xmark className="size-4" aria-hidden />
@@ -69,7 +70,7 @@ export const PipelineDetailsDialog = withPropsViewModel(
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Открыть в GitLab{' '}
+                  {t('common.openInGitLab')}{' '}
                   <ArrowUpRightFromSquare className="size-3" aria-hidden />
                 </a>
               )}
@@ -77,7 +78,7 @@ export const PipelineDetailsDialog = withPropsViewModel(
           )}
           {loading && (
             <p role="status" className="text-fg-muted text-sm">
-              Загружаем задания…
+              {t('pipelines.loadingJobs')}
             </p>
           )}
           {error && (
@@ -90,7 +91,7 @@ export const PipelineDetailsDialog = withPropsViewModel(
           )}
           {!loading && !error && jobs.length === 0 && (
             <p className="text-fg-muted text-sm">
-              В этом пайплайне нет заданий.
+              {t('pipelines.thisPipelineHasNoJobs')}
             </p>
           )}
           {[...model.stages].map(([stage, stageJobs]) => (
@@ -112,7 +113,9 @@ export const PipelineDetailsDialog = withPropsViewModel(
                             href={job.web_url}
                             target="_blank"
                             rel="noreferrer"
-                            title={`Открыть задание ${job.name} в GitLab`}
+                            title={t('pipelines.openJobInGitlab', {
+                              v1: job.name,
+                            })}
                           >
                             {job.name}
                             <ArrowUpRightFromSquare

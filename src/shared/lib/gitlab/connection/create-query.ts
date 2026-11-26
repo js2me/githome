@@ -9,6 +9,7 @@ import {
   resolveGitlabRequestUrl,
 } from '@/shared/api/gitlab';
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import {
   buildFetchQueryKey,
   buildFetchQueryUrl,
@@ -201,7 +202,9 @@ export const createGitlabListQuery = <TItem = unknown>(
           return { items: [], total: 0 };
         }
 
-        throw new Error(`Fetch error: ${response.status}`);
+        throw new LocalizedError('connection.requestFailedHttp', {
+          v1: response.status,
+        });
       }
 
       const totalHeader = response.headers.get('X-Total');

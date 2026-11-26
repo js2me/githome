@@ -1,4 +1,5 @@
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import { gitlabFetch, normalizeGitlabBaseUrl } from '../../client';
 import { enqueueGitLabFileContentRequest } from '../../file-content-request-queue';
 
@@ -25,7 +26,7 @@ export const getRepositoryFileBlobId = (
       const metadata = await gitlabFetch(connection, path, signal);
       const { blob_id } = (await metadata.json()) as { blob_id?: string };
       if (!blob_id) {
-        throw new Error('GitLab не вернул хеш файла');
+        throw new LocalizedError('gitlab.gitlabDidNotReturnAFileHash');
       }
 
       return blob_id;

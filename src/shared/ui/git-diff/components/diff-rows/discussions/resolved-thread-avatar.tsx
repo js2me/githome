@@ -1,5 +1,6 @@
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { createPortal } from 'react-dom';
+import { t } from '@/shared/lib/i18n';
 import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
 import { ThreadAvatarVM } from '../../../model/discussion-rows';
 
@@ -31,7 +32,7 @@ export const ResolvedThreadAvatar = withPropsViewModel(
       return null;
     }
 
-    const authorName = firstNote.author?.name ?? 'Unknown';
+    const authorName = firstNote.author?.name ?? t('review.unknown');
     const preview = getNotePreview(firstNote.body);
 
     return (
@@ -46,7 +47,7 @@ export const ResolvedThreadAvatar = withPropsViewModel(
         <button
           className="git-diff-thread-avatar-button"
           type="button"
-          aria-label={`Разрешённый комментарий: ${authorName}`}
+          aria-label={t('diff.resolvedComment', { v1: authorName })}
           onClick={(event) => {
             event.stopPropagation();
             onClick();

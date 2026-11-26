@@ -1,4 +1,5 @@
 import { withViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import { LoadingState } from '@/shared/ui/loading-state';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { MergeRequestPageVM } from '../model';
@@ -11,7 +12,7 @@ export const MergeRequestPage = withViewModel(
     return (
       <section>
         {model.mrInfo.isLoading && !detailView && (
-          <LoadingState>Загружаем Merge Request</LoadingState>
+          <LoadingState>{t('review.loadingMergeRequest')}</LoadingState>
         )}
 
         {model.mrInfo.showLoadError && (
@@ -29,7 +30,7 @@ export const MergeRequestPage = withViewModel(
             <div
               className="size-5 animate-spin rounded-full border-2 border-slate-200 border-t-brand dark:border-slate-600"
               role="status"
-              aria-label="Обновление Merge Request"
+              aria-label={t('review.refreshingMergeRequest')}
             />
           </div>
         )}

@@ -2,19 +2,22 @@ import { ChevronRight, CodeFork, Comment } from '@gravity-ui/icons';
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { MrStateBadge, ReviewStatuses } from '@/entities/gitlab-merge-requests';
 import { cn } from '@/shared/lib/cn';
+import { getLocale, t } from '@/shared/lib/i18n';
 import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
 import { MrListPageVM } from '../../model/mr-list-page';
 
-const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
+const dateFormatterOptions: Intl.DateTimeFormatOptions = {
   day: 'numeric',
   month: 'short',
   hour: '2-digit',
   minute: '2-digit',
-});
+};
 
 const formatUpdatedAt = (value: string) => {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : dateFormatter.format(date);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleString(getLocale(), dateFormatterOptions);
 };
 
 export const MergeRequestListRows = withPropsViewModel(
@@ -29,7 +32,7 @@ export const MergeRequestListRows = withPropsViewModel(
       <>
         {mergeRequests.map((mr) => {
           const authorName =
-            mr.author?.name ?? mr.author?.username ?? 'Неизвестный автор';
+            mr.author?.name ?? mr.author?.username ?? t('review.unknownAuthor');
           const statusId = `mr-list-status-${mr.id}`;
           return (
             <li key={mr.id}>
@@ -40,7 +43,7 @@ export const MergeRequestListRows = withPropsViewModel(
                     'bg-[var(--glass-selected)]',
                 )}
                 type="button"
-                aria-label={`Открыть !${mr.iid} ${mr.title}`}
+                aria-label={t('review.open3', { v1: mr.iid, v2: mr.title })}
                 aria-describedby={statusId}
                 onClick={() => onSelect(mr)}
               >
@@ -62,7 +65,10 @@ export const MergeRequestListRows = withPropsViewModel(
                       />
                       <span className="truncate">{authorName}</span>
                     </span>
-                    <time dateTime={mr.updated_at} title="Последнее обновление">
+                    <time
+                      dateTime={mr.updated_at}
+                      title={t('review.lastUpdated')}
+                    >
                       {formatUpdatedAt(mr.updated_at)}
                     </time>
                     <span
@@ -93,10 +99,10 @@ export const MergeRequestListRows = withPropsViewModel(
                   {mr.user_notes_count != null && mr.user_notes_count > 0 && (
                     <span
                       className="inline-flex items-center gap-1 text-fg-muted text-xs tabular-nums"
-                      title={`Комментариев: ${mr.user_notes_count}`}
+                      title={t('review.comments2', { v1: mr.user_notes_count })}
                     >
                       <Comment width={14} height={14} aria-hidden />
-                      <span className="sr-only">Комментариев </span>
+                      <span className="sr-only">{t('review.comments3')} </span>
                       {mr.user_notes_count}
                     </span>
                   )}

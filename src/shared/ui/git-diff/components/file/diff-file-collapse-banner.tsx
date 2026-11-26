@@ -1,6 +1,7 @@
 import { ChevronDown } from '@gravity-ui/icons';
-import { memo } from 'react';
+import { observer } from 'mobx-react-lite';
 import type { GitLabMergeRequestChangeDC } from '@/shared/api/gitlab';
+import { t } from '@/shared/lib/i18n';
 
 const GENERATED_DOCS_URL =
   'https://docs.gitlab.com/ee/user/project/merge_requests/changes.html#collapse-generated-files';
@@ -8,7 +9,7 @@ const GENERATED_DOCS_URL =
 const bannerClassName =
   'flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 border-info-border border-b bg-info-surface px-4 py-3 text-fg-default text-sm';
 
-export const DiffFileCollapseBanner = memo(
+export const DiffFileCollapseBanner = observer(
   ({
     change,
     isLoading,
@@ -21,17 +22,14 @@ export const DiffFileCollapseBanner = memo(
     if (change.too_large) {
       return (
         <div className={bannerClassName}>
-          <p className="m-0">
-            Diff слишком большой для отображения в этом интерфейсе.
-          </p>
+          <p className="m-0">{t('diff.thisDiffIsTooLargeToDisplay')}</p>
         </div>
       );
     }
 
     const message = change.generated_file ? (
       <>
-        Сгенерированные файлы по умолчанию свёрнуты. Чтобы изменить это
-        поведение, отредактируйте файл{' '}
+        {t('diff.generatedFilesAreCollapsedByDefaultTo')}{' '}
         <code className="rounded bg-canvas-subtle px-1 py-0.5 font-mono text-[13px]">
           .gitattributes
         </code>
@@ -42,14 +40,12 @@ export const DiffFileCollapseBanner = memo(
           rel="noopener noreferrer"
           target="_blank"
         >
-          Подробнее
+          {t('diff.learnMore')}
         </a>
         .
       </>
     ) : (
-      <>
-        Diff для этого файла свёрнут. Разверните его, чтобы увидеть изменения.
-      </>
+      t('diff.theDiffForThisFileIsCollapsed')
     );
 
     return (
@@ -70,7 +66,7 @@ export const DiffFileCollapseBanner = memo(
           ) : (
             <ChevronDown aria-hidden="true" className="size-3.5" />
           )}
-          {isLoading ? 'Загружаем…' : 'Развернуть файл'}
+          {isLoading ? t('common.loading') : t('diff.expandFile')}
         </button>
       </div>
     );

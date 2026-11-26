@@ -1,3 +1,4 @@
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 export const releasesUrl = 'https://github.com/js2me/githome/releases/latest';
 const latestReleaseApi =
   'https://api.github.com/repos/js2me/githome/releases/latest';
@@ -30,7 +31,7 @@ export async function getLatestRelease(): Promise<GitHubRelease> {
     release.prerelease ||
     !stableTag.test(release.tag_name)
   ) {
-    throw new Error('Invalid release version');
+    throw new LocalizedError('updates.invalidReleaseVersion');
   }
   return release;
 }

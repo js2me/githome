@@ -7,6 +7,7 @@ import {
 } from '@gravity-ui/icons';
 import { RouteView, RouteViewGroup } from 'mobx-route/react';
 import { withViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
 import { ProjectAvatar } from '@/shared/ui/project-avatar';
 import { StatusMessage } from '@/shared/ui/status-message';
@@ -37,7 +38,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
       <RouteView route={model.globals.routes.analytics} view={AnalyticsPage} />
       <section className="mx-auto max-w-page">
         {model.isLoading && !project && (
-          <StatusMessage>Загружаем репозиторий...</StatusMessage>
+          <StatusMessage>{t('files.loadingRepository')}</StatusMessage>
         )}
 
         {model.errorMessage && !project && (
@@ -67,7 +68,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
                 </div>
               </div>
               <nav
-                aria-label="Разделы проекта"
+                aria-label={t('repository.projectSections')}
                 className="flex flex-wrap gap-2"
               >
                 <button
@@ -76,17 +77,21 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
                   className="glass-primary inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 font-semibold text-sm"
                 >
                   <CodePullRequest className="size-4" aria-hidden />
-                  <span>Merge requests</span>
+                  <span>{t('common.mergeRequests')}</span>
                 </button>
                 {[
-                  { label: 'Files', Icon: Code, open: model.openFiles },
                   {
-                    label: 'Пайплайны',
+                    label: t('common.files'),
+                    Icon: Code,
+                    open: model.openFiles,
+                  },
+                  {
+                    label: t('pipelines.pipelines'),
                     Icon: Timeline,
                     open: model.openPipelines,
                   },
                   {
-                    label: 'Аналитика',
+                    label: t('analytics.analytics'),
                     Icon: ChartLine,
                     open: model.openAnalytics,
                   },
@@ -105,7 +110,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
             </header>
 
             {model.isReadmeLoading && (
-              <StatusMessage>Загружаем README...</StatusMessage>
+              <StatusMessage>{t('repository.loadingReadme')}</StatusMessage>
             )}
 
             {model.readmeErrorMessage && !model.isReadmeLoading && (
@@ -113,7 +118,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
             )}
 
             {model.showReadmeMissing && (
-              <StatusMessage>README не найден.</StatusMessage>
+              <StatusMessage>{t('repository.readmeNotFound')}</StatusMessage>
             )}
 
             {model.readme && (

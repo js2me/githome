@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import type { ReactElement, ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import type { MergeRequestDetailVM } from '../../../model/merge-request-detail';
 
 export const ChangesTreeLayout = observer(
@@ -45,7 +46,7 @@ export const ChangesTreeLayout = observer(
                 role="separator"
                 aria-orientation="vertical"
                 aria-valuenow={width}
-                aria-label="Изменить ширину дерева файлов"
+                aria-label={t('review.resizeFileTree')}
                 className={cn(
                   'changes-tree-layout__resize-handle absolute top-0 -right-2 z-10 h-full w-4 cursor-col-resize touch-none select-none',
                   'after:absolute after:top-0 after:left-1/2 after:h-full after:w-px after:-translate-x-1/2 after:bg-[var(--file-tree-border)]',

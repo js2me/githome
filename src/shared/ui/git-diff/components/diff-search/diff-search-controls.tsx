@@ -1,11 +1,13 @@
-import { memo, type Ref } from 'react';
+import { observer } from 'mobx-react-lite';
+import type { Ref } from 'react';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { DiffSearchInput } from './diff-search-input';
 
 const diffSearchControlButtonClassName =
   'glass-control inline-flex size-7 shrink-0 items-center justify-center rounded-md';
 
-export const DiffSearchControls = memo(
+export const DiffSearchControls = observer(
   ({
     variant,
     query,
@@ -49,7 +51,7 @@ export const DiffSearchControls = memo(
           >
             {matchCount > 0
               ? `${activeIndex + 1} / ${matchCount}`
-              : 'Нет совпадений'}
+              : t('diff.noMatches')}
           </span>
         )}
         <button
@@ -58,7 +60,7 @@ export const DiffSearchControls = memo(
             isMini && 'h-6 w-6 text-xs',
           )}
           type="button"
-          title="Предыдущее (Shift+Enter)"
+          title={t('diff.previousMatchShiftEnter')}
           disabled={matchCount === 0}
           onClick={onPrevious}
         >
@@ -70,7 +72,7 @@ export const DiffSearchControls = memo(
             isMini && 'h-6 w-6 text-xs',
           )}
           type="button"
-          title="Следующее (Enter)"
+          title={t('diff.nextMatchEnter')}
           disabled={matchCount === 0}
           onClick={onNext}
         >

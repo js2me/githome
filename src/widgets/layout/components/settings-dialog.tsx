@@ -6,19 +6,38 @@ import {
   codeFontSizes,
   codeSyntaxThemeSettings,
 } from '@/shared/lib/code-view-preferences';
+import { getLanguage, languages, setLanguage, t } from '@/shared/lib/i18n';
 import { GlassDialog } from '@/shared/ui/glass-dialog';
 import type { LayoutVM } from '../model/layout-vm';
 import { AppUpdatePanel } from './app-update-panel';
 
 const sections = [
-  { id: 'appearance', label: 'Оформление', Icon: Palette },
-  { id: 'code', label: 'Просмотр кода', Icon: Code },
-  { id: 'updates', label: 'Обновления', Icon: CircleArrowDown },
+  {
+    id: 'appearance',
+    labelKey: 'settings.appearance',
+    Icon: Palette,
+  },
+  {
+    id: 'code',
+    labelKey: 'settings.codeView',
+    Icon: Code,
+  },
+  {
+    id: 'updates',
+    labelKey: 'settings.updates',
+    Icon: CircleArrowDown,
+  },
 ] as const;
 
 const codeColorModes = [
-  { mode: 'light', label: 'Цветовая схема для светлой темы' },
-  { mode: 'dark', label: 'Цветовая схема для тёмной темы' },
+  {
+    mode: 'light',
+    labelKey: 'settings.colorSchemeForLightTheme',
+  },
+  {
+    mode: 'dark',
+    labelKey: 'settings.colorSchemeForDarkTheme',
+  },
 ] as const;
 
 const iconButtonClassName =
@@ -33,7 +52,7 @@ export const SettingsDialog = observer(() => {
       <button
         type="button"
         className={iconButtonClassName}
-        aria-label="Настройки"
+        aria-label={t('settings.title')}
         aria-haspopup="dialog"
         onClick={() => dialog.current?.showModal()}
       >
@@ -51,12 +70,12 @@ export const SettingsDialog = observer(() => {
               id="settings-title"
               className="font-bold text-xl tracking-tight"
             >
-              Настройки
+              {t('settings.title')}
             </h2>
             <button
               type="button"
               className={iconButtonClassName}
-              aria-label="Закрыть настройки"
+              aria-label={t('settings.closeSettings')}
               onClick={() => dialog.current?.close()}
             >
               <Xmark className="size-[18px]" aria-hidden />
@@ -65,10 +84,10 @@ export const SettingsDialog = observer(() => {
 
           <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
             <nav
-              aria-label="Разделы настроек"
+              aria-label={t('settings.settingsSections')}
               className="grid shrink-0 grid-cols-3 gap-1 border-border-default border-b bg-[var(--glass-control)] p-2 sm:flex sm:w-48 sm:flex-col sm:border-r sm:border-b-0 sm:p-3"
             >
-              {sections.map(({ id, label, Icon }) => (
+              {sections.map(({ id, labelKey, Icon }) => (
                 <button
                   key={id}
                   type="button"
@@ -85,7 +104,7 @@ export const SettingsDialog = observer(() => {
                     className="hidden size-4 shrink-0 min-[400px]:block"
                     aria-hidden
                   />
-                  {label}
+                  {t(labelKey)}
                 </button>
               ))}
             </nav>
@@ -93,21 +112,35 @@ export const SettingsDialog = observer(() => {
             <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-7">
               {section === 'appearance' && (
                 <section aria-labelledby="settings-appearance">
+                  <label className="glass-panel mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 font-semibold text-sm">
+                    {t('settings.language')}
+                    <select
+                      className="glass-input rounded-lg px-2.5 py-1.5 text-sm"
+                      value={getLanguage()}
+                      onChange={(event) => setLanguage(event.target.value)}
+                    >
+                      {Object.entries(languages).map(([id, name]) => (
+                        <option key={id} value={id} lang={id}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <h3
                     id="settings-appearance"
                     className="font-semibold text-lg"
                   >
-                    Тема интерфейса
+                    {t('settings.interfaceTheme')}
                   </h3>
                   <p className="mt-1 mb-5 text-fg-muted text-sm">
-                    Меняет оформление приложения и подсветку кода.
+                    {t('settings.changesTheAppearanceOfTheAppAnd')}
                   </p>
                   <div
                     className="grid gap-2 sm:grid-cols-3"
                     role="group"
-                    aria-label="Тема"
+                    aria-label={t('settings.theme')}
                   >
-                    {appSettings.themeOptions.map(({ id, label, Icon }) => (
+                    {appSettings.themeOptions.map(({ id, labelKey, Icon }) => (
                       <button
                         key={id}
                         type="button"
@@ -121,7 +154,7 @@ export const SettingsDialog = observer(() => {
                         onClick={() => appSettings.setThemePreference(id)}
                       >
                         <Icon className="size-5 shrink-0" aria-hidden />
-                        {label}
+                        {t(labelKey)}
                       </button>
                     ))}
                   </div>
@@ -131,14 +164,14 @@ export const SettingsDialog = observer(() => {
               {section === 'code' && (
                 <section aria-labelledby="settings-code">
                   <h3 id="settings-code" className="font-semibold text-lg">
-                    Просмотр кода
+                    {t('settings.codeView')}
                   </h3>
                   <p className="mt-1 mb-5 text-fg-muted text-sm">
-                    Эти параметры применяются к файлам в репозитории и к diff.
+                    {t('settings.theseSettingsApplyToRepositoryFilesAnd')}
                   </p>
                   <div className="glass-panel divide-y divide-border-default rounded-xl">
                     <label className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 font-semibold text-sm">
-                      Размер шрифта
+                      {t('settings.fontSize')}
                       <select
                         className="glass-input rounded-lg px-2.5 py-1.5 text-sm"
                         value={appSettings.codeFontSize}
@@ -159,11 +192,12 @@ export const SettingsDialog = observer(() => {
                     <label className="flex items-center justify-between gap-3 px-4 py-4">
                       <span>
                         <span className="block font-semibold text-sm">
-                          Перенос длинных строк
+                          {t('settings.wrapLongLines')}
                         </span>
                         <span className="mt-1 block text-fg-muted text-sm">
-                          Показывает длинные строки целиком без горизонтальной
-                          прокрутки.
+                          {t(
+                            'settings.showsLongLinesWithoutHorizontalScrolling',
+                          )}
                         </span>
                       </span>
                       <input
@@ -175,12 +209,12 @@ export const SettingsDialog = observer(() => {
                         }
                       />
                     </label>
-                    {codeColorModes.map(({ mode, label }) => (
+                    {codeColorModes.map(({ mode, labelKey }) => (
                       <label
                         key={mode}
                         className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 font-semibold text-sm"
                       >
-                        {label}
+                        {t(labelKey)}
                         <select
                           className="glass-input rounded-lg px-2.5 py-1.5 text-sm"
                           value={appSettings.getCodeSyntaxTheme(mode)}

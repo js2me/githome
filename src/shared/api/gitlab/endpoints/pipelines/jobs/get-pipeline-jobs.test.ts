@@ -83,7 +83,7 @@ describe('getPipelineJobs', () => {
       .mockResolvedValueOnce(page(makeJobs(1, 100)))
       .mockResolvedValueOnce(page(makeJobs(1, 100)));
     await expect(getPipelineJobs(connection, 1, 2)).rejects.toThrow(
-      'повторную страницу',
+      'GitLab returned a duplicate page',
     );
     const invalid: Record<string, string>[] = [
       { 'X-Next-Page': '3' },

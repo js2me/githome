@@ -6,6 +6,7 @@ import type {
   GitLabProjectReadmeDC,
 } from '@/shared/api/gitlab';
 import { createGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { t } from '@/shared/lib/i18n';
 import { ProjectReadmeModel } from './project-readme';
 
 export class RepositoryPageVM extends WorkspaceVM {
@@ -134,7 +135,7 @@ export class RepositoryPageVM extends WorkspaceVM {
 
     return error instanceof Error
       ? error.message
-      : 'Не удалось загрузить репозиторий';
+      : t('repository.couldNotLoadTheRepository');
   }
 
   @computed

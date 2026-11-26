@@ -1,12 +1,14 @@
 import { Comment } from '@gravity-ui/icons';
-import { type CSSProperties, memo } from 'react';
+import { observer } from 'mobx-react-lite';
+import type { CSSProperties } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { getChangesTreeFileDataId } from '@/shared/lib/diff/diff-search';
 import type { ChangesTreeNode } from '@/shared/lib/file-tree/build-changes-tree';
+import { t } from '@/shared/lib/i18n';
 import { FileTypeIcon } from '@/shared/ui/file-type-icon';
 import { FileStatusIcon } from './file-status-icon';
 
-export const TreeNodeView = memo(
+export const TreeNodeView = observer(
   ({
     node,
     depth,
@@ -77,7 +79,7 @@ export const TreeNodeView = memo(
         {hasDiscussions && (
           <span
             className="changes-file-tree__comment-icon"
-            title="Есть комментарии"
+            title={t('review.hasComments')}
             aria-hidden="true"
           >
             <Comment />

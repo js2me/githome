@@ -1,4 +1,5 @@
 import { withPropsViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import { GitlabCommentEditor } from '@/shared/ui/gitlab-comment-editor';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { MergeRequestCommentFormVM } from '../../../model/merge-request-comment-form';
@@ -16,7 +17,7 @@ export const MergeRequestCommentForm = withPropsViewModel(
       <div className="glass-panel overflow-hidden rounded-xl">
         <div className="border-slate-200 border-b px-4 py-3 dark:border-slate-800">
           <h3 className="m-0 font-semibold text-slate-800 text-sm dark:text-slate-200">
-            Комментарий к merge request
+            {t('review.mergeRequestComment')}
           </h3>
         </div>
 
@@ -24,7 +25,7 @@ export const MergeRequestCommentForm = withPropsViewModel(
           <GitlabCommentEditor
             projectId={projectId}
             className="min-h-[96px]"
-            placeholder="Напишите общий комментарий к этому merge request..."
+            placeholder={t('review.writeAGeneralCommentOnThisMerge')}
             value={body}
             onChange={model.change}
             rows={4}
@@ -46,7 +47,7 @@ export const MergeRequestCommentForm = withPropsViewModel(
                 void model.submit();
               }}
             >
-              {isSubmitting ? 'Отправка...' : 'Отправить комментарий'}
+              {isSubmitting ? t('review.posting') : t('review.postComment')}
             </button>
           </div>
         </div>

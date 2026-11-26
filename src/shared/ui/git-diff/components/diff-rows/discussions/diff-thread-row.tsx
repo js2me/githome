@@ -1,4 +1,5 @@
 import { withPropsViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import { GitlabCommentEditor } from '@/shared/ui/gitlab-comment-editor';
 import { DiffThreadVM } from '../../../model/discussion-rows';
 import { InlineThreadNote } from './inline-thread-note';
@@ -56,7 +57,7 @@ export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
     replyErrorDiscussionId === thread.discussionId ? replyError : null;
 
   const resolvedBy = thread.resolved
-    ? (firstNote.author?.name ?? 'Unknown')
+    ? (firstNote.author?.name ?? t('review.unknown'))
     : null;
 
   return (
@@ -112,7 +113,7 @@ export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
                     <GitlabCommentEditor
                       projectId={markdownScope?.projectId ?? null}
                       className="text-sm"
-                      placeholder="Напишите ответ в тред..."
+                      placeholder={t('diff.writeAReply')}
                       value={replyBody}
                       onChange={model.changeReply}
                       rows={3}
@@ -130,7 +131,9 @@ export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
                         disabled={isSubmittingReply || !replyBody.trim()}
                         onClick={() => void model.submitReply()}
                       >
-                        {isSubmittingReply ? 'Отправка...' : 'Ответить'}
+                        {isSubmittingReply
+                          ? t('review.posting')
+                          : t('diff.reply')}
                       </button>
                       <button
                         className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 font-semibold text-[13px] text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
@@ -138,7 +141,7 @@ export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
                         disabled={isSubmittingReply}
                         onClick={model.cancelReply}
                       >
-                        Отмена
+                        {t('common.cancel')}
                       </button>
                     </div>
                   </div>
@@ -148,7 +151,7 @@ export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
                     type="button"
                     onClick={model.startReply}
                   >
-                    Ответить
+                    {t('diff.reply')}
                   </button>
                 )}
               </div>
@@ -163,7 +166,7 @@ export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
                   type="button"
                   onClick={toggleExpanded}
                 >
-                  Свернуть тред
+                  {t('diff.collapseThread')}
                 </button>
               )}
               {thread.resolvable && onResolveThread && (
@@ -177,11 +180,11 @@ export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
                 >
                   {resolvingDiscussionId === thread.discussionId
                     ? thread.resolved
-                      ? 'Открываем...'
-                      : 'Разрешаем...'
+                      ? t('review.reopening')
+                      : t('review.resolving')
                     : thread.resolved
-                      ? 'Открыть тред'
-                      : 'Разрешить тред'}
+                      ? t('review.reopenThread')
+                      : t('review.resolveThread')}
                 </button>
               )}
             </div>

@@ -1,7 +1,9 @@
-import { memo, type Ref } from 'react';
+import { observer } from 'mobx-react-lite';
+import type { Ref } from 'react';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 
-export const DiffSearchInput = memo(
+export const DiffSearchInput = observer(
   ({
     variant,
     query,
@@ -43,8 +45,8 @@ export const DiffSearchInput = memo(
             'glass-input col-start-1 row-start-1 w-full min-w-0 rounded-md font-mono',
             isMini ? 'px-2 py-1 text-xs' : 'px-2.5 py-1.5 text-sm',
           )}
-          placeholder={isMini ? undefined : 'Поиск по файлам и коду...'}
-          aria-label="Поиск по файлам и коду"
+          placeholder={isMini ? undefined : t('diff.searchFilesAndCode')}
+          aria-label={t('diff.searchFilesAndCode2')}
           type="search"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}

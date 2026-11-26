@@ -41,6 +41,7 @@
     "echarts": "^6.1.0",
     "electron-updater": "^6.8.11",
     "gologen": "0.0.1",
+    "i18next": "^27.2.9",
     "mobx": "^7.1.7",
     "mobx-location-history": "^9.5.1",
     "mobx-react-lite": "^5.1.4",

@@ -5,6 +5,7 @@ import {
   canEditGitLabNote,
   getDiscussionNoteKey,
 } from '@/shared/lib/gitlab/discussions/note-permissions';
+import { getLocale, t } from '@/shared/lib/i18n';
 import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
 import { GitlabCommentEditor } from '@/shared/ui/gitlab-comment-editor';
 import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
@@ -17,27 +18,28 @@ const formatRelativeTime = (value: string) => {
   }
 
   const diffMs = Date.now() - date.getTime();
+  const relativeTime = new Intl.RelativeTimeFormat(getLocale());
   const diffMinutes = Math.floor(diffMs / 60_000);
 
   if (diffMinutes < 1) {
-    return 'только что';
+    return t('diff.justNow');
   }
 
   if (diffMinutes < 60) {
-    return `${diffMinutes} мин. назад`;
+    return relativeTime.format(-diffMinutes, 'minute');
   }
 
   const diffHours = Math.floor(diffMinutes / 60);
   if (diffHours < 24) {
-    return `${diffHours} ч. назад`;
+    return relativeTime.format(-diffHours, 'hour');
   }
 
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) {
-    return `${diffDays} дн. назад`;
+    return relativeTime.format(-diffDays, 'day');
   }
 
-  return date.toLocaleString('ru-RU', {
+  return date.toLocaleString(getLocale(), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -65,7 +67,7 @@ export const InlineThreadNote = withPropsViewModel(
       deleteNoteError = null,
     } = model.payload;
 
-    const authorName = note.author?.name ?? 'Unknown';
+    const authorName = note.author?.name ?? t('review.unknown');
     const authorUsername = note.author?.username ?? '';
     const canEdit = canEditGitLabNote(note, currentUserId);
     const noteKey = getDiscussionNoteKey(discussionId, note.id);
@@ -115,8 +117,8 @@ export const InlineThreadNote = withPropsViewModel(
                   <button
                     className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                     type="button"
-                    title="Редактировать"
-                    aria-label="Редактировать комментарий"
+                    title={t('review.edit')}
+                    aria-label={t('review.editComment')}
                     disabled={Boolean(updatingNoteKey || deletingNoteKey)}
                     onClick={handleStartEdit}
                   >
@@ -127,8 +129,10 @@ export const InlineThreadNote = withPropsViewModel(
                   <button
                     className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-300"
                     type="button"
-                    title={isDeleting ? 'Удаление...' : 'Удалить'}
-                    aria-label="Удалить комментарий"
+                    title={
+                      isDeleting ? t('review.deleting') : t('review.delete')
+                    }
+                    aria-label={t('review.deleteComment')}
                     disabled={Boolean(updatingNoteKey || deletingNoteKey)}
                     onClick={() => void handleDelete()}
                   >
@@ -141,7 +145,8 @@ export const InlineThreadNote = withPropsViewModel(
 
           {resolvedBy && !isReply && (
             <div className="mb-1.5 text-blue-600 text-xs dark:text-blue-400">
-              Разрешён {formatRelativeTime(note.updated_at)} — {resolvedBy}
+              {t('common.resolved2')} {formatRelativeTime(note.updated_at)} —{' '}
+              {resolvedBy}
             </div>
           )}
 
@@ -171,7 +176,7 @@ export const InlineThreadNote = withPropsViewModel(
                     void handleSaveEdit();
                   }}
                 >
-                  {isSaving ? 'Сохранение...' : 'Сохранить'}
+                  {isSaving ? t('common.saving2') : t('common.save')}
                 </button>
                 <button
                   className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3.5 py-2 font-semibold text-[13px] text-slate-700 enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-gray-900 dark:text-slate-200 dark:enabled:hover:bg-slate-800"
@@ -179,7 +184,7 @@ export const InlineThreadNote = withPropsViewModel(
                   disabled={isSaving}
                   onClick={handleCancelEdit}
                 >
-                  Отмена
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>

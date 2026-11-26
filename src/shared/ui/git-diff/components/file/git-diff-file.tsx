@@ -12,6 +12,7 @@ import {
   getDiffFileElementId,
   getDiffFileHeaderRowId,
 } from '@/shared/lib/diff/diff-search';
+import { t } from '@/shared/lib/i18n';
 import type { FileGitDiff } from '../../model/file-git-diff';
 import { DiffThreadRow } from '../diff-rows';
 import { SearchHighlightedText, useRowSearchHighlight } from '../diff-search';
@@ -183,8 +184,8 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         <div className="flex items-center gap-3 p-3.5 text-[13px] text-slate-500">
           <span>
             {collapsedExpandError
-              ? `Не удалось загрузить diff: ${collapsedExpandError}`
-              : 'Загружаем diff...'}
+              ? t('diff.couldNotLoadDiff', { v1: collapsedExpandError })
+              : t('diff.loadingDiff')}
           </span>
           {collapsedExpandError && (
             <button
@@ -193,7 +194,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
               disabled={isLoadingCollapsedExpand}
               onClick={() => void content.expandCollapsedFile()}
             >
-              Повторить
+              {t('common.retry')}
             </button>
           )}
         </div>
@@ -203,8 +204,8 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     return (
       <div className="p-3.5 text-[13px] text-slate-500">
         {isResolvingDiff || isLoadingCollapsedExpand
-          ? 'Загружаем diff...'
-          : 'Нет diff для этого файла.'}
+          ? t('diff.loadingDiff')
+          : t('diff.noDiffForThisFile')}
       </div>
     );
   };
@@ -234,8 +235,8 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
           <button
             className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--color-fg-subtle)] transition hover:bg-[var(--color-accent-emphasis-hover)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)]"
             type="button"
-            title={isFileExpanded ? 'Свернуть файл' : 'Развернуть файл'}
-            aria-label={isFileExpanded ? 'Свернуть файл' : 'Развернуть файл'}
+            title={isFileExpanded ? t('diff.collapseFile') : t('diff.expandFile')}
+            aria-label={isFileExpanded ? t('diff.collapseFile') : t('diff.expandFile')}
             onClick={content.toggleFileExpanded}
           >
             <svg
@@ -275,13 +276,13 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
           <div className="flex shrink-0 items-center">
             <DiffFileCopyButton
               compact
-              label="копировать путь"
+              label={t('diff.copyPath')}
               icon={<CopyPathIcon />}
               getValue={() => filePath}
             />
             <DiffFileCopyButton
               compact
-              label="копировать имя"
+              label={t('diff.copyName')}
               icon={<CopyNameIcon />}
               getValue={() => getFileNameFromPath(filePath)}
             />
@@ -310,7 +311,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         <div className="ml-2 flex shrink-0 items-center">
           {!model.images && (
             <DiffFileCopyButton
-              label="копировать содержимое"
+              label={t('diff.copyContents')}
               icon={<CopyContentIcon />}
               getValue={content.copyFileContent}
             />
@@ -322,9 +323,9 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
                 'ml-2 no-underline',
               )}
               href={openInFilesHref}
-              title="Открыть файл в Files"
+              title={t('diff.openFileInFiles')}
             >
-              открыть в files
+              {t('diff.openInFiles')}
             </Link>
           )}
         </div>
@@ -337,7 +338,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
             type="button"
             onClick={comments.toggleFileCommentOpen}
           >
-            {isFileCommentOpen ? 'Скрыть комментарий' : 'Комментарий к файлу'}
+            {isFileCommentOpen ? t('diff.hideComment') : t('diff.fileComment')}
           </button>
         )}
       </header>

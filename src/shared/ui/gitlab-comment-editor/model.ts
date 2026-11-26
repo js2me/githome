@@ -7,6 +7,7 @@ import type {
 import { createRef } from 'yummies/mobx';
 import { gitlabApi } from '@/shared/api/gitlab';
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import {
   insertMarkdownAtSelection,
   insertMarkdownCode,
@@ -58,7 +59,11 @@ export class GitlabCommentEditorVM extends VM<EditorPayload> {
   private readonly internalTextarea = createRef<HTMLTextAreaElement>();
   readonly fileInput = createRef<HTMLInputElement>();
   @observable accessor isUploadingImage = false;
-  @observable accessor uploadError: string | null = null;
+  @observable private accessor uploadErrorValue: Error | null = null;
+
+  get uploadError() {
+    return this.uploadErrorValue?.message ?? null;
+  }
 
   get textareaRef() {
     return this.payload.inputRef ?? this.internalTextarea;
@@ -147,7 +152,7 @@ export class GitlabCommentEditorVM extends VM<EditorPayload> {
     const fromPicker = source === 'picker';
     if (fromPicker) {
       this.isUploadingImage = true;
-      this.uploadError = null;
+      this.uploadErrorValue = null;
     }
 
     const isCurrent = () =>
@@ -173,10 +178,10 @@ export class GitlabCommentEditorVM extends VM<EditorPayload> {
     } catch (error) {
       if (fromPicker && isCurrent()) {
         runInAction(() => {
-          this.uploadError =
+          this.uploadErrorValue =
             error instanceof Error
-              ? error.message
-              : 'Не удалось загрузить изображение';
+              ? error
+              : new LocalizedError('diff.couldNotLoadTheImage');
         });
       }
     } finally {

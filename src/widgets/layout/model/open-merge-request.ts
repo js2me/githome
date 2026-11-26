@@ -4,13 +4,18 @@ import { resolveMergeRequestLink } from '@/features/merge-requests';
 import { WorkspaceVM } from '@/features/workspace-navigation';
 import { gitlabApi } from '@/shared/api/gitlab';
 import { GitLabApiError } from '@/shared/api/gitlab/client';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 
 export class OpenMergeRequestVM extends WorkspaceVM {
   readonly dialog = createRef<HTMLDialogElement>();
   readonly input = createRef<HTMLInputElement>();
   private request?: AbortController;
   @observable accessor link = '';
-  @observable accessor error = '';
+  @observable private accessor currentError: Error | null = null;
+
+  get error() {
+    return this.currentError?.message ?? '';
+  }
   @observable accessor pending = false;
 
   protected willMount() {
@@ -52,7 +57,7 @@ export class OpenMergeRequestVM extends WorkspaceVM {
   @actionBound
   setLink(link: string) {
     this.link = link;
-    this.error = '';
+    this.currentError = null;
   }
 
   @actionBound
@@ -73,7 +78,7 @@ export class OpenMergeRequestVM extends WorkspaceVM {
     const request = new AbortController();
     this.request = request;
     this.pending = true;
-    this.error = '';
+    this.currentError = null;
 
     try {
       const { settings } = this.globals.stores;
@@ -90,7 +95,9 @@ export class OpenMergeRequestVM extends WorkspaceVM {
       );
       if (request.signal.aborted || !this.dialog.current?.open) return;
       if (!mr.project_id || mr.iid !== iid) {
-        throw new Error('GitLab вернул неполные данные мерж-реквеста.');
+        throw new LocalizedError(
+          'navigation.gitlabReturnedIncompleteMergeRequestData',
+        );
       }
       this.dialog.current?.close();
       this.globals.navigation.mergeRequests.open(
@@ -103,12 +110,19 @@ export class OpenMergeRequestVM extends WorkspaceVM {
       if (request.signal.aborted) return;
       runInAction(() => {
         if (error instanceof GitLabApiError) {
-          this.error = `Не удалось открыть MR (HTTP ${error.status}). Проверьте ссылку и доступ к проекту.`;
+          this.currentError = new LocalizedError(
+            'navigation.couldNotOpenTheMergeRequestHttp',
+            { v1: error.status },
+          );
         } else if (error instanceof TypeError) {
-          this.error = 'Не удалось связаться с GitLab. Проверьте подключение.';
+          this.currentError = new LocalizedError(
+            'navigation.couldNotReachGitlabCheckYourConnection',
+          );
         } else {
-          this.error =
-            error instanceof Error ? error.message : 'Не удалось открыть MR.';
+          this.currentError =
+            error instanceof Error
+              ? error
+              : new LocalizedError('navigation.couldNotOpenTheMergeRequest');
         }
       });
     } finally {

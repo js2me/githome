@@ -3,6 +3,7 @@ import {
   isDiscussionResolvable,
   isDiscussionResolved,
 } from '@/shared/lib/gitlab/discussions/diff-discussions';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import {
   GitLabApiError,
   GitLabGraphqlError,
@@ -103,7 +104,9 @@ const loadCountPage = async (
     if (!page?.pageInfo?.hasNextPage) return;
     const cursor = page.pageInfo.endCursor;
     if (!cursor || cursors.has(cursor))
-      throw new Error('GitLab вернул некорректную страницу merge requests');
+      throw new LocalizedError(
+        'review.gitlabReturnedAnInvalidMergeRequestPage',
+      );
     cursors.add(cursor);
     after = cursor;
   }

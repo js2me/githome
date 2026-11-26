@@ -4,18 +4,20 @@ import {
   CommentDot,
   Pencil,
 } from '@gravity-ui/icons';
+import { observer } from 'mobx-react-lite';
 import type {
   GitLabMergeRequestApprovalSummary,
   GitLabMergeRequestDiscussionSummary,
 } from '@/shared/api/gitlab';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 
 const badgeClass =
   'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[11px] leading-none font-semibold tabular-nums';
 const positiveClass =
   'border-green-700/20 bg-green-100/55 text-green-800 dark:border-green-300/25 dark:bg-green-900/35 dark:text-green-300';
 
-export function ReviewStatuses({
+export const ReviewStatuses = observer(function ReviewStatuses({
   approval,
   discussions,
   review,
@@ -33,9 +35,10 @@ export function ReviewStatuses({
             badgeClass,
             'border-red-700/20 bg-red-100/55 text-red-800 dark:border-red-300/25 dark:bg-red-950/35 dark:text-red-300',
           )}
-          title="Ревьюер запросил изменения"
+          title={t('review.aReviewerRequestedChanges')}
         >
-          <Pencil width={13} height={13} aria-hidden /> Requested
+          <Pencil width={13} height={13} aria-hidden />{' '}
+          {t('review.changesRequested')}
         </span>
       ) : review === 'waiting' && !approval?.approved ? (
         <span
@@ -44,25 +47,27 @@ export function ReviewStatuses({
             'border-[var(--glass-border)] text-fg-muted',
           )}
         >
-          Ожидает ревью
+          {t('review.awaitingReview')}
         </span>
       ) : null}
       {approval &&
         (approval.approved && review !== 'requested' ? (
           <span
             className={cn(badgeClass, positiveClass)}
-            title={`MR одобрен. Одобрений: ${approval.count}`}
+            title={t('review.mergeRequestApprovedApprovals', {
+              v1: approval.count,
+            })}
           >
             <CodePullRequestCheck width={14} height={14} aria-hidden />
-            Approved <span aria-hidden>·</span> {approval.count}
+            {t('review.approved')} <span aria-hidden>·</span> {approval.count}
           </span>
         ) : (
           <span
             className="inline-flex items-center gap-1 text-fg-muted text-xs"
-            title="Количество полученных одобрений"
+            title={t('review.numberOfApprovalsReceived')}
           >
             <CodePullRequestCheck width={14} height={14} aria-hidden />
-            Одобрений {approval.count}
+            {t('review.approvals')} {approval.count}
           </span>
         ))}
       {discussions && discussions.total > 0 && (
@@ -73,7 +78,10 @@ export function ReviewStatuses({
               ? positiveClass
               : 'border-brand/25 bg-brand-tint text-brand-ink',
           )}
-          title={`Закрыто обсуждений: ${discussions.resolved} из ${discussions.total}`}
+          title={t('review.resolvedDiscussionsOf', {
+            v1: discussions.resolved,
+            v2: discussions.total,
+          })}
         >
           {resolved ? (
             <CircleCheck width={14} height={14} aria-hidden />
@@ -81,10 +89,15 @@ export function ReviewStatuses({
             <CommentDot width={14} height={14} aria-hidden />
           )}
           {resolved
-            ? `Resolved ${discussions.resolved}/${discussions.total}`
-            : `Unresolved · ${discussions.total - discussions.resolved}`}
+            ? t('review.discussionsResolved', {
+                resolved: discussions.resolved,
+                total: discussions.total,
+              })
+            : t('review.discussionsUnresolved', {
+                count: discussions.total - discussions.resolved,
+              })}
         </span>
       )}
     </>
   );
-}
+});

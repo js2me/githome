@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import { t } from '@/shared/lib/i18n';
 import type { RefreshShortcut } from '../model/refresh-shortcut';
 
 export const RefreshNotice = observer(
@@ -13,7 +14,7 @@ export const RefreshNotice = observer(
             aria-hidden="true"
             className="size-4 rounded-full border-2 border-brand border-r-transparent motion-safe:animate-spin"
           />
-          Обновляем данные…
+          {t('navigation.refreshingData')}
         </div>
       )}
     </div>

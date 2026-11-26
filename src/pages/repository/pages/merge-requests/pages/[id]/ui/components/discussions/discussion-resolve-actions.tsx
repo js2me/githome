@@ -1,8 +1,9 @@
-import { memo } from 'react';
+import { observer } from 'mobx-react-lite';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { CheckIcon } from './check-icon';
 
-export const DiscussionResolveActions = memo(
+export const DiscussionResolveActions = observer(
   ({
     discussionId,
     resolved,
@@ -33,11 +34,11 @@ export const DiscussionResolveActions = memo(
           <CheckIcon />
           {isResolving
             ? resolved
-              ? 'Открываем...'
-              : 'Разрешаем...'
+              ? t('review.reopening')
+              : t('review.resolving')
             : resolved
-              ? 'Открыть тред'
-              : 'Разрешить тред'}
+              ? t('review.reopenThread')
+              : t('review.resolveThread')}
         </button>
       </div>
     );

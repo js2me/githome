@@ -9,6 +9,7 @@ import {
   getCodeSyntaxTheme,
   wrapSourceCodeKey,
 } from '@/shared/lib/code-view-preferences';
+import type { MessageKey } from '@/shared/lib/i18n';
 import type { ThemePreference } from '@/shared/lib/theme/theme-manager';
 import type { Globals } from '@/shared/model/globals';
 import { AppUpdates } from './app-updates';
@@ -27,12 +28,12 @@ export class AppSettings {
   readonly updates = new AppUpdates();
   readonly themeOptions: {
     id: ThemePreference;
-    label: string;
+    labelKey: MessageKey;
     Icon: typeof Sun;
   }[] = [
-    { id: 'light', label: 'Светлая', Icon: Sun },
-    { id: 'system', label: 'Системная', Icon: Display },
-    { id: 'dark', label: 'Тёмная', Icon: Moon },
+    { id: 'light', labelKey: 'settings.light', Icon: Sun },
+    { id: 'system', labelKey: 'settings.system', Icon: Display },
+    { id: 'dark', labelKey: 'settings.dark', Icon: Moon },
   ];
 
   constructor(private readonly globals: Globals) {}

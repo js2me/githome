@@ -8,6 +8,7 @@ import {
   normalizeJiraBaseUrl,
   parseConnectionDraft,
 } from '@/shared/lib/gitlab/connection/connection';
+import { t } from '@/shared/lib/i18n';
 import type { GitLabConnectionItem } from '@/shared/lib/storage';
 import { AppSettings } from './app-settings';
 import { RefreshShortcut } from './refresh-shortcut';
@@ -114,13 +115,14 @@ export class LayoutVM extends WorkspaceVM {
   get currentSection() {
     const { routes } = this.globals;
     if (routes.mergeRequests.isOpened || this.isMergeRequestDetailOpen) {
-      return { label: 'Merge requests', open: this.openMergeRequests };
+      return { label: t('common.mergeRequests'), open: this.openMergeRequests };
     }
-    if (routes.files.isOpened) return { label: 'Files', open: this.openFiles };
+    if (routes.files.isOpened)
+      return { label: t('common.files'), open: this.openFiles };
     if (routes.pipelines.isOpened)
-      return { label: 'Пайплайны', open: this.openPipelines };
+      return { label: t('pipelines.pipelines'), open: this.openPipelines };
     if (routes.analytics.isOpened)
-      return { label: 'Аналитика', open: this.openAnalytics };
+      return { label: t('analytics.analytics'), open: this.openAnalytics };
     return null;
   }
 

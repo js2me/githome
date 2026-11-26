@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { useViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import logo from '../../../../../resources/icons/128x128.png';
 import type { LayoutVM } from '../../model/layout-vm';
 import { ConnectionPicker } from '../connection-picker';
@@ -15,7 +16,7 @@ export const AppNav = observer(() => {
         <button
           className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-lg"
           type="button"
-          aria-label="GitHome — на главную"
+          aria-label={t('navigation.githomeHome')}
           onClick={model.openHome}
         >
           <img src={logo} alt="" className="size-7 sm:size-8" />

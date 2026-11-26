@@ -1,6 +1,7 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { observer } from 'mobx-react-lite';
 import type { GitLabCommitDC } from '@/shared/api/gitlab';
+import { t } from '@/shared/lib/i18n';
 import type { RepositoryCommitsModel } from '../../../model/repository-commits';
 import { CommitRow } from './commit-row';
 
@@ -57,7 +58,9 @@ const CommitsVirtualList = observer(
         </div>
 
         {commitsModel.isFetchingNextPage && (
-          <p className="px-3 py-2 text-slate-500 text-sm">Загружаем ещё...</p>
+          <p className="px-3 py-2 text-slate-500 text-sm">
+            {t('files.loadingMore')}
+          </p>
         )}
       </div>
     );

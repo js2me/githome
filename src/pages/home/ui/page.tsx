@@ -9,6 +9,7 @@ import {
 import { withViewModel } from 'mobx-view-model-react';
 import { cn } from '@/shared/lib/cn';
 import { formatProjectCount } from '@/shared/lib/gitlab/format-project-count';
+import { t } from '@/shared/lib/i18n';
 import { LoadMoreSentinel } from '@/shared/ui/load-more-sentinel';
 import { ProjectAvatar } from '@/shared/ui/project-avatar';
 import { StatusMessage } from '@/shared/ui/status-message';
@@ -32,18 +33,17 @@ export const HomePage = withViewModel(
               aria-hidden
             />
             <h2 className="font-semibold text-3xl tracking-tight sm:text-4xl">
-              Подключите GitLab
+              {t('common.connectToGitlab')}
             </h2>
             <p className="mt-3 max-w-sm text-fg-muted text-sm leading-relaxed sm:text-base">
-              Укажите адрес сервера и токен доступа, чтобы открыть свои проекты
-              и мерж-реквесты.
+              {t('home.enterTheServerAddressAndAnAccess')}
             </p>
             <button
               type="button"
               className="glass-primary mt-6 inline-flex items-center gap-3 rounded-xl px-4 py-2.5 font-semibold text-sm"
               onClick={model.parentViewModel.openConnectionPopup}
             >
-              Настроить подключение{' '}
+              {t('home.setUpAConnection')}{' '}
               <ArrowRight className="size-4" aria-hidden />
             </button>
           </div>
@@ -64,19 +64,20 @@ export const HomePage = withViewModel(
                 id="home-reviews-title"
                 className="font-semibold text-[clamp(1.65rem,3vw,2.15rem)] leading-tight tracking-tight"
               >
-                Мерж-реквесты
+                {t('common.mergeRequests')}
               </h2>
               <a
                 href="#home-projects-title"
                 className="glass-control inline-flex items-center gap-1 rounded-lg px-2 py-1.5 font-semibold text-xs min-[960px]:hidden"
               >
-                Проекты <ChevronDown className="size-3" aria-hidden />
+                {t('home.projects')}{' '}
+                <ChevronDown className="size-3" aria-hidden />
               </a>
             </div>
             <div
               className="relative z-10 mt-5 mb-5 inline-flex gap-1 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-control)] p-1"
               role="group"
-              aria-label="Мои мерж-реквесты"
+              aria-label={t('home.myMergeRequests')}
             >
               {(['reviewer', 'author'] as const).map((scope) => (
                 <button
@@ -89,7 +90,9 @@ export const HomePage = withViewModel(
                   )}
                   onClick={() => reviewInbox.setScope(scope)}
                 >
-                  {scope === 'reviewer' ? 'На моё ревью' : 'Мои MR'}
+                  {scope === 'reviewer'
+                    ? t('home.forMyReview')
+                    : t('home.createdByMe')}
                 </button>
               ))}
             </div>
@@ -98,7 +101,7 @@ export const HomePage = withViewModel(
 
           {reviewInbox.isLoading && (
             <p className="home-empty-state" role="status">
-              Загружаем мерж-реквесты…
+              {t('home.loadingMergeRequests')}
             </p>
           )}
           {reviewInbox.hasRequests && (
@@ -114,13 +117,13 @@ export const HomePage = withViewModel(
           )}
           {reviewInbox.error ? (
             <StatusMessage className="mx-4 mb-4" error>
-              Не удалось загрузить мерж-реквесты.{' '}
+              {t('home.loadMergeRequestsFailed')}{' '}
               <button
                 className="font-semibold underline"
                 type="button"
                 onClick={reviewInbox.retry}
               >
-                Повторить
+                {t('common.retry')}
               </button>
             </StatusMessage>
           ) : reviewInbox.query.hasNextPage ? (
@@ -132,8 +135,8 @@ export const HomePage = withViewModel(
                 onClick={reviewInbox.loadMore}
               >
                 {reviewInbox.query.isFetchingNextPage
-                  ? 'Загружаем…'
-                  : 'Показать ещё'}
+                  ? t('common.loading')
+                  : t('home.showMore')}
                 <ChevronDown className="size-3.5" aria-hidden />
               </button>
             </div>
@@ -147,8 +150,8 @@ export const HomePage = withViewModel(
                   aria-hidden
                 />
                 {reviewInbox.scope === 'reviewer'
-                  ? 'Нет мерж-реквестов, где вы назначены ревьюером.'
-                  : 'У вас пока нет открытых мерж-реквестов.'}
+                  ? t('home.noMergeRequestsAreAssignedToYou')
+                  : t('home.youHaveNoOpenMergeRequestsYet')}
               </div>
             )}
         </section>
@@ -164,11 +167,11 @@ export const HomePage = withViewModel(
               className="flex scroll-mt-4 items-center gap-2.5 font-semibold text-lg tracking-tight"
             >
               <Folders className="size-5 text-fg-muted" aria-hidden />
-              Проекты
+              {t('home.projects')}
             </h2>
             <div className="relative min-w-0">
               <select
-                aria-label="Категория проектов"
+                aria-label={t('home.projectCategory')}
                 className="glass-control max-w-full appearance-none rounded-lg py-2 pr-8 pl-3 font-medium text-xs"
                 value={gitlabProjectsList.activeTab}
                 onChange={(event) =>
@@ -192,7 +195,7 @@ export const HomePage = withViewModel(
           </header>
           {model.showProjectsLoading && (
             <p className="home-empty-state" role="status">
-              Загружаем проекты…
+              {t('home.loadingProjects')}
             </p>
           )}
           {model.showProjectsError && (
@@ -202,7 +205,7 @@ export const HomePage = withViewModel(
           )}
           {model.showProjectsEmpty && (
             <p className="home-empty-state">
-              Проекты не найдены для {model.connectionLabel}.
+              {t('home.noProjectsFor', { connection: model.connectionLabel })}
             </p>
           )}
           {model.showProjectsList && (
@@ -239,8 +242,10 @@ export const HomePage = withViewModel(
                     <button
                       className="glass-control mr-1 inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 font-semibold text-xs"
                       type="button"
-                      aria-label={`Мерж-реквесты проекта ${project.data.path_with_namespace}`}
-                      title={`Мерж-реквесты проекта ${project.name}`}
+                      aria-label={t('home.mergeRequestsFor', {
+                        v1: project.data.path_with_namespace,
+                      })}
+                      title={t('home.mergeRequestsFor', { v1: project.name })}
                       onClick={() => model.openProjectMergeRequests(project)}
                     >
                       <CodePullRequest className="size-3.5" aria-hidden />
@@ -257,7 +262,7 @@ export const HomePage = withViewModel(
           )}
           {model.showProjectsLoadingMore && (
             <p className="home-empty-state" role="status">
-              Загружаем ещё проекты…
+              {t('home.loadingMoreProjects')}
             </p>
           )}
         </section>

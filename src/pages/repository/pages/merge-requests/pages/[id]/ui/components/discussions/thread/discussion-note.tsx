@@ -6,6 +6,7 @@ import {
   canEditGitLabNote,
   getDiscussionNoteKey,
 } from '@/shared/lib/gitlab/discussions/note-permissions';
+import { getLocale, t } from '@/shared/lib/i18n';
 import { GitlabCommentEditor } from '@/shared/ui/gitlab-comment-editor';
 import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
 import {
@@ -21,7 +22,7 @@ const formatDateTime = (value: string) => {
     return value;
   }
 
-  return date.toLocaleString('ru-RU', {
+  return date.toLocaleString(getLocale(), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -64,7 +65,7 @@ export const DiscussionNote = withPropsViewModel(
     const { editor } = model;
     const { isEditing, editBody } = editor;
     const position = formatPosition(note);
-    const authorName = note.author?.name ?? 'Unknown';
+    const authorName = note.author?.name ?? t('review.unknown');
     const authorUsername = note.author?.username ?? '';
     const canEdit = canEditGitLabNote(note, currentUserId);
     const noteKey = getDiscussionNoteKey(discussionId, note.id);
@@ -101,7 +102,7 @@ export const DiscussionNote = withPropsViewModel(
               </time>
               {note.resolvable && note.resolved && (
                 <span className="rounded-full bg-green-100 px-2 py-0.5 font-bold text-[11px] text-green-800 uppercase dark:bg-green-950 dark:text-green-300">
-                  Resolved
+                  {t('common.resolved')}
                 </span>
               )}
             </div>
@@ -112,8 +113,8 @@ export const DiscussionNote = withPropsViewModel(
                   <button
                     className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                     type="button"
-                    title="Редактировать"
-                    aria-label="Редактировать комментарий"
+                    title={t('review.edit')}
+                    aria-label={t('review.editComment')}
                     disabled={Boolean(updatingNoteKey || deletingNoteKey)}
                     onClick={editor.start}
                   >
@@ -124,8 +125,10 @@ export const DiscussionNote = withPropsViewModel(
                   <button
                     className="inline-flex cursor-pointer items-center justify-center rounded-md p-1 text-slate-500 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-300"
                     type="button"
-                    title={isDeleting ? 'Удаление...' : 'Удалить'}
-                    aria-label="Удалить комментарий"
+                    title={
+                      isDeleting ? t('review.deleting') : t('review.delete')
+                    }
+                    aria-label={t('review.deleteComment')}
                     disabled={Boolean(updatingNoteKey || deletingNoteKey)}
                     onClick={() => void editor.remove()}
                   >
@@ -138,7 +141,7 @@ export const DiscussionNote = withPropsViewModel(
 
           {position && (
             <div className="flex items-center gap-1.5 text-slate-500 text-xs">
-              <span>на</span>
+              <span>{t('review.file')}</span>
               <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-slate-700 text-xs dark:bg-slate-800 dark:text-slate-200">
                 {position}
               </code>
@@ -171,7 +174,7 @@ export const DiscussionNote = withPropsViewModel(
                     void editor.save();
                   }}
                 >
-                  {isSaving ? 'Сохранение...' : 'Сохранить'}
+                  {isSaving ? t('common.saving2') : t('common.save')}
                 </button>
                 <button
                   className="glass-control rounded-lg px-3.5 py-2 font-semibold text-[13px]"
@@ -179,7 +182,7 @@ export const DiscussionNote = withPropsViewModel(
                   disabled={isSaving}
                   onClick={editor.cancel}
                 >
-                  Отмена
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>

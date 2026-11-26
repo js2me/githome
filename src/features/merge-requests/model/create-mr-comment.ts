@@ -6,6 +6,7 @@ import type {
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
 import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/discussions/diff-comment';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type { Globals } from '@/shared/model/globals';
 
 export type CreateMrCommentContext = {
@@ -22,7 +23,11 @@ export interface CreateMrCommentParams {
 
 export class CreateMrComment {
   @observable accessor isSubmitting = false;
-  @observable accessor submitError = '';
+  @observable private accessor submitErrorValue: Error | null = null;
+
+  get submitError() {
+    return this.submitErrorValue?.message ?? '';
+  }
 
   constructor(private readonly options: CreateMrCommentParams) {}
 
@@ -34,7 +39,7 @@ export class CreateMrComment {
 
   @actionBound
   clearSubmitError() {
-    this.submitError = '';
+    this.submitErrorValue = null;
   }
 
   @actionBound
@@ -44,22 +49,26 @@ export class CreateMrComment {
     const diffRefs = this.options.getDiffRefs();
 
     if (!connection || !mr) {
-      this.submitError = 'Merge request не выбран';
+      this.submitErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
     if (!diffRefs?.base_sha || !diffRefs.head_sha || !diffRefs.start_sha) {
-      this.submitError = 'Нельзя оставить комментарий: нет diff refs';
+      this.submitErrorValue = new LocalizedError(
+        'review.cannotPostACommentWithoutDiffRefs',
+      );
       return false;
     }
 
     if (!input.body.trim()) {
-      this.submitError = 'Введите текст комментария';
+      this.submitErrorValue = new LocalizedError('review.enterAComment');
       return false;
     }
 
     this.isSubmitting = true;
-    this.submitError = '';
+    this.submitErrorValue = null;
 
     try {
       const discussion = await gitlabApi.createMergeRequestDiffDiscussion(
@@ -82,10 +91,10 @@ export class CreateMrComment {
       return true;
     } catch (error) {
       runInAction(() => {
-        this.submitError =
+        this.submitErrorValue =
           error instanceof Error
-            ? error.message
-            : 'Не удалось отправить комментарий';
+            ? error
+            : new LocalizedError('review.couldNotPostTheComment');
       });
       return false;
     } finally {

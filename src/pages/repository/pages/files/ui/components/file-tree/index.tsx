@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import { t } from '@/shared/lib/i18n';
 import type { RepositoryTreeModel } from '../../../model/repository-tree';
 import { TreeNode } from './tree-node';
 
@@ -7,13 +8,13 @@ export const FileTree = observer(
     return (
       <aside className="glass-panel flex max-h-[min(40vh,320px)] w-full min-w-0 flex-col overflow-hidden rounded-xl lg:max-h-[calc(100vh-2rem)]">
         <div className="border-slate-200 border-b px-3 py-2.5 font-semibold text-slate-700 text-sm dark:border-slate-800 dark:text-slate-300">
-          Files
+          {t('common.files')}
         </div>
 
         <nav className="min-h-0 flex-1 overflow-auto p-1">
           {treeModel.isRootLoading && (
             <p className="px-2 py-2 text-slate-500 text-sm">
-              Загружаем файлы...
+              {t('files.loadingFiles')}
             </p>
           )}
 
@@ -27,7 +28,7 @@ export const FileTree = observer(
             !treeModel.rootErrorMessage &&
             treeModel.rootItems.length === 0 && (
               <p className="px-2 py-2 text-slate-500 text-sm">
-                Файлы не найдены.
+                {t('files.noFilesFound')}
               </p>
             )}
 

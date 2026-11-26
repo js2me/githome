@@ -1,5 +1,6 @@
 import type { DefaultError } from '@tanstack/query-core';
 import { createInfiniteQuery } from 'mobx-tanstack-query/preset';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import {
   buildFetchQueryKey,
   buildFetchQueryUrl,
@@ -129,7 +130,9 @@ export const createInfiniteFetchQuery = <TItem = unknown>(
           } satisfies FetchPageResult<TItem>;
         }
 
-        throw new Error(`Fetch error: ${response.status}`);
+        throw new LocalizedError('connection.requestFailedHttp', {
+          v1: response.status,
+        });
       }
 
       if (fetchParams.responseType === 'text') {

@@ -1,5 +1,6 @@
 import type { DefaultError } from '@tanstack/query-core';
 import { createQuery } from 'mobx-tanstack-query/preset';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 
 type RefetchIntervalQuery = {
   state: { data: unknown };
@@ -186,7 +187,9 @@ export const createFetchQuery = <TData = unknown>(
           return null;
         }
 
-        throw new Error(`Fetch error: ${response.status}`);
+        throw new LocalizedError('connection.requestFailedHttp', {
+          v1: response.status,
+        });
       }
 
       if (fetchParams.responseType === 'text') {

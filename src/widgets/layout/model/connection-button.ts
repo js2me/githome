@@ -5,6 +5,7 @@ import {
   getConnectionLabel,
 } from '@/shared/lib/gitlab/connection/connection';
 import { connectionProfileOptions } from '@/shared/lib/gitlab/connection/connection-profile-query';
+import { t } from '@/shared/lib/i18n';
 import { VM } from '@/shared/lib/view-models/vm';
 
 interface ConnectionButtonPayload {
@@ -31,7 +32,7 @@ export class ConnectionButtonVM extends VM<ConnectionButtonPayload> {
   @computed get host() {
     return this.payload.connection
       ? getConnectionLabel(this.payload.connection)
-      : 'Подключить GitLab';
+      : t('common.connectToGitlab2');
   }
 
   @computed get label() {

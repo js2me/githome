@@ -1,5 +1,6 @@
 import { Minus, Plus, Xmark } from '@gravity-ui/icons';
 import { withPropsViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import {
   DiffImageViewerVM,
   MAX_SCALE,
@@ -47,15 +48,15 @@ export const DiffImageViewer = withPropsViewModel(
               <button
                 type="button"
                 className={toolButton}
-                aria-label="Уменьшить"
-                title="Уменьшить"
+                aria-label={t('diff.zoomOut')}
+                title={t('diff.zoomOut')}
                 disabled={scale <= fitScale}
                 onClick={() => changeScale(scale / ZOOM_STEP)}
               >
                 <Minus className="size-4" aria-hidden />
               </button>
               <output
-                aria-label="Масштаб"
+                aria-label={t('diff.zoom')}
                 className="min-w-12 text-center text-xs tabular-nums"
               >
                 {Math.round(scale * 100)}%
@@ -63,8 +64,8 @@ export const DiffImageViewer = withPropsViewModel(
               <button
                 type="button"
                 className={toolButton}
-                aria-label="Приблизить"
-                title="Приблизить"
+                aria-label={t('diff.zoomIn')}
+                title={t('diff.zoomIn')}
                 disabled={!size.width || scale >= MAX_SCALE}
                 onClick={() => changeScale(scale * ZOOM_STEP)}
               >
@@ -75,13 +76,13 @@ export const DiffImageViewer = withPropsViewModel(
                 className={toolButton}
                 onClick={() => changeScale(null)}
               >
-                Вписать
+                {t('diff.fitToView')}
               </button>
               <button
                 type="button"
                 className={toolButton}
-                aria-label="Исходный размер"
-                title="Исходный размер"
+                aria-label={t('diff.actualSize')}
+                title={t('diff.actualSize')}
                 onClick={() => changeScale(1)}
               >
                 1:1
@@ -89,8 +90,8 @@ export const DiffImageViewer = withPropsViewModel(
               <button
                 type="button"
                 className={toolButton}
-                aria-label="Закрыть изображение"
-                title="Закрыть"
+                aria-label={t('diff.closeImage')}
+                title={t('common.close')}
                 onClick={() => dialogRef.current?.close()}
               >
                 <Xmark className="size-5" aria-hidden />
@@ -100,7 +101,7 @@ export const DiffImageViewer = withPropsViewModel(
           <div
             ref={viewportRef}
             role="region"
-            aria-label="Область просмотра"
+            aria-label={t('diff.imageViewport')}
             tabIndex={0}
             className="min-h-0 flex-1 overflow-auto overscroll-contain bg-canvas-subtle focus-visible:outline-2 focus-visible:outline-accent-blue focus-visible:-outline-offset-2"
           >

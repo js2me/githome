@@ -35,9 +35,9 @@ export function setupAppUpdater(getAppOrigin: () => string | undefined) {
     console.error("App update failed", error);
     setState({
       status: "error",
-      message: state.status === "installing"
-        ? "Не удалось установить обновление. Проверьте разрешения и попробуйте снова."
-        : "Не удалось получить обновление. Проверьте соединение и попробуйте снова.",
+      messageKey: state.status === "installing"
+        ? "updates.desktopInstallFailed"
+        : "updates.desktopFetchFailed",
     });
   };
 
@@ -60,7 +60,7 @@ export function setupAppUpdater(getAppOrigin: () => string | undefined) {
   handle("check", async () => {
     if (["checking", "downloading", "ready", "installing"].includes(state.status)) return;
     if (!app.isPackaged) {
-      setState({ status: "manual", message: "Установка обновлений доступна в установленной сборке GitHome." });
+      setState({ status: "manual", messageKey: "updates.desktopPackagedOnly" });
       return;
     }
 
@@ -72,7 +72,7 @@ export function setupAppUpdater(getAppOrigin: () => string | undefined) {
       } else if (result) {
         setState({ status: "current" });
       } else {
-        setState({ status: "manual", message: "Для этой сборки обновление доступно на странице релизов." });
+        setState({ status: "manual", messageKey: "updates.desktopManualRelease" });
       }
     } catch (error) {
       fail(error);

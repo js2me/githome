@@ -3,6 +3,7 @@ import {
   buildChangesTree,
   type ChangesTreeNode,
 } from '@/shared/lib/file-tree/build-changes-tree';
+import { t } from '@/shared/lib/i18n';
 
 export const CHANGES_FILE_TREE_MIN_WIDTH = 220;
 export const CHANGES_FILE_TREE_MAX_WIDTH = 640;
@@ -21,7 +22,6 @@ const ROW_LABEL_FONT =
   '13px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
 const ROW_STATS_FONT =
   '600 12px ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace';
-const SEARCH_PLACEHOLDER = 'Search (e.g. *.vue)';
 
 let measureContext: CanvasRenderingContext2D | null = null;
 
@@ -122,7 +122,7 @@ export const estimateChangesFileTreeWidth = (
   const tree = buildChangesTree(changes);
   const maxRowWidth = getMaxTreeRowWidth(tree);
   const searchMinWidth =
-    24 + measureTextWidth(SEARCH_PLACEHOLDER, ROW_LABEL_FONT) + 24;
+    24 + measureTextWidth(t('review.searchEGVue'), ROW_LABEL_FONT) + 24;
   const contentWidth = Math.max(maxRowWidth, searchMinWidth);
 
   return clampChangesFileTreeWidth(

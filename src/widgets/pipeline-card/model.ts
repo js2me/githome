@@ -10,6 +10,8 @@ import {
   createGitlabApiQuery,
   createGitlabQuery,
 } from '@/shared/lib/gitlab/connection/create-query';
+import { t } from '@/shared/lib/i18n';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { Globals } from '@/shared/model/globals';
 
@@ -34,7 +36,11 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
 
   @observable private accessor openPipelineKey: string | null = null;
   @observable accessor busyJobId: number | null = null;
-  @observable accessor actionError: string | null = null;
+  @observable private accessor actionErrorValue: Error | null = null;
+
+  get actionError() {
+    return this.actionErrorValue?.message ?? null;
+  }
 
   constructor(globals: Globals, params: ViewModelParams<PipelineCardPayload>) {
     super(globals, params);
@@ -108,7 +114,7 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
 
   @actionBound
   openDetails() {
-    this.actionError = null;
+    this.actionErrorValue = null;
     this.openPipelineKey = this.pipelineKey;
   }
 
@@ -128,7 +134,7 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
     return error instanceof Error
       ? error.message
       : error
-        ? 'Не удалось загрузить jobs'
+        ? t('pipelines.couldNotLoadJobs2')
         : null;
   }
 
@@ -138,7 +144,7 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
     return error instanceof Error
       ? error.message
       : error
-        ? 'Не удалось загрузить pipeline'
+        ? t('pipelines.couldNotLoadThePipeline')
         : null;
   }
 
@@ -176,7 +182,7 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
 
     const pipelineKey = this.pipelineKey;
     this.busyJobId = job.id;
-    this.actionError = null;
+    this.actionErrorValue = null;
 
     try {
       if (job.status === 'manual') {
@@ -199,10 +205,10 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
     } catch (error) {
       runInAction(() => {
         if (pipelineKey !== this.pipelineKey) return;
-        this.actionError =
+        this.actionErrorValue =
           error instanceof Error
-            ? error.message
-            : 'Не удалось выполнить действие';
+            ? error
+            : new LocalizedError('common.couldNotCompleteTheAction');
       });
     } finally {
       runInAction(() => {

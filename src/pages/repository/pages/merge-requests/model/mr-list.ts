@@ -5,23 +5,28 @@ import type {
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
 import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { t } from '@/shared/lib/i18n';
 
 export const MR_FILTERS = [
   {
     id: 'opened',
-    label: 'Открытые',
-    empty: 'Открытых merge requests пока нет',
+    labelKey: 'review.open2',
+    emptyKey: 'review.noOpenMergeRequestsYet',
   },
   {
     id: 'mine',
-    label: 'Мои',
-    empty: 'Вы ещё не создавали merge requests в этом проекте',
+    labelKey: 'review.mine',
+    emptyKey: 'review.youHaveNotOpenedAnyMergeRequests',
   },
-  { id: 'merged', label: 'Слитые', empty: 'Слитых merge requests пока нет' },
+  {
+    id: 'merged',
+    labelKey: 'review.merged2',
+    emptyKey: 'review.noMergedRequestsYet',
+  },
   {
     id: 'closed',
-    label: 'Закрытые',
-    empty: 'Закрытых merge requests пока нет',
+    labelKey: 'review.closed2',
+    emptyKey: 'review.noClosedMergeRequestsYet',
   },
 ] as const;
 
@@ -141,7 +146,7 @@ export class MrList {
 
     return error instanceof Error
       ? error.message
-      : 'Не удалось загрузить merge requests';
+      : t('review.couldNotLoadMergeRequests');
   }
 
   @computed

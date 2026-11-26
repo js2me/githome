@@ -2,6 +2,10 @@ import { actionBound, computed, observable, reaction } from 'mobx';
 import { createRef } from 'yummies/mobx';
 import { WorkspaceVM } from '@/features/workspace-navigation';
 
+import { t } from '@/shared/lib/i18n';
+
+const legacyLoadingRepository = 'Загрузка репозитория…';
+
 export class WorkspacePickerVM extends WorkspaceVM {
   readonly workspace = createRef<HTMLElement>();
   readonly trigger = createRef<HTMLButtonElement>();
@@ -13,7 +17,16 @@ export class WorkspacePickerVM extends WorkspaceVM {
     return store.groups
       .map((group) => ({
         ...group,
-        items: store.items.filter((item) => item.groupId === group.id),
+        title:
+          !group.title || group.title === legacyLoadingRepository
+            ? t('common.loadingRepository')
+            : group.title,
+        items: store.items
+          .filter((item) => item.groupId === group.id)
+          .map((item) => ({
+            ...item,
+            title: item.title || t('common.mergeRequest'),
+          })),
       }))
       .filter((group) => group.items.length > 0);
   }

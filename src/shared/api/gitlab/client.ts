@@ -1,4 +1,5 @@
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 
 interface GraphQLResponse<T> {
   data?: T;
@@ -150,7 +151,7 @@ export const fetchGitlabAssetBlob = async (
 ): Promise<Blob> => {
   const url = resolveGitlabAssetUrl(connection, assetUrl);
   if (!url) {
-    throw new Error('GitLab asset URL is empty');
+    throw new LocalizedError('gitlab.theGitlabAssetUrlIsEmpty');
   }
 
   const response = await fetch(url, {
@@ -164,7 +165,9 @@ export const fetchGitlabAssetBlob = async (
   });
 
   if (!response.ok) {
-    throw new Error(`GitLab asset error: ${response.status}`);
+    throw new LocalizedError('gitlab.gitlabAssetError', {
+      v1: response.status,
+    });
   }
 
   return response.blob();
@@ -221,13 +224,12 @@ const getRetryAfterMs = (response: Response): number | null => {
   return null;
 };
 
-export class GitLabApiError extends Error {
+export class GitLabApiError extends LocalizedError {
   constructor(
-    message: string,
     readonly status: number,
     readonly retryAfterMs: number | null = null,
   ) {
-    super(message);
+    super('gitlab.apiError', { status });
     this.name = 'GitLabApiError';
   }
 }
@@ -260,7 +262,9 @@ export const gitlabGraphql = async <T>(
         throw new GitLabGraphqlError(payload.errors);
       }
     }
-    throw new Error(`GitLab GraphQL error: ${response.status}`);
+    throw new LocalizedError('gitlab.gitlabGraphqlError', {
+      v1: response.status,
+    });
   }
 
   const payload = (await response.json()) as GraphQLResponse<T>;
@@ -270,7 +274,7 @@ export const gitlabGraphql = async <T>(
   }
 
   if (!payload.data) {
-    throw new Error('GitLab GraphQL error: empty response');
+    throw new LocalizedError('gitlab.gitlabGraphqlReturnedAnEmptyResponse');
   }
 
   return payload.data;
@@ -319,7 +323,6 @@ export const gitlabFetch = async (
 
   if (!response.ok) {
     throw new GitLabApiError(
-      `GitLab API error: ${response.status}`,
       response.status,
       response.status === 429 ? getRetryAfterMs(response) : null,
     );
@@ -348,10 +351,10 @@ export const gitlabPostForm = async <T>(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(
-      errorBody
-        ? `GitLab API error: ${response.status} — ${errorBody}`
-        : `GitLab API error: ${response.status}`,
+    throw new LocalizedError(
+      'gitlab.apiError',
+      { status: response.status },
+      errorBody,
     );
   }
 
@@ -379,10 +382,10 @@ export const gitlabPost = async <T>(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(
-      errorBody
-        ? `GitLab API error: ${response.status} — ${errorBody}`
-        : `GitLab API error: ${response.status}`,
+    throw new LocalizedError(
+      'gitlab.apiError',
+      { status: response.status },
+      errorBody,
     );
   }
 
@@ -410,10 +413,10 @@ export const gitlabPut = async <T>(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(
-      errorBody
-        ? `GitLab API error: ${response.status} — ${errorBody}`
-        : `GitLab API error: ${response.status}`,
+    throw new LocalizedError(
+      'gitlab.apiError',
+      { status: response.status },
+      errorBody,
     );
   }
 
@@ -438,10 +441,10 @@ export const gitlabDelete = async (
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(
-      errorBody
-        ? `GitLab API error: ${response.status} — ${errorBody}`
-        : `GitLab API error: ${response.status}`,
+    throw new LocalizedError(
+      'gitlab.apiError',
+      { status: response.status },
+      errorBody,
     );
   }
 };
@@ -492,13 +495,13 @@ export const gitlabWebFetch = async (
     response.type === 'opaqueredirect' ||
     (response.status >= 300 && response.status < 400)
   ) {
-    throw new Error(
-      'GitLab web API: требуется авторизация (редирект на страницу входа). Проверьте токен доступа.',
-    );
+    throw new LocalizedError('gitlab.gitlabWebApiRequiresSignInCheck');
   }
 
   if (!response.ok) {
-    throw new Error(`GitLab web API error: ${response.status}`);
+    throw new LocalizedError('gitlab.gitlabWebApiError', {
+      v1: response.status,
+    });
   }
 
   return response;
@@ -541,25 +544,25 @@ export const fetchGitlabWebJson = async <T>(
     response.type === 'opaqueredirect' ||
     (response.status >= 300 && response.status < 400)
   ) {
-    throw new Error(
-      'GitLab web API: требуется авторизация (редирект на страницу входа). Проверьте токен доступа.',
-    );
+    throw new LocalizedError('gitlab.gitlabWebApiRequiresSignInCheck');
   }
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(
-      errorBody
-        ? `GitLab web API error: ${response.status} — ${errorBody.slice(0, 200)}`
-        : `GitLab web API error: ${response.status}`,
+    throw new LocalizedError(
+      'gitlab.gitlabWebApiError',
+      { v1: response.status },
+      errorBody.slice(0, 200),
     );
   }
 
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) {
     const body = await response.text();
-    throw new Error(
-      `GitLab web API returned non-JSON response: ${body.slice(0, 200)}`,
+    throw new LocalizedError(
+      'gitlab.webApiInvalidResponse',
+      { status: response.status },
+      body.slice(0, 200),
     );
   }
 

@@ -1,6 +1,7 @@
 import { Check, Copy, Link, Xmark } from '@gravity-ui/icons';
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { CopyControlVM } from '../../../model/copy-control';
 import { actionClass } from './action-classes';
 
@@ -10,9 +11,9 @@ export const CopyControl = withPropsViewModel(CopyControlVM, ({ model }) => {
   const actionLabel = branch ? `${label} ${value}` : label;
   const feedback =
     copyStatus === 'copied'
-      ? 'Скопировано'
+      ? t('review.copied')
       : copyStatus === 'failed'
-        ? 'Не удалось скопировать'
+        ? t('review.couldNotCopy')
         : '';
   const Icon =
     copyStatus === 'copied'
@@ -46,7 +47,9 @@ export const CopyControl = withPropsViewModel(CopyControlVM, ({ model }) => {
         )}
       />
       {!branch && (
-        <span className="sr-only @md:not-sr-only">{feedback || 'Ссылка'}</span>
+        <span className="sr-only @md:not-sr-only">
+          {feedback || t('review.link')}
+        </span>
       )}
       <span className="sr-only" role="status">
         {feedback}

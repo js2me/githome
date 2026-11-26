@@ -2,6 +2,7 @@ import { ChevronDown, Layers } from '@gravity-ui/icons';
 import { withViewModel } from 'mobx-view-model-react';
 import { useId } from 'react';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { WorkspacePickerVM } from '../model/workspace-picker';
 import { CloseIcon } from './close-icon';
 
@@ -22,7 +23,7 @@ export const WorkspacePicker = withViewModel(WorkspacePickerVM, ({ model }) => {
   return (
     <aside
       ref={workspace}
-      aria-label="Рабочая область"
+      aria-label={t('navigation.workspace')}
       data-expanded={isExpanded}
       className="sticky top-3 z-50 mt-3 ml-3 flex flex-col items-start self-start sm:ml-4 lg:ml-6"
       onPointerEnter={(event) => {
@@ -56,7 +57,7 @@ export const WorkspacePicker = withViewModel(WorkspacePickerVM, ({ model }) => {
         onClick={() => setExpanded(!isExpanded)}
       >
         <Layers className="size-3.5 text-fg-muted" aria-hidden="true" />
-        Рабочая область
+        {t('navigation.workspace')}
         <span
           aria-hidden
           className="rounded-md bg-[var(--glass-selected)] px-1.5 text-[11px] text-[var(--glass-accent)]"
@@ -75,7 +76,7 @@ export const WorkspacePicker = withViewModel(WorkspacePickerVM, ({ model }) => {
       {isExpanded && (
         <nav
           id={navigationId}
-          aria-label="Навигационное дерево"
+          aria-label={t('navigation.navigationTree')}
           className="glass-overlay absolute top-full left-0 -mt-px flex max-h-[min(55dvh,24rem)] w-80 max-w-[calc(100vw-1.5rem)] origin-top-left flex-col gap-3 overflow-y-auto overflow-x-hidden overscroll-contain rounded-2xl rounded-tl-none p-3 motion-safe:starting:scale-y-95 motion-safe:starting:opacity-0 motion-safe:transition-[opacity,scale] motion-safe:duration-150"
         >
           {groups.map((group) => (
@@ -89,7 +90,7 @@ export const WorkspacePicker = withViewModel(WorkspacePickerVM, ({ model }) => {
                     className="block w-full cursor-pointer truncate border-0 bg-transparent p-0 text-left text-inherit transition hover:text-brand focus-visible:outline-2 focus-visible:outline-brand"
                     type="button"
                     title={group.title}
-                    aria-label={`Открыть ${group.title}`}
+                    aria-label={t('navigation.open2', { v1: group.title })}
                     onClick={() => {
                       closeAndFocusTrigger();
                       navigation.selectGroup(group);
@@ -130,8 +131,8 @@ export const WorkspacePicker = withViewModel(WorkspacePickerVM, ({ model }) => {
                         <button
                           className="mr-1 grid size-7 shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent text-slate-400 opacity-100 transition hover:bg-black/5 hover:text-slate-700 focus-visible:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 dark:hover:bg-white/10 dark:hover:text-slate-200"
                           type="button"
-                          aria-label={`Закрыть ${item.title}`}
-                          title="Закрыть элемент"
+                          aria-label={t('navigation.close', { v1: item.title })}
+                          title={t('navigation.closeItem')}
                           onClick={() => navigation.close(item)}
                         >
                           <CloseIcon />

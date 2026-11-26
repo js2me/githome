@@ -4,6 +4,7 @@ import { cn } from '@/shared/lib/cn';
 import type { WordDiffSegment } from '@/shared/lib/diff/compute-word-diff';
 import type { DiffDisplayLine } from '@/shared/lib/diff/parse-unified-diff';
 import type { InlineDiffThread } from '@/shared/lib/gitlab/discussions/diff-discussions';
+import { t } from '@/shared/lib/i18n';
 import { ResolvedThreadAvatar } from '../discussions/resolved-thread-avatar';
 import { diffGridClassName } from '../grid-class';
 import { DiffLineContent } from './diff-line-content';
@@ -152,7 +153,7 @@ export const DiffLineRow = observer(
                   isSelected && 'git-diff-comment-button--visible',
                 )}
                 type="button"
-                title="Оставить комментарий"
+                title={t('diff.addAComment')}
                 onMouseDown={(event) => {
                   event.stopPropagation();
                 }}

@@ -1,5 +1,6 @@
 import { withViewModel } from 'mobx-view-model-react';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { GitDiff } from '@/shared/ui/git-diff';
 import { DiffSearchProvider } from '@/shared/ui/git-diff/components/diff-search';
 import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
@@ -104,7 +105,7 @@ export const MergeRequestDetail = withViewModel(
               >
                 <path d="M6 4l8 6-8 6V4z" />
               </svg>
-              Описание
+              {t('review.description')}
             </button>
             {descriptionExpanded && (
               <div className="glass-panel rounded-2xl p-4">
@@ -132,7 +133,7 @@ export const MergeRequestDetail = withViewModel(
             >
               <path d="M6 4l8 6-8 6V4z" />
             </svg>
-            Активность
+            {t('review.activity')}
             {activityDiscussions.length > 0 && (
               <span className="rounded-full bg-slate-200 px-2 py-0.5 font-bold text-slate-600 text-xs dark:bg-slate-700 dark:text-slate-300">
                 {activityDiscussions.length}
@@ -165,7 +166,7 @@ export const MergeRequestDetail = withViewModel(
             tabIndex={-1}
             className="m-0 flex scroll-mt-16 items-center gap-2 font-semibold text-lg"
           >
-            Изменения
+            {t('review.changes')}
             {changes.length > 0 && (
               <span className="rounded-full bg-slate-200 px-2 py-0.5 font-bold text-slate-600 text-xs dark:bg-slate-700 dark:text-slate-300">
                 {changes.length}
@@ -184,7 +185,7 @@ export const MergeRequestDetail = withViewModel(
                   type="button"
                   onClick={() => info.selectDiffVersion(null)}
                 >
-                  К последней версии
+                  {t('review.goToLatestVersion')}
                 </button>
               )
             )}
@@ -192,7 +193,7 @@ export const MergeRequestDetail = withViewModel(
           {changesError && <StatusMessage error>{changesError}</StatusMessage>}
           {review.error && (
             <StatusMessage error>
-              {review.error.path} — не удалось сохранить отметку.{' '}
+              {review.error.path} {t('review.couldNotSaveViewedStatus')}{' '}
               {review.error.message}
             </StatusMessage>
           )}
@@ -205,7 +206,7 @@ export const MergeRequestDetail = withViewModel(
                 className="size-4 animate-spin rounded-full border-2 border-slate-200 border-t-brand dark:border-slate-700"
                 aria-hidden="true"
               />
-              Подготавливаем diff...
+              {t('review.preparingDiff')}
             </div>
           ) : (
             (changes.length > 0 || !changesError) && (

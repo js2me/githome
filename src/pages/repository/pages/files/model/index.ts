@@ -5,6 +5,7 @@ import { WorkspaceVM } from '@/features/workspace-navigation';
 import type { GitLabBranchDC } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
 import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { t } from '@/shared/lib/i18n';
 import { isImagePath } from '@/shared/lib/image-path';
 import type { RepositoryPageVM } from '../../../model/page-vm';
 import { isMarkdownPath } from '../lib/repository-tree-utils';
@@ -267,7 +268,7 @@ export class FilesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
 
     return error instanceof Error
       ? error.message
-      : 'Не удалось загрузить ветки';
+      : t('files.couldNotLoadBranches');
   }
 
   @computed
@@ -297,7 +298,7 @@ export class FilesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
 
     return error instanceof Error
       ? error.message
-      : 'Не удалось загрузить содержимое файла';
+      : t('files.couldNotLoadTheFileContents');
   }
 
   @computed

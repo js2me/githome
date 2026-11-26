@@ -2,6 +2,7 @@ import { Magnifier } from '@gravity-ui/icons';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { withPropsViewModel } from 'mobx-view-model-react';
 import type { CSSProperties } from 'react';
+import { t } from '@/shared/lib/i18n';
 import { ChangesFileTreeVM } from '../../../model/changes/changes-file-tree';
 import './changes-file-tree.css';
 import { TreeNodeView } from './file-tree/tree-node-view';
@@ -41,7 +42,7 @@ export const ChangesFileTree = withPropsViewModel(
         style={{ '--file-row-height': `${FILE_ROW_HEIGHT}px` } as CSSProperties}
       >
         <div className="changes-file-tree__header">
-          <span>Files</span>
+          <span>{t('common.files')}</span>
           <span className="changes-file-tree__count">{changes.length}</span>
         </div>
 
@@ -49,7 +50,7 @@ export const ChangesFileTree = withPropsViewModel(
           <Magnifier width={16} height={16} />
           <input
             className="changes-file-tree__search-input"
-            placeholder="Search (e.g. *.vue)"
+            placeholder={t('review.searchEGVue')}
             type="search"
             value={searchQuery}
             onChange={(event) => model.search(event.target.value)}

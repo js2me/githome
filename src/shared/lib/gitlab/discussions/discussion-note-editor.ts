@@ -1,5 +1,6 @@
 import { actionBound, observable, runInAction } from 'mobx';
 import type { GitLabNoteDC } from '@/shared/api/gitlab';
+import { t } from '@/shared/lib/i18n';
 
 interface DiscussionNoteActions {
   note: GitLabNoteDC;
@@ -75,7 +76,7 @@ export class DiscussionNoteEditor {
     } = this.actions();
     if (
       onDeleteDiscussionNote &&
-      window.confirm('Удалить комментарий? Это действие нельзя отменить.')
+      window.confirm(t('common.deleteThisCommentThisCannotBeUndone'))
     ) {
       onClearDeleteNoteError?.();
       await onDeleteDiscussionNote(discussionId, note.id);

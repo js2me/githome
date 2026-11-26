@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import { t } from '@/shared/lib/i18n';
 import { PipelineDetailsDialog } from '@/widgets/pipeline-card';
 import { getPipelineMergeRequestIid } from '../../model/pipeline-list';
 import { DateTime } from './date-time';
@@ -13,18 +14,40 @@ import {
 } from './run-presentation';
 
 const sources: Record<string, string> = {
-  push: 'Обновление ветки или тега',
-  web: 'Интерфейс GitLab',
+  get push() {
+    return t('pipelines.branchOrTagUpdate');
+  },
+  get web() {
+    return t('pipelines.gitlabInterface');
+  },
   api: 'API',
-  merge_request_event: 'Мерж-реквест',
-  schedule: 'Расписание',
-  trigger: 'Триггер',
-  pipeline: 'Другой пайплайн',
-  parent_pipeline: 'Родительский пайплайн',
-  chat: 'Чат',
-  external: 'Внешний сервис',
-  webide: 'Веб-редактор',
-  external_pull_request_event: 'Внешний пул-реквест',
+  get merge_request_event() {
+    return t('pipelines.mergeRequest');
+  },
+  get schedule() {
+    return t('pipelines.schedule');
+  },
+  get trigger() {
+    return t('pipelines.trigger');
+  },
+  get pipeline() {
+    return t('pipelines.anotherPipeline');
+  },
+  get parent_pipeline() {
+    return t('pipelines.parentPipeline');
+  },
+  get chat() {
+    return t('pipelines.chat');
+  },
+  get external() {
+    return t('pipelines.externalService');
+  },
+  get webide() {
+    return t('pipelines.webIde');
+  },
+  get external_pull_request_event() {
+    return t('pipelines.externalPullRequest');
+  },
 };
 
 export const RunDetails = observer(({ model, run }: RunProps) => {
@@ -42,7 +65,7 @@ export const RunDetails = observer(({ model, run }: RunProps) => {
       onClose={model.closeDetails}
       error={
         model.jobs.error
-          ? errorText(model.jobs.error, 'Не удалось загрузить задания')
+          ? errorText(model.jobs.error, t('pipelines.couldNotLoadJobs'))
           : null
       }
       description={
@@ -52,12 +75,12 @@ export const RunDetails = observer(({ model, run }: RunProps) => {
           )}
           <dl className="pipeline-details-meta">
             <div>
-              <dt>Ветка или тег</dt>
+              <dt>{t('pipelines.branchOrTag')}</dt>
               <dd className="font-mono">{mr?.source_branch || run.ref}</dd>
             </div>
             {run.sha && (
               <div>
-                <dt>Коммит</dt>
+                <dt>{t('common.commit')}</dt>
                 <dd className="font-mono" title={run.sha}>
                   {run.sha.slice(0, 8)}
                 </dd>
@@ -65,25 +88,25 @@ export const RunDetails = observer(({ model, run }: RunProps) => {
             )}
             {run.source && (
               <div>
-                <dt>Источник</dt>
+                <dt>{t('pipelines.source')}</dt>
                 <dd>{sources[run.source] || run.source}</dd>
               </div>
             )}
             {author && (
               <div>
-                <dt>Автор</dt>
+                <dt>{t('pipelines.author')}</dt>
                 <dd>{author}</dd>
               </div>
             )}
             <div>
-              <dt>Обновлён</dt>
+              <dt>{t('common.updated')}</dt>
               <dd>
                 <DateTime value={run.updated_at || run.created_at} />
               </dd>
             </div>
             {duration && (
               <div>
-                <dt>Длительность</dt>
+                <dt>{t('pipelines.duration')}</dt>
                 <dd>{duration}</dd>
               </div>
             )}
@@ -106,7 +129,7 @@ export const RunDetails = observer(({ model, run }: RunProps) => {
               type="button"
               onClick={() => list.openMergeRequest(iid)}
             >
-              Открыть MR !{iid}
+              {t('pipelines.openMergeRequest', { id: iid })}
             </button>
           )}
           <RunAction model={model} run={run} />

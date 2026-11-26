@@ -1,17 +1,19 @@
 import { normalizeGitlabBaseUrl } from '@/shared/api/gitlab/client';
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 
 export function resolveMergeRequestLink(
   input: string,
   connections: readonly GitLabConnection[],
   activeId: string | null,
 ) {
-  const invalidLink = 'Вставьте ссылку на мерж-реквест GitLab.';
+  const invalidLink = () =>
+    new LocalizedError('review.pasteAGitlabMergeRequestLink');
   let url: URL;
   try {
     url = new URL(input.trim());
   } catch {
-    throw new Error(invalidLink);
+    throw invalidLink();
   }
 
   const match = url.pathname.match(
@@ -26,7 +28,7 @@ export function resolveMergeRequestLink(
     !Number.isSafeInteger(iid) ||
     iid < 1
   ) {
-    throw new Error(invalidLink);
+    throw invalidLink();
   }
 
   const projectLocation = `/${match[1]}`;
@@ -53,7 +55,9 @@ export function resolveMergeRequestLink(
   }
 
   if (!selected)
-    throw new Error(`Добавьте подключение к ${url.host} в шапке GitHome.`);
+    throw new LocalizedError('review.addAConnectionToAtTheTop', {
+      v1: url.host,
+    });
 
   let projectPath: string;
   try {
@@ -61,14 +65,14 @@ export function resolveMergeRequestLink(
       projectLocation.slice(basePath.length + 1),
     );
   } catch {
-    throw new Error(invalidLink);
+    throw invalidLink();
   }
   const segments = projectPath.split('/');
   if (
     segments.length < 2 ||
     segments.some((part) => !part || part === '.' || part === '..')
   ) {
-    throw new Error(invalidLink);
+    throw invalidLink();
   }
   return { connection: selected, projectPath, iid };
 }

@@ -235,7 +235,7 @@ describe('NavTreeStore', () => {
     expect(store.items).toMatchObject([
       { title: 'Review API' },
       {
-        title: 'Merge Request',
+        title: '',
         payload: { projectPath: 'group/project', mergeRequestIid: 43 },
       },
     ]);

@@ -40,7 +40,7 @@ public class AppUpdaterPlugin extends Plugin {
         try {
             call.resolve(new JSObject().put("version", installedPackage(0).versionName));
         } catch (PackageManager.NameNotFoundException error) {
-            call.reject("Не удалось получить версию GitHome.");
+            call.reject("Could not get the installed version.", "VERSION_UNAVAILABLE");
         }
     }
 
@@ -51,7 +51,7 @@ public class AppUpdaterPlugin extends Plugin {
         int size = call.getInt("size", 0);
         if (!tag.matches("v?[0-9]{1,9}\\.[0-9]{1,9}\\.[0-9]{1,9}") ||
             !digest.matches("sha256:[a-f0-9]{64}") || size <= 0 || size > MAX_APK_SIZE) {
-            call.reject("В релизе указан некорректный APK.");
+            call.reject("Invalid APK in the release.", "INVALID_APK");
             return;
         }
 
@@ -70,10 +70,10 @@ public class AppUpdaterPlugin extends Plugin {
             stagedApk = apk;
             call.resolve();
         } catch (InvalidUpdateException error) {
-            call.reject(error.getMessage());
+            call.reject("APK validation failed.", error.getMessage());
         } catch (Exception error) {
             Log.e("GitHomeUpdater", "Could not download the update", error);
-            call.reject("Не удалось скачать обновление. Проверьте соединение и свободное место.");
+            call.reject("Could not download the update.", "DOWNLOAD_FAILED");
         } finally {
             partial.delete();
         }
@@ -127,7 +127,7 @@ public class AppUpdaterPlugin extends Plugin {
                     hash.append(Character.forDigit(value & 0xf, 16));
                 }
                 if (size != expectedSize || !expectedDigest.contentEquals(hash)) {
-                    throw new InvalidUpdateException("Не совпали размер или контрольная сумма APK.");
+                    throw new InvalidUpdateException("APK_CHECKSUM_MISMATCH");
                 }
                 return;
             } finally {
@@ -152,7 +152,7 @@ public class AppUpdaterPlugin extends Plugin {
             !expectedVersion.equals(update.versionName) ||
             (modern ? update.getLongVersionCode() <= installed.getLongVersionCode()
                     : update.versionCode <= installed.versionCode)) {
-            throw new InvalidUpdateException("APK не подходит для обновления установленной версии GitHome.");
+            throw new InvalidUpdateException("APK_INCOMPATIBLE");
         }
 
         Signature[] current = modern
@@ -163,7 +163,7 @@ public class AppUpdaterPlugin extends Plugin {
             : update.signatures;
         if (current == null || incoming == null || current.length == 0 ||
             !new HashSet<>(Arrays.asList(current)).equals(new HashSet<>(Arrays.asList(incoming)))) {
-            throw new InvalidUpdateException("Подпись APK отличается от подписи установленного GitHome.");
+            throw new InvalidUpdateException("APK_SIGNATURE_MISMATCH");
         }
     }
 
@@ -171,11 +171,11 @@ public class AppUpdaterPlugin extends Plugin {
     public void install(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             if (installerOpen) {
-                call.reject("Установщик уже открыт.");
+                call.reject("Installer is already open.", "INSTALLER_ALREADY_OPEN");
                 return;
             }
             if (stagedApk == null || !stagedApk.isFile()) {
-                call.reject("Скачанный APK больше недоступен. Проверьте обновления ещё раз.", "APK_MISSING");
+                call.reject("Downloaded APK is missing.", "APK_MISSING");
                 return;
             }
             installerOpen = true;
@@ -190,7 +190,7 @@ public class AppUpdaterPlugin extends Plugin {
                 }
             } catch (RuntimeException error) {
                 installerOpen = false;
-                call.reject("Не удалось открыть установщик Android.");
+                call.reject("Could not open the installer.", "INSTALLER_OPEN_FAILED");
             }
         });
     }
@@ -204,14 +204,14 @@ public class AppUpdaterPlugin extends Plugin {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             !getContext().getPackageManager().canRequestPackageInstalls()) {
             installerOpen = false;
-            call.resolve(new JSObject().put("message", "Разрешите GitHome установку приложений в настройках Android."));
+            call.resolve(new JSObject().put("code", "INSTALL_PERMISSION_REQUIRED"));
             return;
         }
         try {
             openInstaller(call);
         } catch (RuntimeException error) {
             installerOpen = false;
-            call.reject("Не удалось открыть установщик Android.");
+            call.reject("Could not open the installer.", "INSTALLER_OPEN_FAILED");
         }
     }
 
@@ -230,7 +230,7 @@ public class AppUpdaterPlugin extends Plugin {
         installerOpen = false;
         if (call != null) {
             if (result.getResultCode() == Activity.RESULT_OK) call.resolve(new JSObject());
-            else call.resolve(new JSObject().put("message", "Установка не завершена. Можно попробовать снова."));
+            else call.resolve(new JSObject().put("code", "INSTALL_INCOMPLETE"));
         }
     }
 

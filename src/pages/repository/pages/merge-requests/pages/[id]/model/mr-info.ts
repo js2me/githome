@@ -31,6 +31,8 @@ import {
   buildMergeRequestApprovalView,
   type MergeRequestApprovalView,
 } from '@/shared/lib/gitlab/merge-request-approval-view';
+import { t } from '@/shared/lib/i18n';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type { Globals } from '@/shared/model/globals';
 import { ReviewedFiles } from './changes/reviewed-files/reviewed-files';
 
@@ -79,19 +81,43 @@ export class MrInfoModel {
   mergeRequestReviewersQuery;
 
   @observable accessor isSubmittingMrComment = false;
-  @observable accessor submitMrCommentError = '';
+  @observable private accessor submitMrCommentErrorValue: Error | null = null;
+
+  get submitMrCommentError() {
+    return this.submitMrCommentErrorValue?.message ?? '';
+  }
   @observable accessor resolvingDiscussionId = '';
-  @observable accessor resolveDiscussionError = '';
+  @observable private accessor resolveDiscussionErrorValue: Error | null = null;
+
+  get resolveDiscussionError() {
+    return this.resolveDiscussionErrorValue?.message ?? '';
+  }
   @observable accessor replyingDiscussionId = '';
   @observable accessor replyDiscussionErrorKey = '';
-  @observable accessor replyDiscussionError = '';
+  @observable private accessor replyDiscussionErrorValue: Error | null = null;
+
+  get replyDiscussionError() {
+    return this.replyDiscussionErrorValue?.message ?? '';
+  }
   @observable accessor updatingNoteKey = '';
-  @observable accessor updateNoteError = '';
+  @observable private accessor updateNoteErrorValue: Error | null = null;
+
+  get updateNoteError() {
+    return this.updateNoteErrorValue?.message ?? '';
+  }
   @observable accessor deletingNoteKey = '';
   @observable accessor deleteNoteErrorKey = '';
-  @observable accessor deleteNoteError = '';
+  @observable private accessor deleteNoteErrorValue: Error | null = null;
+
+  get deleteNoteError() {
+    return this.deleteNoteErrorValue?.message ?? '';
+  }
   @observable accessor reviewActionInProgress = null as MrReviewAction | null;
-  @observable accessor reviewActionError = '';
+  @observable private accessor reviewActionErrorValue: Error | null = null;
+
+  get reviewActionError() {
+    return this.reviewActionErrorValue?.message ?? '';
+  }
   @observable accessor locallyCreatedDiscussionsKey = '';
   @observable accessor locallyCreatedDiscussions: GitLabDiscussionDC[] = [];
 
@@ -360,7 +386,7 @@ export class MrInfoModel {
 
       return error instanceof Error
         ? error.message
-        : 'Не удалось загрузить merge request';
+        : t('review.couldNotLoadTheMergeRequest');
     }
 
     return null;
@@ -457,17 +483,21 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.submitMrCommentError = 'Merge request не выбран';
+      this.submitMrCommentErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
     if (!body.trim()) {
-      this.submitMrCommentError = 'Введите текст комментария';
+      this.submitMrCommentErrorValue = new LocalizedError(
+        'review.enterAComment',
+      );
       return false;
     }
 
     this.isSubmittingMrComment = true;
-    this.submitMrCommentError = '';
+    this.submitMrCommentErrorValue = null;
 
     try {
       const createdDiscussion = await gitlabApi.createMergeRequestDiscussion(
@@ -484,10 +514,10 @@ export class MrInfoModel {
       return true;
     } catch (error) {
       runInAction(() => {
-        this.submitMrCommentError =
+        this.submitMrCommentErrorValue =
           error instanceof Error
-            ? error.message
-            : 'Не удалось отправить комментарий';
+            ? error
+            : new LocalizedError('review.couldNotPostTheComment');
       });
       return false;
     } finally {
@@ -499,7 +529,7 @@ export class MrInfoModel {
 
   @actionBound
   clearSubmitMrCommentError() {
-    this.submitMrCommentError = '';
+    this.submitMrCommentErrorValue = null;
   }
 
   @actionBound
@@ -509,13 +539,13 @@ export class MrInfoModel {
 
   @action
   clearResolveDiscussionError() {
-    this.resolveDiscussionError = '';
+    this.resolveDiscussionErrorValue = null;
   }
 
   @actionBound
   clearReplyDiscussionError() {
     this.replyDiscussionErrorKey = '';
-    this.replyDiscussionError = '';
+    this.replyDiscussionErrorValue = null;
   }
 
   @actionBound
@@ -525,15 +555,17 @@ export class MrInfoModel {
     const trimmedBody = body.trim();
 
     this.replyDiscussionErrorKey = discussionId;
-    this.replyDiscussionError = '';
+    this.replyDiscussionErrorValue = null;
 
     if (!connection || !mr) {
-      this.replyDiscussionError = 'Merge request не выбран';
+      this.replyDiscussionErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
     if (!trimmedBody) {
-      this.replyDiscussionError = 'Введите текст ответа';
+      this.replyDiscussionErrorValue = new LocalizedError('review.enterAReply');
       return false;
     }
 
@@ -553,8 +585,10 @@ export class MrInfoModel {
       return true;
     } catch (error) {
       runInAction(() => {
-        this.replyDiscussionError =
-          error instanceof Error ? error.message : 'Не удалось отправить ответ';
+        this.replyDiscussionErrorValue =
+          error instanceof Error
+            ? error
+            : new LocalizedError('review.couldNotPostTheReply');
       });
       return false;
     } finally {
@@ -566,18 +600,18 @@ export class MrInfoModel {
 
   @actionBound
   clearUpdateNoteError() {
-    this.updateNoteError = '';
+    this.updateNoteErrorValue = null;
   }
 
   @actionBound
   clearDeleteNoteError() {
     this.deleteNoteErrorKey = '';
-    this.deleteNoteError = '';
+    this.deleteNoteErrorValue = null;
   }
 
   @action
   clearReviewActionError() {
-    this.reviewActionError = '';
+    this.reviewActionErrorValue = null;
   }
 
   private refreshDiscussions() {
@@ -603,13 +637,15 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.reviewActionError = 'Merge request не выбран';
+      this.reviewActionErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
     const actionMergeRequestKey = `${mr.project.id}:${mr.mergeRequestIid}`;
     this.reviewActionInProgress = action;
-    this.reviewActionError = '';
+    this.reviewActionErrorValue = null;
 
     try {
       await runner();
@@ -623,10 +659,10 @@ export class MrInfoModel {
     } catch (error) {
       runInAction(() => {
         if (this.mergeRequestKey === actionMergeRequestKey) {
-          this.reviewActionError =
+          this.reviewActionErrorValue =
             error instanceof Error
-              ? error.message
-              : 'Не удалось выполнить действие';
+              ? error
+              : new LocalizedError('common.couldNotCompleteTheAction');
         }
       });
       return false;
@@ -646,7 +682,9 @@ export class MrInfoModel {
     const headSha = this.mergeRequestDetail?.diff_refs?.head_sha ?? null;
 
     if (!connection || !mr) {
-      this.reviewActionError = 'Merge request не выбран';
+      this.reviewActionErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
@@ -668,7 +706,9 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.reviewActionError = 'Merge request не выбран';
+      this.reviewActionErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
@@ -687,7 +727,9 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.reviewActionError = 'Merge request не выбран';
+      this.reviewActionErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
@@ -706,7 +748,9 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.reviewActionError = 'Merge request не выбран';
+      this.reviewActionErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
@@ -725,12 +769,14 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.resolveDiscussionError = 'Merge request не выбран';
+      this.resolveDiscussionErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
     this.resolvingDiscussionId = discussionId;
-    this.resolveDiscussionError = '';
+    this.resolveDiscussionErrorValue = null;
 
     try {
       await gitlabApi.resolveMergeRequestDiscussion(
@@ -746,10 +792,10 @@ export class MrInfoModel {
       return true;
     } catch (error) {
       runInAction(() => {
-        this.resolveDiscussionError =
+        this.resolveDiscussionErrorValue =
           error instanceof Error
-            ? error.message
-            : 'Не удалось обновить статус треда';
+            ? error
+            : new LocalizedError('review.couldNotUpdateTheThreadStatus');
       });
       return false;
     } finally {
@@ -769,19 +815,21 @@ export class MrInfoModel {
     const mr = this.options.params();
 
     if (!connection || !mr) {
-      this.updateNoteError = 'Merge request не выбран';
+      this.updateNoteErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
     const trimmedBody = body.trim();
     if (!trimmedBody) {
-      this.updateNoteError = 'Введите текст комментария';
+      this.updateNoteErrorValue = new LocalizedError('review.enterAComment');
       return false;
     }
 
     const noteKey = `${discussionId}:${noteId}`;
     this.updatingNoteKey = noteKey;
-    this.updateNoteError = '';
+    this.updateNoteErrorValue = null;
 
     try {
       await gitlabApi.updateMergeRequestDiscussionNote(
@@ -798,10 +846,10 @@ export class MrInfoModel {
       return true;
     } catch (error) {
       runInAction(() => {
-        this.updateNoteError =
+        this.updateNoteErrorValue =
           error instanceof Error
-            ? error.message
-            : 'Не удалось обновить комментарий';
+            ? error
+            : new LocalizedError('review.couldNotUpdateTheComment');
       });
       return false;
     } finally {
@@ -818,10 +866,12 @@ export class MrInfoModel {
     const noteKey = `${discussionId}:${noteId}`;
 
     this.deleteNoteErrorKey = noteKey;
-    this.deleteNoteError = '';
+    this.deleteNoteErrorValue = null;
 
     if (!connection || !mr) {
-      this.deleteNoteError = 'Merge request не выбран';
+      this.deleteNoteErrorValue = new LocalizedError(
+        'review.noMergeRequestSelected',
+      );
       return false;
     }
 
@@ -854,10 +904,10 @@ export class MrInfoModel {
       return true;
     } catch (error) {
       runInAction(() => {
-        this.deleteNoteError =
+        this.deleteNoteErrorValue =
           error instanceof Error
-            ? error.message
-            : 'Не удалось удалить комментарий';
+            ? error
+            : new LocalizedError('review.couldNotDeleteTheComment');
       });
       return false;
     } finally {

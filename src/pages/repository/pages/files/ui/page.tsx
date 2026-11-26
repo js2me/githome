@@ -1,6 +1,7 @@
 import { ArrowLeft } from '@gravity-ui/icons';
 import { Link } from 'mobx-route/react';
 import { withViewModel } from 'mobx-view-model-react';
+import { t } from '@/shared/lib/i18n';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { FilesPageVM } from '../model';
 import { BranchPicker } from './components/branch-picker';
@@ -21,10 +22,10 @@ export const FilesPage = withViewModel(FilesPageVM, ({ model }) => {
             href={mergeRequestHref}
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
-            Назад к MR
+            {t('files.backToMergeRequest')}
           </Link>
         )}
-        <h2 className="font-semibold text-[22px]">Files</h2>
+        <h2 className="font-semibold text-[22px]">{t('common.files')}</h2>
         <BranchPicker model={model} />
         <CommitPicker model={model} />
         <FilesSearch model={model} />
@@ -43,8 +44,8 @@ export const FilesPage = withViewModel(FilesPageVM, ({ model }) => {
       ) : (
         <StatusMessage>
           {model.project
-            ? 'Загружаем ветку...'
-            : 'Загружаем репозиторий...'}
+            ? t('files.loadingBranch')
+            : t('files.loadingRepository')}
         </StatusMessage>
       )}
     </section>

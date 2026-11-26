@@ -1,6 +1,7 @@
 import { CodePullRequest, Magnifier, Xmark } from '@gravity-ui/icons';
 import { withViewModel } from 'mobx-view-model-react';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { LoadMoreSentinel } from '@/shared/ui/load-more-sentinel';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { MergeRequestsPageVM } from '../model';
@@ -28,7 +29,7 @@ export const MergeRequestsPage = withViewModel(
           >
             <CodePullRequest width={21} height={21} />
           </span>
-          Merge requests
+          {t('common.mergeRequests')}
         </h2>
 
         <div className="glass-panel overflow-hidden rounded-2xl">
@@ -36,7 +37,7 @@ export const MergeRequestsPage = withViewModel(
             <div
               className="grid w-full grid-cols-2 gap-1 min-[440px]:flex min-[440px]:w-auto"
               role="group"
-              aria-label="Фильтры merge requests"
+              aria-label={t('review.mergeRequestFilters')}
             >
               {MR_FILTERS.map((filter) => {
                 const active = mrList.activeFilter.id === filter.id;
@@ -53,7 +54,7 @@ export const MergeRequestsPage = withViewModel(
                     aria-pressed={active}
                     onClick={() => mrList.setFilter(filter.id)}
                   >
-                    {filter.label}
+                    {t(filter.labelKey)}
                     {active && mrList.resultCount != null && (
                       <span className="ml-1.5 rounded-md bg-[var(--glass-control)] px-1.5 py-0.5 text-xs tabular-nums">
                         {mrList.resultCount}
@@ -81,15 +82,15 @@ export const MergeRequestsPage = withViewModel(
                 className="glass-input h-10 w-full rounded-xl pr-10 pl-9 text-sm"
                 type="text"
                 inputMode="search"
-                aria-label="Поиск merge requests по названию или номеру"
-                placeholder="Название или !номер"
+                aria-label={t('review.searchMergeRequestsByTitleOrNumber')}
+                placeholder={t('review.titleOrNumber')}
                 value={mrList.searchText}
                 onChange={(event) => mrList.setSearchText(event.target.value)}
               />
               {mrList.searchText && (
                 <button
                   type="button"
-                  aria-label="Очистить поиск"
+                  aria-label={t('review.clearSearch')}
                   className="absolute right-1 grid size-8 cursor-pointer place-items-center rounded-lg text-fg-muted hover:bg-[var(--glass-hover)] hover:text-fg-default"
                   onClick={() => mrList.setSearchText('')}
                 >
@@ -101,7 +102,7 @@ export const MergeRequestsPage = withViewModel(
 
           {mrList.isLoading && (
             <p role="status" className="p-8 text-center text-fg-muted text-sm">
-              Загружаем merge requests…
+              {t('review.loadingMergeRequests')}
             </p>
           )}
 
@@ -118,8 +119,8 @@ export const MergeRequestsPage = withViewModel(
               </span>
               <p className="font-semibold text-sm">
                 {mrList.appliedSearch
-                  ? 'По вашему запросу ничего не найдено'
-                  : mrList.activeFilter.empty}
+                  ? t('review.noResultsMatchYourSearch')
+                  : t(mrList.activeFilter.emptyKey)}
               </p>
               {mrList.appliedSearch && (
                 <button
@@ -127,7 +128,7 @@ export const MergeRequestsPage = withViewModel(
                   type="button"
                   onClick={() => mrList.setSearchText('')}
                 >
-                  Сбросить поиск
+                  {t('review.resetSearch')}
                 </button>
               )}
             </div>
@@ -150,13 +151,15 @@ export const MergeRequestsPage = withViewModel(
           {mrList.showLoadError && (
             <div role="alert" className="px-4 pb-4">
               <StatusMessage error>
-                <span>Не удалось загрузить список. {mrList.errorMessage}</span>
+                <span>
+                  {t('review.couldNotLoadTheList')} {mrList.errorMessage}
+                </span>
                 <button
                   className="glass-control ml-3 rounded-lg px-2.5 py-1"
                   type="button"
                   onClick={mrList.retry}
                 >
-                  Повторить
+                  {t('common.retry')}
                 </button>
               </StatusMessage>
             </div>
@@ -173,7 +176,7 @@ export const MergeRequestsPage = withViewModel(
               role="status"
               className="px-4 py-3 text-center text-fg-muted text-sm"
             >
-              Загружаем ещё merge requests…
+              {t('review.loadingMoreMergeRequests')}
             </p>
           )}
         </div>

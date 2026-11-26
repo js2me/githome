@@ -9,13 +9,26 @@ import * as echarts from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { computed, reaction } from 'mobx';
 import { createRef } from 'yummies/mobx';
+import { t } from '@/shared/lib/i18n';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { AnalyticsPageVM } from './index';
 
 const CHART_SERIES = [
-  { key: 'commits', name: 'Коммиты', color: '#6366f1' },
-  { key: 'mergeRequests', name: 'Смерженные MR', color: '#10b981' },
-  { key: 'jiraMergeRequests', name: 'MR с JIRA-ID', color: '#0891b2' },
+  {
+    key: 'commits',
+    nameKey: 'analytics.commits',
+    color: '#6366f1',
+  },
+  {
+    key: 'mergeRequests',
+    nameKey: 'analytics.mergedRequests',
+    color: '#10b981',
+  },
+  {
+    key: 'jiraMergeRequests',
+    nameKey: 'analytics.requestsWithAJiraIssueId',
+    color: '#0891b2',
+  },
 ] as const;
 
 echarts.use([
@@ -68,7 +81,7 @@ export class AnalyticsChartVM extends VM<
         },
         series: [
           {
-            name: 'Изменённые файлы',
+            name: t('analytics.changedFiles'),
             type: 'bar',
             data: authors.map((item) => item.changedFiles),
             barMaxWidth: 24,
@@ -116,7 +129,7 @@ export class AnalyticsChartVM extends VM<
         splitLine: { lineStyle: { color: splitLineColor, type: 'dashed' } },
       },
       series: CHART_SERIES.map((series) => ({
-        name: series.name,
+        name: t(series.nameKey),
         type: 'line',
         smooth: 0.25,
         symbol: 'circle',

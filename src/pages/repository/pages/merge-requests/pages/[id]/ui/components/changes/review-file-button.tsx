@@ -1,6 +1,7 @@
 import { Check } from '@gravity-ui/icons';
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/shared/lib/i18n';
 import { ReviewFileButtonVM } from '../../../model/changes/reviewed-files/review-file-button';
 
 export const ReviewFileButton = withPropsViewModel(
@@ -8,8 +9,8 @@ export const ReviewFileButton = withPropsViewModel(
   ({ model }) => {
     const { checked, saving, verifying, disabled, toggle } = model;
     const label = checked
-      ? 'Снять отметку «Просмотрено»'
-      : 'Отметить как просмотренное';
+      ? t('review.unmarkAsViewed')
+      : t('review.markAsViewed');
 
     return (
       <button
@@ -28,7 +29,7 @@ export const ReviewFileButton = withPropsViewModel(
         onClick={toggle}
       >
         <Check width={14} height={14} />
-        {saving ? 'Сохранение…' : checked ? 'Просмотрено' : null}
+        {saving ? t('common.saving') : checked ? t('review.viewed') : null}
       </button>
     );
   },

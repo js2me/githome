@@ -1,4 +1,5 @@
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type {
   GitLabDiscussionDC,
   GitLabProjectDC,
@@ -21,7 +22,9 @@ export const getMergeRequestDiscussions = async (
   return discussions
     .filter((discussion) => {
       if (!Array.isArray(discussion.notes))
-        throw new Error('GitLab вернул неполные данные обсуждения');
+        throw new LocalizedError(
+          'review.gitlabReturnedIncompleteDiscussionData',
+        );
       return discussion.notes.length > 0;
     })
     .sort((left, right) => {

@@ -5,6 +5,7 @@ import type {
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
 import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { t } from '@/shared/lib/i18n';
 import type { Globals } from '@/shared/model/globals';
 
 const SEARCH_DEBOUNCE_MS = 400;
@@ -231,13 +232,13 @@ export class RepositoryFilesSearchModel {
 
     if (error instanceof Error) {
       if (error.message.includes('403') || error.message.includes('404')) {
-        return 'Поиск по файлам недоступен на этом GitLab';
+        return t('files.fileSearchIsUnavailableOnThisGitlab');
       }
 
       return error.message;
     }
 
-    return 'Не удалось выполнить поиск по файлам';
+    return t('files.couldNotSearchForFiles');
   }
 
   @computed
@@ -249,13 +250,13 @@ export class RepositoryFilesSearchModel {
 
     if (error instanceof Error) {
       if (error.message.includes('403') || error.message.includes('404')) {
-        return 'Поиск по содержимому недоступен на этом GitLab';
+        return t('files.contentSearchIsUnavailableOnThisGitlab');
       }
 
       return error.message;
     }
 
-    return 'Не удалось выполнить поиск по содержимому';
+    return t('files.couldNotSearchFileContents');
   }
 
   @computed
