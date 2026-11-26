@@ -10,6 +10,7 @@ import { ChangesActiveFileLink } from './changes/changes-active-file-link';
 import { ChangesFileTree } from './changes/changes-file-tree';
 import { ChangesTreeLayout } from './changes/changes-tree-layout';
 import { DiffVersionPicker } from './changes/diff-version-picker';
+import { ReviewFileButton } from './changes/review-file-button';
 import { MergeRequestCommentForm } from './discussions/merge-request-comment-form';
 import { MergeRequestDiscussions } from './discussions/merge-request-discussions';
 import { MergeRequestOverview } from './overview/merge-request-overview';
@@ -20,6 +21,7 @@ export const MergeRequestDetail = withViewModel(
   ({ model }) => {
     const page = model.parentViewModel;
     const info = page.mrInfo;
+    const review = info.reviewedFiles;
     const detail = info.detailView;
     if (!detail) return null;
     const {
@@ -188,6 +190,12 @@ export const MergeRequestDetail = withViewModel(
             )}
           </h3>
           {changesError && <StatusMessage error>{changesError}</StatusMessage>}
+          {review.error && (
+            <StatusMessage error>
+              {review.error.path} — не удалось сохранить отметку.{' '}
+              {review.error.message}
+            </StatusMessage>
+          )}
           {isPreparingDiffs ? (
             <div
               className="flex items-center gap-2 py-4 text-fg-muted text-sm"
@@ -211,6 +219,14 @@ export const MergeRequestDetail = withViewModel(
                 submitCommentError={info.submitDiffCommentError}
                 onAddComment={info.submitDiffComment}
                 onClearSubmitError={info.clearSubmitDiffCommentError}
+                renderFileAction={(change) => (
+                  <ReviewFileButton
+                    review={review}
+                    change={change}
+                    head={headRef ?? ''}
+                    base={baseRef ?? null}
+                  />
+                )}
                 headBranch={mergeRequest.source_branch ?? null}
                 headRef={headRef ?? null}
                 baseRef={baseRef ?? null}

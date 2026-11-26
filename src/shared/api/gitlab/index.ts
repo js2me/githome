@@ -21,6 +21,7 @@ import { getMergeRequestDetail } from './endpoints/merge-requests/get-merge-requ
 import { getMergeRequestVersions } from './endpoints/merge-requests/get-merge-request-versions';
 import { getMergeRequestView } from './endpoints/merge-requests/get-merge-request-view';
 import { getProjectMergeRequests } from './endpoints/merge-requests/get-project-merge-requests';
+import { saveMergeRequestNote } from './endpoints/merge-requests/notes/save-merge-request-note';
 import { cancelPipeline } from './endpoints/pipelines/cancel-pipeline';
 import { createPipeline } from './endpoints/pipelines/create-pipeline';
 import { cancelPipelineJob } from './endpoints/pipelines/jobs/cancel-pipeline-job';
@@ -38,6 +39,7 @@ import {
   getRepositoryFileBlob,
   getRepositoryFileImage,
 } from './endpoints/repository/get-repository-file-blob';
+import { getRepositoryFileBlobId } from './endpoints/repository/get-repository-file-blob-id';
 import { getRepositoryFileContent } from './endpoints/repository/get-repository-file-content';
 import { getRepositoryTree } from './endpoints/repository/get-repository-tree';
 import { searchProjectBlobs } from './endpoints/repository/search-project-blobs';
@@ -77,6 +79,8 @@ export const gitlabApi = {
 
   getRepositoryFileBlob,
 
+  getRepositoryFileBlobId,
+
   getRepositoryFileImage,
 
   getRepositoryTree,
@@ -114,6 +118,8 @@ export const gitlabApi = {
   createMergeRequestDiscussionNote,
 
   createMergeRequestDiscussion,
+
+  saveMergeRequestNote,
 
   deleteMergeRequestDiscussionNote,
 

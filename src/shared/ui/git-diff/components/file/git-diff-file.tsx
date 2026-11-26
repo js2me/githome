@@ -316,6 +316,8 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
           )}
         </div>
 
+        {payload.renderFileAction?.(change)}
+
         {canComment && (
           <button
             className={diffFileHeaderTextButtonVariants()}

@@ -8,6 +8,10 @@ import {
 } from '@/shared/lib/gitlab/discussions/note-permissions';
 import { GitlabCommentEditor } from '@/shared/ui/gitlab-comment-editor';
 import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
+import {
+  REVIEWED_FILES_EMOJI,
+  readReviewedFiles,
+} from '../../../../model/changes/reviewed-files/reviewed-files-note';
 import { DiscussionNoteVM } from '../../../../model/merge-request-discussions';
 import { AuthorAvatar } from './author-avatar';
 
@@ -182,7 +186,9 @@ export const DiscussionNote = withPropsViewModel(
           ) : (
             <GitLabMarkdown
               {...markdownScope}
-              text={note.body}
+              text={
+                readReviewedFiles(note.body) ? REVIEWED_FILES_EMOJI : note.body
+              }
               className="min-w-0 max-w-full text-slate-800 dark:text-slate-300"
               italic={note.system}
             />

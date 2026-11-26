@@ -304,7 +304,7 @@ export const gitlabFetch = async (
   connection: GitLabConnection,
   path: string,
   signal?: AbortSignal,
-  options?: Pick<RequestInit, 'cache'>,
+  options?: Pick<RequestInit, 'cache' | 'method'>,
 ) => {
   const response = await fetch(
     resolveGitlabRequestUrl(connection.gitlabUrl, `/api/v4${path}`),

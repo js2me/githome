@@ -22,6 +22,7 @@ export interface GitLabGroupDC {
 
 export interface GitLabMergeRequestDC {
   project_id?: number;
+  source_project_id?: number | null;
   id: number;
   iid: number;
   title: string;
@@ -105,6 +106,8 @@ export interface GitLabPipelineVariableDC {
 }
 
 export interface GitLabMergeRequestChangeDC {
+  a_mode?: string;
+  b_mode?: string;
   old_path: string;
   new_path: string;
   diff: string;
@@ -128,6 +131,8 @@ export interface GitLabHighlightedDiffLineDC {
 }
 
 export interface GitLabDiffsBatchFileDC {
+  a_mode?: string;
+  b_mode?: string;
   old_path: string;
   new_path: string;
   diff?: string;

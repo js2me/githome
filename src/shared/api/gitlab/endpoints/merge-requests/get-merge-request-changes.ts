@@ -18,6 +18,8 @@ import type {
 import { getMergeRequestDetail } from './get-merge-request-detail';
 
 interface GitLabCompareDiffDC {
+  a_mode?: string;
+  b_mode?: string;
   old_path: string;
   new_path: string;
   diff?: string;
@@ -45,6 +47,8 @@ const getDiffFileMetadataKey = (oldPath: string, newPath: string) =>
 const mapCompareDiffToChange = (
   diff: GitLabCompareDiffDC,
 ): GitLabMergeRequestChangeDC => ({
+  a_mode: diff.a_mode,
+  b_mode: diff.b_mode,
   old_path: diff.old_path,
   new_path: diff.new_path,
   diff: diff.diff ?? '',
@@ -62,6 +66,8 @@ const mapBatchFileToChange = (
   }
 
   return {
+    a_mode: file.a_mode,
+    b_mode: file.b_mode,
     old_path: file.old_path,
     new_path: file.new_path,
     diff,

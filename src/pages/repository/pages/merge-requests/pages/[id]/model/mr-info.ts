@@ -32,6 +32,7 @@ import {
   type MergeRequestApprovalView,
 } from '@/shared/lib/gitlab/merge-request-approval-view';
 import type { Globals } from '@/shared/model/globals';
+import { ReviewedFiles } from './changes/reviewed-files/reviewed-files';
 
 export type MrReviewAction =
   | 'approve'
@@ -70,6 +71,7 @@ const sortMergeRequestDiscussions = (
 export class MrInfoModel {
   gitDiff: MergeRequestGitDiff;
   diffComment: CreateMrComment;
+  readonly reviewedFiles: ReviewedFiles;
   mergeRequestDetailQuery;
   mergeRequestDiscussionsQuery;
   currentUserQuery;
@@ -185,6 +187,8 @@ export class MrInfoModel {
           : null,
       options.abortSignal,
     );
+
+    this.reviewedFiles = new ReviewedFiles(this, options);
 
     this.mergeRequestApprovalsQuery =
       createGitlabQuery<GitLabMergeRequestApprovalsDC>({

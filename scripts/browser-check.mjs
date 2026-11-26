@@ -26,6 +26,7 @@
  * - retain TSX token colors on changed words and newly added lines in small and large MRs
  * - compare PNG and JPEG revisions and open either side in the zoom viewer
  * - submit a file-level comment and render the new thread on the file
+ * - restore reviewed files from one plain MR note and reset only changed diffs
  * - copy the GitLab URL from the MR header and open an MR by a pasted URL
  * - follow Jira references from the MR overview with the keyboard and copy each branch
  * - identify and switch between two GitLab users on the same host
@@ -255,7 +256,13 @@ const fileDiscussionPath = '/git-proxy/gitlab.mock/api/v4/projects/1/merge_reque
 const isFileDiscussionPost = (req) =>
   req.method() === 'POST' && new URL(req.url()).pathname === fileDiscussionPath;
 
-const route = (url, postData, token) => {
+const reviewNotesPath = '/api/v4/projects/1/merge_requests/157/notes';
+let reviewHead = 'head-sha';
+let reviewPatch = tsxChange.diff;
+let reviewNote;
+const reviewWrites = [];
+
+const route = (url, postData, token, method) => {
   const { pathname, searchParams } = new URL(url);
   const p = pathname.replace('/git-proxy/gitlab.mock', '');
   if (p === '/api/v4/user') return accountProfiles.get(token) ?? {};
@@ -299,12 +306,24 @@ const route = (url, postData, token) => {
   }
   if (p.endsWith('/diffs_batch.json')) {
     if (p.includes('/155/')) return { diff_files: largeMrChanges };
-    if (p.includes('/157/')) return { diff_files: [tsxChange, generatedChange] };
+    if (p.includes('/157/')) return { diff_files: [{ ...tsxChange, diff: reviewPatch }, generatedChange] };
     if (p.includes('/159/')) return { diff_files: [longDiffChange] };
     return { diff_files: p.includes('/156/') ? imageMrChanges : [] };
   }
   if (p.endsWith('/merge_requests/155')) return mr(155, 'Large MR', AUTHORS[0]);
-  if (p.endsWith('/merge_requests/157')) return mr(157, 'TSX MR', AUTHORS[0]);
+  if (p.endsWith('/merge_requests/157')) {
+    return { ...mr(157, 'TSX MR', AUTHORS[0]), diff_refs: { base_sha: 'base-sha', head_sha: reviewHead } };
+  }
+  if (p === reviewNotesPath && method === 'POST' || p === reviewNotesPath + '/901' && method === 'PUT') {
+    const { body } = JSON.parse(postData);
+    const now = new Date().toISOString();
+    reviewWrites.push(method);
+    reviewNote = { id: 901, body, author: accountProfiles.get(token), created_at: reviewNote?.created_at ?? now, updated_at: now };
+    return reviewNote;
+  }
+  if (p === '/api/v4/projects/1/merge_requests/157/discussions') {
+    return reviewNote ? [{ id: 'review-note', individual_note: true, notes: [reviewNote] }] : [];
+  }
   if (p.endsWith('/merge_requests/159')) {
     return {
       ...mr(159, 'Long diff', AUTHORS[0]),
@@ -428,7 +447,7 @@ page.on('request', (req) => {
     req.respond({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(route(url, req.postData(), token) ?? []),
+      body: JSON.stringify(route(url, req.postData(), token, req.method()) ?? []),
     });
   } else {
     req.continue();
@@ -1074,6 +1093,51 @@ try {
   await page.waitForSelector(afterViewer, { hidden: true });
 } catch (error) {
   check('image diff previews', false, String(error));
+}
+
+try {
+  const mrUrl = `${BASE}/repository/1/merge-requests/157`;
+  const button = index => `.git-diff > article:nth-child(${index}) header button[aria-pressed][title*="тмет"]`;
+  const waitForReview = (index, checked) => page.waitForSelector(
+    `${button(index)}[aria-pressed="${checked}"]:enabled`, { timeout: 5000 },
+  );
+  await page.goto(mrUrl, { waitUntil: 'domcontentloaded' });
+  await (await waitForReview(1, false)).click();
+  await waitForReview(1, true);
+  await (await waitForReview(2, false)).click();
+  await waitForReview(2, true);
+  const payload = JSON.parse(reviewNote.body.match(/<!-- githome-reviewed-files:v1\n(.+)\n-->/)?.[1] ?? 'null');
+  check('reviewing two files creates and updates one plain eyes note', reviewWrites.join(',') === 'POST,PUT' &&
+    reviewNote.body.startsWith('👀\n\n') && payload?.length === 2 &&
+    payload[0].path === tsxChange.new_path && payload[1].path === generatedChange.new_path &&
+    payload.every(file => file.commit === reviewHead && /^[0-9a-f]{64}$/.test(file.fingerprint)));
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForReview(1, true);
+  await waitForReview(2, true);
+  check('reviewed files are restored from GitLab after reopening the MR', true);
+
+  reviewHead = 'new-head-sha';
+  reviewPatch = reviewPatch.replace('visible', 'updated');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForReview(1, false);
+  await waitForReview(2, true);
+  check('a new commit clears only the mark for the modified diff', reviewWrites.length === 2);
+
+  await (await waitForReview(2, true)).click();
+  await waitForReview(2, false);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForReview(2, false);
+  check('manually clearing a mark updates the same note and persists after reload',
+    reviewWrites.join(',') === 'POST,PUT,PUT' && !reviewNote.body.includes(generatedChange.new_path));
+} catch (error) {
+  check('reviewed file marks are synchronized with GitLab', false, String(error));
+} finally {
+  reviewHead = 'head-sha';
+  reviewPatch = tsxChange.diff;
+  reviewNote = undefined;
+  await page.goto(`${BASE}/repository/1/merge-requests/156`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.git-diff > article:first-child');
 }
 
 try {

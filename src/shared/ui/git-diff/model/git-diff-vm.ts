@@ -4,6 +4,7 @@ import {
   observableRef,
   reaction,
 } from 'mobx';
+import type { ReactNode } from 'react';
 import type {
   GitLabDiscussionDC,
   GitLabMergeRequestChangeDC,
@@ -28,6 +29,7 @@ export interface GitDiffProps {
   submitCommentError: string | null;
   onAddComment: (input: CreateDiffCommentInput) => Promise<boolean>;
   onClearSubmitError: () => void;
+  renderFileAction?: (change: GitLabMergeRequestChangeDC) => ReactNode;
   headBranch?: string | null;
   headRef?: string | null;
   baseRef?: string | null;
