@@ -4,6 +4,29 @@
   overflow-anchor: none;
 }
 
+.git-diff-body-inner {
+  width: max-content;
+  min-width: 100%;
+}
+
+.git-diff-code-row {
+  min-width: max-content;
+}
+
+.git-diff-body-inner[data-diff-notice],
+.git-diff-body-scroll[data-wrap-code] .git-diff-body-inner {
+  width: 100%;
+}
+
+.git-diff-body-scroll[data-wrap-code] :is(.git-diff-code-row, .git-diff-grid) {
+  min-width: 0;
+}
+
+.git-diff-body-scroll[data-wrap-code] :is(.git-diff-code, .git-diff-expand-hunk, .git-diff-expand-label) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .git-diff-grid {
   display: grid;
   width: 100%;

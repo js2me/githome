@@ -5,10 +5,11 @@ import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 import type { ParsedFileDiff } from '@/shared/lib/parse-unified-diff';
 import { getDiffLineTokenKey } from './diff-line-token-key';
 import type { SyntaxLanguage } from './supported-languages';
+import type { SyntaxTheme } from './theme-options';
 import draculaOfficialTheme from './themes/dracula-official.json';
 import tokyoNightLightTheme from './themes/tokyo-night-light.json';
 
-export type SyntaxTheme = 'tokyo-night-light' | 'dracula-official';
+export type { SyntaxTheme } from './theme-options';
 
 export interface SyntaxToken {
   content: string;
@@ -276,6 +277,13 @@ export class SyntaxHighlighter {
     theme: SyntaxTheme,
   ) {
     const highlighter = await this.getHighlighter();
+    if (
+      theme !== 'tokyo-night-light' &&
+      theme !== 'dracula-official' &&
+      !highlighter.getLoadedThemes().includes(theme)
+    ) {
+      await highlighter.loadTheme(theme);
+    }
     const { tokens } = highlighter.codeToTokens(source, {
       lang: lang as BundledLanguage,
       theme,

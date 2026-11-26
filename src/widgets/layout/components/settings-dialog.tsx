@@ -2,7 +2,10 @@ import { CircleArrowDown, Code, Gear, Palette, Xmark } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
 import { useViewModel } from 'mobx-view-model-react';
 import { cn } from '@/shared/lib/cn';
-import { codeFontSizes } from '@/shared/lib/code-view-preferences';
+import {
+  codeFontSizes,
+  codeSyntaxThemeSettings,
+} from '@/shared/lib/code-view-preferences';
 import { GlassDialog } from '@/shared/ui/glass-dialog';
 import type { LayoutVM } from '../model/layout-vm';
 import { AppUpdatePanel } from './app-update-panel';
@@ -11,6 +14,11 @@ const sections = [
   { id: 'appearance', label: 'Оформление', Icon: Palette },
   { id: 'code', label: 'Просмотр кода', Icon: Code },
   { id: 'updates', label: 'Обновления', Icon: CircleArrowDown },
+] as const;
+
+const codeColorModes = [
+  { mode: 'light', label: 'Цветовая схема для светлой темы' },
+  { mode: 'dark', label: 'Цветовая схема для тёмной темы' },
 ] as const;
 
 const iconButtonClassName =
@@ -126,7 +134,7 @@ export const SettingsDialog = observer(() => {
                     Просмотр кода
                   </h3>
                   <p className="mt-1 mb-5 text-fg-muted text-sm">
-                    Эти параметры применяются к файлам в репозитории.
+                    Эти параметры применяются к файлам в репозитории и к diff.
                   </p>
                   <div className="glass-panel divide-y divide-border-default rounded-xl">
                     <label className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 font-semibold text-sm">
@@ -167,6 +175,32 @@ export const SettingsDialog = observer(() => {
                         }
                       />
                     </label>
+                    {codeColorModes.map(({ mode, label }) => (
+                      <label
+                        key={mode}
+                        className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 font-semibold text-sm"
+                      >
+                        {label}
+                        <select
+                          className="glass-input rounded-lg px-2.5 py-1.5 text-sm"
+                          value={appSettings.getCodeSyntaxTheme(mode)}
+                          onChange={(event) =>
+                            appSettings.setCodeSyntaxTheme(
+                              mode,
+                              event.target.value,
+                            )
+                          }
+                        >
+                          {codeSyntaxThemeSettings[mode].options.map(
+                            ({ id, label: themeLabel }) => (
+                              <option key={id} value={id}>
+                                {themeLabel}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </label>
+                    ))}
                   </div>
                 </section>
               )}

@@ -2,8 +2,11 @@ import { Display, Moon, Sun } from '@gravity-ui/icons';
 import { actionBound, computed, observable } from 'mobx';
 import { createRef } from 'yummies/mobx';
 import {
+  type CodeColorMode,
   type CodeFontSize,
   codeFontSizeKey,
+  codeSyntaxThemeSettings,
+  getCodeSyntaxTheme,
   wrapSourceCodeKey,
 } from '@/shared/lib/code-view-preferences';
 import type { ThemePreference } from '@/shared/lib/theme-manager';
@@ -62,5 +65,15 @@ export class AppSettings {
   @actionBound
   setWrapSourceCode(wrap: boolean) {
     wrapSourceCodeKey.value = wrap;
+  }
+
+  getCodeSyntaxTheme(mode: CodeColorMode) {
+    return getCodeSyntaxTheme(mode);
+  }
+
+  @actionBound
+  setCodeSyntaxTheme(mode: CodeColorMode, value: string) {
+    const { key, options } = codeSyntaxThemeSettings[mode];
+    if (options.some(({ id }) => id === value)) key.value = value;
   }
 }

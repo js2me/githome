@@ -1,7 +1,8 @@
 import { action, computed, reaction } from 'mobx';
 import { colorScheme } from 'mobx-web-api';
+import { getCodeSyntaxTheme } from '@/shared/lib/code-view-preferences';
 import { appStorage } from '@/shared/lib/storage';
-import type { SyntaxTheme } from '@/shared/lib/syntax-highlight/syntax-highlighter';
+import type { SyntaxTheme } from '@/shared/lib/syntax-highlight/theme-options';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 
@@ -36,7 +37,7 @@ export class ThemeManager {
 
   @computed
   get syntaxTheme(): SyntaxTheme {
-    return this.isDark ? 'dracula-official' : 'tokyo-night-light';
+    return getCodeSyntaxTheme(this.isDark ? 'dark' : 'light');
   }
 
   @action

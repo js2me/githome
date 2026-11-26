@@ -20,7 +20,7 @@ export class HighlightedSourceCodeVM extends VM<HighlightedSourceCodePayload> {
       () => ({
         content: this.payload.content,
         filePath: this.payload.filePath,
-        isDark: this.globals.stores.theme.isDark,
+        theme: this.globals.stores.theme.syntaxTheme,
       }),
       () => {
         void this.highlight();

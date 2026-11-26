@@ -1,7 +1,11 @@
 import { observer } from 'mobx-react-lite';
-import { useLayoutEffect } from 'react';
+import { type CSSProperties, useLayoutEffect } from 'react';
 import { cva } from 'yummies/css';
 import { cn } from '@/shared/lib/cn';
+import {
+  codeFontSizeKey,
+  wrapSourceCodeKey,
+} from '@/shared/lib/code-view-preferences';
 import {
   getDiffFileElementId,
   getDiffFileHeaderRowId,
@@ -434,12 +438,20 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       {model.images ? (
         <DiffImages images={model.images} />
       ) : (
-        <div className="git-diff-body-scroll">
+        <div
+          className="git-diff-body-scroll"
+          data-wrap-code={wrapSourceCodeKey.value ? '' : undefined}
+          style={
+            {
+              '--diff-code-font-size': `${codeFontSizeKey.value}px`,
+            } as CSSProperties
+          }
+        >
           <div
-            className={cn(
-              'min-w-full',
-              showTooLargeBanner || isDiffContentHidden ? 'w-full' : 'w-max',
-            )}
+            className="git-diff-body-inner"
+            data-diff-notice={
+              showTooLargeBanner || isDiffContentHidden ? '' : undefined
+            }
             style={
               reservedBodyMinHeight
                 ? { minHeight: reservedBodyMinHeight }

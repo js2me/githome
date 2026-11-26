@@ -2,6 +2,10 @@ import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { observer } from 'mobx-react-lite';
 import { useLayoutEffect } from 'react';
 import type { VirtualDiffRow } from '@/shared/lib/build-diff-virtual-rows';
+import {
+  codeFontSizeKey,
+  wrapSourceCodeKey,
+} from '@/shared/lib/code-view-preferences';
 import type { FileGitDiff } from '../model/file-git-diff';
 import {
   DiffCommentFormRow,
@@ -15,7 +19,7 @@ const isDiffCodeRow = (row: VirtualDiffRow) =>
   row.type === 'line' || row.type === 'hunk' || row.type === 'expand';
 
 const getDiffRowLayoutClassName = (row: VirtualDiffRow) =>
-  isDiffCodeRow(row) ? 'w-full min-w-max' : 'w-full min-w-full';
+  isDiffCodeRow(row) ? 'git-diff-code-row w-full' : 'w-full min-w-full';
 
 const VirtualDiffRowView = observer(
   ({ row, file }: { row: VirtualDiffRow; file: FileGitDiff }) => {
@@ -134,9 +138,16 @@ const VirtualDiffRowView = observer(
 const VirtualizedDiffBody = observer(({ file }: { file: FileGitDiff }) => {
   const { navigation } = file;
   const rows = file.rows.virtualRows;
+  const fontSize = codeFontSizeKey.value;
+  const wrap = wrapSourceCodeKey.value;
+  const lineHeight = fontSize * 1.6;
   const virtualizer = useWindowVirtualizer({
     count: rows.length,
-    estimateSize: (index) => rows[index]?.estimatedHeight ?? 20,
+    estimateSize: (index) => {
+      const row = rows[index];
+      if (!row || row.type === 'line') return lineHeight;
+      return row.estimatedHeight;
+    },
     getItemKey: (index) => rows[index]?.id ?? index,
     overscan: 24,
     scrollMargin: navigation.scrollMargin,
@@ -147,7 +158,12 @@ const VirtualizedDiffBody = observer(({ file }: { file: FileGitDiff }) => {
   useLayoutEffect(() => {
     navigation.measureMargin();
     virtualizer.measure();
-  }, [measureKey, navigation, virtualizer]);
+    for (const element of navigation.listRef.current?.querySelectorAll<HTMLElement>(
+      ':scope > div > [data-index]',
+    ) ?? []) {
+      virtualizer.measureElement(element);
+    }
+  }, [fontSize, wrap, measureKey, navigation, virtualizer]);
 
   useLayoutEffect(() => {
     return navigation.registerScrollToRow((rowId: string) => {
