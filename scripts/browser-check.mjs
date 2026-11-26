@@ -17,6 +17,8 @@
  * - exactly one visible avatar per author on every MR-list mount
  * - the «Мои» filter includes the user's open, merged and closed MRs and supports search
  * - review badges reflect approval and discussion states on desktop and mobile
+ * - long MR titles wrap beside their numbers without overflowing
+ * - capped pages share the same maximum width without overflowing on mobile
  * - open multiple MR tabs across repositories, switch between them, and close one
  * - open the sticky workspace picker by pointer and keyboard without shifting the page
  * - scroll and select files in a 255-file merge request
@@ -103,6 +105,7 @@ const mr = (iid, title, authorName) => ({
 
 const projects = [project(1, 'alpha'), project(2, 'beta'), project(3, 'gamma')];
 const mrs = AUTHORS.map((name, i) => mr(i + 1, `Mock MR #${i + 1}`, name));
+const longMrTitle = `Refactor the shared libraries for the microfrontend host and application ${'LongIdentifier'.repeat(12)}`;
 const currentUser = user(1, 'Test User');
 const secondUser = user(2, 'Mira Rivera');
 const primaryConnection = { id: 'test-conn', gitlabUrl: 'https://gitlab.mock', gitToken: 'fake-token' };
@@ -113,7 +116,7 @@ const accountProfiles = new Map([
   [secondConnection.gitToken, profile(secondUser)],
 ]);
 const projectMrs = [
-  ...mrs,
+  ...mrs.map(item => item.iid === 4 ? { ...item, title: longMrTitle } : item),
   { ...mr(11, 'Refine navigation', currentUser.name), author: currentUser, draft: true },
   { ...mr(12, 'Update release notes', currentUser.name), author: currentUser, state: 'merged' },
   { ...mr(13, 'Replace sidebar', currentUser.name), author: currentUser, state: 'closed' },
@@ -344,7 +347,7 @@ page.on('console', (msg) => {
   if (msg.type() === 'error') consoleErrors.push(text);
 });
 
-await page.evaluateOnNewDocument(connection => {
+const { identifier: connectionSetup } = await page.evaluateOnNewDocument(connection => {
   if (!localStorage.getItem('githome:connections')) {
     localStorage.setItem('githome:connections', JSON.stringify({ items: [connection], activeId: connection.id }));
   }
@@ -496,6 +499,23 @@ try {
         bounds.left >= 0 && bounds.right <= window.innerWidth && row.scrollWidth <= row.clientWidth;
     }), { timeout: 5000 }, expectedStatuses);
     check(`MR rows show accurate review statuses within the ${width}px viewport`, true);
+    check(`Long MR title wraps beside its number at ${width}px`, await page.$eval(
+      'main button[aria-label^="Открыть !4 "]',
+      (row, expectedTitle) => {
+        const number = row.querySelector('span');
+        const title = number?.nextElementSibling;
+        if (number?.textContent !== '!4' || title?.textContent !== expectedTitle) return false;
+        const range = document.createRange();
+        range.selectNodeContents(title);
+        const lines = [...range.getClientRects()];
+        const numberRect = number.getBoundingClientRect();
+        const titleRect = title.getBoundingClientRect();
+        return lines.length > 1 && numberRect.right <= lines[0].left &&
+          numberRect.top < lines[0].bottom && lines[0].top < numberRect.bottom &&
+          lines.every(line => line.right <= titleRect.right + 1);
+      },
+      longMrTitle,
+    ));
   }
   check('MR list displays open and draft states in Russian',
     await page.$eval('main button[aria-label^="Открыть !1 "]', row => row.innerText.includes('Открыт')) &&
@@ -1197,6 +1217,32 @@ try {
   }
 } catch (error) {
   check('pipeline detail dialogs', false, String(error));
+}
+
+try {
+  for (const [path, selector] of [
+    ['/', '.home-dashboard'],
+    ['/repository/1', 'main section:has(nav[aria-label="Разделы проекта"])'],
+    ['/repository/1/merge-requests', 'section[aria-labelledby="mr-list-heading"]'],
+    ['/repository/1/pipelines', 'section[aria-labelledby="pipelines-heading"]'],
+    ['/', '.home-welcome'],
+  ]) {
+    if (selector === '.home-welcome') {
+      await page.removeScriptToEvaluateOnNewDocument(connectionSetup);
+      await page.evaluate(() => localStorage.removeItem('githome:connections'));
+    }
+    await page.setViewport({ width: 1920, height: 800 });
+    await page.goto(BASE + path, { waitUntil: 'domcontentloaded' });
+    const container = await page.waitForSelector(selector, { visible: true, timeout: 5000 });
+    const desktop = await container.boundingBox();
+    await page.setViewport({ width: 320, height: 800 });
+    const mobile = await container.boundingBox();
+    check(`Page width stays centered and responsive for ${selector}`,
+      desktop?.width === 1440 && desktop.x === 240 &&
+      mobile?.width === 296 && mobile.x === 12);
+  }
+} catch (error) {
+  check('shared maximum page width', false, String(error));
 }
 
 check('no page errors', pageErrors.length === 0, pageErrors[0]?.slice(0, 150));

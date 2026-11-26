@@ -357,7 +357,10 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
   const list = model.pipelineList;
   const { selectedPipeline } = list;
   return (
-    <section className="pipeline-page" aria-labelledby="pipelines-heading">
+    <section
+      className="mx-auto w-full max-w-page"
+      aria-labelledby="pipelines-heading"
+    >
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2
           id="pipelines-heading"

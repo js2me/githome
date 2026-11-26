@@ -36,7 +36,7 @@ export const HomePage = withViewModel(
 
     if (!model.isConfigured) {
       return (
-        <section className="home-welcome glass-panel mx-auto max-w-[1180px] rounded-3xl">
+        <section className="home-welcome glass-panel mx-auto max-w-page rounded-3xl">
           <div className="relative z-10 max-w-lg">
             <LogoGitlab
               className="mb-6 size-9 text-[var(--glass-accent)]"
@@ -64,7 +64,7 @@ export const HomePage = withViewModel(
     }
 
     return (
-      <div className="home-dashboard mx-auto grid max-w-[1180px] items-start gap-5">
+      <div className="home-dashboard mx-auto grid max-w-page items-start gap-5">
         <section
           className="glass-panel min-w-0 rounded-2xl"
           aria-labelledby="home-reviews-title"

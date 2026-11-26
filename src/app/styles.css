@@ -3,6 +3,10 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --container-page: 90rem;
+}
+
 @theme inline {
   --color-brand: var(--color-brand);
   --color-brand-hover: var(--color-brand-hover);

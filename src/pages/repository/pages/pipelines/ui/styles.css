@@ -1,8 +1,3 @@
-.pipeline-page {
-  width: 100%;
-  max-width: 72rem;
-  margin-inline: auto;
-}
 .pipeline-list {
   container-type: inline-size;
 }

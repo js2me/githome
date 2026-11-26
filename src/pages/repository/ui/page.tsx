@@ -61,7 +61,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
       />
       <RouteView route={model.globals.routes.pipelines} view={PipelinesPage} />
       <RouteView route={model.globals.routes.analytics} view={AnalyticsPage} />
-      <section className="mx-auto max-w-[1180px]">
+      <section className="mx-auto max-w-page">
         {model.isLoading && !project && (
           <StatusMessage>Загружаем репозиторий...</StatusMessage>
         )}

@@ -15,7 +15,7 @@ export const MergeRequestsPage = withViewModel(
 
     return (
       <section
-        className="mx-auto w-full max-w-[1180px]"
+        className="mx-auto w-full max-w-page"
         aria-labelledby="mr-list-heading"
       >
         <h2

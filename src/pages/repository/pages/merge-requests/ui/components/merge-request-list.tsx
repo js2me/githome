@@ -45,8 +45,8 @@ export const MergeRequestListRows = withPropsViewModel(
                 onClick={() => onSelect(mr)}
               >
                 <div className="min-w-0 basis-full sm:flex-1">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span className="font-medium font-mono text-fg-muted text-xs">
+                  <div className="flex items-baseline gap-2">
+                    <span className="shrink-0 font-medium font-mono text-fg-muted text-xs">
                       !{mr.iid}
                     </span>
                     <span className="min-w-0 font-semibold text-[15px] leading-snug [overflow-wrap:anywhere]">
