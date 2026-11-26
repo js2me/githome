@@ -1,5 +1,4 @@
 import { observer } from 'mobx-react-lite';
-import { useLayoutEffect } from 'react';
 import type { FileGitDiff } from '../../model/file-git-diff';
 import { getDiffRowLayoutClassName } from './diff-row-layout';
 import { VirtualDiffRowView } from './virtual-diff-row-view';
@@ -8,17 +7,9 @@ import { VirtualizedDiffBody } from './virtualized-diff-body';
 export const DiffBody = observer(
   ({ fileGitDiff: file }: { fileGitDiff: FileGitDiff }) => {
     const { rows, navigation } = file;
-    useLayoutEffect(() => rows.watchResolvedThreads(), [rows]);
-    const formKey = file.selection.formKey;
-    const commentLineKey = rows.commentFormLineKey;
-    useLayoutEffect(() => {
-      if (commentLineKey)
-        navigation.scrollToRow(`comment-form:${commentLineKey}`);
-    }, [formKey, commentLineKey, navigation]);
-
     if (rows.virtualized) return <VirtualizedDiffBody file={file} />;
     return (
-      <div className="w-full pl-7">
+      <div ref={navigation.bodyRef} className="w-full pl-7">
         {rows.virtualRows.map((row) => (
           <div
             key={row.id}

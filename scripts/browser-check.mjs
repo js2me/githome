@@ -195,6 +195,16 @@ const largeMrChanges = Array.from({ length: 255 }, (_, index) => {
   };
 });
 
+const longDiffLines = Array.from({ length: 180 }, (_, index) =>
+  `+export const ${index === 165 ? 'virtualSearchTarget' : `line${index}`} = ${index};`,
+);
+const longDiffChange = {
+  old_path: 'long-diff.ts',
+  new_path: 'long-diff.ts',
+  new_file: true,
+  diff: ['@@ -0,0 +1,180 @@', ...longDiffLines].join('\n'),
+};
+
 const imageMrChanges = [
   {
     old_path: 'assets/old screenshot.PNG',
@@ -290,10 +300,17 @@ const route = (url, postData, token) => {
   if (p.endsWith('/diffs_batch.json')) {
     if (p.includes('/155/')) return { diff_files: largeMrChanges };
     if (p.includes('/157/')) return { diff_files: [tsxChange, generatedChange] };
+    if (p.includes('/159/')) return { diff_files: [longDiffChange] };
     return { diff_files: p.includes('/156/') ? imageMrChanges : [] };
   }
   if (p.endsWith('/merge_requests/155')) return mr(155, 'Large MR', AUTHORS[0]);
   if (p.endsWith('/merge_requests/157')) return mr(157, 'TSX MR', AUTHORS[0]);
+  if (p.endsWith('/merge_requests/159')) {
+    return {
+      ...mr(159, 'Long diff', AUTHORS[0]),
+      diff_refs: { base_sha: 'base-sha', start_sha: 'start-sha', head_sha: 'head-sha' },
+    };
+  }
   if (p.endsWith('/merge_requests/158')) {
     return { ...mr(158, unlinkedTitle, AUTHORS[0]), description: '', title_html: unlinkedTitle };
   }
@@ -962,6 +979,36 @@ try {
   await checkTsxColors('.git-diff > article:last-child', 'TSX colors appear at the bottom of a 255-file MR');
 } catch (error) {
   check('large MR tree navigation', false, String(error));
+}
+
+try {
+  await page.goto(`${BASE}/repository/1/merge-requests/159`, { waitUntil: 'domcontentloaded' });
+  const viewport = '.diff-viewport';
+  await page.waitForSelector(`${viewport} [data-index="0"]`);
+  const target = `${viewport} [data-index="166"]`;
+  check('long diff initially mounts only nearby lines', !(await page.$(target)));
+
+  await page.keyboard.down('Control');
+  await page.keyboard.press('f');
+  await page.keyboard.up('Control');
+  await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Поиск по файлам и коду');
+  await page.keyboard.type('virtualSearchTarget');
+  await page.waitForFunction(selector => {
+    const item = document.querySelector(selector);
+    const rect = item?.getBoundingClientRect();
+    return item?.textContent.includes('virtualSearchTarget') && rect.top > 0 && rect.bottom < innerHeight;
+  }, { timeout: 6000 }, target);
+  check('diff search scrolls to a line outside the mounted range', true);
+
+  await page.$eval(`${target} button[title="Оставить комментарий"]`, button => button.click());
+  await page.waitForFunction(() => {
+    const editor = document.querySelector('.diff-viewport textarea[placeholder="Напишите комментарий..."]');
+    const rect = editor?.getBoundingClientRect();
+    return rect && rect.top >= 0 && rect.bottom <= innerHeight;
+  }, { timeout: 6000 });
+  check('inline comment editor scrolls into view in a virtualized diff', true);
+} catch (error) {
+  check('virtualized diff navigation', false, String(error));
 }
 
 try {

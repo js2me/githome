@@ -11,7 +11,7 @@ description: >-
 
 **Правило:** бизнес-логика и сложная логика — во ViewModel. React-хуки для этого — зло.
 
-Biome запрещает импорт `useState`, `useRef` и `useEffect` из React. Состояние и DOM-ссылки храните в VM, подписки привязывайте к её жизненному циклу. В представлении допустимы хуки интеграции с DOM и внешними UI-библиотеками, например `useLayoutEffect` для измерений виртуализатора.
+Biome запрещает импорт `useState`, `useRef`, `useEffect`, `useCallback`, `useLayoutEffect`, `useReducer` и `useMemo` из React. Состояние и DOM-ссылки храните в VM, подписки привязывайте к её жизненному циклу. Для измерений после обновления DOM используйте callback ref, `ResizeObserver` или `requestAnimationFrame` из модели. Хуки сторонних UI-библиотек, например `useVirtualizer`, остаются в представлении.
 
 ## Где применять
 

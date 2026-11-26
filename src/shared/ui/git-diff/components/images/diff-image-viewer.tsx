@@ -1,6 +1,5 @@
 import { Minus, Plus, Xmark } from '@gravity-ui/icons';
 import { withPropsViewModel } from 'mobx-view-model-react';
-import { useLayoutEffect } from 'react';
 import {
   DiffImageViewerVM,
   MAX_SCALE,
@@ -24,9 +23,7 @@ export const DiffImageViewer = withPropsViewModel(
       fitScale,
       changeScale,
       setSize,
-      restoreAnchor,
     } = model;
-    useLayoutEffect(restoreAnchor);
 
     return (
       <dialog

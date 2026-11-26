@@ -1,10 +1,6 @@
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { observer } from 'mobx-react-lite';
-import { useLayoutEffect } from 'react';
-import {
-  codeFontSizeKey,
-  wrapSourceCodeKey,
-} from '@/shared/lib/code-view-preferences';
+import { codeFontSizeKey } from '@/shared/lib/code-view-preferences';
 import type { FileGitDiff } from '../../model/file-git-diff';
 import { getDiffRowLayoutClassName } from './diff-row-layout';
 import { VirtualDiffRowView } from './virtual-diff-row-view';
@@ -14,9 +10,8 @@ export const VirtualizedDiffBody = observer(
     const { navigation } = file;
     const rows = file.rows.virtualRows;
     const fontSize = codeFontSizeKey.value;
-    const wrap = wrapSourceCodeKey.value;
     const lineHeight = fontSize * 1.6;
-    const virtualizer = useWindowVirtualizer({
+    const virtualizer = useWindowVirtualizer<HTMLDivElement>({
       count: rows.length,
       estimateSize: (index) => {
         const row = rows[index];
@@ -29,28 +24,11 @@ export const VirtualizedDiffBody = observer(
       measureElement: (element) => element.getBoundingClientRect().height,
     });
 
-    const measureKey = file.rows.layoutKey;
-    useLayoutEffect(() => {
-      navigation.measureMargin();
-      virtualizer.measure();
-      for (const element of navigation.listRef.current?.querySelectorAll<HTMLElement>(
-        ':scope > div > [data-index]',
-      ) ?? []) {
-        virtualizer.measureElement(element);
-      }
-    }, [fontSize, wrap, measureKey, navigation, virtualizer]);
-
-    useLayoutEffect(() => {
-      return navigation.registerScrollToRow((rowId: string) => {
-        const index = rows.findIndex((row) => row.id === rowId);
-        if (index >= 0) {
-          virtualizer.scrollToIndex(index, { align: 'center' });
-        }
-      });
-    }, [navigation, rows, virtualizer]);
-
     return (
-      <div ref={navigation.listRef} className="diff-viewport w-full pl-7">
+      <div
+        ref={navigation.getViewportRef(virtualizer)}
+        className="diff-viewport w-full pl-7"
+      >
         <div
           className="relative w-full"
           style={{

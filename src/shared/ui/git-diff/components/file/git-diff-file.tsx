@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import { type CSSProperties, useLayoutEffect } from 'react';
+import type { CSSProperties } from 'react';
 import { cva } from 'yummies/css';
 import { cn } from '@/shared/lib/cn';
 import {
@@ -12,11 +12,7 @@ import {
 } from '@/shared/lib/diff/diff-search';
 import type { FileGitDiff } from '../../model/file-git-diff';
 import { DiffThreadRow } from '../diff-rows';
-import {
-  SearchHighlightedText,
-  useDiffSearchRegistrationOptional,
-  useRowSearchHighlight,
-} from '../diff-search';
+import { SearchHighlightedText, useRowSearchHighlight } from '../diff-search';
 import { DiffSyntaxHighlightProvider } from '../diff-syntax-highlight';
 import { CopyContentIcon } from '../icons/copy-content-icon';
 import { CopyNameIcon } from '../icons/copy-name-icon';
@@ -140,14 +136,8 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         })
       : null;
 
-  const searchRegistration = useDiffSearchRegistrationOptional();
   const headerRowId = getDiffFileHeaderRowId(fileKey);
   const headerSearchHighlight = useRowSearchHighlight(headerRowId);
-
-  useLayoutEffect(() => {
-    if (searchRegistration)
-      return navigation.registerSearch(searchRegistration);
-  }, [navigation, searchRegistration]);
 
   const renderDiffContent = () => {
     if (showTooLargeBanner) {

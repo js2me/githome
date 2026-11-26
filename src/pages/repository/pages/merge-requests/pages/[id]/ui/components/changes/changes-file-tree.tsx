@@ -1,7 +1,7 @@
 import { Magnifier } from '@gravity-ui/icons';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { withPropsViewModel } from 'mobx-view-model-react';
-import { type CSSProperties, useCallback, useLayoutEffect } from 'react';
+import type { CSSProperties } from 'react';
 import { ChangesFileTreeVM } from '../../../model/changes/changes-file-tree';
 import './changes-file-tree.css';
 import { TreeNodeView } from './file-tree/tree-node-view';
@@ -18,11 +18,10 @@ export const ChangesFileTree = withPropsViewModel(
       collapsedPaths,
       searchQuery,
       fileKeysWithDiscussions,
+      getItemKey,
     } = model;
     const { changes, onSelectFile } = model.payload;
-    const activeFileKey = model.payload.activeFile.get();
-    const getItemKey = useCallback((index: number) => rows[index].key, [rows]);
-    const virtualizer = useVirtualizer({
+    const virtualizer = useVirtualizer<HTMLElement, HTMLDivElement>({
       count: rows.length,
       getScrollElement: () => nav.current,
       estimateSize: () => FILE_ROW_HEIGHT,
@@ -31,11 +30,6 @@ export const ChangesFileTree = withPropsViewModel(
       paddingEnd: 4,
       overscan: 8,
     });
-
-    useLayoutEffect(() => {
-      if (activeIndex >= 0)
-        virtualizer.scrollToIndex(activeIndex, { align: 'auto' });
-    }, [activeIndex, activeFileKey, virtualizer]);
 
     if (changes.length === 0) {
       return null;
@@ -62,7 +56,10 @@ export const ChangesFileTree = withPropsViewModel(
           />
         </label>
 
-        <nav ref={nav} className="changes-file-tree__nav">
+        <nav
+          ref={model.getNavRef(virtualizer)}
+          className="changes-file-tree__nav"
+        >
           <div
             className="relative"
             style={{ height: virtualizer.getTotalSize() }}

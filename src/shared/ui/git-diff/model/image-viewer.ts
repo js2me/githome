@@ -14,7 +14,15 @@ export class DiffImageViewerVM extends VM<{
   readonly dialogRef = createRef<HTMLDialogElement>({
     onSet: (dialog) => dialog.showModal(),
   });
-  readonly imageRef = createRef<HTMLImageElement>();
+  readonly imageRef = createRef<HTMLImageElement>({
+    onChange: (image) => {
+      this.imageResizeObserver?.disconnect();
+      this.anchor = undefined;
+      if (!image) return;
+      this.imageResizeObserver = new ResizeObserver(this.restoreAnchor);
+      this.imageResizeObserver.observe(image);
+    },
+  });
   readonly viewportRef = createRef<HTMLDivElement>({
     onChange: (view, previous) => {
       this.resizeObserver?.disconnect();
@@ -31,6 +39,7 @@ export class DiffImageViewerVM extends VM<{
   @observableRef private accessor viewport = { width: 0, height: 0 };
   @observable accessor zoom: number | null = null;
   private resizeObserver?: ResizeObserver;
+  private imageResizeObserver?: ResizeObserver;
   private anchor?: { x: number; y: number; clientX: number; clientY: number };
   private drag?: {
     pointerId: number;
@@ -87,7 +96,11 @@ export class DiffImageViewerVM extends VM<{
     const bounds = view.getBoundingClientRect();
     const clientX = point?.clientX ?? bounds.left + view.clientWidth / 2;
     const clientY = point?.clientY ?? bounds.top + view.clientHeight / 2;
-    if (rect.width && rect.height) {
+    if (
+      (nextScale ?? this.fitScale) !== this.scale &&
+      rect.width &&
+      rect.height
+    ) {
       this.anchor = {
         x: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
         y: Math.max(0, Math.min(1, (clientY - rect.top) / rect.height)),
@@ -98,7 +111,7 @@ export class DiffImageViewerVM extends VM<{
     this.zoom = nextScale;
   }
 
-  @actionBound restoreAnchor() {
+  @actionBound private restoreAnchor() {
     const view = this.viewportRef.current;
     const image = this.imageRef.current;
     const point = this.anchor;

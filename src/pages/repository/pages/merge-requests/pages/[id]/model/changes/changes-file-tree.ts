@@ -1,3 +1,4 @@
+import type { Virtualizer } from '@tanstack/react-virtual';
 import {
   actionBound,
   computed,
@@ -124,6 +125,11 @@ export class ChangesFileTreeVM extends VM<{
   onSelectFile: (fileKey: string) => void;
 }> {
   readonly nav = createRef<HTMLElement>();
+  private readonly navRefs = new WeakMap<
+    Virtualizer<HTMLElement, HTMLDivElement>,
+    (element: HTMLElement | null) => void
+  >();
+  private stopScrolling?: () => void;
   readonly collapsedPaths = observable.set<string>();
   @observable accessor searchQuery = '';
 
@@ -146,6 +152,44 @@ export class ChangesFileTreeVM extends VM<{
       filterTreeNodes(this.tree, this.searchQuery),
       this.collapsedPaths,
     );
+  }
+
+  @computed get getItemKey() {
+    const rows = this.rows;
+    return (index: number) => rows[index].key;
+  }
+
+  getNavRef(virtualizer: Virtualizer<HTMLElement, HTMLDivElement>) {
+    let ref = this.navRefs.get(virtualizer);
+    if (!ref) {
+      ref = (element) => {
+        this.stopScrolling?.();
+        this.stopScrolling = undefined;
+        this.nav(element);
+        if (!element) return;
+
+        let frame = 0;
+        const stop = reaction(
+          () => [this.activeIndex, this.payload.activeFile.get()] as const,
+          ([index]) => {
+            cancelAnimationFrame(frame);
+            if (index >= 0) {
+              // Wait for the virtualizer to receive the committed list.
+              frame = requestAnimationFrame(() =>
+                virtualizer.scrollToIndex(index, { align: 'auto' }),
+              );
+            }
+          },
+          { fireImmediately: true },
+        );
+        this.stopScrolling = () => {
+          stop();
+          cancelAnimationFrame(frame);
+        };
+      };
+      this.navRefs.set(virtualizer, ref);
+    }
+    return ref;
   }
 
   @computed
