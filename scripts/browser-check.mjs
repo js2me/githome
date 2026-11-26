@@ -14,6 +14,7 @@
  *
  * Checks:
  * - home -> project (lazy page under Suspense) -> Merge requests -> back -> forward
+ * - repository breadcrumbs open nested groups and link back to the repository
  * - exactly one visible avatar per author on every MR-list mount
  * - the «Мои» filter includes the user's open, merged and closed MRs and supports search
  * - review badges reflect approval and discussion states on desktop and mobile
@@ -104,6 +105,13 @@ const mr = (iid, title, authorName) => ({
 });
 
 const projects = [project(1, 'alpha'), project(2, 'beta'), project(3, 'gamma')];
+const oneui = { id: 401, name: 'oneui', full_path: 'oneui' };
+const frontend = { id: 402, name: 'frontend', full_path: 'oneui/frontend' };
+const nova = {
+  ...project(4, 'nova'),
+  path_with_namespace: 'oneui/frontend/nova',
+  web_url: 'https://gitlab.mock/oneui/frontend/nova',
+};
 const mrs = AUTHORS.map((name, i) => mr(i + 1, `Mock MR #${i + 1}`, name));
 const longMrTitle = `Refactor the shared libraries for the microfrontend host and application ${'LongIdentifier'.repeat(12)}`;
 const currentUser = user(1, 'Test User');
@@ -241,6 +249,11 @@ const route = (url, postData, token) => {
   const { pathname, searchParams } = new URL(url);
   const p = pathname.replace('/git-proxy/gitlab.mock', '');
   if (p === '/api/v4/user') return accountProfiles.get(token) ?? {};
+  if (p === '/api/v4/groups/oneui') return oneui;
+  if (p === '/api/v4/groups/oneui%2Ffrontend') return frontend;
+  if (p === '/api/v4/groups/401/subgroups') return [frontend];
+  if (p === '/api/v4/groups/402/projects') return [nova];
+  if (p === '/api/v4/projects/4') return nova;
   if (p === '/api/v4/merge_requests') {
     return searchParams.get('scope') === 'created_by_me' ? [projectMrs.find(item => item.iid === 11)] : [mrs[0], betaRequest];
   }
@@ -1278,6 +1291,43 @@ try {
   }
 } catch (error) {
   check('pipeline detail dialogs', false, String(error));
+}
+
+try {
+  await page.setViewport({ width: 1280, height: 800 });
+  await page.goto(`${BASE}/repository/4`, { waitUntil: 'domcontentloaded' });
+  const repoCrumbs = 'nav[aria-label="Путь к проекту"]';
+  const groupCrumbs = 'nav[aria-label="Путь к группе"]';
+  const rootLink = 'a[href="/group/oneui"]';
+  const nestedLink = 'a[href="/group/oneui%2Ffrontend"]';
+  const repoLink = 'main a[href="/repository/4"]';
+  await page.waitForSelector(`${repoCrumbs} ${nestedLink}`);
+  check('breadcrumb separates both groups and places the icon before nova',
+    await page.$eval(repoCrumbs, nav => {
+      const [root, nested, repo] = nav.querySelectorAll('a, button');
+      return root.textContent === 'oneui' && nested.textContent === 'frontend' &&
+        repo.textContent.endsWith('nova') && repo.firstElementChild?.nextElementSibling?.textContent === 'nova';
+    }));
+  await page.click(`${repoCrumbs} ${nestedLink}`);
+  await page.waitForSelector(repoLink);
+  check('frontend opens its own page with the nova repository',
+    new URL(page.url()).pathname === '/group/oneui%2Ffrontend');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector(repoLink);
+  await page.click(`${groupCrumbs} ${rootLink}`);
+  await page.waitForSelector(`main ${nestedLink}`);
+  check('oneui opens the parent group with a frontend subgroup',
+    new URL(page.url()).pathname === '/group/oneui');
+  await page.click(`main ${nestedLink}`);
+  await page.waitForSelector(repoLink);
+  await page.click(repoLink);
+  await page.waitForSelector(`${repoCrumbs} ${rootLink}`);
+  await page.click(`${repoCrumbs} ${rootLink}`);
+  await page.waitForSelector(`main ${nestedLink}`);
+  check('oneui also opens directly from the repository breadcrumb',
+    new URL(page.url()).pathname === '/group/oneui');
+} catch (error) {
+  check('group breadcrumb navigation', false, String(error));
 }
 
 try {

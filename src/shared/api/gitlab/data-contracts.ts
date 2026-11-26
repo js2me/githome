@@ -6,10 +6,18 @@ export interface GitLabProjectDC {
   avatar_url?: string | null;
   last_activity_at?: string | null;
   default_branch?: string | null;
+  namespace?: { kind: 'group' | 'user' };
   permissions?: {
     project_access?: { access_level?: number | null } | null;
     group_access?: { access_level?: number | null } | null;
   } | null;
+}
+
+export interface GitLabGroupDC {
+  id: number;
+  name: string;
+  full_path: string;
+  description?: string | null;
 }
 
 export interface GitLabMergeRequestDC {

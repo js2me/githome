@@ -22,6 +22,7 @@ const defineRoutes = () => {
 
   return {
     home: createRoute('/', { exact: true }),
+    group: createRoute('/group/:groupPath', { exact: true }),
     repository,
     files,
     mergeRequests,

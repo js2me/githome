@@ -1,7 +1,7 @@
 import { type ViewModelProps, withViewModel } from 'mobx-view-model-react';
 import { type ReactNode, Suspense } from 'react';
 import { GitLabConnectionProvider } from '@/shared/lib/gitlab/connection/connection-context';
-import { AppNav } from './components/app-nav';
+import { AppNav } from './components/navigation/app-nav';
 import { RefreshNotice } from './components/refresh-notice';
 import { WorkspacePicker } from './components/workspace-picker';
 import { LayoutVM } from './model/layout-vm';
