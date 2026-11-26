@@ -2,74 +2,15 @@ import { Comment, Magnifier } from '@gravity-ui/icons';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { type CSSProperties, memo, useCallback, useLayoutEffect } from 'react';
-import type {
-  ChangeFileStatus,
-  ChangesTreeNode,
-} from '@/shared/lib/build-changes-tree';
+import type { ChangesTreeNode } from '@/shared/lib/build-changes-tree';
 import { cn } from '@/shared/lib/cn';
 import { getChangesTreeFileDataId } from '@/shared/lib/diff-search';
 import { FileTypeIcon } from '@/shared/ui/file-type-icon';
 import { ChangesFileTreeVM } from '../../model/changes-file-tree';
+import { FileStatusIcon } from './changes/file-tree/file-status-icon';
 import './changes-file-tree.css';
 
 const FILE_ROW_HEIGHT = 32;
-
-const FileStatusIcon = ({ status }: { status: ChangeFileStatus }) => {
-  if (status === 'added') {
-    return (
-      <span
-        className="changes-file-tree__status-icon changes-file-tree__status-icon--added"
-        title="Added"
-        aria-hidden="true"
-      >
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
-          <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm3 7H8.75v2.25H7.25V8.5H5V7h2.25V4.75h1.5V7H11v1.5Z" />
-        </svg>
-      </span>
-    );
-  }
-
-  if (status === 'deleted') {
-    return (
-      <span
-        className="changes-file-tree__status-icon changes-file-tree__status-icon--deleted"
-        title="Deleted"
-        aria-hidden="true"
-      >
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
-          <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM5 7.25h6v1.5H5v-1.5Z" />
-        </svg>
-      </span>
-    );
-  }
-
-  if (status === 'renamed') {
-    return (
-      <span
-        className="changes-file-tree__status-icon changes-file-tree__status-icon--renamed"
-        title="Renamed"
-        aria-hidden="true"
-      >
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
-          <path d="M3.5 4.5h7.79l1.71 1.71v7.29a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Zm6.29 0V3.5a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v8h8.5V4.5h-1.21Z" />
-        </svg>
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className="changes-file-tree__status-icon changes-file-tree__status-icon--modified"
-      title="Modified"
-      aria-hidden="true"
-    >
-      <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
-        <rect x="2" y="2" width="12" height="12" rx="2" />
-        <circle cx="8" cy="8" r="2" fill="var(--color-white)" />
-      </svg>
-    </span>
-  );
-};
 
 const TreeNodeView = memo(
   ({
