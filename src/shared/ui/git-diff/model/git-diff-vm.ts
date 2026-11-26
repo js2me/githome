@@ -29,7 +29,10 @@ export interface GitDiffProps {
   submitCommentError: string | null;
   onAddComment: (input: CreateDiffCommentInput) => Promise<boolean>;
   onClearSubmitError: () => void;
-  renderFileAction?: (change: GitLabMergeRequestChangeDC) => ReactNode;
+  renderFileAction?: (
+    change: GitLabMergeRequestChangeDC,
+    onReviewedChange: (reviewed: boolean) => void,
+  ) => ReactNode;
   mergeRequestIid?: number;
   headBranch?: string | null;
   headRef?: string | null;

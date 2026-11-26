@@ -220,10 +220,11 @@ export const MergeRequestDetail = withViewModel(
                 submitCommentError={info.submitDiffCommentError}
                 onAddComment={info.submitDiffComment}
                 onClearSubmitError={info.clearSubmitDiffCommentError}
-                renderFileAction={(change) => (
+                renderFileAction={(change, onReviewedChange) => (
                   <ReviewFileButton
                     review={review}
                     change={change}
+                    onReviewedChange={onReviewedChange}
                     head={headRef ?? ''}
                     base={baseRef ?? null}
                   />

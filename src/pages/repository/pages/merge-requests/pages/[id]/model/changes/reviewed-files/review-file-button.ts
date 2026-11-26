@@ -16,6 +16,7 @@ interface ReviewFileButtonProps {
   change: GitLabMergeRequestChangeDC;
   head: string;
   base: string | null;
+  onReviewedChange: (reviewed: boolean) => void;
 }
 
 export class ReviewFileButtonVM extends VM<ReviewFileButtonProps> {
@@ -35,27 +36,37 @@ export class ReviewFileButtonVM extends VM<ReviewFileButtonProps> {
 
   @computed
   get checked() {
-    return Boolean(this.saved && this.saved.fingerprint === this.fingerprint);
+    return (
+      this.pending ??
+      Boolean(this.saved && this.saved.fingerprint === this.fingerprint)
+    );
   }
 
   @computed
   get verifying() {
     return Boolean(
-      this.payload.head && this.saved && this.fingerprint === undefined,
+      this.pending === undefined &&
+        this.payload.head &&
+        this.saved &&
+        this.fingerprint === undefined,
     );
   }
 
   @computed
+  private get pending() {
+    const { review, head, base } = this.payload;
+    return review.pendingStatus(this.path, head, base);
+  }
+
+  @computed
   get saving() {
-    return this.payload.review.savingPath === this.path;
+    return this.pending !== undefined;
   }
 
   @computed
   get disabled() {
     const { head, review } = this.payload;
-    return (
-      !head || !review.isReady || review.savingPath !== null || this.verifying
-    );
+    return !head || !review.isReady || this.verifying;
   }
 
   willMount() {
@@ -96,6 +107,13 @@ export class ReviewFileButtonVM extends VM<ReviewFileButtonProps> {
         signal: this.unmountSignal,
       },
     );
+    reaction(
+      () => (this.verifying ? null : this.checked),
+      (reviewed) => {
+        if (reviewed !== null) this.payload.onReviewedChange(reviewed);
+      },
+      { fireImmediately: true, signal: this.unmountSignal },
+    );
   }
 
   willUnmount() {
@@ -105,6 +123,12 @@ export class ReviewFileButtonVM extends VM<ReviewFileButtonProps> {
   @actionBound
   toggle() {
     const { review, change, head, base } = this.payload;
-    void review.toggle(change, head, base, this.fingerprint ?? undefined);
+    review.setReviewed(
+      change,
+      head,
+      base,
+      !this.checked,
+      this.fingerprint ?? undefined,
+    );
   }
 }

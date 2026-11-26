@@ -13,6 +13,8 @@ const shouldStartExpanded = (file: FileGitDiff) => !file.meta.isAutoCollapsed;
 
 export class FileGitDiffContent extends DisposableModel {
   @observable accessor isFileExpanded = false;
+  @observable accessor isReviewed = false;
+  @observable private accessor isReviewedDiffExpanded = false;
   @observable accessor expandedDiff: string | null = null;
   @observable private accessor collapsedExpandErrorValue: Error | null = null;
 
@@ -27,6 +29,18 @@ export class FileGitDiffContent extends DisposableModel {
     super();
     this.isFileExpanded = shouldStartExpanded(this.file);
     if (!this.file.meta.isImage) this.setupReactions();
+  }
+
+  @computed
+  get isReviewCollapsed() {
+    return this.isReviewed && !this.isReviewedDiffExpanded;
+  }
+
+  @actionBound
+  setReviewed(reviewed: boolean) {
+    if (this.isReviewed === reviewed) return;
+    this.isReviewed = reviewed;
+    this.isReviewedDiffExpanded = false;
   }
 
   @computed
@@ -137,6 +151,14 @@ export class FileGitDiffContent extends DisposableModel {
 
   @actionBound
   toggleFileExpanded() {
+    if (this.isReviewed) {
+      this.isReviewedDiffExpanded = !this.isReviewedDiffExpanded;
+      if (this.isReviewedDiffExpanded && !this.isFileExpanded) {
+        void this.expandCollapsedFile();
+      }
+      return;
+    }
+
     if (this.isFileExpanded) {
       this.collapseFile();
       return;

@@ -99,12 +99,15 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
 
   const {
     isFileExpanded,
+    isReviewed,
+    isReviewCollapsed,
     collapsedExpandError,
     isLoadingCollapsedExpand,
     isResolvingDiff,
     parsed,
     showTooLargeBanner,
   } = content;
+  const isExpanded = isFileExpanded && !isReviewCollapsed;
 
   const { virtualRows } = rows;
   const { isFileCommentOpen } = comments;
@@ -231,19 +234,24 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       }}
     >
       <header className="git-diff-file-header sticky top-0 z-20 flex flex-wrap items-center gap-2.5 rounded-t-lg border-[var(--diff-border)] border-b bg-[var(--diff-header-bg)] px-3.5 py-2.5 sm:flex-nowrap">
-        {isCollapsible && (
+        {(isCollapsible || isReviewed) && (
           <button
             className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--color-fg-subtle)] transition hover:bg-[var(--color-accent-emphasis-hover)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)]"
             type="button"
-            title={isFileExpanded ? t('diff.collapseFile') : t('diff.expandFile')}
-            aria-label={isFileExpanded ? t('diff.collapseFile') : t('diff.expandFile')}
+            title={
+              isExpanded ? t('diff.collapseFile') : t('diff.expandFile')
+            }
+            aria-label={
+              isExpanded ? t('diff.collapseFile') : t('diff.expandFile')
+            }
+            aria-expanded={isExpanded}
             onClick={content.toggleFileExpanded}
           >
             <svg
               aria-hidden="true"
               className={cn(
                 'h-3.5 w-3.5 transition-transform',
-                isFileExpanded && 'rotate-90',
+                isExpanded && 'rotate-90',
               )}
               viewBox="0 0 16 16"
               fill="none"
@@ -330,7 +338,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
           )}
         </div>
 
-        {payload.renderFileAction?.(change)}
+        {payload.renderFileAction?.(change, content.setReviewed)}
 
         {canComment && (
           <button
@@ -381,7 +389,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         </div>
       )}
 
-      {model.images ? (
+      {isReviewCollapsed ? null : model.images ? (
         <DiffImages images={model.images} />
       ) : (
         <div

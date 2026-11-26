@@ -29,7 +29,7 @@ export const ReviewFileButton = withPropsViewModel(
         onClick={toggle}
       >
         <Check width={14} height={14} />
-        {saving ? t('common.saving') : checked ? t('review.viewed') : null}
+        {checked ? t('review.viewed') : null}
       </button>
     );
   },

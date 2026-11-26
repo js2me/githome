@@ -1171,20 +1171,40 @@ try {
   const waitForReview = (index, checked) => page.waitForSelector(
     `${button(index)}[aria-pressed="${checked}"]:enabled`, { timeout: 5000 },
   );
+  const waitForSavedReview = (index, checked) => page.waitForSelector(
+    `${button(index)}[aria-pressed="${checked}"]:not([aria-busy]):enabled`, { timeout: 5000 },
+  );
+  const firstDiff = '.git-diff > article:first-child';
+  const expandReviewed = `${firstDiff} header button[aria-expanded][aria-label="Развернуть файл"]`;
+  const collapseReviewed = `${firstDiff} header button[aria-expanded][aria-label="Свернуть файл"]`;
+  const diffBody = `${firstDiff} .git-diff-body-scroll`;
   const hasReviewedAccent = index => page.$eval(
     `.git-diff > article:nth-child(${index}) .git-diff-file-reviewed-mark`,
     mark => getComputedStyle(mark).display !== 'none' &&
       getComputedStyle(mark.closest('header')).backgroundImage.startsWith('linear-gradient'),
   );
   await page.goto(mrUrl, { waitUntil: 'domcontentloaded' });
-  await (await waitForReview(1, false)).click();
+  await waitForReview(1, false);
+  await waitForReview(2, false);
+  await page.evaluate((first, second) => {
+    document.querySelector(first).click();
+    document.querySelector(second).click();
+  }, button(1), button(2));
   await waitForReview(1, true);
-  check('only a reviewed file gets a gradient and checkmark by its path',
-    await hasReviewedAccent(1) && !await hasReviewedAccent(2));
-  await (await waitForReview(2, false)).click();
   await waitForReview(2, true);
+  await page.waitForSelector(diffBody, { hidden: true, timeout: 5000 });
+  await page.click(expandReviewed);
+  await page.waitForSelector(diffBody, { visible: true, timeout: 5000 });
+  await waitForReview(1, true);
+  await page.click(collapseReviewed);
+  await page.waitForSelector(diffBody, { hidden: true, timeout: 5000 });
+  check('reviewing collapses the diff and the header can reopen it without clearing the mark', true);
+  check('reviewed files get a gradient and checkmark by their path',
+    await hasReviewedAccent(1) && await hasReviewedAccent(2));
+  await waitForSavedReview(1, true);
+  await waitForSavedReview(2, true);
   const payload = JSON.parse(reviewNote.body.match(/<!-- githome-reviewed-files:v1\n(.+)\n-->/)?.[1] ?? 'null');
-  check('reviewing two files creates and updates one plain eyes note', reviewWrites.join(',') === 'POST,PUT' &&
+  check('reviewing two files quickly saves them together in one request', reviewWrites.join(',') === 'POST' &&
     reviewNote.body.startsWith('👀\n\n') && payload?.length === 2 &&
     payload[0].path === tsxChange.new_path && payload[1].path === generatedChange.new_path &&
     payload.every(file => file.commit === reviewHead && /^[0-9a-f]{64}$/.test(file.fingerprint)));
@@ -1192,6 +1212,8 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForReview(1, true);
   await waitForReview(2, true);
+  await page.waitForSelector(expandReviewed, { visible: true, timeout: 5000 });
+  await page.waitForSelector(diffBody, { hidden: true, timeout: 5000 });
   check('reviewed files are restored from GitLab after reopening the MR', true);
 
   reviewHead = 'new-head-sha';
@@ -1201,14 +1223,14 @@ try {
   await waitForReview(2, true);
   check('the reviewed accent disappears when the diff changes',
     !await hasReviewedAccent(1) && await hasReviewedAccent(2));
-  check('a new commit clears only the mark for the modified diff', reviewWrites.length === 2);
+  check('a new commit clears only the mark for the modified diff', reviewWrites.length === 1);
 
   await (await waitForReview(2, true)).click();
-  await waitForReview(2, false);
+  await waitForSavedReview(2, false);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForReview(2, false);
   check('manually clearing a mark updates the same note and persists after reload',
-    reviewWrites.join(',') === 'POST,PUT,PUT' && !reviewNote.body.includes(generatedChange.new_path));
+    reviewWrites.join(',') === 'POST,PUT' && !reviewNote.body.includes(generatedChange.new_path));
 } catch (error) {
   check('reviewed file marks are synchronized with GitLab', false, String(error));
 } finally {

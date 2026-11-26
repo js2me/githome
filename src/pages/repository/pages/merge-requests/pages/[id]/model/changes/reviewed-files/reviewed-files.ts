@@ -1,58 +1,51 @@
-import {
-  actionBound,
-  computed,
-  observableRef,
-  reaction,
-  runInAction,
-} from 'mobx';
+import { actionBound, computed, observable, reaction } from 'mobx';
 import {
   type GitLabMergeRequestChangeDC,
-  type GitLabNoteDC,
   gitlabApi,
 } from '@/shared/api/gitlab';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
+import type { Globals } from '@/shared/model/globals';
 import type { MrInfoModel, MrInfoModelParams } from '../../mr-info';
 import {
   getFileReviewFingerprint,
   getReviewedFilePath,
 } from './file-review-fingerprint';
+import { ReviewSaveBatch } from './review-save-batch';
 import {
   findReviewedFilesNote,
-  formatReviewedFiles,
   readReviewedFiles,
 } from './reviewed-files-note';
 
+const createBatches = () =>
+  observable.map<string, ReviewSaveBatch>(undefined, { deep: false });
+const workspaceBatches = new WeakMap<
+  Globals,
+  ReturnType<typeof createBatches>
+>();
+
 export class ReviewedFiles {
-  @observableRef private accessor pendingNote: {
-    scope: string;
-    note: GitLabNoteDC;
-  } | null = null;
-  @observableRef private accessor saving: {
-    scope: string;
-    path: string;
-  } | null = null;
-  @observableRef private accessor failure: {
-    scope: string;
-    path: string;
-    error: Error;
-  } | null = null;
+  private readonly batches;
 
   constructor(
     private readonly info: MrInfoModel,
     private readonly options: MrInfoModelParams,
   ) {
+    const { globals } = options;
+    this.batches = workspaceBatches.get(globals) ?? createBatches();
+    workspaceBatches.set(globals, this.batches);
     reaction(
-      () => [this.serverNote, this.pendingNote] as const,
-      ([server, pending]) => {
+      () => [this.serverNote, this.batch, this.batch?.note] as const,
+      ([server, batch, pending]) => {
         if (
           server &&
-          pending?.scope === this.scope &&
-          (server.id > pending.note.id ||
-            (server.id === pending.note.id &&
-              (server.body === pending.note.body ||
-                server.updated_at > pending.note.updated_at)))
+          batch &&
+          pending &&
+          (server.id > pending.id ||
+            (server.id === pending.id &&
+              (server.body === pending.body ||
+                server.updated_at > pending.updated_at)))
         ) {
-          this.pendingNote = null;
+          batch.note = undefined;
         }
       },
       { signal: options.abortSignal },
@@ -83,10 +76,13 @@ export class ReviewedFiles {
   }
 
   @computed
+  private get batch() {
+    return this.batches.get(this.scope);
+  }
+
+  @computed
   private get note() {
-    return this.pendingNote?.scope === this.scope
-      ? this.pendingNote.note
-      : this.serverNote;
+    return this.batch?.note ?? this.serverNote;
   }
 
   @computed
@@ -107,17 +103,17 @@ export class ReviewedFiles {
     );
   }
 
-  @computed
-  get savingPath() {
-    return this.saving?.scope === this.scope ? this.saving.path : null;
+  pendingStatus(path: string, head: string, base: string | null) {
+    const change = this.batch?.pending.get(path);
+    return change?.head === head && change.base === base
+      ? change.reviewed
+      : undefined;
   }
 
   @computed
   get error() {
-    const failure = this.failure;
-    return failure?.scope === this.scope
-      ? { ...failure, message: failure.error.message }
-      : null;
+    const failure = this.batch?.failure;
+    return failure ? { ...failure, message: failure.error.message } : null;
   }
 
   @actionBound
@@ -149,81 +145,59 @@ export class ReviewedFiles {
   }
 
   @actionBound
-  async toggle(
+  setReviewed(
     change: GitLabMergeRequestChangeDC,
     head: string,
     base: string | null,
+    reviewed: boolean,
     knownFingerprint?: string,
   ) {
     const connection = this.options.globals.stores.settings.activeConnection;
     const mr = this.options.params();
     const scope = this.scope;
-    const signal = this.options.abortSignal;
-    if (
-      !connection ||
-      !mr ||
-      !head ||
-      !this.isReady ||
-      this.savingPath !== null
-    ) {
-      return;
-    }
+    if (!connection || !mr || !head || !this.isReady) return;
 
     const path = getReviewedFilePath(change);
-    const saving = { scope, path };
-    this.saving = saving;
-    this.failure = null;
-    try {
-      const fingerprint =
-        knownFingerprint ??
-        (await this.fingerprint(change, head, base, signal));
-      if (this.scope !== scope || signal.aborted) {
-        return;
-      }
-
-      const files = new Map(this.files);
-      if (files.get(path)?.fingerprint === fingerprint) {
-        files.delete(path);
-      } else {
-        files.set(path, { path, commit: head, fingerprint });
-      }
-
-      const body = formatReviewedFiles(files.values());
-      const note = await gitlabApi.saveMergeRequestNote(
-        connection,
-        mr.project.id,
-        mr.mergeRequestIid,
-        body,
-        this.note?.id,
-        signal,
-      );
-      if (this.scope === scope && !signal.aborted) {
-        runInAction(() => {
-          this.pendingNote = { scope, note };
-        });
-        void this.info.mergeRequestDiscussionsQuery
-          .invalidate()
-          .catch(() => undefined);
-      }
-    } catch (error) {
-      if (!signal.aborted && this.scope === scope) {
-        runInAction(() => {
-          this.failure = {
-            scope,
-            path,
-            error:
-              error instanceof Error
-                ? error
-                : new LocalizedError('review.couldNotSaveTheViewedStatus'),
-          };
-        });
-      }
-    } finally {
-      runInAction(() => {
-        if (this.saving === saving) {
-          this.saving = null;
-        }
-      });
-    }
+    const batch = this.batch ?? new ReviewSaveBatch();
+    this.batches.set(scope, batch);
+    const initialNote = this.note;
+    // Accepted clicks should still save when the MR page is closed.
+    const file = reviewed
+      ? Promise.resolve(
+          knownFingerprint ??
+            this.fingerprint(change, head, base, new AbortController().signal),
+        ).then((fingerprint) => ({ path, commit: head, fingerprint }))
+      : Promise.resolve(null);
+    batch.enqueue(
+      path,
+      {
+        reviewed,
+        head,
+        base,
+        file: file.then(
+          (value) => ({ status: 'fulfilled', value }),
+          (reason: unknown) => ({ status: 'rejected', reason }),
+        ),
+      },
+      {
+        readNote: () =>
+          this.scope === scope ? this.note : (batch.note ?? initialNote),
+        saveNote: (body, id) =>
+          gitlabApi.saveMergeRequestNote(
+            connection,
+            mr.project.id,
+            mr.mergeRequestIid,
+            body,
+            id,
+          ),
+        onSaved: () => {
+          if (this.scope === scope) {
+            void this.info.mergeRequestDiscussionsQuery
+              .invalidate()
+              .catch(() => undefined);
+          }
+        },
+      },
+    );
   }
 }
