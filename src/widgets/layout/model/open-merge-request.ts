@@ -29,7 +29,8 @@ export class OpenMergeRequestVM extends WorkspaceVM {
           event.shiftKey ||
           event.repeat ||
           event.defaultPrevented ||
-          event.isComposing
+          event.isComposing ||
+          !this.globals.stores.settings.connections.length
         )
           return;
         const target = event.target;
@@ -47,10 +48,36 @@ export class OpenMergeRequestVM extends WorkspaceVM {
     );
   }
 
+  protected didMount() {
+    const desktop = window.githomeDesktop?.systemLinks;
+    if (!desktop) return;
+
+    const signal = this.unmountSignal;
+    let draining = Promise.resolve();
+    const receive = () => {
+      draining = draining
+        .then(async () => {
+          if (signal.aborted) return;
+          const links = await desktop.takePending();
+          for (const link of links) {
+            if (signal.aborted) return;
+            this.open();
+            this.setLink(link);
+            await this.submit();
+          }
+        })
+        .catch(() => undefined);
+    };
+    const unsubscribe = desktop.subscribe(receive);
+    signal.addEventListener('abort', unsubscribe, { once: true });
+    receive();
+  }
+
   @actionBound
   open() {
     this.reset();
-    this.dialog.current?.showModal();
+    const dialog = this.dialog.current;
+    if (dialog && !dialog.open) dialog.showModal();
     this.input.current?.focus();
   }
 

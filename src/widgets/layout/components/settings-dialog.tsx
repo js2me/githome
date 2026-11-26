@@ -10,6 +10,7 @@ import { getLanguage, languages, setLanguage, t } from '@/shared/lib/i18n';
 import { GlassDialog } from '@/shared/ui/glass-dialog';
 import type { LayoutVM } from '../model/layout-vm';
 import { AppUpdatePanel } from './app-update-panel';
+import { SystemLinksSetting } from './settings/system-links-setting';
 
 const sections = [
   {
@@ -54,7 +55,10 @@ export const SettingsDialog = observer(() => {
         className={iconButtonClassName}
         aria-label={t('settings.title')}
         aria-haspopup="dialog"
-        onClick={() => dialog.current?.showModal()}
+        onClick={() => {
+          dialog.current?.showModal();
+          void appSettings.refreshSystemLinks();
+        }}
       >
         <Gear className="size-[18px]" aria-hidden />
       </button>
@@ -158,6 +162,7 @@ export const SettingsDialog = observer(() => {
                       </button>
                     ))}
                   </div>
+                  <SystemLinksSetting model={appSettings} />
                 </section>
               )}
 

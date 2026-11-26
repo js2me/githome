@@ -1,4 +1,5 @@
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { normalizeGitlabBaseUrl } from '@/shared/lib/gitlab/links/gitlab-url';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 
 interface GraphQLResponse<T> {
@@ -20,18 +21,7 @@ export class GitLabGraphqlError extends Error {
 
 export const GIT_PROXY_PREFIX = '/git-proxy';
 
-export const normalizeGitlabBaseUrl = (url: string): string => {
-  let normalized = url.trim();
-  if (!normalized) {
-    return '';
-  }
-
-  if (!/^https?:\/\//i.test(normalized)) {
-    normalized = `https://${normalized}`;
-  }
-
-  return normalized.replace(/\/+$/, '');
-};
+export { normalizeGitlabBaseUrl };
 
 const getGitlabOrigin = (gitlabUrl: string) => {
   const url = new URL(normalizeGitlabBaseUrl(gitlabUrl));

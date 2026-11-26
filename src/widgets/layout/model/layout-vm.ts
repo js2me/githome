@@ -33,6 +33,7 @@ export class LayoutVM extends WorkspaceVM {
 
   willMount() {
     void this.appSettings.updates.connect(this.unmountSignal);
+    this.appSettings.connectSystemLinks(this.unmountSignal);
     this.refreshShortcut.connect(window, this.unmountSignal);
   }
 

@@ -8,29 +8,31 @@ export const OpenMergeRequestDialog = withViewModel(
   OpenMergeRequestVM,
   ({ model }) => (
     <>
-      <button
-        type="button"
-        className="glass-primary inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 font-semibold text-sm sm:px-3.5"
-        aria-haspopup="dialog"
-        aria-label={t('navigation.openMergeRequest')}
-        title={t('navigation.openMergeRequest')}
-        aria-keyshortcuts="Control+K Meta+K"
-        onClick={model.open}
-      >
-        <Link className="size-4" aria-hidden />
-        <span>
-          <span className="hidden min-[420px]:inline">
-            {t('navigation.open')}{' '}
-          </span>
-          MR
-        </span>
-        <kbd
-          aria-hidden
-          className="hidden rounded border border-current/35 px-1 py-0.5 font-medium font-sans text-[10px] leading-none lg:inline"
+      {model.globals.stores.settings.connections.length > 0 && (
+        <button
+          type="button"
+          className="glass-primary inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 font-semibold text-sm sm:px-3.5"
+          aria-haspopup="dialog"
+          aria-label={t('navigation.openMergeRequest')}
+          title={t('navigation.openMergeRequest')}
+          aria-keyshortcuts="Control+K Meta+K"
+          onClick={model.open}
         >
-          {/Mac|iPad|iPhone/.test(navigator.platform) ? '⌘ K' : 'Ctrl K'}
-        </kbd>
-      </button>
+          <Link className="size-4" aria-hidden />
+          <span>
+            <span className="hidden min-[420px]:inline">
+              {t('navigation.open')}{' '}
+            </span>
+            MR
+          </span>
+          <kbd
+            aria-hidden
+            className="hidden rounded border border-current/35 px-1 py-0.5 font-medium font-sans text-[10px] leading-none lg:inline"
+          >
+            {/Mac|iPad|iPhone/.test(navigator.platform) ? '⌘ K' : 'Ctrl K'}
+          </kbd>
+        </button>
+      )}
       <GlassDialog
         ref={model.dialog}
         className="w-[min(28rem,calc(100%-2rem))] p-5 sm:p-6"

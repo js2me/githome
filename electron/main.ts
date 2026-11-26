@@ -1,8 +1,12 @@
 import { app, BrowserWindow, Menu, dialog, shell } from "electron";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { setupAppUpdater } from "./app-updater";
 import { startAppServer } from "./app-server";
+import { setupSystemLinks } from "./system-links/ipc";
+import { createLinkPlatform } from "./system-links/platform";
+import { SystemLinkRouter } from "./system-links/router";
+import { parseWebUrl } from "../src/shared/lib/gitlab/links/gitlab-url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,6 +21,8 @@ const preloadPath = path.join(__dirname, "preload.cjs");
 let mainWindow: BrowserWindow | null = null;
 let appServer: Awaited<ReturnType<typeof startAppServer>> | null = null;
 let appOrigin: string | undefined;
+let creatingWindow: Promise<void> | undefined;
+let linkRouter: SystemLinkRouter | undefined;
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
@@ -74,8 +80,12 @@ const createWindow = async () => {
     mainWindow?.show();
   });
 
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
+    void (linkRouter?.openInBrowser(url) ?? shell.openExternal(url)).catch(showLinkError);
     return { action: "deny" };
   });
 
@@ -90,27 +100,104 @@ const createWindow = async () => {
   }
 };
 
+function showLinkError() {
+  dialog.showErrorBox(
+    "GitHome",
+    "Could not open this link. Check your default browser in system settings.",
+  );
+}
+
+function focusWindow() {
+  if (!mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.focus();
+}
+
+function ensureWindow() {
+  if (creatingWindow) return creatingWindow;
+  if (mainWindow) return Promise.resolve();
+  creatingWindow = createWindow().finally(() => {
+    creatingWindow = undefined;
+  });
+  return creatingWindow;
+}
+
+const webArgs = (argv: string[]) => argv.filter((arg) => Boolean(parseWebUrl(arg)));
+
 if (gotSingleInstanceLock) {
-  app.on("second-instance", () => {
-    if (!mainWindow) {
-      return;
-    }
+  let startupLinks = process.platform === "darwin" ? [] : webArgs(process.argv.slice(1));
+  let receiveLinks = (urls: string[]) => {
+    startupLinks.push(...urls);
+  };
+  let openedNormally = false;
 
-    if (mainWindow.isMinimized()) {
-      mainWindow.restore();
-    }
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    if (parseWebUrl(url)) receiveLinks([url]);
+  });
 
-    mainWindow.focus();
+  app.on("open-file", (event, file) => {
+    if (!/\.html?$/i.test(file) || !path.isAbsolute(file)) return;
+    event.preventDefault();
+    receiveLinks([pathToFileURL(file).href]);
+  });
+
+  app.on("second-instance", (_event, argv) => {
+    const urls = webArgs(argv.slice(1));
+    if (urls.length) receiveLinks(urls);
+    else {
+      openedNormally = true;
+      if (app.isReady()) void ensureWindow().then(focusWindow);
+    }
   });
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
     setupAppUpdater(() => appOrigin);
-    void createWindow();
+    const router = new SystemLinkRouter(
+      path.join(app.getPath("userData"), "system-links.json"),
+      createLinkPlatform(app.isPackaged),
+      (url) => shell.openExternal(url),
+    );
+    linkRouter = router;
+    const enqueue = setupSystemLinks(router, () => mainWindow, () => appOrigin);
+    const startedWithLink = startupLinks.length > 0;
+    let dispatch = Promise.resolve();
+    let generation = 0;
+    receiveLinks = (urls) => {
+      const batch = ++generation;
+      dispatch = dispatch.then(async () => {
+        for (const url of urls) {
+          try {
+            if (await router.shouldOpenMergeRequest(url)) {
+              enqueue(url);
+              await ensureWindow();
+              openedNormally = true;
+              focusWindow();
+            } else {
+              await router.openInBrowser(url);
+            }
+          } catch {
+            showLinkError();
+          }
+        }
+        if (batch === generation && startedWithLink && !openedNormally && !mainWindow) {
+          app.quit();
+        }
+      });
+    };
 
-    app.on("activate", () => {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        void createWindow();
+    if (startedWithLink) {
+      receiveLinks(startupLinks);
+      startupLinks = [];
+    }
+    if (!startedWithLink || openedNormally) void ensureWindow();
+
+    app.on("activate", (_event, hasVisibleWindows) => {
+      if (!hasVisibleWindows) {
+        void dispatch.then(() => {
+          if (!startedWithLink || mainWindow || openedNormally) void ensureWindow();
+        });
       }
     });
   });

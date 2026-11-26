@@ -35,6 +35,8 @@ pnpm install
 pnpm build:electron
 ```
 
+Для упаковки macOS запускайте сборку на Mac с установленными Xcode Command Line Tools. Упаковщик компилирует системный обработчик ссылок через `xcrun swiftc`.
+
 Артефакты появятся в `release/`:
 
 | Платформа | Форматы |

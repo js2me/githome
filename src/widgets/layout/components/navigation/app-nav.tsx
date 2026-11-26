@@ -26,9 +26,7 @@ export const AppNav = observer(() => {
         </button>
         <AppBreadcrumbs />
         <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
-          {model.globals.stores.settings.connections.length > 0 && (
-            <OpenMergeRequestDialog />
-          )}
+          <OpenMergeRequestDialog />
           <ConnectionPicker />
           <SettingsDialog />
         </div>

@@ -14,7 +14,7 @@
     "dev": "vite",
     "dev:electron": "cross-env ELECTRON=1 vite",
     "build": "cross-env WEB_ONLY=1 tsc && cross-env WEB_ONLY=1 vite build",
-    "build:app": "cross-env ELECTRON=1 tsc && cross-env ELECTRON=1 vite build",
+    "build:app": "cross-env ELECTRON=1 tsc && tsc -p tsconfig.node.json && cross-env ELECTRON=1 vite build",
     "package:linux": "electron-builder --publish never --linux",
     "package:win": "electron-builder --publish never --win",
     "package:mac": "electron-builder --publish never --mac",
@@ -124,14 +124,39 @@
       "description": "Desktop client for GitLab merge requests and code review."
     },
     "deb": {
-      "packageName": "git-home"
+      "packageName": "git-home",
+      "mimeTypes": [
+        "x-scheme-handler/https"
+      ]
     },
     "mac": {
       "target": [
         "dmg",
         "zip"
       ],
-      "category": "public.app-category.developer-tools"
+      "category": "public.app-category.developer-tools",
+      "protocols": [
+        {
+          "name": "Web links",
+          "schemes": [
+            "http",
+            "https"
+          ],
+          "role": "Viewer"
+        }
+      ],
+      "extendInfo": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "HTML document",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": [
+              "public.html"
+            ]
+          }
+        ]
+      }
     },
     "win": {
       "target": [

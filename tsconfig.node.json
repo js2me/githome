@@ -1,11 +1,18 @@
 {
   "compilerOptions": {
-    "composite": true,
+    "noEmit": true,
     "skipLibCheck": true,
+    "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "electron/**/*.ts", "src/shared/lib/app-update/types.d.ts"]
+  "include": [
+    "vite.config.ts",
+    "electron/**/*.ts",
+    "src/shared/lib/app-update/types.d.ts",
+    "src/shared/lib/gitlab/links/*.ts",
+    "src/shared/lib/system-links/types.ts"
+  ]
 }

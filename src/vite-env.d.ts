@@ -11,6 +11,7 @@ interface ImportMeta {
 
 interface GithomeDesktopApi {
   platform: NodeJS.Platform;
+  systemLinks?: import('./shared/lib/system-links/types').SystemLinksApi;
   updates: import('./shared/lib/app-update/types').AppUpdateApi;
 }
 
