@@ -115,6 +115,11 @@
       "package.json"
     ],
     "linux": {
+      "desktop": {
+        "entry": {
+          "StartupNotify": "true"
+        }
+      },
       "extraResources": [
         {
           "from": "resources/icon.png",
