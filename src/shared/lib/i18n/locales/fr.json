@@ -107,6 +107,7 @@
   "diff.resolvedComment": "Commentaire résolu : {{v1}}",
   "diff.searchFilesAndCode": "Rechercher dans les fichiers et le code…",
   "diff.searchFilesAndCode2": "Rechercher dans les fichiers et le code",
+  "diff.reviewedFiles": "Fichiers consultés",
   "diff.showLineCountAbove_one": "Afficher {{count}} ligne au-dessus",
   "diff.showLineCountAbove_other": "Afficher {{count}} lignes au-dessus",
   "diff.showLineCountBelow_one": "Afficher {{count}} ligne en dessous",

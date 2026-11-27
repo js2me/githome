@@ -155,7 +155,7 @@ export class FileGitDiffRows {
       Boolean(content.parsed) &&
       this.virtualRows.length > 0 &&
       !meta.isDiffContentHidden &&
-      !content.isReviewCollapsed
+      !content.isContentCollapsed
     );
   }
 }

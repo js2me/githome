@@ -106,6 +106,7 @@
   "diff.resolvedComment": "已解决的评论：{{v1}}",
   "diff.searchFilesAndCode": "搜索文件和代码…",
   "diff.searchFilesAndCode2": "搜索文件和代码",
+  "diff.reviewedFiles": "已查看的文件",
   "diff.showLineCountAbove_other": "显示上方 {{count}} 行",
   "diff.showLineCountBelow_other": "显示下方 {{count}} 行",
   "diff.showLinesAbove": "显示上方的行",

@@ -6,9 +6,9 @@ import {
   type DiffSearchFileEntry,
   type DiffSearchLineEntry,
   type DiffSearchMatch,
-  getDiffFileElementId,
   isDiffFileHeaderRowId,
 } from '@/shared/lib/diff/diff-search';
+import { revealDiffFile } from '@/shared/lib/diff/scroll-to-diff-file';
 import { registerFindShortcutHandler } from '@/shared/lib/find-shortcut';
 import { VM } from '@/shared/lib/view-models/vm';
 import { DiffSearchHighlightStore } from './search-highlights';
@@ -188,9 +188,7 @@ export class DiffSearchVM extends VM<{
 
   private scrollTo(match: DiffSearchMatch) {
     cancelAnimationFrame(this.scrollFrame);
-    document
-      .getElementById(getDiffFileElementId(match.fileKey))
-      ?.scrollIntoView({ block: 'nearest' });
+    revealDiffFile(match.fileKey)?.scrollIntoView({ block: 'nearest' });
     if (!isDiffFileHeaderRowId(match.rowId)) {
       this.scrollFrame = requestAnimationFrame(() =>
         this.scrollHandlers.get(match.fileKey)?.(match.rowId),

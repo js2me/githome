@@ -86,7 +86,6 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     fileKey,
     badge,
     filePath,
-    isCollapsible,
     isDiffContentHidden,
     fileThreads,
     searchFilePath,
@@ -100,14 +99,15 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
   const {
     isFileExpanded,
     isReviewed,
-    isReviewCollapsed,
+    isContentCollapsed,
     collapsedExpandError,
     isLoadingCollapsedExpand,
     isResolvingDiff,
     parsed,
     showTooLargeBanner,
   } = content;
-  const isExpanded = isFileExpanded && !isReviewCollapsed;
+  const isExpanded = isFileExpanded && !isContentCollapsed;
+  const toggleLabel = t(isExpanded ? 'diff.collapseFile' : 'diff.expandFile');
 
   const { virtualRows } = rows;
   const { isFileCommentOpen } = comments;
@@ -216,6 +216,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
   return (
     <article
       id={getDiffFileElementId(fileKey)}
+      data-diff-reviewed={isReviewed ? '' : undefined}
       className={cn(
         'w-full min-w-0 rounded-lg border bg-white dark:bg-gray-900',
         isActive
@@ -234,36 +235,30 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       }}
     >
       <header className="git-diff-file-header sticky top-0 z-20 flex flex-wrap items-center gap-2.5 rounded-t-lg border-[var(--diff-border)] border-b bg-[var(--diff-header-bg)] px-3.5 py-2.5 sm:flex-nowrap">
-        {(isCollapsible || isReviewed) && (
-          <button
-            className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--color-fg-subtle)] transition hover:bg-[var(--color-accent-emphasis-hover)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)]"
-            type="button"
-            title={
-              isExpanded ? t('diff.collapseFile') : t('diff.expandFile')
-            }
-            aria-label={
-              isExpanded ? t('diff.collapseFile') : t('diff.expandFile')
-            }
-            aria-expanded={isExpanded}
-            onClick={content.toggleFileExpanded}
+        <button
+          className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--color-fg-subtle)] transition hover:bg-[var(--color-accent-emphasis-hover)] dark:text-[var(--color-fg-muted)] dark:hover:bg-[var(--color-canvas-muted)]"
+          type="button"
+          title={toggleLabel}
+          aria-label={toggleLabel}
+          aria-expanded={isExpanded}
+          onClick={content.toggleFileExpanded}
+        >
+          <svg
+            aria-hidden="true"
+            className={cn(
+              'h-3.5 w-3.5 transition-transform',
+              isExpanded && 'rotate-90',
+            )}
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <svg
-              aria-hidden="true"
-              className={cn(
-                'h-3.5 w-3.5 transition-transform',
-                isExpanded && 'rotate-90',
-              )}
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 4l4 4-4 4" />
-            </svg>
-          </button>
-        )}
+            <path d="M6 4l4 4-4 4" />
+          </svg>
+        </button>
         <div className="flex min-w-0 flex-1 basis-[calc(100%-3rem)] items-center gap-0.5 sm:basis-0">
           {payload.renderFileAction && (
             <span className="git-diff-file-reviewed-mark" aria-hidden="true">
@@ -389,7 +384,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         </div>
       )}
 
-      {isReviewCollapsed ? null : model.images ? (
+      {isContentCollapsed ? null : model.images ? (
         <DiffImages images={model.images} />
       ) : (
         <div

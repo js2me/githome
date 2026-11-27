@@ -1514,31 +1514,59 @@ try {
 
 try {
   const mrUrl = `${BASE}/repository/1/merge-requests/157`;
-  const button = index => `.git-diff > article:nth-child(${index}) header button[aria-pressed][title*="тмет"]`;
+  const changes = [tsxChange, generatedChange];
+  const fileKey = index => encodeURIComponent(`${changes[index - 1].old_path}\0${changes[index - 1].new_path}`);
+  const card = index => `[id="diff-file-${fileKey(index)}"]`;
+  const button = index => `${card(index)} header [data-diff-review-toggle]`;
+  const stack = '[data-diff-reviewed-stack]';
+  const summary = `${stack} > summary`;
   const waitForReview = (index, checked) => page.waitForSelector(
     `${button(index)}[aria-pressed="${checked}"]:enabled`, { timeout: 5000 },
   );
   const waitForSavedReview = (index, checked) => page.waitForSelector(
     `${button(index)}[aria-pressed="${checked}"]:not([aria-busy]):enabled`, { timeout: 5000 },
   );
-  const firstDiff = '.git-diff > article:first-child';
+  const firstDiff = card(1);
   const expandReviewed = `${firstDiff} header button[aria-expanded][aria-label="Развернуть файл"]`;
   const collapseReviewed = `${firstDiff} header button[aria-expanded][aria-label="Свернуть файл"]`;
   const diffBody = `${firstDiff} .git-diff-body-scroll`;
   const hasReviewedAccent = index => page.$eval(
-    `.git-diff > article:nth-child(${index}) .git-diff-file-reviewed-mark`,
+    `${card(index)} .git-diff-file-reviewed-mark`,
     mark => getComputedStyle(mark).display !== 'none' &&
       getComputedStyle(mark.closest('header')).backgroundImage.startsWith('linear-gradient'),
   );
   await page.goto(mrUrl, { waitUntil: 'domcontentloaded' });
   await waitForReview(1, false);
   await waitForReview(2, false);
+  await page.waitForSelector(diffBody, { visible: true });
+  await page.click(collapseReviewed);
+  await page.waitForSelector(diffBody, { hidden: true });
+  await waitForReview(1, false);
+  await page.$eval(expandReviewed, element => element.focus());
+  await page.keyboard.press('Enter');
+  await page.waitForSelector(diffBody, { visible: true });
+  await waitForReview(1, false);
+  check('an unread file can be collapsed and reopened without changing its review status', reviewWrites.length === 0);
   await page.evaluate((first, second) => {
     document.querySelector(first).click();
     document.querySelector(second).click();
   }, button(1), button(2));
   await waitForReview(1, true);
   await waitForReview(2, true);
+  await page.waitForSelector(`${stack}:not([open])`);
+  check('two reviewed files collapse into one layered summary row',
+    await page.$eval(summary, element => {
+      const stack = element.parentElement;
+      const cards = [...stack.parentElement.querySelectorAll(':scope > article')];
+      return element.textContent.includes('Просмотренные файлы') &&
+        element.textContent.includes('2') &&
+        cards.length === 2 && cards.every(card => !card.getClientRects().length) &&
+        getComputedStyle(stack, '::before').content !== 'none' &&
+        getComputedStyle(stack, '::after').content !== 'none';
+    }));
+  await page.$eval(summary, element => element.focus());
+  await page.keyboard.press('Enter');
+  await page.waitForSelector(card(2), { visible: true });
   await page.waitForSelector(diffBody, { hidden: true, timeout: 5000 });
   await page.click(expandReviewed);
   await page.waitForSelector(diffBody, { visible: true, timeout: 5000 });
@@ -1559,9 +1587,18 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForReview(1, true);
   await waitForReview(2, true);
+  await page.waitForSelector(`${stack}:not([open])`);
+  await page.click(`[data-changes-file-id="${fileKey(1)}"]`);
+  await page.waitForSelector(`${stack}[open]`);
   await page.waitForSelector(expandReviewed, { visible: true, timeout: 5000 });
   await page.waitForSelector(diffBody, { hidden: true, timeout: 5000 });
-  check('reviewed files are restored from GitLab after reopening the MR', true);
+  check('the stack is restored after reload and clicking the file tree reveals a reviewed file', true);
+  await page.click(summary);
+  await page.waitForSelector(`${stack}:not([open])`);
+  await page.click('input[placeholder="Поиск по файлам и коду..."]');
+  await page.keyboard.type(tsxChange.new_path.split('/').at(-1));
+  await page.waitForSelector(`${stack}[open]`);
+  check('a search match on a reviewed path opens the stack', true);
 
   reviewHead = 'new-head-sha';
   reviewPatch = reviewPatch.replace('visible', 'updated');
@@ -1572,7 +1609,9 @@ try {
     !await hasReviewedAccent(1) && await hasReviewedAccent(2));
   check('a new commit clears only the mark for the modified diff', reviewWrites.length === 1);
 
+  await page.click(summary);
   await (await waitForReview(2, true)).click();
+  await page.waitForSelector(stack, { hidden: true });
   await waitForSavedReview(2, false);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForReview(2, false);

@@ -24,7 +24,7 @@ const getActiveDiffFileKey = (files: DiffFileAnchor[]) => {
     return last.key;
   }
 
-  // Diff cards are stacked in the same order as the changes.
+  // The anchors are in display order, including any open reviewed stack.
   let low = 0;
   let high = files.length;
   while (low < high) {
@@ -64,42 +64,81 @@ export class ActiveDiffFile {
       return;
     }
 
-    const keys = changes.map(({ old_path, new_path }) =>
-      getDiffFileKey(old_path, new_path),
+    const keysById = new Map(
+      changes.map(({ old_path, new_path }) => {
+        const key = getDiffFileKey(old_path, new_path);
+        return [getDiffFileElementId(key), key];
+      }),
     );
     let frame: number | null = null;
-    let files: DiffFileAnchor[] = [];
+    let list: HTMLElement | null = null;
+    let files: DiffFileAnchor[] | null = null;
 
     const sync = action(() => {
       frame = null;
-      // A jump can be clamped at the bottom. Keep the clicked file selected until the page moves.
-      if (window.scrollY === this.selectedScrollY) return;
-      this.selectedScrollY = null;
-
-      if (!files.length) {
-        files = keys.flatMap((key) => {
-          const element = document.getElementById(getDiffFileElementId(key));
-          return element ? [{ key, element }] : [];
-        });
-        if (!files.length) {
+      if (!list?.isConnected) {
+        observer.disconnect();
+        files = null;
+        list =
+          document.getElementById(keysById.keys().next().value!)
+            ?.parentElement ?? null;
+        if (!list) {
           scheduleSync();
           return;
         }
+        observer.observe(list, { childList: true });
       }
 
-      this.activeFile.set(getActiveDiffFileKey(files));
+      if (!files) {
+        files = [];
+        const hideReviewed = list.querySelector(
+          ':scope > [data-diff-reviewed-stack]:not([open])',
+        );
+        for (const element of list.querySelectorAll<HTMLElement>(
+          hideReviewed
+            ? ':scope > article:not([data-diff-reviewed])'
+            : ':scope > article',
+        )) {
+          const key = keysById.get(element.id);
+          if (key) files.push({ key, element });
+        }
+      }
+
+      // A jump can be clamped at the bottom. Keep the clicked file selected until the page moves.
+      if (
+        window.scrollY === this.selectedScrollY &&
+        files.some(({ key }) => key === this.activeFile.get())
+      )
+        return;
+      this.selectedScrollY = null;
+      this.activeFile.set(files.length ? getActiveDiffFileKey(files) : null);
     });
 
     const scheduleSync = () => {
       frame ??= requestAnimationFrame(sync);
     };
+    const invalidateAnchors = () => {
+      files = null;
+      scheduleSync();
+    };
+    const observer = new MutationObserver(invalidateAnchors);
+    const onToggle = (event: Event) => {
+      if (
+        event.target instanceof HTMLDetailsElement &&
+        event.target.hasAttribute('data-diff-reviewed-stack')
+      )
+        invalidateAnchors();
+    };
 
     scheduleSync();
+    window.addEventListener('toggle', onToggle, true);
     window.addEventListener('scroll', scheduleSync, { passive: true });
     window.addEventListener('resize', scheduleSync);
 
     this.stopTracking = () => {
       if (frame !== null) cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('toggle', onToggle, true);
       window.removeEventListener('scroll', scheduleSync);
       window.removeEventListener('resize', scheduleSync);
     };

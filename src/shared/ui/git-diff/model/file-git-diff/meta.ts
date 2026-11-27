@@ -27,11 +27,6 @@ export class FileGitDiffMeta {
   }
 
   @computed
-  get isCollapsible() {
-    return this.isAutoCollapsed || this.isLazyCollapsed;
-  }
-
-  @computed
   get isImage() {
     return isImageChange(this.change);
   }

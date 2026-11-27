@@ -109,6 +109,7 @@
   "diff.resolvedComment": "Разрешённый комментарий: {{v1}}",
   "diff.searchFilesAndCode": "Поиск по файлам и коду...",
   "diff.searchFilesAndCode2": "Поиск по файлам и коду",
+  "diff.reviewedFiles": "Просмотренные файлы",
   "diff.showLineCountAbove_few": "Показать {{count}} строки выше",
   "diff.showLineCountAbove_many": "Показать {{count}} строк выше",
   "diff.showLineCountAbove_one": "Показать {{count}} строку выше",
