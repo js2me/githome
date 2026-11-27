@@ -22,6 +22,11 @@ import { getMergeRequestVersions } from './endpoints/merge-requests/get-merge-re
 import { getMergeRequestView } from './endpoints/merge-requests/get-merge-request-view';
 import { getProjectMergeRequests } from './endpoints/merge-requests/get-project-merge-requests';
 import { closeMergeRequest } from './endpoints/merge-requests/lifecycle/close-merge-request';
+import {
+  cancelAutoMerge,
+  mergeMergeRequest,
+} from './endpoints/merge-requests/lifecycle/merge-merge-request';
+import { getMergeOptions } from './endpoints/merge-requests/lifecycle/merge-options';
 import { saveMergeRequestNote } from './endpoints/merge-requests/notes/save-merge-request-note';
 import { cancelPipeline } from './endpoints/pipelines/cancel-pipeline';
 import { createPipeline } from './endpoints/pipelines/create-pipeline';
@@ -138,6 +143,9 @@ export const gitlabApi = {
   approveMergeRequest,
 
   closeMergeRequest,
+  getMergeOptions,
+  cancelAutoMerge,
+  mergeMergeRequest,
 
   unapproveMergeRequest,
 

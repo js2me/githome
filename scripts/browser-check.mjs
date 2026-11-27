@@ -313,6 +313,14 @@ let reviewHead = 'head-sha';
 let reviewPatch = tsxChange.diff;
 let reviewNote;
 const reviewWrites = [];
+const mergeRuns = new Map([
+  ['173', { ...mr(173, 'Ready to merge', AUTHORS[0]), draft: false }],
+  ['174', { ...mr(174, 'Runs on a train', AUTHORS[0]), draft: false }],
+  ['175', { ...mr(175, 'Checks have not passed', AUTHORS[0]), draft: false }],
+]);
+const mergeInputs = [];
+let mergeRejection = '';
+const cancelMergeInputs = [];
 const closeWrites = [];
 
 const route = (url, postData, token, method) => {
@@ -453,6 +461,13 @@ const route = (url, postData, token, method) => {
   if (/merge_requests\/\d+\/(versions|discussions|reviewers)$/.test(p)) return [];
   const approvals = p.match(/^\/api\/v4\/projects\/(\d+)\/merge_requests\/(\d+)\/approvals$/);
   if (approvals) return approvals[1] === '1' ? approvalsByIid.get(Number(approvals[2])) ?? {} : {};
+  const mergeRun = p.match(/^\/api\/v4\/projects\/1\/merge_requests\/(17[345])$/);
+  if (mergeRun) return mergeRuns.get(mergeRun[1]);
+  if (p === '/api/v4/projects/1/merge_requests/174/cancel_merge_when_pipeline_succeeds') {
+    cancelMergeInputs.push({ method, token });
+    mergeRuns.get('174').merge_when_pipeline_succeeds = false;
+    return { status: 'success' };
+  }
   if (/merge_requests\/\d+/.test(p)) {
     const iid = Number(p.match(/merge_requests\/(\d+)/)[1]);
     return projectMrs.find((m) => m.iid === iid) ?? mrs[0];
@@ -506,6 +521,36 @@ const route = (url, postData, token, method) => {
   if (p.includes('projects')) return projects;
   if (p === '/api/graphql') {
     const { query, variables } = JSON.parse(postData ?? '{}');
+    if (query?.includes('query GitHomeMergeOptions')) {
+      const run = mergeRuns.get(variables.iid);
+      return { data: { project: { mergeRequestsFfOnlyEnabled: false, mergeRequest: {
+        mergeable: run.iid === 173,
+        mergeOngoing: false,
+        autoMergeEnabled: run.merge_when_pipeline_succeeds ?? false,
+        availableAutoMergeStrategies: run.iid === 174 ? ['merge_train'] : [],
+        diffHeadSha: 'reviewed-head',
+        shouldRemoveSourceBranch: false, forceRemoveSourceBranch: true, commitCount: 3,
+        squashReadOnly: false, squashOnMerge: false,
+        defaultMergeCommitMessage: 'Default merge message',
+        defaultSquashCommitMessage: 'Default squash message',
+        mergeError: null,
+        headPipeline: { status: run.iid === 173 ? 'SUCCESS' : 'RUNNING' },
+        userPermissions: { canMerge: true, removeSourceBranch: true },
+      } } } };
+    }
+    if (query?.includes('mutation GitHomeMergeRequest')) {
+      const input = variables.input;
+      const run = mergeRuns.get(input.iid);
+      mergeInputs.push(input);
+      if (mergeRejection) {
+        return { data: { mergeRequestAccept: { errors: [mergeRejection], mergeRequest: null } } };
+      }
+      if (input.strategy) run.merge_when_pipeline_succeeds = true;
+      else run.state = 'merged';
+      return { data: { mergeRequestAccept: {
+        errors: [], mergeRequest: { state: run.state, autoMergeEnabled: run.merge_when_pipeline_succeeds ?? false },
+      } } };
+    }
     if (testMrMetadata && query?.includes('query MrMetadata')) {
       return { data: { project: {
         userPermissions: { createLabel: metadataCanUpdate },
@@ -2027,15 +2072,15 @@ try {
 try {
   const header = 'header[aria-label="Сводка merge request"]';
   const close = `${header} ::-p-aria([name="Закрыть"][role="button"])`;
-  const merge = `${header} ::-p-aria([name="Смержить в GitLab"][role="link"])`;
+  const merge = `${header} ::-p-aria([name="Смержить"][role="button"])`;
   const waitForState = state => page.waitForFunction((selector, expected) =>
     [...document.querySelectorAll(`${selector} span`)].some(el => el.textContent === expected),
   { timeout: 5000 }, header, state);
 
   await page.goto(BASE + '/repository/1/merge-requests/11', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector(close);
-  check('Merge links to the native GitLab MR even for a draft', await page.$eval(merge, link =>
-    link.href === 'https://gitlab.mock/group/alpha/-/merge_requests/11' && link.target === '_blank'));
+  check('draft merge is disabled and does not send a mutation', await page.$eval(merge, button =>
+    button.disabled && button.tagName === 'BUTTON') && mergeInputs.length === 0);
   await page.click(close);
   await page.waitForSelector(`${header} dialog[open]`);
   await page.locator(`${header} dialog ::-p-aria([name="Отмена"][role="button"])`).click();
@@ -2050,6 +2095,56 @@ try {
     await page.$(merge) === null);
 } catch (error) {
   check('merge request lifecycle actions', false, String(error));
+}
+
+try {
+  const header = 'header[aria-label="Сводка merge request"]';
+  const action = label => `${header} ::-p-aria([name="${label}"][role="button"])`;
+  const inDialog = label => `${header} dialog[open] ::-p-aria([name="${label}"][role="button"])`;
+  const openMerge = async (iid, label = 'Смержить') => {
+    await page.goto(BASE + '/repository/1/merge-requests/' + iid, {waitUntil:'domcontentloaded'});
+    await page.locator(action(label)).click();
+    await page.waitForSelector(header + ' dialog[open]');
+  };
+  await openMerge(175);
+  await page.waitForFunction(() => document.querySelector('dialog[open]')?.innerText.includes('GitLab пока не разрешает слияние'));
+  check('blocked merge has no confirmation action', !await page.$(inDialog('Смержить')) && mergeInputs.length === 0);
+  await page.keyboard.press('Escape');
+
+  await openMerge(173);
+  const openPages = (await browser.pages()).length;
+  await page.locator('dialog[open] ::-p-aria([name="Объединить коммиты (squash)"][role="checkbox"])').click();
+  await page.locator('dialog[open] ::-p-aria([name="Удалить исходную ветку"][role="checkbox"])').click();
+  await page.locator('dialog[open] ::-p-aria([name="Сообщение squash-коммита"][role="textbox"])').fill('Squashed in GitHome');
+  await page.locator('dialog[open] ::-p-aria([name="Сообщение merge-коммита"][role="textbox"])').fill('Merged from GitHome');
+  mergeRejection = 'The merge-head is not at the anticipated SHA';
+  await page.locator(inDialog('Смержить')).click();
+  await page.waitForFunction(() => document.querySelector('dialog[open] [role="alert"]')?.innerText.includes('anticipated SHA'));
+  check('GitLab’s rejection is shown inside GitHome and leaves the MR open', mergeRuns.get('173').state === 'opened');
+  mergeRejection = '';
+  await page.locator(inDialog('Смержить')).click();
+  await page.waitForFunction(() => [...document.querySelectorAll('header span')].some(el => el.textContent === 'Влит'));
+  const sent = mergeInputs.at(-1);
+  check('merge stays in GitHome and sends reviewed SHA, squash, branch and commit options',
+    sent.iid === '173' && sent.projectPath === 'group/alpha' && sent.sha === 'reviewed-head' &&
+    sent.squash === true && sent.shouldRemoveSourceBranch === false &&
+    sent.squashCommitMessage === 'Squashed in GitHome' && sent.commitMessage === 'Merged from GitHome' &&
+    !sent.strategy && (await browser.pages()).length === openPages);
+
+  await openMerge(174);
+  await page.locator(inDialog('Добавить в очередь слияния')).click();
+  await page.waitForFunction(() => document.querySelector('dialog[open]')?.innerText.includes('Запрос на слияние передан'));
+  check('GitLab merge train is respected', mergeInputs.at(-1).strategy === 'MERGE_TRAIN');
+  await page.locator(inDialog('Закрыть')).click();
+  await page.locator(action('Автослияние включено')).click();
+  await page.locator(inDialog('Отменить автослияние')).click();
+  await page.waitForFunction(() => document.querySelector('dialog[open]')?.innerText.includes('Автослияние отменено'));
+  check('auto-merge can be cancelled inside GitHome', cancelMergeInputs.length === 1 && cancelMergeInputs[0].method === 'POST');
+  await page.locator(inDialog('Закрыть')).click();
+} catch (error) {
+  check('merging in GitHome', false, String(error));
+} finally {
+  mergeRejection = '';
 }
 
 try {

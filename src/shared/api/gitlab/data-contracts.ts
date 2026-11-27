@@ -42,6 +42,9 @@ export interface GitLabMergeRequestDC {
   labels?: string[];
   merge_status?: string;
   detailed_merge_status?: string;
+  merge_when_pipeline_succeeds?: boolean;
+  merge_error?: string | null;
+  user?: { can_merge?: boolean };
   reviewers?: GitLabUserDC[];
   has_conflicts?: boolean;
   user_notes_count?: number;

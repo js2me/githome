@@ -22,6 +22,7 @@ import type {
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
 import { gitlabApi, resolveGitlabRequestUrl } from '@/shared/api/gitlab';
+import type { GitLabMergeInput } from '@/shared/api/gitlab/endpoints/merge-requests/lifecycle/merge-merge-request';
 import { createConnectionUserIdQuery } from '@/shared/lib/gitlab/connection/connection-profile-query';
 import {
   createGitlabApiQuery,
@@ -44,7 +45,7 @@ export type MrReviewAction =
   | 'requestChanges'
   | 'cancelRequestChanges';
 
-export type MrAction = MrReviewAction | 'close';
+export type MrAction = MrReviewAction | 'close' | 'merge' | 'cancelMerge';
 
 export type MrInfoModelContext = {
   project: GitLabProjectDC;
@@ -127,7 +128,9 @@ export class MrInfoModel {
   @observable private accessor actionErrorValue: Error | null = null;
 
   get reviewActionError() {
-    return this.failedAction === 'close'
+    return this.failedAction === 'close' ||
+      this.failedAction === 'merge' ||
+      this.failedAction === 'cancelMerge'
       ? ''
       : (this.actionErrorValue?.message ?? '');
   }
@@ -137,6 +140,20 @@ export class MrInfoModel {
       ? (this.actionErrorValue?.message ?? '')
       : '';
   }
+  get mergeActionError() {
+    return this.failedAction === 'merge' || this.failedAction === 'cancelMerge'
+      ? (this.actionErrorValue?.message ?? '')
+      : '';
+  }
+
+  @actionBound
+  clearMergeActionError() {
+    if (this.failedAction === 'merge' || this.failedAction === 'cancelMerge') {
+      this.failedAction = null;
+      this.actionErrorValue = null;
+    }
+  }
+
   @observable accessor locallyCreatedDiscussionsKey = '';
   @observable accessor locallyCreatedDiscussions: GitLabDiscussionDC[] = [];
 
@@ -647,7 +664,7 @@ export class MrInfoModel {
 
   private async runMrAction(
     action: MrAction,
-    runner: () => Promise<void | GitLabMergeRequestDC>,
+    runner: () => Promise<void | Partial<GitLabMergeRequestDC>>,
   ) {
     if (this.actionInProgress) return false;
 
@@ -668,6 +685,7 @@ export class MrInfoModel {
       return (
         active?.id === connection.id &&
         active.gitlabUrl === connection.gitlabUrl &&
+        active.credentialsRevision === connection.credentialsRevision &&
         this.mergeRequestKey === actionMergeRequestKey
       );
     };
@@ -683,7 +701,7 @@ export class MrInfoModel {
           mr.mergeRequestIid,
         );
         queryClient.setQueryData<GitLabMergeRequestDC>(key, (current) =>
-          current ? { ...current, ...updated } : updated,
+          current ? { ...current, ...updated } : undefined,
         );
         const listPath = resolveGitlabRequestUrl(
           connection.gitlabUrl,
@@ -719,6 +737,48 @@ export class MrInfoModel {
         }
       });
     }
+  }
+
+  get mergeContext() {
+    const connection = this.options.globals.stores.settings.activeConnection;
+    const mr = this.options.params();
+    return connection && mr ? { connection, ...mr } : null;
+  }
+
+  @actionBound
+  async merge(input: GitLabMergeInput) {
+    const context = this.mergeContext;
+    const mr = this.mergeRequestDetail;
+    if (
+      !context ||
+      mr?.state !== 'opened' ||
+      mr.draft ||
+      mr.work_in_progress ||
+      !input.sha
+    )
+      return false;
+
+    return this.runMrAction('merge', () =>
+      gitlabApi.mergeMergeRequest(
+        context.connection,
+        context.project.path_with_namespace,
+        context.mergeRequestIid,
+        input,
+      ),
+    );
+  }
+
+  @actionBound
+  async cancelMerge() {
+    const context = this.mergeContext;
+    if (!context || this.mergeRequestDetail?.state !== 'opened') return false;
+    return this.runMrAction('cancelMerge', () =>
+      gitlabApi.cancelAutoMerge(
+        context.connection,
+        context.project.id,
+        context.mergeRequestIid,
+      ),
+    );
   }
 
   @actionBound

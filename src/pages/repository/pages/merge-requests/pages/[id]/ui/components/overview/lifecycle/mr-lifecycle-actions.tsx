@@ -1,4 +1,4 @@
-import { ArrowUpRightFromSquare, Xmark } from '@gravity-ui/icons';
+import { Xmark } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
 import { useId } from 'react';
 import { cn } from '@/shared/lib/cn';
@@ -6,6 +6,7 @@ import { t } from '@/shared/lib/i18n';
 import { GlassDialog } from '@/shared/ui/glass-dialog';
 import type { MergeRequestDetailVM } from '../../../../model/merge-request-detail';
 import { actionClass } from '../action-classes';
+import { MrMergeAction } from './mr-merge-action';
 
 export const MrLifecycleActions = observer(
   ({ model }: { model: MergeRequestDetailVM }) => {
@@ -20,15 +21,7 @@ export const MrLifecycleActions = observer(
 
     return (
       <>
-        <a
-          className="glass-primary inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 font-semibold text-xs no-underline"
-          href={mr.web_url}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {t('review.mergeInGitLab')}
-          <ArrowUpRightFromSquare aria-hidden className="size-3.5" />
-        </a>
+        <MrMergeAction model={model} />
         <button
           type="button"
           className={cn(actionClass, 'text-[var(--color-danger-fg)]')}

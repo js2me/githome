@@ -20,6 +20,7 @@ import { matchGitlabProject } from '@/shared/lib/gitlab/links/project';
 import { VM } from '@/shared/lib/view-models/vm';
 import { ActiveDiffFile } from './changes/active-diff-file';
 import type { MergeRequestPageVM } from './index';
+import { MrMerge } from './merge/mr-merge';
 import { MrMetadataEditor } from './metadata/editor';
 import { MergeRequestPipelines } from './pipelines/merge-request-pipelines';
 
@@ -59,6 +60,7 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
   readonly fileNavigation = new ActiveDiffFile();
   readonly activityButton = createRef<HTMLButtonElement>();
   readonly changesHeading = createRef<HTMLHeadingElement>();
+  readonly merge = new MrMerge(this.parentViewModel.mrInfo, this.unmountSignal);
   readonly closeMrDialog = createRef<HTMLDialogElement>();
   @observable accessor activityExpanded = false;
   @observable accessor descriptionExpanded = false;
