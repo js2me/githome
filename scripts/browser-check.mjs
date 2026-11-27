@@ -107,7 +107,15 @@ const mr = (iid, title, authorName) => ({
   sha: 'abc123',
 });
 
-const projects = [project(1, 'alpha'), project(2, 'beta'), project(3, 'gamma')];
+const projects = [
+  project(1, 'alpha'),
+  {
+    ...project(2, 'beta'),
+    path_with_namespace: 'group/platform/beta',
+    web_url: 'https://gitlab.mock/group/platform/beta',
+  },
+  project(3, 'gamma'),
+];
 const oneui = { id: 401, name: 'oneui', full_path: 'oneui' };
 const frontend = { id: 402, name: 'frontend', full_path: 'oneui/frontend' };
 const nova = {
@@ -153,7 +161,7 @@ const discussionCounts = [
 const betaRequest = {
   ...mr(1, 'Review the beta deployment', AUTHORS[1]),
   id: 2001, project_id: 2, detailed_merge_status: 'requested_changes',
-  references: { short: '!1', full: 'group/beta!1' },
+  references: { short: '!1', full: 'group/platform/beta!1' },
 };
 const pipeline = {
   id: 4821, iid: 31, project_id: 1, status: 'success', ref: 'refs/merge-requests/156/head',
@@ -298,6 +306,7 @@ const route = (url, postData, token, method) => {
     return item;
   }
   if (p === '/api/v4/groups/oneui') return oneui;
+  if (p === '/api/v4/groups/group%2Fplatform') return { id: 403, name: 'Platform', full_path: 'group/platform' };
   if (p === '/api/v4/groups/oneui%2Ffrontend') return frontend;
   if (p === '/api/v4/groups/401/subgroups') return [frontend];
   if (p === '/api/v4/groups/402/projects') return [nova];
@@ -653,7 +662,7 @@ try {
   await page.waitForFunction(selector => {
     const cards = Array.from(document.querySelectorAll(selector), row => row.innerText);
     return cards.some(text => text.includes('group/alpha') && text.includes('Одобрено') && text.includes('Решено 2/2')) &&
-      cards.some(text => text.includes('group/beta') && text.includes('Запрошены правки') && !text.includes('Одобрено'));
+      cards.some(text => text.includes('group/platform/beta') && text.includes('Запрошены правки') && !text.includes('Одобрено'));
   }, { timeout: 5000 }, rows);
   check('home review badges distinguish identical MR numbers in different projects', true);
   await page.click('button::-p-text(Мои MR)');
@@ -818,16 +827,20 @@ const workspaceOpen = await page.$eval(workspace, (aside) => {
     ));
   };
   const trigger = aside.querySelector('button[aria-expanded]');
-  const sections = [...nav.querySelectorAll('section')];
+  const root = nav.querySelector('ul');
+  const alpha = nav.querySelector('button[title="group/alpha"]')?.closest('li');
+  const platform = nav.querySelector('button[title="group/platform"]')?.closest('li');
+  const beta = nav.querySelector('button[title="group/platform/beta"]')?.closest('li');
+  const alphaRows = alpha?.querySelectorAll(':scope > ul > li') ?? [];
   return {
     expanded: trigger.getAttribute('aria-expanded') === 'true',
     position: getComputedStyle(aside).position,
     opensDown: nav.getBoundingClientRect().top >= trigger.getBoundingClientRect().bottom - 1,
     navWidth: nav.clientWidth,
     navScrollWidth: nav.scrollWidth,
-    verticalGroups: sections.length === 2 && withinColumn(sections),
-    verticalTabs: sections.some((section) => section.querySelectorAll('li').length >= 2) &&
-      sections.every((section) => withinColumn(section.querySelectorAll('li'))),
+    nestedGroups: root.children.length === 1 && platform?.contains(beta) &&
+      platform.parentElement === alpha?.parentElement,
+    verticalTabs: alphaRows.length >= 2 && withinColumn(alphaRows),
   };
 });
 
@@ -842,9 +855,25 @@ check('opening the workspace picker does not move the page',
   JSON.stringify({ before: mainBeforeOpening, open: mainWhileOpen }),
 );
 check(
-  'workspace groups and all MR tabs form one column without horizontal scrolling at 980px',
-  workspaceOpen.verticalGroups && workspaceOpen.verticalTabs && workspaceOpen.navScrollWidth <= workspaceOpen.navWidth,
+  'workspace nests projects and subgroups without horizontal scrolling at 980px',
+  workspaceOpen.nestedGroups && workspaceOpen.verticalTabs && workspaceOpen.navScrollWidth <= workspaceOpen.navWidth,
 );
+
+try {
+  await page.waitForSelector(`${workspaceTree} button[title="Mock MR #1"] [title="MR одобрен. Одобрений: 1"]`, { timeout: 5000 });
+  await page.waitForSelector(`${workspaceTree} button[title="Mock MR #1"] [title="Закрыто обсуждений: 2 из 2"]`, { timeout: 5000 });
+  check('workspace shows approval and resolved discussion icons', true);
+} catch (error) {
+  check('workspace shows approval and resolved discussion icons', false, String(error));
+}
+await page.click(`${workspaceTree} button[aria-label="Свернуть platform"]`);
+check('workspace subgroups can be collapsed',
+  !(await page.$(`${workspaceTree} button[title="group/platform/beta"]`)));
+await page.click(`${workspaceTree} button[aria-label="Развернуть platform"]`);
+await page.click(`${workspaceTree} button[title="group/platform"]`);
+await page.waitForFunction(() => decodeURIComponent(location.pathname) === '/group/group/platform', { timeout: 5000 });
+check('clicking a subgroup opens its GitLab group page', true);
+await openWorkspace();
 
 await leaveWorkspace();
 await waitForWorkspace(false);
@@ -872,8 +901,6 @@ const sidebarState = await page.evaluate(() => {
   return {
     titles: [...(sidebar?.querySelectorAll('button[title]') ?? [])]
       .map((button) => button.getAttribute('title')),
-    groups: [...(sidebar?.querySelectorAll('h3') ?? [])]
-      .map((heading) => heading.textContent?.trim()),
     text: sidebar?.textContent ?? '',
   };
 });
@@ -881,8 +908,8 @@ check(
   'both MR tabs persist and are grouped by repository',
   sidebarState.titles.includes('Mock MR #1') &&
     sidebarState.titles.includes('Mock MR #2') &&
-    sidebarState.groups.includes('group/alpha') &&
-    sidebarState.groups.includes('group/beta'),
+    sidebarState.titles.includes('group/alpha') &&
+    sidebarState.titles.includes('group/platform/beta'),
   JSON.stringify(sidebarState),
 );
 check('MR numbers are not displayed in the sidebar', !sidebarState.text.includes('!1') && !sidebarState.text.includes('!2'));

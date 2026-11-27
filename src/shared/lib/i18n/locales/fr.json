@@ -197,6 +197,8 @@
   "home.showMore": "Afficher plus",
   "home.starred": "Favoris",
   "home.youHaveNoOpenMergeRequestsYet": "Vous n’avez aucune demande de fusion ouverte.",
+  "navigation.collapseBranch": "Réduire {{v1}}",
+  "navigation.expandBranch": "Développer {{v1}}",
   "navigation.close": "Fermer {{v1}}",
   "navigation.closeItem": "Fermer l’élément",
   "navigation.couldNotOpenTheMergeRequest": "Impossible d’ouvrir la demande de fusion.",

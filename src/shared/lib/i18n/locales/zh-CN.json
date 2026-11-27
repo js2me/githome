@@ -194,6 +194,8 @@
   "home.showMore": "显示更多",
   "home.starred": "已加星标",
   "home.youHaveNoOpenMergeRequestsYet": "你还没有开放的合并请求。",
+  "navigation.collapseBranch": "折叠 {{v1}}",
+  "navigation.expandBranch": "展开 {{v1}}",
   "navigation.close": "关闭 {{v1}}",
   "navigation.closeItem": "关闭项目",
   "navigation.couldNotOpenTheMergeRequest": "无法打开合并请求。",

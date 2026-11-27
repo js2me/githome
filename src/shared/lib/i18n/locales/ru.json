@@ -203,6 +203,8 @@
   "home.showMore": "Показать ещё",
   "home.starred": "Избранные",
   "home.youHaveNoOpenMergeRequestsYet": "У вас пока нет открытых мерж-реквестов.",
+  "navigation.collapseBranch": "Свернуть {{v1}}",
+  "navigation.expandBranch": "Развернуть {{v1}}",
   "navigation.close": "Закрыть {{v1}}",
   "navigation.closeItem": "Закрыть элемент",
   "navigation.couldNotOpenTheMergeRequest": "Не удалось открыть MR.",

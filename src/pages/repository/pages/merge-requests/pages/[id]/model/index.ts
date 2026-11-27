@@ -165,14 +165,15 @@ export class MergeRequestPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
         projectId: this.projectId,
         project: this.project,
         mergeRequestIid: this.mergeRequestIid,
-        title: this.mrInfo.mergeRequestDetail?.title,
+        detail: this.mrInfo.mergeRequestDetail,
       }),
-      ({ connectionId, projectId, project, mergeRequestIid, title }) => {
+      ({ connectionId, projectId, project, mergeRequestIid, detail }) => {
         if (
           !connectionId ||
           projectId === null ||
           mergeRequestIid === null ||
-          !title
+          detail?.iid !== mergeRequestIid ||
+          (detail.project_id != null && detail.project_id !== projectId)
         ) {
           return;
         }
@@ -182,11 +183,19 @@ export class MergeRequestPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
           projectId,
           mergeRequestIid,
           {
-            title,
+            title: detail.title,
             projectPath: project?.path_with_namespace,
+            namespaceKind: project?.namespace?.kind,
+            status: {
+              state: detail.state,
+              draft: detail.draft,
+              work_in_progress: detail.work_in_progress,
+              detailed_merge_status: detail.detailed_merge_status,
+            },
           },
         );
       },
+      { fireImmediately: true },
     );
   }
 

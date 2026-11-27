@@ -197,6 +197,8 @@
   "home.showMore": "Show more",
   "home.starred": "Starred",
   "home.youHaveNoOpenMergeRequestsYet": "You have no open merge requests yet.",
+  "navigation.collapseBranch": "Collapse {{v1}}",
+  "navigation.expandBranch": "Expand {{v1}}",
   "navigation.close": "Close {{v1}}",
   "navigation.closeItem": "Close item",
   "navigation.couldNotOpenTheMergeRequest": "Could not open the merge request.",

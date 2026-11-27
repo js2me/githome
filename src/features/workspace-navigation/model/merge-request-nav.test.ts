@@ -1,6 +1,9 @@
+import { observable, runInAction } from 'mobx';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NavTreeItem } from '@/shared/lib/navigation/nav-tree';
 import {
+  createMergeRequestNavItemId,
+  MERGE_REQUEST_TAB_LIFETIME,
   MergeRequestNavAdapter,
   pruneOrphanedMergeRequestItems,
 } from './merge-request-nav';
@@ -55,12 +58,18 @@ const createItem = <Kind extends string, Payload>(
 });
 
 describe('NavTreeStore', () => {
+  let stopNavigation: (() => void) | undefined;
+
   beforeEach(() => {
+    vi.useFakeTimers();
     store = new NavTreeStore();
     store.clear();
   });
 
   afterEach(() => {
+    stopNavigation?.();
+    stopNavigation = undefined;
+    vi.useRealTimers();
     store.clear();
   });
 
@@ -217,7 +226,7 @@ describe('NavTreeStore', () => {
     });
     const snapshot = store.snapshot;
 
-    navigation.start();
+    stopNavigation = navigation.start();
 
     expect(store.snapshot).toEqual(snapshot);
   });
@@ -229,7 +238,7 @@ describe('NavTreeStore', () => {
       projectPath: 'group/project',
     });
 
-    navigation.start();
+    stopNavigation = navigation.start();
 
     expect(store.groups).toMatchObject([{ title: 'group/project' }]);
     expect(store.items).toMatchObject([
@@ -261,5 +270,94 @@ describe('NavTreeStore', () => {
     pruneOrphanedMergeRequestItems(store, ['active-connection']);
 
     expect(store.items.map((item) => item.id)).toEqual(['mr:active', 'file:1']);
+  });
+
+  it('expires only inactive MR tabs and does not extend their life on a metadata update', () => {
+    const navigation = createMrNavigation(42);
+    navigation.updateDetails('active-connection', 1, 41, { title: 'Other MR' });
+    stopNavigation = navigation.start();
+    vi.advanceTimersByTime(MERGE_REQUEST_TAB_LIFETIME - 1);
+    navigation.updateDetails('active-connection', 1, 41, {
+      title: 'New title',
+    });
+    expect(store.items).toHaveLength(2);
+    vi.advanceTimersByTime(1);
+    expect(store.items.map(({ payload }) => payload)).toMatchObject([
+      { mergeRequestIid: 42 },
+    ]);
+  });
+
+  it('refreshes the expiry timestamp on select and on route navigation', () => {
+    const open = vi.fn();
+    const route = observable({
+      isOpened: false,
+      params: { projectId: '1', mergeRequestIid: '42' },
+      open,
+    });
+    const navigation = new MergeRequestNavAdapter({
+      routes: { mergeRequest: route },
+      stores: {
+        navTree: store,
+        settings: {
+          activeId: 'active-connection',
+          connections: [{ id: 'active-connection' }],
+        },
+      },
+    } as unknown as Workspace);
+    navigation.updateDetails('active-connection', 1, 42, {
+      title: 'Review API',
+    });
+    stopNavigation = navigation.start();
+    vi.advanceTimersByTime(MERGE_REQUEST_TAB_LIFETIME - 1);
+    navigation.select(store.items[0]);
+    expect(open).toHaveBeenCalledWith({
+      projectId: '1',
+      mergeRequestIid: '42',
+    });
+    vi.advanceTimersByTime(MERGE_REQUEST_TAB_LIFETIME - 1);
+    expect(store.items).toHaveLength(1);
+    runInAction(() => {
+      route.isOpened = true;
+    });
+    runInAction(() => {
+      route.isOpened = false;
+    });
+    vi.advanceTimersByTime(MERGE_REQUEST_TAB_LIFETIME - 1);
+    expect(store.items).toHaveLength(1);
+    vi.advanceTimersByTime(1);
+    expect(store.items).toHaveLength(0);
+  });
+
+  it('drops expired persisted tabs and gives untimestamped tabs two hours after migration', () => {
+    const legacyTab = {
+      connectionId: 'active-connection',
+      projectId: 1,
+      projectPath: 'group/repo',
+    };
+    for (const [mergeRequestIid, lastOpenedAt] of [
+      [41, Date.now() - MERGE_REQUEST_TAB_LIFETIME],
+      [43, undefined],
+    ] as const) {
+      const payload = { ...legacyTab, mergeRequestIid, lastOpenedAt };
+      store.upsertItem(
+        createItem(
+          createMergeRequestNavItemId(payload),
+          'repository:active-connection:1',
+          'merge-request',
+          'Older MR',
+          payload,
+        ),
+      );
+    }
+    const navigation = createMrNavigation(42);
+    stopNavigation = navigation.start();
+    expect(store.items.map(({ payload }) => payload)).toMatchObject([
+      { mergeRequestIid: 43, lastOpenedAt: Date.now() },
+      { mergeRequestIid: 42 },
+    ]);
+    vi.advanceTimersByTime(MERGE_REQUEST_TAB_LIFETIME);
+    expect(store.items.map(({ payload }) => payload)).toMatchObject([
+      { mergeRequestIid: 42 },
+    ]);
   });
 });

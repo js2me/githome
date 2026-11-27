@@ -68,9 +68,14 @@ export class NavTreeStore {
 
   @actionBound
   removeItem(itemId: string) {
+    this.removeItems(new Set([itemId]));
+  }
+
+  @actionBound
+  removeItems(itemIds: ReadonlySet<string>) {
     navTreeKey.value = {
       ...this.snapshot,
-      items: this.items.filter((item) => item.id !== itemId),
+      items: this.items.filter((item) => !itemIds.has(item.id)),
     };
   }
 

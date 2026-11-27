@@ -1,39 +1,45 @@
 import { actionBound, computed, observable, reaction } from 'mobx';
 import { createRef } from 'yummies/mobx';
-import { WorkspaceVM } from '@/features/workspace-navigation';
-
-import { t } from '@/shared/lib/i18n';
-
-const legacyLoadingRepository = 'Загрузка репозитория…';
+import {
+  buildWorkspaceTree,
+  isMergeRequestNavItem,
+  WorkspaceVM,
+} from '@/features/workspace-navigation';
+import { createWorkspaceReviewQuery } from './review-query';
 
 export class WorkspacePickerVM extends WorkspaceVM {
   readonly workspace = createRef<HTMLElement>();
   readonly trigger = createRef<HTMLButtonElement>();
   @observable accessor expanded = false;
+  readonly collapsed = observable.set<string>();
+  private readonly reviews = createWorkspaceReviewQuery(
+    this.globals,
+    this.unmountSignal,
+    () => (this.expanded ? this.items : []),
+  );
 
   @computed
-  get groups() {
-    const store = this.globals.stores.navTree;
-    return store.groups
-      .map((group) => ({
-        ...group,
-        title:
-          !group.title || group.title === legacyLoadingRepository
-            ? t('common.loadingRepository')
-            : group.title,
-        items: store.items
-          .filter((item) => item.groupId === group.id)
-          .map((item) => ({
-            ...item,
-            title: item.title || t('common.mergeRequest'),
-          })),
-      }))
-      .filter((group) => group.items.length > 0);
+  get items() {
+    return this.globals.stores.navTree.items.filter(isMergeRequestNavItem);
+  }
+
+  @computed
+  get branches() {
+    return buildWorkspaceTree(this.globals.stores.navTree);
+  }
+
+  reviewFor(itemId: string) {
+    return this.reviews.data?.[itemId];
+  }
+
+  @actionBound
+  toggleBranch(id: string) {
+    if (!this.collapsed.delete(id)) this.collapsed.add(id);
   }
 
   willMount() {
     reaction(
-      () => this.globals.stores.navTree.items.length,
+      () => this.items.length,
       (count) => {
         if (!count) this.setExpanded(false);
       },

@@ -1,5 +1,8 @@
-import { reaction } from 'mobx';
-import type { GitLabProjectDC } from '@/shared/api/gitlab';
+import { compareShallow, reaction } from 'mobx';
+import type {
+  GitLabMergeRequestDC,
+  GitLabProjectDC,
+} from '@/shared/api/gitlab';
 import type {
   NavTreeGroup,
   NavTreeItem,
@@ -9,20 +12,29 @@ import type { Workspace } from './workspace';
 
 export const MERGE_REQUEST_NAV_KIND = 'merge-request';
 export const REPOSITORY_NAV_GROUP_KIND = 'repository';
+export const MERGE_REQUEST_TAB_LIFETIME = 2 * 60 * 60 * 1000;
+
+type MergeRequestStatus = Pick<
+  GitLabMergeRequestDC,
+  'state' | 'draft' | 'work_in_progress' | 'detailed_merge_status'
+>;
 
 export interface MergeRequestNavPayload {
   connectionId: string;
   projectId: number;
   projectPath: string;
   mergeRequestIid: number;
+  lastOpenedAt?: number;
+  status?: MergeRequestStatus;
 }
 
 interface RepositoryNavGroupPayload {
   connectionId: string;
   projectId: number;
+  personalNamespace?: boolean;
 }
 
-type RepositoryNavGroup = NavTreeGroup<
+export type RepositoryNavGroup = NavTreeGroup<
   typeof REPOSITORY_NAV_GROUP_KIND,
   RepositoryNavGroupPayload
 >;
@@ -31,6 +43,10 @@ export type MergeRequestNavItem = NavTreeItem<
   typeof MERGE_REQUEST_NAV_KIND,
   MergeRequestNavPayload
 >;
+
+export const isMergeRequestNavItem = (
+  item: NavTreeItem,
+): item is MergeRequestNavItem => item.kind === MERGE_REQUEST_NAV_KIND;
 
 export const pruneOrphanedMergeRequestItems = (
   navTree: Pick<NavTreeStore, 'items' | 'removeItem'>,
@@ -69,7 +85,7 @@ export class MergeRequestNavAdapter {
   constructor(private readonly globals: Workspace) {}
 
   start() {
-    reaction(
+    const stopRouteSync = reaction(
       () => ({
         isOpened: this.globals.routes.mergeRequest.isOpened,
         projectId: this.globals.routes.mergeRequest.params?.projectId,
@@ -77,8 +93,9 @@ export class MergeRequestNavAdapter {
           this.globals.routes.mergeRequest.params?.mergeRequestIid,
       }),
       () => this.syncCurrentRoute(),
+      { equals: compareShallow },
     );
-    reaction(
+    const stopConnectionSync = reaction(
       () =>
         this.globals.stores.settings.connections.map(
           (connection) => connection.id,
@@ -93,6 +110,49 @@ export class MergeRequestNavAdapter {
     this.migrateLegacyTabs();
     this.pruneOrphanedItems();
     this.syncCurrentRoute();
+    const navTree = this.globals.stores.navTree;
+    for (const item of navTree.items) {
+      if (
+        isMergeRequestNavItem(item) &&
+        !Number.isFinite(item.payload.lastOpenedAt)
+      ) {
+        this.touch(item);
+      }
+    }
+
+    let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+    const scheduleExpiry = () => {
+      clearTimeout(expiryTimer);
+      const now = Date.now();
+      const activeItemId = this.activeItemId;
+      const expired = new Set<string>();
+      let nextExpiry = Infinity;
+      for (const item of navTree.items) {
+        if (!isMergeRequestNavItem(item) || item.id === activeItemId) continue;
+        const expiresAt =
+          (item.payload.lastOpenedAt ?? now) + MERGE_REQUEST_TAB_LIFETIME;
+        if (expiresAt <= now) expired.add(item.id);
+        else nextExpiry = Math.min(nextExpiry, expiresAt);
+      }
+      if (Number.isFinite(nextExpiry)) {
+        expiryTimer = setTimeout(
+          scheduleExpiry,
+          Math.min(nextExpiry - now, MERGE_REQUEST_TAB_LIFETIME),
+        );
+      }
+      if (expired.size) navTree.removeItems(expired);
+    };
+    const stopExpiry = reaction(
+      () => [navTree.items, this.activeItemId],
+      scheduleExpiry,
+      { fireImmediately: true },
+    );
+    return () => {
+      stopRouteSync();
+      stopConnectionSync();
+      stopExpiry();
+      clearTimeout(expiryTimer);
+    };
   }
 
   get activeItemId(): string | null {
@@ -125,18 +185,21 @@ export class MergeRequestNavAdapter {
 
   open(
     connectionId: string,
-    project: Pick<GitLabProjectDC, 'id' | 'path_with_namespace'>,
+    project: Pick<GitLabProjectDC, 'id' | 'path_with_namespace' | 'namespace'>,
     mergeRequestIid: number,
     title: string,
   ) {
+    const target = { connectionId, projectId: project.id, mergeRequestIid };
+    const existing = this.findItem(target);
     const payload: MergeRequestNavPayload = {
-      connectionId,
-      projectId: project.id,
-      projectPath: project.path_with_namespace,
-      mergeRequestIid,
+      ...existing?.payload,
+      ...target,
+      projectPath:
+        project.path_with_namespace || existing?.payload.projectPath || '',
+      lastOpenedAt: Date.now(),
     };
 
-    this.upsertItem(payload, title);
+    this.upsertItem(payload, title, project.namespace?.kind);
     this.navigate(payload);
   }
 
@@ -144,45 +207,36 @@ export class MergeRequestNavAdapter {
     connectionId: string,
     projectId: number,
     mergeRequestIid: number,
-    details: { title: string; projectPath?: string },
+    details: {
+      title: string;
+      projectPath?: string;
+      namespaceKind?: NonNullable<GitLabProjectDC['namespace']>['kind'];
+      status?: MergeRequestStatus;
+    },
   ) {
-    const existing = this.globals.stores.navTree.items.find(
-      (item) =>
-        item.id ===
-        createMergeRequestNavItemId({
-          connectionId,
-          projectId,
-          mergeRequestIid,
-        }),
-    ) as MergeRequestNavItem | undefined;
-
+    const target = { connectionId, projectId, mergeRequestIid };
+    const existing = this.findItem(target);
     this.upsertItem(
       {
-        connectionId,
-        projectId,
-        projectPath: details.projectPath ?? existing?.payload.projectPath ?? '',
-        mergeRequestIid,
+        ...existing?.payload,
+        ...target,
+        projectPath: details.projectPath || existing?.payload.projectPath || '',
+        status: details.status ?? existing?.payload.status,
+        lastOpenedAt: existing?.payload.lastOpenedAt ?? Date.now(),
       },
       details.title || existing?.title || '',
+      details.namespaceKind,
     );
   }
 
   select(item: NavTreeItem) {
-    if (item.kind !== MERGE_REQUEST_NAV_KIND) {
-      return;
-    }
-
-    const mergeRequestItem = item as MergeRequestNavItem;
-    this.navigate(mergeRequestItem.payload);
+    if (!isMergeRequestNavItem(item)) return;
+    this.touch(item);
+    this.navigate(item.payload);
   }
 
-  selectGroup(group: NavTreeGroup) {
-    if (group.kind !== REPOSITORY_NAV_GROUP_KIND) {
-      return;
-    }
-
-    const repositoryGroup = group as RepositoryNavGroup;
-    const { connectionId, projectId } = repositoryGroup.payload ?? {};
+  selectGroup(group: RepositoryNavGroup) {
+    const { connectionId, projectId } = group.payload ?? {};
     if (
       typeof connectionId !== 'string' ||
       !Number.isInteger(projectId) ||
@@ -201,15 +255,22 @@ export class MergeRequestNavAdapter {
     });
   }
 
+  selectNamespace(connectionId: string, groupPath: string) {
+    const { settings } = this.globals.stores;
+    if (!settings.connections.some(({ id }) => id === connectionId)) return;
+    if (settings.activeId !== connectionId)
+      settings.setActiveConnection(connectionId);
+    void this.globals.routes.group.open({ groupPath });
+  }
+
   close(item: NavTreeItem) {
-    if (item.kind !== MERGE_REQUEST_NAV_KIND) {
+    if (!isMergeRequestNavItem(item)) {
       return;
     }
 
-    const mergeRequestItem = item as MergeRequestNavItem;
+    const mergeRequestItem = item;
     const mergeRequestItems = this.globals.stores.navTree.items.filter(
-      (navItem): navItem is MergeRequestNavItem =>
-        navItem.kind === MERGE_REQUEST_NAV_KIND,
+      isMergeRequestNavItem,
     );
     const index = mergeRequestItems.findIndex(
       (navItem) => navItem.id === mergeRequestItem.id,
@@ -228,6 +289,7 @@ export class MergeRequestNavAdapter {
     const nextItem = remainingItems[index] ?? remainingItems[index - 1];
 
     if (nextItem) {
+      this.touch(nextItem);
       this.navigate(nextItem.payload);
       return;
     }
@@ -273,8 +335,9 @@ export class MergeRequestNavAdapter {
 
     const navTree = this.globals.stores.navTree;
     const tab = { connectionId, projectId, mergeRequestIid };
-    const itemId = createMergeRequestNavItemId(tab);
-    if (navTree.items.some((item) => item.id === itemId)) {
+    const item = this.findItem(tab);
+    if (item) {
+      this.touch(item);
       return;
     }
 
@@ -286,6 +349,7 @@ export class MergeRequestNavAdapter {
       {
         ...tab,
         projectPath: projectPath ?? '',
+        lastOpenedAt: Date.now(),
       },
       '',
     );
@@ -300,8 +364,38 @@ export class MergeRequestNavAdapter {
     );
   }
 
-  private upsertItem(payload: MergeRequestNavPayload, title: string) {
+  private findItem(
+    target: Pick<
+      MergeRequestNavPayload,
+      'connectionId' | 'projectId' | 'mergeRequestIid'
+    >,
+  ) {
+    const id = createMergeRequestNavItemId(target);
+    return this.globals.stores.navTree.items.find(
+      (item): item is MergeRequestNavItem =>
+        item.id === id && isMergeRequestNavItem(item),
+    );
+  }
+
+  private touch(item: MergeRequestNavItem) {
+    const lastOpenedAt = Date.now();
+    if (item.payload.lastOpenedAt !== lastOpenedAt) {
+      this.globals.stores.navTree.upsertItem({
+        ...item,
+        payload: { ...item.payload, lastOpenedAt },
+      });
+    }
+  }
+
+  private upsertItem(
+    payload: MergeRequestNavPayload,
+    title: string,
+    namespaceKind?: NonNullable<GitLabProjectDC['namespace']>['kind'],
+  ) {
     const groupId = createGroupId(payload.connectionId, payload.projectId);
+    const existing = this.globals.stores.navTree.groups.find(
+      (group) => group.id === groupId,
+    ) as RepositoryNavGroup | undefined;
     this.globals.stores.navTree.upsertGroup<
       typeof REPOSITORY_NAV_GROUP_KIND,
       RepositoryNavGroupPayload
@@ -312,6 +406,10 @@ export class MergeRequestNavAdapter {
       payload: {
         connectionId: payload.connectionId,
         projectId: payload.projectId,
+        personalNamespace:
+          namespaceKind == null
+            ? existing?.payload?.personalNamespace
+            : namespaceKind === 'user',
       },
     });
     this.globals.stores.navTree.upsertItem<

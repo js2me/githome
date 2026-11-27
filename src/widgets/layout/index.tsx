@@ -3,7 +3,7 @@ import { type ReactNode, Suspense } from 'react';
 import { GitLabConnectionProvider } from '@/shared/lib/gitlab/connection/connection-context';
 import { AppNav } from './components/navigation/app-nav';
 import { RefreshNotice } from './components/refresh-notice';
-import { WorkspacePicker } from './components/workspace-picker';
+import { WorkspacePicker } from './components/workspace/workspace-picker';
 import { LayoutVM } from './model/layout-vm';
 
 export interface LayoutProps extends ViewModelProps<LayoutVM> {
