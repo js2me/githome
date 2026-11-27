@@ -1,8 +1,6 @@
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
-import {
-  matchMergeRequestProject,
-  parseMergeRequestLocation,
-} from '@/shared/lib/gitlab/links/merge-request';
+import { resolveGitlabProjectLink } from '@/shared/lib/gitlab/connection/resolve-project-link';
+import { parseMergeRequestLocation } from '@/shared/lib/gitlab/links/merge-request';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 
 export function resolveMergeRequestLink(
@@ -14,30 +12,8 @@ export function resolveMergeRequestLink(
   if (!location)
     throw new LocalizedError('review.pasteAGitlabMergeRequestLink');
 
-  let selected:
-    | { connection: GitLabConnection; projectPath: string; specificity: number }
-    | undefined;
-  for (const connection of connections) {
-    const match = matchMergeRequestProject(location, connection.gitlabUrl);
-    if (
-      match &&
-      (!selected ||
-        match.specificity > selected.specificity ||
-        (match.specificity === selected.specificity &&
-          connection.id === activeId))
-    ) {
-      selected = { connection, ...match };
-    }
-  }
-
-  if (!selected)
-    throw new LocalizedError('review.addAConnectionToAtTheTop', {
-      v1: new URL(location.origin).host,
-    });
-
   return {
-    connection: selected.connection,
-    projectPath: selected.projectPath,
+    ...resolveGitlabProjectLink(location, connections, activeId),
     iid: location.iid,
   };
 }

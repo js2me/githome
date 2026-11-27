@@ -160,6 +160,10 @@ const pipeline = {
   source: 'merge_request_event', sha: 'a12bc3456789', duration: 82,
   web_url: 'https://gitlab.mock/group/alpha/-/pipelines/4821', created_at: '2026-07-27T08:00:00Z',
 };
+const linkedPipeline = {
+  ...pipeline, id: 4819, ref: 'older-branch',
+  web_url: 'https://gitlab.mock/group/alpha/-/pipelines/4819',
+};
 const pipelineJobs = Array.from({ length: 125 }, (_, index) => ({
   id: 700 + index, name: index === 0 ? 'typecheck' : `test-${index}`,
   stage: index === 0 ? 'build' : index === 124 ? 'deploy-dev' : 'test',
@@ -298,6 +302,14 @@ const route = (url, postData, token, method) => {
   }
   if (p === '/api/v4/projects/1/pipelines') return [pipeline];
   if (p === '/api/v4/projects/1/pipelines/4821') return pipeline;
+  if (p === '/api/v4/projects/group%2Falpha') return projects[0];
+  if (p === '/api/v4/projects/1/pipelines/4819') return linkedPipeline;
+  if (p === '/api/v4/projects/1/pipelines/4819/jobs') {
+    return searchParams.get('page') === '2' ? [] : [{
+      id: 966, name: 'older-pipeline-job', stage: 'build', status: 'success',
+    }];
+  }
+
   if (p === '/api/v4/projects/1/pipelines/4821/jobs') {
     const page = Number(searchParams.get('page') ?? 1);
     const size = Number(searchParams.get('per_page') ?? 20);
@@ -1509,6 +1521,27 @@ try {
   check('opening a GitLab MR by URL', false, String(error));
 } finally {
   openByLinkSecondary.resolve();
+}
+
+try {
+  const dialog = 'dialog[open][aria-labelledby="open-mr-title"]';
+  await page.click('button[aria-label="Открыть MR"]');
+  await page.waitForSelector(dialog);
+  await page.keyboard.type(linkedPipeline.web_url + '?ref=main');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() =>
+    location.pathname === '/repository/1/pipelines' &&
+    new URLSearchParams(location.search).get('pipeline') === '4819' &&
+    Boolean(document.querySelector('dialog[open] button[aria-label="Лог задания older-pipeline-job"]')),
+    { timeout: 5000 },
+  );
+  check('a GitLab pipeline link opens its jobs even when the run is absent from the pipeline list', true);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog[open]') &&
+    !new URLSearchParams(location.search).has('pipeline'), { timeout: 3000 });
+  check('closing the linked pipeline returns to the pipeline list', true);
+} catch (error) {
+  check('opening an older GitLab pipeline by URL', false, String(error));
 }
 
 try {

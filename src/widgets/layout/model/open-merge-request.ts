@@ -6,7 +6,9 @@ import { resolveMergeRequestLink } from '@/features/merge-requests';
 import { WorkspaceVM } from '@/features/workspace-navigation';
 import { gitlabApi } from '@/shared/api/gitlab';
 import { GitLabApiError } from '@/shared/api/gitlab/client';
+import { parsePipelineLocation } from '@/shared/lib/gitlab/links/pipeline';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
+import { resolvePipelineTarget } from './open-pipeline';
 
 export class OpenMergeRequestVM extends WorkspaceVM {
   readonly dialog = createRef<HTMLDialogElement>();
@@ -14,6 +16,10 @@ export class OpenMergeRequestVM extends WorkspaceVM {
   private request?: AbortController;
   @observable accessor link = '';
   @observable private accessor currentError: Error | null = null;
+
+  get isPipelineLink() {
+    return Boolean(parsePipelineLocation(this.link));
+  }
 
   get error() {
     return this.currentError?.message ?? '';
@@ -109,8 +115,27 @@ export class OpenMergeRequestVM extends WorkspaceVM {
     this.pending = true;
     this.currentError = null;
 
+    const pipeline = parsePipelineLocation(this.link);
     try {
       const { settings } = this.globals.stores;
+      if (pipeline) {
+        const target = await resolvePipelineTarget(
+          this.globals,
+          pipeline,
+          request.signal,
+        );
+        if (request.signal.aborted || !this.dialog.current?.open) return;
+        this.dialog.current.close();
+        if (settings.activeId !== target.connection.id) {
+          settings.setActiveConnection(target.connection.id);
+        }
+        this.globals.stores.repository.setProject(target.project);
+        await this.globals.routes.pipelines.open(
+          { projectId: String(target.project.id) },
+          { query: { pipeline: String(target.pipelineId) } },
+        );
+        return;
+      }
       const { connection, projectPath, iid } = resolveMergeRequestLink(
         this.link,
         settings.connections,
@@ -142,7 +167,14 @@ export class OpenMergeRequestVM extends WorkspaceVM {
     } catch (error) {
       if (request.signal.aborted) return;
       runInAction(() => {
-        if (error instanceof GitLabApiError) {
+        if (
+          pipeline &&
+          (error instanceof GitLabApiError || error instanceof TypeError)
+        ) {
+          this.currentError = new LocalizedError(
+            'pipelines.couldNotLoadThePipeline',
+          );
+        } else if (error instanceof GitLabApiError) {
           this.currentError = new LocalizedError(
             'navigation.couldNotOpenTheMergeRequestHttp',
             { v1: error.status },

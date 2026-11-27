@@ -1,5 +1,10 @@
 import { parseMergeRequestLocation } from "../../src/shared/lib/gitlab/links/merge-request";
 
+import { parsePipelineLocation } from "../../src/shared/lib/gitlab/links/pipeline";
+
+export const isSupportedGitlabLink = (input: string) =>
+  Boolean(parseMergeRequestLocation(input) || parsePipelineLocation(input));
+
 const openMergeRequestFlag = "--open-mr";
 
 // Undefined means normal app launch. An empty string means the flag was used
@@ -18,23 +23,26 @@ export function readOpenMergeRequestArgument(argv: readonly string[]): string | 
 
 export function readGitHomeLink(input: string): string | undefined {
   if (!/^githome:/i.test(input)) return;
-  const rawPrefix = "githome://open-mr?raw=";
-  if (input.startsWith(rawPrefix)) {
+  const raw = input.match(/^githome:\/\/(open-mr|open-pipeline)\?raw=(.*)$/s);
+  const parse = (action: string, url: string) => {
+    const parser = action === "open-pipeline" ? parsePipelineLocation : parseMergeRequestLocation;
+    return parser(url) ? url : "";
+  };
+  if (raw) {
     // A Chrome redirect cannot percent-encode its capture. The entire suffix is the HTTPS URL.
-    const url = input.slice(rawPrefix.length);
-    return /^https:\/\//i.test(url) && parseMergeRequestLocation(url) ? url : "";
+    return /^https:\/\//i.test(raw[2]) ? parse(raw[1], raw[2]) : "";
   }
   if (!URL.canParse(input)) return "";
   const link = new URL(input);
   if (
-    link.host !== "open-mr" || (link.pathname && link.pathname !== "/") ||
+    (link.host !== "open-mr" && link.host !== "open-pipeline") ||
+    (link.pathname && link.pathname !== "/") ||
     link.username || link.password || link.hash || link.searchParams.size !== 1
   ) return "";
-  const url = link.searchParams.get("url") ?? "";
-  return parseMergeRequestLocation(url) ? url : "";
+  return parse(link.host, link.searchParams.get("url") ?? "");
 }
 
-export function readExplicitMergeRequest(argv: readonly string[]): string | undefined {
+export function readExplicitGitHomeLink(argv: readonly string[]): string | undefined {
   const flag = readOpenMergeRequestArgument(argv);
   if (flag !== undefined) return flag;
   const link = argv.find((arg) => /^githome:/i.test(arg));

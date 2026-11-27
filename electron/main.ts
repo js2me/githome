@@ -4,9 +4,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { setupAppUpdater } from "./app-updater";
 import { startAppServer } from "./app-server";
 import {
-  readExplicitMergeRequest,
+  readExplicitGitHomeLink,
   readGitHomeLink,
-  readOpenMergeRequestArgument,
+  isSupportedGitlabLink,
 } from "./system-links/arguments";
 import { setupSystemLinks } from "./system-links/ipc";
 import { createLinkPlatform } from "./system-links/platform";
@@ -29,9 +29,9 @@ let appOrigin: string | undefined;
 let creatingWindow: Promise<void> | undefined;
 let linkRouter: SystemLinkRouter | undefined;
 
-const explicitMergeRequest = readExplicitMergeRequest(process.argv.slice(1));
+const explicitGitHomeLink = readExplicitGitHomeLink(process.argv.slice(1));
 const gotSingleInstanceLock = app.requestSingleInstanceLock(
-  explicitMergeRequest === undefined ? undefined : { explicitMergeRequest },
+  explicitGitHomeLink === undefined ? undefined : { explicitGitHomeLink },
 );
 if (!gotSingleInstanceLock) {
   app.quit();
@@ -136,8 +136,8 @@ const webArgs = (argv: string[]): IncomingLink[] =>
   argv.filter((arg) => Boolean(parseWebUrl(arg))).map((url) => ({ url }));
 
 if (gotSingleInstanceLock) {
-  let startupLinks: IncomingLink[] = explicitMergeRequest !== undefined
-    ? [{ url: explicitMergeRequest, explicit: true }]
+  let startupLinks: IncomingLink[] = explicitGitHomeLink !== undefined
+    ? [{ url: explicitGitHomeLink, explicit: true }]
     : process.platform === "darwin" ? [] : webArgs(process.argv.slice(1));
   let receiveLinks = (links: IncomingLink[]) => {
     startupLinks.push(...links);
@@ -159,12 +159,12 @@ if (gotSingleInstanceLock) {
 
   app.on("second-instance", (_event, argv, _cwd, data) => {
     const args = argv.slice(1);
-    const forwarded = data && typeof data === "object" && "explicitMergeRequest" in data
-      ? data.explicitMergeRequest
+    const forwarded = data && typeof data === "object" && "explicitGitHomeLink" in data
+      ? data.explicitGitHomeLink
       : undefined;
     const explicit = typeof forwarded === "string"
-      ? readOpenMergeRequestArgument(["--open-mr", forwarded])
-      : readExplicitMergeRequest(args);
+      ? (isSupportedGitlabLink(forwarded) ? forwarded : "")
+      : readExplicitGitHomeLink(args);
     const links = explicit === undefined ? webArgs(args) : [{ url: explicit, explicit: true } as const];
     if (links.length) receiveLinks(links);
     else {
@@ -195,7 +195,7 @@ if (gotSingleInstanceLock) {
         for (const { url, explicit } of links) {
           try {
             if (explicit && !url) {
-              dialog.showErrorBox("GitHome", "This link does not open a GitLab merge request.");
+              dialog.showErrorBox("GitHome", "This link does not open a GitLab merge request or pipeline.");
               continue;
             }
 

@@ -3,10 +3,8 @@ import {
   normalizeGitlabBaseUrl,
   parseWebUrl,
 } from "../../src/shared/lib/gitlab/links/gitlab-url";
-import {
-  matchMergeRequestProject,
-  parseMergeRequestLocation,
-} from "../../src/shared/lib/gitlab/links/merge-request";
+import { parseMergeRequestLocation } from "../../src/shared/lib/gitlab/links/merge-request";
+import { matchGitlabProject } from "../../src/shared/lib/gitlab/links/project";
 import type { SystemLinksState } from "../../src/shared/lib/system-links/types";
 import type { LinkPlatform, WebScheme } from "./platform";
 
@@ -131,7 +129,7 @@ export class SystemLinkRouter {
     const platform = this.platform;
     const location = parseMergeRequestLocation(input);
     if (!platform || !location ||
-      !this.settings.gitlabs.some((base) => matchMergeRequestProject(location, base))) return false;
+      !this.settings.gitlabs.some((base) => matchGitlabProject(location, base))) return false;
     const scheme = location.origin.startsWith("https:") ? "https" : "http";
     return platform.schemes.includes(scheme) && await platform.getDefault(scheme) === platform.ownHandler;
   }

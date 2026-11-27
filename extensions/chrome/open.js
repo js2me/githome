@@ -1,17 +1,19 @@
-import { appLink, escapeRegex, isMergeRequest } from './links.js';
+import { appLink, escapeRegex, gitlabLinkKind } from './links.js';
 
 const prefix = `${chrome.runtime.getURL('open.html')}?url=`;
 const raw = location.href.startsWith(prefix) ? location.href.slice(prefix.length) : '';
 const status = document.querySelector('#status');
 const { origin } = await chrome.storage.local.get('origin');
 
-if (!isMergeRequest(raw, origin)) {
-  status.textContent = 'Эта ссылка не ведёт на MR в настроенном GitLab.';
+const kind = gitlabLinkKind(raw, origin);
+
+if (!kind) {
+  status.textContent = 'Эта ссылка не ведёт на MR или пайплайн в настроенном GitLab.';
 } else {
   const target = new URL(raw);
   const app = document.querySelector('#open');
   const browser = document.querySelector('#browser');
-  const link = appLink(target.href);
+  const link = appLink(target.href, kind);
   app.href = link;
   document.querySelector('#target').textContent = `${target.host}${target.pathname}`;
   document.querySelector('#actions').hidden = false;
@@ -42,5 +44,4 @@ if (!isMergeRequest(raw, origin)) {
       browser.disabled = false;
     }
   });
-
 }

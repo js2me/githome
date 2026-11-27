@@ -41,7 +41,7 @@ async function change(origin, auto) {
   saved = { origin, auto };
   render();
   if (old && old !== current) await chrome.permissions.remove({ origins: [old] }).catch(() => false);
-  status.textContent = origin ? 'Готово. Откройте ссылку на MR.' : 'Расширение отключено.';
+  status.textContent = origin ? 'Готово. Откройте ссылку на MR или пайплайн.' : 'Расширение отключено.';
 }
 
 async function update(origin, auto) {

@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   appLink,
   gitlabOrigin,
-  isMergeRequest,
-  mergeRequestFilter,
+  gitlabLinkKind,
   navigationRules,
   permissionPattern,
 } from '../links.js';
@@ -31,9 +30,9 @@ describe('GitHome Chrome links', () => {
   });
 
   it('only matches MR navigations on the configured origin and preserves the link', () => {
-    const rule = new RegExp(mergeRequestFilter(origin));
+    const rule = new RegExp(navigationRules(origin, true, '').addRules[0]!.condition.regexFilter);
     expect(rule.test(mr)).toBe(true);
-    expect(isMergeRequest(mr, origin)).toBe(true);
+    expect(gitlabLinkKind(mr, origin)).toBe('open-mr');
     for (const url of [
       mr.replace(origin, `${origin}.example.org`),
       mr.replace('merge_requests', 'issues'),
@@ -41,8 +40,26 @@ describe('GitHome Chrome links', () => {
       `${origin}/-/merge_requests/155`,
     ]) {
       expect(rule.test(url)).toBe(false);
-      expect(isMergeRequest(url, origin)).toBe(false);
+      expect(gitlabLinkKind(url, origin)).toBeNull();
     }
-    expect(new URL(appLink(mr)).searchParams.get('url')).toBe(mr);
+    expect(new URL(appLink(mr, 'open-mr')).searchParams.get('url')).toBe(mr);
+  });
+
+  it('opens individual pipelines directly or through the manual page', () => {
+    const pipeline = `${origin}/group/sub/project/-/pipelines/987?ref=main#jobs`;
+    const bridge = 'chrome-extension://fixture/open.html';
+    const automatic = navigationRules(origin, true, bridge);
+    const manual = navigationRules(origin, false, bridge);
+    const rule = automatic.addRules[1]!;
+    const filter = new RegExp(rule.condition.regexFilter);
+    expect(automatic.removeRuleIds).toEqual([1, 2]);
+    expect(rule.action.redirect.regexSubstitution).toBe('githome://open-pipeline?raw=\\0');
+    expect(manual.addRules[1]?.action.redirect.regexSubstitution).toBe(`${bridge}?url=\\0`);
+    expect(filter.test(pipeline)).toBe(true);
+    expect(gitlabLinkKind(pipeline, origin)).toBe('open-pipeline');
+    expect(new URL(appLink(pipeline, 'open-pipeline')).searchParams.get('url')).toBe(pipeline);
+    for (const url of [pipeline.replace('/987', ''), pipeline.replace('/987', '/0'), pipeline.replace(origin, `${origin}.example.org`), mr]) {
+      expect(filter.test(url)).toBe(false);
+    }
   });
 });

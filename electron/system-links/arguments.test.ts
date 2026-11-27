@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readExplicitMergeRequest, readGitHomeLink, readOpenMergeRequestArgument } from "./arguments";
+import { readExplicitGitHomeLink, readGitHomeLink, readOpenMergeRequestArgument } from "./arguments";
 
 const url = "https://gitlab.example.com/team/project/-/merge_requests/42/diffs?view=parallel#note_1";
 
@@ -23,16 +23,24 @@ describe("githome://", () => {
   it("opens an MR from the OS without changing its URL", () => {
     const link = `githome://open-mr?url=${encoded}`;
     expect(readGitHomeLink(link)).toBe(url);
-    expect(readExplicitMergeRequest(["--flag", link])).toBe(url);
+    expect(readExplicitGitHomeLink(["--flag", link])).toBe(url);
   });
 
   it("preserves the complete raw URL from a Chrome redirect", () => {
     const mr = `${url.replace("#", "&other=%2B#")}`;
     const link = `githome://open-mr?raw=${mr}`;
     expect(readGitHomeLink(link)).toBe(mr);
-    expect(readExplicitMergeRequest([link])).toBe(mr);
+    expect(readExplicitGitHomeLink([link])).toBe(mr);
     expect(readGitHomeLink("githome://open-mr?raw=githome://open-mr")).toBe("");
     expect(readGitHomeLink(`githome://open-mr?raw=${mr.replace("https:", "http:")}`)).toBe("");
+  });
+
+  it("accepts a pipeline through Chrome and the manual opening page", () => {
+    const pipeline = "https://gitlab.example.com/group/nested/project/-/pipelines/987?ref=main#jobs";
+    expect(readGitHomeLink(`githome://open-pipeline?raw=${pipeline}`)).toBe(pipeline);
+    expect(readGitHomeLink(`githome://open-pipeline?url=${encodeURIComponent(pipeline)}`)).toBe(pipeline);
+    expect(readGitHomeLink(`githome://open-mr?raw=${pipeline}`)).toBe("");
+    expect(readGitHomeLink(`githome://open-pipeline?raw=${url}`)).toBe("");
   });
 
   it("does not accept arbitrary actions, non-MR URLs, or multiple payloads", () => {

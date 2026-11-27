@@ -4,12 +4,12 @@ import type { GitLabProjectDC } from '../../data-contracts';
 
 export const getProject = async (
   connection: GitLabConnection,
-  projectId: number,
+  projectId: number | string,
   signal?: AbortSignal,
 ): Promise<GitLabProjectDC> => {
   const response = await gitlabFetch(
     connection,
-    `/projects/${projectId}`,
+    `/projects/${encodeURIComponent(projectId)}`,
     signal,
   );
 

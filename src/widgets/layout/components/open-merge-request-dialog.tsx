@@ -49,7 +49,11 @@ export const OpenMergeRequestDialog = withViewModel(
         >
           <div className="mb-5 flex items-center justify-between gap-3">
             <h2 id="open-mr-title" className="font-bold text-xl tracking-tight">
-              {t('navigation.openAMergeRequest')}
+              {t(
+                model.isPipelineLink
+                  ? 'navigation.openAPipeline'
+                  : 'navigation.openAMergeRequest',
+              )}
             </h2>
             <button
               type="button"
@@ -61,7 +65,11 @@ export const OpenMergeRequestDialog = withViewModel(
             </button>
           </div>
           <label className="grid gap-2 font-semibold text-sm">
-            {t('navigation.gitlabMergeRequestLink')}
+            {t(
+              model.isPipelineLink
+                ? 'navigation.gitlabPipelineLink'
+                : 'navigation.gitlabMergeRequestLink',
+            )}
             <input
               ref={model.input}
               className="glass-input min-w-0 rounded-xl px-3.5 py-3 font-normal text-sm"

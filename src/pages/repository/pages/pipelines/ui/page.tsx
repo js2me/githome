@@ -33,7 +33,7 @@ const filterStatuses = [
 
 export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
   const list = model.pipelineList;
-  const { selectedPipeline } = list;
+  const { selectedPipeline, linkedPipelineQuery } = model;
   return (
     <section
       className="mx-auto w-full max-w-page"
@@ -252,7 +252,21 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
       {list.actionError && !selectedPipeline && (
         <StatusMessage error>{list.actionError}</StatusMessage>
       )}
-      {selectedPipeline && <RunDetails model={model} run={selectedPipeline} />}
+      {linkedPipelineQuery.isLoading && !selectedPipeline && (
+        <StatusMessage>{t('common.loading')}</StatusMessage>
+      )}
+      {linkedPipelineQuery.error && !selectedPipeline && (
+        <StatusMessage error>
+          {t('pipelines.couldNotLoadThePipeline')}
+        </StatusMessage>
+      )}
+      {selectedPipeline && (
+        <RunDetails
+          key={selectedPipeline.id}
+          model={model}
+          run={selectedPipeline}
+        />
+      )}
     </section>
   );
 });

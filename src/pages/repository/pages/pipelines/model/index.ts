@@ -1,4 +1,4 @@
-import { actionBound, reaction } from 'mobx';
+import { actionBound, computed, reaction } from 'mobx';
 import type { ViewModelParams } from 'mobx-view-model';
 import { isPipelineActive } from '@/entities/gitlab-pipelines';
 import type { Workspace } from '@/features/workspace-navigation';
@@ -8,13 +8,17 @@ import {
   type GitLabPipelineDC,
   gitlabApi,
 } from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import {
+  createGitlabApiQuery,
+  createGitlabQuery,
+} from '@/shared/lib/gitlab/connection/create-query';
 import type { RepositoryPageVM } from '../../../model/page-vm';
 import { PipelineList } from './pipeline-list';
 
 export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
   readonly pipelineList: PipelineList;
   readonly jobs;
+  readonly linkedPipelineQuery;
 
   constructor(
     globals: Workspace,
@@ -39,6 +43,27 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
       },
     });
 
+    this.linkedPipelineQuery = createGitlabQuery<GitLabPipelineDC>({
+      globals,
+      abortSignal: this.unmountSignal,
+      params: () => {
+        const { projectId } = this.parentViewModel;
+        const pipelineId = this.linkedPipelineId;
+        return (
+          projectId !== null &&
+          pipelineId !== null && {
+            path: `/projects/${projectId}/pipelines/${pipelineId}`,
+          }
+        );
+      },
+      queryOptions: {
+        refetchInterval: ({ state }) => {
+          const run = state.data as GitLabPipelineDC | undefined;
+          return run && isPipelineActive(run.status) ? 5000 : false;
+        },
+      },
+    });
+
     this.jobs = createGitlabApiQuery<
       GitLabJobDC[],
       { projectId: number; pipelineId: number }
@@ -46,8 +71,12 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
       globals,
       abortSignal: this.unmountSignal,
       params: () => {
-        const run = this.pipelineList.openedRun;
-        return run && { projectId: run.project_id, pipelineId: run.id };
+        const { projectId } = this.parentViewModel;
+        const pipelineId = this.linkedPipelineId ?? this.selectedPipeline?.id;
+        return (
+          projectId !== null &&
+          pipelineId !== undefined && { projectId, pipelineId }
+        );
       },
       queryKey: ({ connection, projectId, pipelineId }) => [
         'pipeline-jobs',
@@ -60,7 +89,7 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
         gitlabApi.getPipelineJobs(connection, projectId, pipelineId, signal),
       queryOptions: {
         refetchInterval: ({ state }) => {
-          const run = this.pipelineList.selectedPipeline;
+          const run = this.selectedPipeline;
           const jobs = state.data as GitLabJobDC[] | undefined;
           return run &&
             (isPipelineActive(run.status) ||
@@ -76,9 +105,35 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
         globals.stores.settings.activeId,
         globals.stores.settings.activeItem?.credentialsRevision,
       ],
-      this.closeDetails,
+      () => this.pipelineList.selectPipeline(null),
       { signal: this.unmountSignal },
     );
+  }
+
+  @computed
+  private get linkedPipelineId() {
+    const param = this.globals.query.data.pipeline;
+    if (
+      !this.globals.routes.pipelines.isOpened ||
+      !/^[1-9][0-9]*$/.test(param ?? '')
+    )
+      return null;
+    const id = Number(param);
+    return Number.isSafeInteger(id) ? id : null;
+  }
+
+  @computed
+  get selectedPipeline() {
+    if (this.linkedPipelineId !== null) {
+      return (
+        this.linkedPipelineQuery.data ??
+        this.pipelineList.pipelines.find(
+          (run) => run.id === this.linkedPipelineId,
+        ) ??
+        null
+      );
+    }
+    return this.pipelineList.selectedPipeline;
   }
 
   get projectPath() {
@@ -88,29 +143,37 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
   @actionBound
   refreshDetails() {
     this.pipelineList.refresh();
+    if (this.linkedPipelineId !== null) void this.linkedPipelineQuery.refetch();
     void this.jobs.refetch();
   }
 
   @actionBound
   openDetails(run: GitLabPipelineDC) {
+    if (this.linkedPipelineId !== null) this.closeDetails();
     this.pipelineList.selectPipeline(run);
   }
 
   @actionBound
   closeDetails() {
     this.pipelineList.selectPipeline(null);
+    if (this.linkedPipelineId !== null) {
+      this.globals.query.update({ pipeline: null }, { replace: true });
+    }
   }
 
   @actionBound
   async runJob(job: GitLabJobDC) {
-    const run = this.pipelineList.openedRun;
+    const run = this.selectedPipeline;
     await this.pipelineList.runJobAction(job);
-    if (run && run === this.pipelineList.openedRun) await this.jobs.refetch();
+    if (run && run.id === this.selectedPipeline?.id) await this.jobs.refetch();
   }
 
   @actionBound
   async runPipeline(run: GitLabPipelineDC, action: 'retry' | 'cancel') {
     await this.pipelineList.runPipelineAction(run, action);
-    if (this.pipelineList.openedRun?.id === run.id) await this.jobs.refetch();
+    if (this.selectedPipeline?.id !== run.id) return;
+    if (this.linkedPipelineId === run.id)
+      void this.linkedPipelineQuery.refetch();
+    await this.jobs.refetch();
   }
 }
