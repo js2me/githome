@@ -16,6 +16,7 @@ export const MergeRequestHeader = observer(
     const detail = info.detailView;
     if (!detail) return null;
     const { mergeRequest, changes, approvals } = detail;
+    const mergeResult = model.merge.result;
     const { markdownScope } = model;
     const { cards, hasError } = model.pipelines;
     return (
@@ -75,6 +76,15 @@ export const MergeRequestHeader = observer(
             </div>
           )}
         </MergeRequestOverview>
+        <div role="status" className="text-fg-muted text-sm empty:sr-only">
+          {mergeRequest.state === 'opened' &&
+            mergeResult &&
+            t(
+              mergeResult === 'sent'
+                ? 'review.mergeSentToGitLab'
+                : 'review.autoMergeCancelled',
+            )}
+        </div>
         {info.lifecycleActionError && (
           <StatusMessage error>{info.lifecycleActionError}</StatusMessage>
         )}

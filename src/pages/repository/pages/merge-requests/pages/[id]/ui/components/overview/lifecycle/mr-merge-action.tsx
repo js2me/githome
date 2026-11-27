@@ -66,7 +66,7 @@ export const MrMergeAction = observer(
             {merge.error && (
               <div className="grid gap-2">
                 <StatusMessage error>{merge.error}</StatusMessage>
-                {!merge.busy && !merge.isLoading && !merge.result && (
+                {!merge.busy && !merge.isLoading && (
                   <button
                     type="button"
                     className={actionClass}
@@ -77,18 +77,7 @@ export const MrMergeAction = observer(
                 )}
               </div>
             )}
-            {merge.result && (
-              <StatusMessage>
-                {t(
-                  merge.result === 'sent'
-                    ? 'review.mergeSentToGitLab'
-                    : 'review.autoMergeCancelled',
-                )}
-              </StatusMessage>
-            )}
-            {options && !merge.result && (
-              <MrMergeFields model={merge} options={options} />
-            )}
+            {options && <MrMergeFields model={merge} options={options} />}
           </div>
           <div className="mt-5 flex flex-wrap justify-end gap-2">
             <button
@@ -97,9 +86,9 @@ export const MrMergeAction = observer(
               disabled={merge.busy}
               onClick={merge.close}
             >
-              {t(merge.result ? 'common.close' : 'common.cancel')}
+              {t('common.cancel')}
             </button>
-            {options && !merge.result && (cancelling || merge.mode) && (
+            {options && (cancelling || merge.mode) && (
               <button
                 type="button"
                 className={primaryClass}

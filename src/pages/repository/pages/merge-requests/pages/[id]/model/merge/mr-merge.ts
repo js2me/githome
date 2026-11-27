@@ -20,10 +20,10 @@ export class MrMerge {
   @observable accessor removeSourceBranch = false;
   @observable accessor commitMessage = '';
   @observable accessor squashMessage = '';
-  @observable accessor result: 'sent' | 'cancelled' | null = null;
+  @observable private accessor outcome: 'sent' | 'cancelled' | null = null;
   @observableRef private accessor loadError: Error | null = null;
   private optionsRequest?: AbortController;
-  private scope = '';
+  @observable private accessor scope = '';
 
   constructor(
     private readonly info: MrInfoModel,
@@ -50,6 +50,11 @@ export class MrMerge {
   @computed
   get busy() {
     return this.info.actionInProgress !== null;
+  }
+
+  @computed
+  get result() {
+    return this.scope === this.currentScope ? this.outcome : null;
   }
 
   @computed
@@ -107,7 +112,7 @@ export class MrMerge {
     this.optionsRequest = request;
     this.scope = this.currentScope;
     this.options = null;
-    this.result = null;
+    this.outcome = null;
     this.loadError = null;
     this.info.clearMergeActionError();
     this.isLoading = true;
@@ -159,18 +164,10 @@ export class MrMerge {
   @actionBound
   async confirm() {
     const { options, mode } = this;
-    if (
-      !options ||
-      this.busy ||
-      this.result ||
-      this.scope !== this.currentScope
-    )
-      return;
+    const scope = this.scope;
+    if (!options || this.busy || scope !== this.currentScope) return;
     if (options.autoMergeEnabled) {
-      if (await this.info.cancelMerge())
-        runInAction(() => {
-          this.result = 'cancelled';
-        });
+      if (await this.info.cancelMerge()) this.complete(scope, 'cancelled');
       return;
     }
     if (!mode || !options.diffHeadSha) return;
@@ -198,9 +195,13 @@ export class MrMerge {
             : undefined
           : undefined,
     });
-    if (success)
-      runInAction(() => {
-        this.result = 'sent';
-      });
+    if (success) this.complete(scope, 'sent');
+  }
+
+  @actionBound
+  private complete(scope: string, outcome: 'sent' | 'cancelled') {
+    if (scope !== this.scope || scope !== this.currentScope) return;
+    this.dialog.current?.close();
+    this.outcome = outcome;
   }
 }

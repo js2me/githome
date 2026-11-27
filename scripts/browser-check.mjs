@@ -2152,6 +2152,13 @@ try {
   const header = 'header[aria-label="Сводка merge request"]';
   const action = label => `${header} ::-p-aria([name="${label}"][role="button"])`;
   const inDialog = label => `${header} dialog[open] ::-p-aria([name="${label}"][role="button"])`;
+  const waitForMergeResult = async message => {
+    await page.waitForSelector(header + ' dialog[open]', { hidden: true });
+    await page.waitForFunction(text =>
+      [...document.querySelectorAll('[role="status"]')].some(el =>
+        !el.closest('dialog') && el.textContent === text),
+    { timeout: 5000 }, message);
+  };
   const openMerge = async (iid, label = 'Смержить') => {
     await page.goto(BASE + '/repository/1/merge-requests/' + iid, {waitUntil:'domcontentloaded'});
     await page.locator(action(label)).click();
@@ -2175,6 +2182,7 @@ try {
   mergeRejection = '';
   await page.locator(inDialog('Смержить')).click();
   await page.waitForFunction(() => [...document.querySelectorAll('header span')].some(el => el.textContent === 'Влит'));
+  await page.waitForSelector(header + ' dialog[open]', { hidden: true });
   const sent = mergeInputs.at(-1);
   check('merge stays in GitHome and sends reviewed SHA, squash, branch and commit options',
     sent.iid === '173' && sent.projectPath === 'group/alpha' && sent.sha === 'reviewed-head' &&
@@ -2184,14 +2192,14 @@ try {
 
   await openMerge(174);
   await page.locator(inDialog('Добавить в очередь слияния')).click();
-  await page.waitForFunction(() => document.querySelector('dialog[open]')?.innerText.includes('Запрос на слияние передан'));
-  check('GitLab merge train is respected', mergeInputs.at(-1).strategy === 'MERGE_TRAIN');
-  await page.locator(inDialog('Закрыть')).click();
+  await waitForMergeResult('Запрос на слияние передан в GitLab.');
+  check('GitLab merge train is respected and the dialog closes automatically', mergeInputs.at(-1).strategy === 'MERGE_TRAIN');
   await page.locator(action('Автослияние включено')).click();
   await page.locator(inDialog('Отменить автослияние')).click();
-  await page.waitForFunction(() => document.querySelector('dialog[open]')?.innerText.includes('Автослияние отменено'));
-  check('auto-merge can be cancelled inside GitHome', cancelMergeInputs.length === 1 && cancelMergeInputs[0].method === 'POST');
-  await page.locator(inDialog('Закрыть')).click();
+  await waitForMergeResult('Автослияние отменено.');
+  check('auto-merge can be cancelled inside GitHome without an extra click',
+    cancelMergeInputs.length === 1 && cancelMergeInputs[0].method === 'POST' &&
+    await page.$(action('Смержить')) !== null);
 } catch (error) {
   check('merging in GitHome', false, String(error));
 } finally {
