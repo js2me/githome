@@ -105,19 +105,12 @@ export const PipelineStatus = observer(
             : status === 'running'
               ? PlayFill
               : Icon;
-      const tone =
-        status === 'success'
-          ? 'text-[#26784a] dark:bg-[#23402c] dark:text-[#53b779]'
-          : status === 'failed'
-            ? 'text-[#b3272b] dark:text-[#f57f7f]'
-            : color;
-
       return (
         <span
           role="img"
           aria-label={label}
           title={label}
-          className={`grid size-6 shrink-0 place-items-center rounded-full border-2 border-current bg-current/10 ${tone}`}
+          className={`grid size-6 shrink-0 place-items-center rounded-full border-2 border-current bg-current/10 ${color}`}
         >
           <StatusIcon className="size-3.5" aria-hidden />
         </span>

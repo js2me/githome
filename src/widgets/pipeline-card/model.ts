@@ -7,6 +7,7 @@ import {
 import type {
   GitLabJobDC,
   GitLabPipelineDC,
+  GitLabPipelineSummaryDC,
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
@@ -14,7 +15,7 @@ import {
   createGitlabApiQuery,
   createGitlabQuery,
 } from '@/shared/lib/gitlab/connection/create-query';
-import { t } from '@/shared/lib/i18n';
+import { type MessageKey, t } from '@/shared/lib/i18n';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { Globals } from '@/shared/model/globals';
@@ -23,11 +24,15 @@ export interface PipelineCardPayload {
   projectId: number;
   projectPath?: string;
   pipelineId: number;
+  summary?: Partial<GitLabPipelineSummaryDC>;
+  labelKey?: MessageKey;
+  lookupProject?: boolean;
   permissions: GitLabProjectDC['permissions'];
 }
 
 export class PipelineCardVM extends VM<PipelineCardPayload> {
   readonly pipelineQuery;
+  readonly projectQuery;
   readonly jobsQuery;
 
   @observable private accessor openPipelineKey: string | null = null;
@@ -40,6 +45,16 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
 
   constructor(globals: Globals, params: ViewModelParams<PipelineCardPayload>) {
     super(globals, params);
+
+    this.projectQuery = createGitlabQuery<GitLabProjectDC>({
+      globals,
+      abortSignal: this.unmountSignal,
+      params: () =>
+        this.payload.lookupProject && {
+          path: `/projects/${this.payload.projectId}`,
+        },
+      queryOptions: { staleTime: 60_000 },
+    });
 
     this.pipelineQuery = createGitlabQuery<GitLabPipelineDC>({
       globals: this.globals,
@@ -93,8 +108,15 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
   }
 
   @computed
-  get pipeline(): GitLabPipelineDC | undefined {
-    return this.pipelineQuery.data;
+  get pipeline() {
+    return this.pipelineQuery.data ?? this.payload.summary;
+  }
+
+  @computed
+  get projectPath() {
+    return (
+      this.payload.projectPath || this.projectQuery.data?.path_with_namespace
+    );
   }
 
   private get pipelineKey() {
@@ -144,7 +166,8 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
 
   @computed
   get canRunJobs() {
-    const permissions = this.payload.permissions;
+    const permissions =
+      this.payload.permissions ?? this.projectQuery.data?.permissions;
     return (
       Math.max(
         permissions?.project_access?.access_level ?? 0,

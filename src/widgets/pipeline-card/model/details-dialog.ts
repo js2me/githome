@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { createRef } from 'yummies/mobx';
 import {
   type GitLabJobDC,
-  type GitLabPipelineDC,
+  type GitLabPipelineSummaryDC,
   gitlabApi,
 } from '@/shared/api/gitlab';
 import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
@@ -16,7 +16,8 @@ interface PipelineDetailsDialogProps {
   projectId: number;
   projectPath?: string;
   pipelineId: number;
-  pipeline?: GitLabPipelineDC;
+  pipeline?: Partial<GitLabPipelineSummaryDC>;
+  kindLabel?: string;
   jobs: readonly GitLabJobDC[];
   loading: boolean;
   error?: string | null;

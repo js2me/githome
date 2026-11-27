@@ -19,6 +19,7 @@ export const PipelineDetailsDialog = withPropsViewModel(
       projectId,
       pipelineId,
       pipeline,
+      kindLabel,
       jobs,
       loading,
       error,
@@ -38,7 +39,7 @@ export const PipelineDetailsDialog = withPropsViewModel(
         onClose={(event) => {
           if (!event.currentTarget.open) onClose();
         }}
-        className="max-h-[min(54rem,calc(100dvh-1.5rem))] w-[min(76rem,calc(100%-1.5rem))] max-w-none overflow-hidden p-0 open:flex open:flex-col"
+        className="max-h-[calc(100vh-80px)] w-[min(76rem,calc(100%-1.5rem))] max-w-none overflow-hidden p-0 open:flex open:flex-col"
       >
         <header className="flex shrink-0 items-start justify-between gap-3 border-[var(--glass-border)] border-b px-4 py-3 sm:px-5 sm:py-4">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
@@ -48,6 +49,9 @@ export const PipelineDetailsDialog = withPropsViewModel(
             >
               {t('pipelines.pipelineNumber', { id: pipelineId })}
             </h2>
+            {kindLabel && (
+              <span className="text-fg-muted text-xs">{kindLabel}</span>
+            )}
             {pipeline?.status && <PipelineStatus status={pipeline.status} />}
           </div>
           <button

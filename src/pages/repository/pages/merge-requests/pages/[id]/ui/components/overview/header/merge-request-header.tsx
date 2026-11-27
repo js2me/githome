@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import { t } from '@/shared/lib/i18n';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { PipelineCard } from '@/widgets/pipeline-card';
 import type { MergeRequestDetailVM } from '../../../../model/merge-request-detail';
@@ -14,6 +15,7 @@ export const MergeRequestHeader = observer(
     if (!detail) return null;
     const { mergeRequest, changes, approvals } = detail;
     const { markdownScope } = model;
+    const { cards, hasError } = model.pipelines;
     return (
       <div className="flex min-w-0 flex-col gap-3">
         {info.resolveDiscussionError && (
@@ -33,16 +35,41 @@ export const MergeRequestHeader = observer(
           onShowFiles={model.showFiles}
           onShowComments={model.showComments}
         >
-          {mergeRequest.head_pipeline && markdownScope.projectId > 0 ? (
-            <PipelineCard
-              payload={{
-                projectId: markdownScope.projectId,
-                projectPath: markdownScope.projectPath,
-                pipelineId: mergeRequest.head_pipeline.id,
-                permissions: page.project?.permissions,
-              }}
-            />
-          ) : null}
+          {(cards.length > 0 || hasError) && (
+            <div className="grid gap-1.5">
+              {cards.map(({ kind, pipeline, projectId }) => {
+                const sameProject = projectId === markdownScope.projectId;
+                return (
+                  <PipelineCard
+                    key={`${projectId}/${pipeline.id}`}
+                    payload={{
+                      projectId,
+                      projectPath: sameProject
+                        ? markdownScope.projectPath
+                        : undefined,
+                      permissions: sameProject
+                        ? page.project?.permissions
+                        : undefined,
+                      lookupProject: !sameProject,
+                      pipelineId: pipeline.id,
+                      summary: pipeline,
+                      labelKey:
+                        kind === 'mr'
+                          ? 'pipelines.mrPipeline'
+                          : kind === 'branch'
+                            ? 'pipelines.branchPipeline'
+                            : 'pipelines.pipeline2',
+                    }}
+                  />
+                );
+              })}
+              {hasError && (
+                <p className="text-fg-muted text-xs" role="status">
+                  {t('pipelines.couldNotLoadAllPipelines')}
+                </p>
+              )}
+            </div>
+          )}
         </MergeRequestOverview>
         {info.lifecycleActionError && (
           <StatusMessage error>{info.lifecycleActionError}</StatusMessage>

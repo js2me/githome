@@ -157,7 +157,7 @@ const betaRequest = {
 };
 const pipeline = {
   id: 4821, iid: 31, project_id: 1, status: 'success', ref: 'refs/merge-requests/156/head',
-  source: 'merge_request_event', sha: 'a12bc3456789', duration: 82,
+  source: 'merge_request_event', sha: 'head-sha', duration: 82,
   web_url: 'https://gitlab.mock/group/alpha/-/pipelines/4821', created_at: '2026-07-27T08:00:00Z',
 };
 const linkedPipeline = {
@@ -268,6 +268,11 @@ const imageMr = {
   diff_refs: imageMrDiffRefs,
   head_pipeline: pipeline,
 };
+const branchPipeline = {
+  ...pipeline, id: 4822, iid: 32, ref: imageMr.source_branch, source: 'push', status: 'failed',
+  web_url: 'https://gitlab.mock/group/alpha/-/pipelines/4822',
+};
+let branchOnly = false;
 const fileDiscussionPath = '/git-proxy/gitlab.mock/api/v4/projects/1/merge_requests/156/discussions';
 const isFileDiscussionPost = (req) =>
   req.method() === 'POST' && new URL(req.url()).pathname === fileDiscussionPath;
@@ -300,7 +305,20 @@ const route = (url, postData, token, method) => {
   if (p === '/api/v4/merge_requests') {
     return searchParams.get('scope') === 'created_by_me' ? [projectMrs.find(item => item.iid === 11)] : [mrs[0], betaRequest];
   }
-  if (p === '/api/v4/projects/1/pipelines') return [pipeline];
+  if (p === '/api/v4/projects/1/pipelines') {
+    if (searchParams.has('sha')) {
+      return searchParams.get('sha') === 'head-sha' &&
+        searchParams.get('scope') === 'branches' &&
+        searchParams.get('ref') === imageMr.source_branch ? [branchPipeline] : [];
+    }
+    return [pipeline];
+  }
+  if (p === '/api/v4/projects/1/merge_requests/156/pipelines') return branchOnly ? [] : [pipeline, branchPipeline];
+  if (/\/merge_requests\/\d+\/pipelines$/.test(p)) return [];
+  if (p === '/api/v4/projects/1/pipelines/4822') return branchPipeline;
+  if (p === '/api/v4/projects/1/pipelines/4822/jobs') {
+    return [{ id: 901, stage: 'test', name: 'branch-test', status: 'failed' }];
+  }
   if (p === '/api/v4/projects/1/pipelines/4821') return pipeline;
   if (p === '/api/v4/projects/group%2Falpha') return projects[0];
   if (p === '/api/v4/projects/1/pipelines/4819') return linkedPipeline;
@@ -369,9 +387,10 @@ const route = (url, postData, token, method) => {
     return { ...mr(158, unlinkedTitle, AUTHORS[0]), description: '', title_html: unlinkedTitle };
   }
   if (p.endsWith('/merge_requests/156')) {
+    const detail = branchOnly ? { ...imageMr, head_pipeline: null } : imageMr;
     return searchParams.get('render_html') === 'true'
-      ? { ...imageMr, title_html: imageMr.title.replace(titleIssue, externalIssueHtml(titleIssue)) }
-      : imageMr;
+      ? { ...detail, title_html: detail.title.replace(titleIssue, externalIssueHtml(titleIssue)) }
+      : detail;
   }
   if (/merge_requests\/\d+\/(versions|discussions|reviewers)$/.test(p)) return [];
   const approvals = p.match(/^\/api\/v4\/projects\/(\d+)\/merge_requests\/(\d+)\/approvals$/);
@@ -1641,11 +1660,18 @@ try {
 
 try {
   for (const { path, trigger, width } of [
-    { path: '/repository/1/merge-requests/156', trigger: 'section[aria-label="Последний пайплайн"] button[aria-haspopup="dialog"]', width: 1280 },
+    { path: '/repository/1/merge-requests/156', trigger: 'section[aria-label="Пайплайн MR"] button[aria-haspopup="dialog"]', width: 1280 },
     { path: '/repository/1/pipelines', trigger: 'button[aria-label="Открыть пайплайн #4821"]', width: 320 },
   ]) {
     await page.setViewport({ width, height: 640 });
     await page.goto(BASE + path, { waitUntil: 'networkidle0' });
+    if (path.includes('/merge-requests/')) {
+      const branch = 'section[aria-label="Пайплайн ветки"]';
+      await page.waitForSelector(`${branch} a[href$="/4822"]`);
+      check('MR and branch show separate statuses', await page.evaluate(() =>
+        document.querySelector('section[aria-label="Пайплайн MR"]')?.textContent.includes('Успешно') &&
+        document.querySelector('section[aria-label="Пайплайн ветки"]')?.textContent.includes('Ошибка')));
+    }
     const button = await page.waitForSelector(trigger, { visible: true, timeout: 5000 });
     const before = await button.boundingBox();
     await button.focus();
@@ -1696,6 +1722,15 @@ try {
     check(`pipeline details scroll inside a dialog and return focus on ${path}`, fits &&
       await button.evaluate(el => el === document.activeElement) && before.height === after.height);
   }
+  branchOnly = true;
+  await page.goto(BASE + '/repository/1/merge-requests/156', { waitUntil: 'networkidle0' });
+  await page.waitForSelector('section[aria-label="Пайплайн ветки"] a[href$="/4822"]');
+  check('branch is shown without an MR run or head_pipeline', !await page.$('section[aria-label="Пайплайн MR"]'));
+  await page.click('section[aria-label="Пайплайн ветки"] button[aria-haspopup="dialog"]');
+  await page.waitForSelector('dialog[open] button[aria-label="Лог задания branch-test"]');
+  check('opening the branch run loads its own jobs', true);
+  await page.keyboard.press('Escape');
+  branchOnly = false;
 } catch (error) {
   check('pipeline detail dialogs', false, String(error));
 }

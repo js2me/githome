@@ -18,8 +18,18 @@ import { matchGitlabProject } from '@/shared/lib/gitlab/links/project';
 import { VM } from '@/shared/lib/view-models/vm';
 import { ActiveDiffFile } from './changes/active-diff-file';
 import type { MergeRequestPageVM } from './index';
+import { MergeRequestPipelines } from './pipelines/merge-request-pipelines';
 
 export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
+  readonly pipelines = new MergeRequestPipelines({
+    globals: this.globals,
+    abortSignal: this.unmountSignal,
+    target: () => {
+      const projectId = this.markdownScope.projectId;
+      const mr = this.parentViewModel.mrInfo.mergeRequestDetail;
+      return projectId > 0 && mr ? { projectId, mr } : null;
+    },
+  });
   readonly fileNavigation = new ActiveDiffFile();
   readonly activityButton = createRef<HTMLButtonElement>();
   readonly changesHeading = createRef<HTMLHeadingElement>();

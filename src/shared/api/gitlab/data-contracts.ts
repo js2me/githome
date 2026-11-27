@@ -32,6 +32,7 @@ export interface GitLabMergeRequestDC {
   draft?: boolean;
   work_in_progress?: boolean;
   source_branch: string;
+  sha?: string;
   target_branch: string;
   updated_at: string;
   created_at?: string;
@@ -56,22 +57,24 @@ export interface GitLabMergeRequestDC {
     head_sha?: string;
     start_sha?: string;
   } | null;
-  head_pipeline?: {
-    id: number;
-    status: string;
-    web_url: string;
-  } | null;
+  head_pipeline?:
+    | (Pick<GitLabPipelineSummaryDC, 'id' | 'status' | 'web_url'> &
+        Partial<GitLabPipelineSummaryDC>)
+    | null;
 }
 
-export interface GitLabPipelineDC {
+export interface GitLabPipelineSummaryDC {
   id: number;
-  iid: number;
   project_id: number;
   status: string;
   source?: string;
   ref: string;
   sha: string;
   web_url: string;
+}
+
+export interface GitLabPipelineDC extends GitLabPipelineSummaryDC {
+  iid: number;
   created_at: string;
   updated_at?: string;
   started_at?: string | null;

@@ -11,8 +11,9 @@ import { PipelineDetailsDialog } from './pipeline-details-dialog';
 import { PipelineJobAction } from './ui/pipeline-job-action';
 
 export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
-  const { pipelineId, projectId, projectPath } = model.payload;
-  const { pipeline } = model;
+  const { pipelineId, projectId, labelKey } = model.payload;
+  const { pipeline, projectPath } = model;
+  const label = t(labelKey ?? 'pipelines.pipeline2');
   const status =
     pipeline?.status ??
     (model.pipelineQuery.isLoading
@@ -22,11 +23,11 @@ export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
   return (
     <section
       className="min-w-0 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-control)]"
-      aria-label={t('pipelines.latestPipeline')}
+      aria-label={label}
     >
       <div className="flex min-w-0 items-center gap-2 px-2.5 py-0.5 sm:gap-3">
-        <span className="font-semibold text-fg-default text-xs">
-          {t('pipelines.pipeline2')}
+        <span className="min-w-0 font-semibold text-fg-default text-xs">
+          {label}
         </span>
         {pipeline?.web_url ? (
           <a
@@ -71,6 +72,7 @@ export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
           }
           pipelineId={pipelineId}
           pipeline={pipeline}
+          kindLabel={labelKey && label}
           jobs={model.jobs}
           loading={model.isLoading}
           error={[
