@@ -1547,10 +1547,21 @@ try {
   await page.waitForSelector(diffBody, { visible: true });
   await waitForReview(1, false);
   check('an unread file can be collapsed and reopened without changing its review status', reviewWrites.length === 0);
-  await page.evaluate((first, second) => {
-    document.querySelector(first).click();
+  const stackReplacesFile = await page.evaluate(async (first, second, summarySelector) => {
+    const firstButton = document.querySelector(first);
+    firstButton.focus();
+    firstButton.click();
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const summary = document.querySelector(summarySelector);
+    const unreviewed = document.querySelector(second).closest('article');
+    const rect = summary?.getBoundingClientRect();
+    const replacesFile = Boolean(rect && rect.top >= 0 && rect.bottom <= innerHeight &&
+      document.activeElement === summary &&
+      (summary.compareDocumentPosition(unreviewed) & Node.DOCUMENT_POSITION_FOLLOWING));
     document.querySelector(second).click();
-  }, button(1), button(2));
+    return replacesFile;
+  }, button(1), button(2), summary);
+  check('marking a file leaves the focused reviewed stack visible before the next unread file', stackReplacesFile);
   await waitForReview(1, true);
   await waitForReview(2, true);
   await page.waitForSelector(`${stack}:not([open])`);

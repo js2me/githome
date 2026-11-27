@@ -12,6 +12,7 @@ export const GitDiffView = withPropsViewModel(
     model: {
       payload: { changes },
       filesGitDiffs,
+      reviewedStackAnchor,
     },
   }) => {
     if (changes.length === 0) {
@@ -23,24 +24,26 @@ export const GitDiffView = withPropsViewModel(
     }
 
     const reviewed = filesGitDiffs.filter((file) => file.content.isReviewed);
-    const remaining = filesGitDiffs.filter((file) => !file.content.isReviewed);
+    const anchor =
+      reviewed.find((file) => file.fileKey === reviewedStackAnchor) ??
+      reviewed[0];
+    const files = filesGitDiffs
+      .filter((file) => !file.content.isReviewed || file === anchor)
+      .flatMap((file) =>
+        file.content.isReviewed
+          ? [
+              <ReviewedDiffStack key="reviewed-stack" files={reviewed} />,
+              ...reviewed.map((item) => (
+                <GitDiffFile key={item.fileKey} model={item} />
+              )),
+            ]
+          : [<GitDiffFile key={file.fileKey} model={file} />],
+      );
 
     return (
       <div className="git-diff flex flex-col gap-4 [overflow-anchor:none]">
         {/* Keep the same React parent when a file moves into the stack. */}
-        {[
-          ...remaining.map((file) => (
-            <GitDiffFile key={file.fileKey} model={file} />
-          )),
-          ...(reviewed.length
-            ? [
-                <ReviewedDiffStack key="reviewed-stack" files={reviewed} />,
-                ...reviewed.map((file) => (
-                  <GitDiffFile key={file.fileKey} model={file} />
-                )),
-              ]
-            : []),
-        ]}
+        {files}
       </div>
     );
   },

@@ -8,6 +8,7 @@ import {
 } from 'mobx';
 import type { GitLabMergeRequestChangeDC } from '@/shared/api/gitlab';
 import { VM } from '@/shared/lib/view-models/vm';
+import type { OnReviewedChange } from '@/shared/ui/git-diff/model/git-diff-vm';
 import { getReviewedFilePath } from './file-review-fingerprint';
 import type { ReviewedFiles } from './reviewed-files';
 
@@ -16,7 +17,7 @@ interface ReviewFileButtonProps {
   change: GitLabMergeRequestChangeDC;
   head: string;
   base: string | null;
-  onReviewedChange: (reviewed: boolean) => void;
+  onReviewedChange: OnReviewedChange;
 }
 
 export class ReviewFileButtonVM extends VM<ReviewFileButtonProps> {
@@ -122,13 +123,15 @@ export class ReviewFileButtonVM extends VM<ReviewFileButtonProps> {
 
   @actionBound
   toggle() {
-    const { review, change, head, base } = this.payload;
+    const { review, change, head, base, onReviewedChange } = this.payload;
+    const reviewed = !this.checked;
     review.setReviewed(
       change,
       head,
       base,
-      !this.checked,
+      reviewed,
       this.fingerprint ?? undefined,
     );
+    if (reviewed && this.checked) onReviewedChange(true, true);
   }
 }

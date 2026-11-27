@@ -9,7 +9,10 @@ import type {
   GitLabDiscussionDC,
   GitLabMergeRequestChangeDC,
 } from '@/shared/api/gitlab';
-import { getDiffFileKey } from '@/shared/lib/diff/diff-search';
+import {
+  getDiffFileElementId,
+  getDiffFileKey,
+} from '@/shared/lib/diff/diff-search';
 import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/discussions/diff-comment';
 import type { DiffFileContentLoader } from '@/shared/lib/syntax-highlight/types';
 import { VM } from '@/shared/lib/view-models/vm';
@@ -21,6 +24,8 @@ import type { DiffImageLoader } from './file-git-diff/content/images';
 
 const MAX_CONCURRENT_COLLAPSED_EXPANDS = 2;
 
+export type OnReviewedChange = (reviewed: boolean, byUser?: boolean) => void;
+
 export interface GitDiffProps {
   changes: GitLabMergeRequestChangeDC[];
   discussions: GitLabDiscussionDC[];
@@ -31,7 +36,7 @@ export interface GitDiffProps {
   onClearSubmitError: () => void;
   renderFileAction?: (
     change: GitLabMergeRequestChangeDC,
-    onReviewedChange: (reviewed: boolean) => void,
+    onReviewedChange: OnReviewedChange,
   ) => ReactNode;
   mergeRequestIid?: number;
   headBranch?: string | null;
@@ -76,6 +81,40 @@ export class GitDiffVM extends VM<GitDiffPayload> {
   private readonly fileModelCache = new Map<string, FileGitDiff>();
   private readonly pendingCollapsedExpands = new Set<FileGitDiffContent>();
   private activeCollapsedExpands = 0;
+
+  @observableRef accessor reviewedStackAnchor: string | null = null;
+  private reviewedStackFrame = 0;
+
+  placeReviewedStack(fileKey: string) {
+    this.reviewedStackAnchor = fileKey;
+    const file = document.getElementById(getDiffFileElementId(fileKey));
+    const rect = file?.querySelector('header')?.getBoundingClientRect();
+    const top =
+      rect && rect.bottom > 0 && rect.top < window.innerHeight
+        ? Math.max(0, rect.top)
+        : null;
+    const transferFocus = file?.contains(document.activeElement);
+
+    cancelAnimationFrame(this.reviewedStackFrame);
+    // Wait until the stack replaces the clicked card in the DOM.
+    this.reviewedStackFrame = requestAnimationFrame(() => {
+      if (!file?.hasAttribute('data-diff-reviewed')) return;
+      const stack = file.parentElement?.querySelector<HTMLDetailsElement>(
+        ':scope > [data-diff-reviewed-stack]',
+      );
+      const summary = stack?.querySelector('summary');
+      if (!stack || !summary) return;
+
+      stack.open = false;
+      if (top !== null) {
+        window.scrollBy({
+          top: summary.getBoundingClientRect().top - top,
+          behavior: 'instant',
+        });
+      }
+      if (transferFocus) summary.focus({ preventScroll: true });
+    });
+  }
 
   scheduleCollapsedExpand(content: FileGitDiffContent) {
     if (
@@ -156,6 +195,7 @@ export class GitDiffVM extends VM<GitDiffPayload> {
   }
 
   willUnmount() {
+    cancelAnimationFrame(this.reviewedStackFrame);
     for (const model of this.fileModelCache.values()) {
       model.dispose();
     }

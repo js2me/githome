@@ -32,8 +32,11 @@ export class FileGitDiffContent extends DisposableModel {
   }
 
   @actionBound
-  setReviewed(reviewed: boolean) {
+  setReviewed(reviewed: boolean, byUser = false) {
     if (this.isReviewed === reviewed) return;
+    if (reviewed && byUser) {
+      this.file.parent.placeReviewedStack(this.file.fileKey);
+    }
     this.isReviewed = reviewed;
     this.isContentCollapsed = reviewed;
   }
