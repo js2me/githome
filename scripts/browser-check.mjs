@@ -162,9 +162,13 @@ const pipeline = {
 };
 const pipelineJobs = Array.from({ length: 125 }, (_, index) => ({
   id: 700 + index, name: index === 0 ? 'typecheck' : `test-${index}`,
-  stage: index === 0 ? 'build' : 'test', status: 'success',
+  stage: index === 0 ? 'build' : index === 124 ? 'deploy-dev' : 'test',
+  status: index === 0 ? 'running' : 'success',
+  runner: index === 0 ? { description: 'Docker runner' } : undefined,
   web_url: `https://gitlab.mock/group/alpha/-/jobs/${700 + index}`,
 })).reverse();
+
+let pipelineTraceRequests = 0;
 
 const tsxChange = {
   old_path: 'packages/feature-14/summary.tsx',
@@ -412,6 +416,12 @@ const route = (url, postData, token, method) => {
   if (p.includes('projects')) return projects;
   if (p === '/api/graphql') {
     const { query, variables } = JSON.parse(postData ?? '{}');
+    if (query?.includes('PipelineStageOrder') && variables.id === 'gid://gitlab/Ci::Pipeline/4821') {
+      return { data: { project: { pipeline: { stages: {
+        nodes: [{ name: 'test' }, { name: 'build' }, { name: 'deploy-dev' }],
+        pageInfo: { hasNextPage: false, endCursor: null },
+      } } } } };
+    }
     if (query?.includes('MergeRequestDiscussionSummaries')) {
       const nodes = variables.projectPath === 'group/alpha'
         ? discussionCounts.filter(node => variables.iids.includes(node.iid))
@@ -492,6 +502,14 @@ page.on('request', (req) => {
   if (url.includes('/git-proxy/')) {
     const requestUrl = new URL(url);
     const token = req.headers()['private-token'];
+    const traceJobId = requestUrl.pathname.match(/\/projects\/1\/jobs\/(\d+)\/trace$/)?.[1];
+    if (traceJobId) {
+      const body = traceJobId === '700'
+        ? `\x1b[0Ksection_start:123:script\r\x1b[0KRunning script\r\nLog update ${++pipelineTraceRequests}\n`
+        : 'Tests passed\n';
+      req.respond({ status: 200, contentType: 'text/plain', body });
+      return;
+    }
     if (requestUrl.pathname.includes('/uploads/avatars/')) {
       const account = accountProfiles.get(token);
       const permitted = account?.avatar_url && requestUrl.pathname.endsWith(`/uploads/avatars/${account.id}.png`);
@@ -1577,15 +1595,46 @@ try {
     const before = await button.boundingBox();
     await button.focus();
     await page.keyboard.press('Enter');
-    await page.waitForSelector('dialog[open] a[href$="/jobs/700"]', { timeout: 5000 });
+    const jobSelector = 'dialog[open] button[aria-label="Лог задания typecheck"]';
+    await page.waitForSelector(jobSelector, { timeout: 5000 });
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll('dialog[open] .pipeline-graph-stage h3')]
+        .map(el => el.textContent).join(',') === 'test,build,deploy-dev',
+    { timeout: 5000 });
     const fits = await page.$eval('dialog[open]', dialog => {
       const bounds = dialog.getBoundingClientRect();
-      return dialog.innerText.includes('Пайплайн #4821') && dialog.innerText.includes('typecheck') &&
+      const graph = dialog.querySelector('.pipeline-graph');
+      const [first, second] = graph.querySelectorAll('.pipeline-graph-stage');
+      return dialog.innerText.includes('Пайплайн #4821') &&
         dialog.querySelectorAll('li').length === 125 &&
         bounds.left >= 0 && bounds.right <= innerWidth && bounds.height <= innerHeight &&
-        [...dialog.querySelectorAll('div')].some(div => div.scrollHeight > div.clientHeight &&
-          getComputedStyle(div).overflowY === 'auto');
+        graph.scrollHeight > graph.clientHeight &&
+        first.offsetTop === second.offsetTop && second.offsetLeft > first.offsetLeft &&
+        getComputedStyle(second, '::before').content !== 'none' &&
+        (innerWidth > 640 || graph.scrollWidth > graph.clientWidth);
     });
+    const unloaded = pipelineTraceRequests;
+    await page.click(jobSelector);
+    await page.waitForFunction(count =>
+      document.querySelector('dialog[open] pre')?.textContent === `Running script\nLog update ${count + 1}\n`,
+    { timeout: 5000 }, unloaded);
+    const jobDetails = await page.$eval('dialog[open] pre', pre =>
+      pre.closest('section').innerText.includes('Docker runner') &&
+      !!pre.closest('section').querySelector('a[href$="/jobs/700"]') &&
+      [...pre.closest('section').querySelectorAll('button')].some(el => el.textContent.includes('Скачать лог')));
+    if (width <= 640) await page.click('dialog[open] button[aria-label="Обновить лог"]');
+    await page.waitForFunction(count => {
+      const output = document.querySelector('dialog[open] pre')?.textContent;
+      return Number(output?.match(/Log update (\d+)/)?.[1]) > count + 1;
+    }, { timeout: width > 640 ? 12_000 : 5000 }, unloaded);
+    const logFilter = 'dialog[open] input[aria-label="Фильтр строк лога"]';
+    await page.type(logFilter, 'running');
+    await page.waitForFunction(() => document.querySelector('dialog[open] pre')?.textContent === 'Running script');
+    await page.click('dialog[open] button[aria-label="Лог задания test-1"]');
+    await page.waitForFunction(() => document.querySelector('dialog[open] pre')?.textContent === 'Tests passed\n');
+    await page.click('dialog[open] button[aria-label="Лог задания test-1"]');
+    await page.waitForSelector('dialog[open] pre', { hidden: true, timeout: 3000 });
+    check(`stage graph and in-app job logs on ${path}`, fits && jobDetails);
     await page.keyboard.press('Escape');
     await page.waitForSelector('dialog[open]', { hidden: true, timeout: 3000 });
     const after = await button.boundingBox();

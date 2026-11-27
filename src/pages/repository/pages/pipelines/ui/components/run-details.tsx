@@ -1,17 +1,12 @@
 import { observer } from 'mobx-react-lite';
+import { durationLabel } from '@/entities/gitlab-pipelines';
 import { t } from '@/shared/lib/i18n';
 import { PipelineDetailsDialog } from '@/widgets/pipeline-card';
 import { getPipelineMergeRequestIid } from '../../model/pipeline-list';
 import { DateTime } from './date-time';
 import { JobActions } from './job-actions';
-import { JobDetails } from './job-details';
 import { RunAction } from './run-action';
-import {
-  control,
-  durationLabel,
-  errorText,
-  type RunProps,
-} from './run-presentation';
+import { control, errorText, type RunProps } from './run-presentation';
 
 const sources: Record<string, string> = {
   get push() {
@@ -58,6 +53,10 @@ export const RunDetails = observer(({ model, run }: RunProps) => {
   const author = run.user?.name || run.user?.username;
   return (
     <PipelineDetailsDialog
+      projectId={run.project_id}
+      projectPath={model.projectPath}
+      onRefresh={model.refreshDetails}
+      refreshing={model.jobs.isFetching}
       pipelineId={run.id}
       pipeline={run}
       jobs={model.jobs.data ?? []}
@@ -136,7 +135,6 @@ export const RunDetails = observer(({ model, run }: RunProps) => {
         </>
       }
       renderJobActions={(job) => <JobActions model={model} job={job} />}
-      renderJobDetails={(job) => <JobDetails model={model} job={job} />}
     />
   );
 });

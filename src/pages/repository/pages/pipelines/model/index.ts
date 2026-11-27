@@ -1,5 +1,6 @@
-import { actionBound, observable, reaction } from 'mobx';
+import { actionBound, reaction } from 'mobx';
 import type { ViewModelParams } from 'mobx-view-model';
+import { isPipelineActive } from '@/entities/gitlab-pipelines';
 import type { Workspace } from '@/features/workspace-navigation';
 import { WorkspaceVM } from '@/features/workspace-navigation';
 import {
@@ -9,13 +10,11 @@ import {
 } from '@/shared/api/gitlab';
 import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
 import type { RepositoryPageVM } from '../../../model/page-vm';
-import { isPipelineActive, PipelineList } from './pipeline-list';
+import { PipelineList } from './pipeline-list';
 
 export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
   readonly pipelineList: PipelineList;
   readonly jobs;
-  readonly trace;
-  @observable accessor traceJobId: number | null = null;
 
   constructor(
     globals: Workspace,
@@ -71,33 +70,6 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
         },
       },
     });
-    this.trace = createGitlabApiQuery<
-      string,
-      { projectId: number; jobId: number }
-    >({
-      globals,
-      abortSignal: this.unmountSignal,
-      params: () => {
-        const run = this.pipelineList.openedRun;
-        return (
-          run &&
-          this.traceJobId !== null && {
-            projectId: run.project_id,
-            jobId: this.traceJobId,
-          }
-        );
-      },
-      queryKey: ({ connection, projectId, jobId }) => [
-        'pipeline-job-trace',
-        connection.id,
-        connection.credentialsRevision,
-        projectId,
-        jobId,
-      ],
-      queryFn: ({ connection, projectId, jobId, signal }) =>
-        gitlabApi.getPipelineJobTrace(connection, projectId, jobId, signal),
-    });
-
     reaction(
       () => [
         this.parentViewModel.projectId,
@@ -109,21 +81,24 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
     );
   }
 
+  get projectPath() {
+    return this.parentViewModel.project?.path_with_namespace;
+  }
+
+  @actionBound
+  refreshDetails() {
+    this.pipelineList.refresh();
+    void this.jobs.refetch();
+  }
+
   @actionBound
   openDetails(run: GitLabPipelineDC) {
     this.pipelineList.selectPipeline(run);
-    this.traceJobId = null;
   }
 
   @actionBound
   closeDetails() {
     this.pipelineList.selectPipeline(null);
-    this.traceJobId = null;
-  }
-
-  @actionBound
-  toggleTrace(jobId: number) {
-    this.traceJobId = this.traceJobId === jobId ? null : jobId;
   }
 
   @actionBound

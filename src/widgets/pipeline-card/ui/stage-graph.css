@@ -1,0 +1,119 @@
+.pipeline-graph {
+  --graph-bg: #ececef;
+  --graph-card: #dedee3;
+  --graph-body: #fff;
+  --graph-text: #18171c;
+  --graph-action: #e4e4e8;
+  --graph-line: #8e8d94;
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  max-height: min(25rem, 48dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  background: var(--graph-bg);
+  color: var(--graph-text);
+}
+
+.dark .pipeline-graph {
+  --graph-bg: #2c2b31;
+  --graph-card: #3d3b41;
+  --graph-body: #1e1d23;
+  --graph-text: #ebebee;
+  --graph-action: #48474d;
+  --graph-line: #bebec2;
+}
+
+.pipeline-graph-stage {
+  position: relative;
+  flex: 0 0 min(16.0625rem, 100%);
+  min-width: 0;
+  padding: 0.3125rem;
+  border-radius: 0.75rem;
+  background: var(--graph-card);
+}
+
+.pipeline-graph-stage + .pipeline-graph-stage::before {
+  position: absolute;
+  top: 1.125rem;
+  left: -2rem;
+  width: 2rem;
+  height: 2px;
+  background: var(--graph-line);
+  content: "";
+}
+
+.pipeline-graph-stage h3 {
+  padding: 0.125rem 0.6875rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.dark .pipeline-graph-stage h3 {
+  color: #fff;
+}
+
+.pipeline-graph-stage ul {
+  border-radius: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  background: var(--graph-body);
+}
+
+.pipeline-graph-job {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.pipeline-graph-job-name {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.375rem;
+  text-align: start;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.pipeline-graph-job-name > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pipeline-graph-job-name:is(:hover, [aria-expanded="true"]) {
+  background: color-mix(in srgb, var(--graph-text) 9%, transparent);
+}
+
+.pipeline-graph-action {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-inline: 0.3125rem;
+  border-radius: 50%;
+  background: var(--graph-action);
+}
+
+.pipeline-graph-action:not(:disabled):hover {
+  background: color-mix(in srgb, var(--graph-action), var(--graph-text) 20%);
+  cursor: pointer;
+}
+
+.pipeline-graph-action:disabled {
+  opacity: 0.5;
+}
+
+@media (max-width: 640px) {
+  .pipeline-graph {
+    padding: 0.75rem;
+  }
+}

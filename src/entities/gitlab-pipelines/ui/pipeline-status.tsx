@@ -1,4 +1,5 @@
 import {
+  Check,
   CircleCheckFill,
   CircleDashed,
   CircleMinus,
@@ -6,6 +7,8 @@ import {
   CirclePlay,
   CircleXmarkFill,
   Clock,
+  PlayFill,
+  Xmark,
 } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
 import { type MessageKey, t } from '@/shared/lib/i18n';
@@ -86,15 +89,48 @@ export const pipelineStatusLabel = (status: string): string => {
   return key ? t(key) : status.replaceAll('_', ' ');
 };
 
-export const PipelineStatus = observer(({ status }: { status: string }) => {
-  const { icon: Icon = CircleDashed, color = 'text-fg-muted' } =
-    statuses[status] ?? {};
-  return (
-    <span
-      className={`inline-flex min-w-0 items-center gap-1.5 font-semibold text-xs ${color}`}
-    >
-      <Icon className="size-4 shrink-0" aria-hidden />
-      <span>{pipelineStatusLabel(status)}</span>
-    </span>
-  );
-});
+export const PipelineStatus = observer(
+  ({ status, iconOnly = false }: { status: string; iconOnly?: boolean }) => {
+    const appearance = statuses[status];
+    const { icon: Icon = CircleDashed, color = 'text-fg-muted' } =
+      appearance ?? {};
+    const label = pipelineStatusLabel(status);
+
+    if (iconOnly) {
+      const StatusIcon =
+        status === 'success'
+          ? Check
+          : status === 'failed'
+            ? Xmark
+            : status === 'running'
+              ? PlayFill
+              : Icon;
+      const tone =
+        status === 'success'
+          ? 'text-[#26784a] dark:bg-[#23402c] dark:text-[#53b779]'
+          : status === 'failed'
+            ? 'text-[#b3272b] dark:text-[#f57f7f]'
+            : color;
+
+      return (
+        <span
+          role="img"
+          aria-label={label}
+          title={label}
+          className={`grid size-6 shrink-0 place-items-center rounded-full border-2 border-current bg-current/10 ${tone}`}
+        >
+          <StatusIcon className="size-3.5" aria-hidden />
+        </span>
+      );
+    }
+
+    return (
+      <span
+        className={`inline-flex min-w-0 items-center gap-1.5 font-semibold text-xs ${color}`}
+      >
+        <Icon className="size-4 shrink-0" aria-hidden />
+        <span>{label}</span>
+      </span>
+    );
+  },
+);

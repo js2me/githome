@@ -1,15 +1,22 @@
-import { ArrowUpRightFromSquare, Xmark } from '@gravity-ui/icons';
+import {
+  ArrowsRotateRight,
+  ArrowUpRightFromSquare,
+  Xmark,
+} from '@gravity-ui/icons';
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { useId } from 'react';
 import { PipelineStatus } from '@/entities/gitlab-pipelines';
 import { t } from '@/shared/lib/i18n';
 import { GlassDialog } from '@/shared/ui/glass-dialog';
 import { PipelineDetailsDialogVM } from './model/details-dialog';
+import { PipelineJobDetails } from './ui/pipeline-job-details';
+import { PipelineStageGraph } from './ui/pipeline-stage-graph';
 
 export const PipelineDetailsDialog = withPropsViewModel(
   PipelineDetailsDialogVM,
   ({ model }) => {
     const {
+      projectId,
       pipelineId,
       pipeline,
       jobs,
@@ -17,11 +24,12 @@ export const PipelineDetailsDialog = withPropsViewModel(
       error,
       description,
       actions,
-      renderJobActions,
-      renderJobDetails,
+      refreshing,
       onClose,
     } = model.payload;
     const titleId = useId();
+    const detailsId = useId();
+    const { selectedJob } = model;
 
     return (
       <GlassDialog
@@ -30,7 +38,7 @@ export const PipelineDetailsDialog = withPropsViewModel(
         onClose={(event) => {
           if (!event.currentTarget.open) onClose();
         }}
-        className="max-h-[min(46rem,calc(100dvh-1.5rem))] w-[min(44rem,calc(100%-1.5rem))] max-w-none overflow-hidden p-0 open:flex open:flex-col"
+        className="max-h-[min(54rem,calc(100dvh-1.5rem))] w-[min(76rem,calc(100%-1.5rem))] max-w-none overflow-hidden p-0 open:flex open:flex-col"
       >
         <header className="flex shrink-0 items-start justify-between gap-3 border-[var(--glass-border)] border-b px-4 py-3 sm:px-5 sm:py-4">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
@@ -60,22 +68,31 @@ export const PipelineDetailsDialog = withPropsViewModel(
               )}
             </div>
           )}
-          {(actions || pipeline?.web_url) && (
-            <div className="flex flex-wrap items-center gap-2">
-              {actions}
-              {pipeline?.web_url && (
-                <a
-                  className="inline-flex items-center gap-1 rounded-sm text-fg-link text-xs hover:underline"
-                  href={pipeline.web_url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t('common.openInGitLab')}{' '}
-                  <ArrowUpRightFromSquare className="size-3" aria-hidden />
-                </a>
-              )}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              className="glass-control inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 font-semibold text-sm"
+              type="button"
+              aria-label={t('pipelines.refresh')}
+              aria-busy={refreshing}
+              disabled={refreshing}
+              onClick={model.refresh}
+            >
+              <ArrowsRotateRight className="size-4" aria-hidden />
+              {t('pipelines.refresh')}
+            </button>
+            {actions}
+            {pipeline?.web_url && (
+              <a
+                className="inline-flex items-center gap-1 rounded-sm text-fg-link text-xs hover:underline"
+                href={pipeline.web_url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t('common.openInGitLab')}{' '}
+                <ArrowUpRightFromSquare className="size-3" aria-hidden />
+              </a>
+            )}
+          </div>
           {loading && (
             <p role="status" className="text-fg-muted text-sm">
               {t('pipelines.loadingJobs')}
@@ -94,48 +111,16 @@ export const PipelineDetailsDialog = withPropsViewModel(
               {t('pipelines.thisPipelineHasNoJobs')}
             </p>
           )}
-          {[...model.stages].map(([stage, stageJobs]) => (
-            <section
-              key={stage}
-              className="min-w-0 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-control)]"
-            >
-              <h3 className="rounded-t-xl border-[var(--glass-border)] border-b bg-[var(--glass-hover)] px-3 py-2 font-semibold text-xs [overflow-wrap:anywhere]">
-                {stage}
-              </h3>
-              <ul className="divide-y divide-[var(--glass-border)]">
-                {stageJobs.map((job) => (
-                  <li key={job.id} className="min-w-0 px-3 py-2">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                      <div className="min-w-0 flex-1 basis-28 font-medium text-sm [overflow-wrap:anywhere]">
-                        {job.web_url ? (
-                          <a
-                            className="rounded-sm hover:underline"
-                            href={job.web_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            title={t('pipelines.openJobInGitlab', {
-                              v1: job.name,
-                            })}
-                          >
-                            {job.name}
-                            <ArrowUpRightFromSquare
-                              className="ml-1 inline size-3 text-fg-muted"
-                              aria-hidden
-                            />
-                          </a>
-                        ) : (
-                          job.name
-                        )}
-                      </div>
-                      <PipelineStatus status={job.status} />
-                      {renderJobActions?.(job)}
-                    </div>
-                    {renderJobDetails?.(job)}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
+          {jobs.length > 0 && (
+            <PipelineStageGraph model={model} detailsId={detailsId} />
+          )}
+          <div id={detailsId} hidden={!selectedJob}>
+            {selectedJob && (
+              <div key={selectedJob.id} ref={model.revealJobDetails}>
+                <PipelineJobDetails projectId={projectId} job={selectedJob} />
+              </div>
+            )}
+          </div>
         </div>
       </GlassDialog>
     );

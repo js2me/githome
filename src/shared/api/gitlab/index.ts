@@ -25,6 +25,7 @@ import { closeMergeRequest } from './endpoints/merge-requests/lifecycle/close-me
 import { saveMergeRequestNote } from './endpoints/merge-requests/notes/save-merge-request-note';
 import { cancelPipeline } from './endpoints/pipelines/cancel-pipeline';
 import { createPipeline } from './endpoints/pipelines/create-pipeline';
+import { getPipelineStages } from './endpoints/pipelines/get-pipeline-stages';
 import { cancelPipelineJob } from './endpoints/pipelines/jobs/cancel-pipeline-job';
 import { getPipelineJobTrace } from './endpoints/pipelines/jobs/get-pipeline-job-trace';
 import { getPipelineJobs } from './endpoints/pipelines/jobs/get-pipeline-jobs';
@@ -73,6 +74,8 @@ export const gitlabApi = {
 
   getPipelineJobTrace,
   getPipelineJobs,
+
+  getPipelineStages,
 
   getProjectReadme,
 

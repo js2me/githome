@@ -5,6 +5,10 @@ import {
   observableRef,
   runInAction,
 } from 'mobx';
+import {
+  isPipelineActive,
+  pipelineJobAction,
+} from '@/entities/gitlab-pipelines';
 import type { Workspace } from '@/features/workspace-navigation';
 import type {
   GitLabJobDC,
@@ -54,17 +58,6 @@ const parsePipelineVariables = (input: string): GitLabPipelineVariableDC[] =>
       };
     });
 
-const activeStatuses = new Set([
-  'created',
-  'waiting_for_resource',
-  'preparing',
-  'waiting_for_callback',
-  'pending',
-  'running',
-  'scheduled',
-  'canceling',
-]);
-export const isPipelineActive = (status: string) => activeStatuses.has(status);
 const canCancelStatus = (status: string) =>
   status !== 'canceling' && isPipelineActive(status);
 
@@ -276,17 +269,10 @@ export class PipelineList {
     );
   }
 
-  isJobCancelable(job: GitLabJobDC) {
-    return this.params.canManagePipelines() && canCancelStatus(job.status);
-  }
-
-  canRunJob(job: GitLabJobDC) {
-    return (
-      this.params.canManagePipelines() &&
-      (job.status === 'manual' ||
-        job.status === 'failed' ||
-        job.status === 'canceled')
-    );
+  jobAction(job: GitLabJobDC) {
+    return this.params.canManagePipelines()
+      ? pipelineJobAction(job.status)
+      : null;
   }
 
   @actionBound
@@ -409,25 +395,23 @@ export class PipelineList {
     this.actionErrorValue = null;
 
     try {
-      if (!this.canRunJob(job) && !this.isJobCancelable(job)) {
-        return;
-      }
+      const action = this.jobAction(job);
 
-      if (job.status === 'manual') {
+      if (action === 'play') {
         await gitlabApi.playPipelineJob(
           connection,
           projectId,
           job.id,
           this.params.abortSignal,
         );
-      } else if (job.status === 'failed' || job.status === 'canceled') {
+      } else if (action === 'retry') {
         await gitlabApi.retryPipelineJob(
           connection,
           projectId,
           job.id,
           this.params.abortSignal,
         );
-      } else if (this.isJobCancelable(job)) {
+      } else if (action === 'cancel') {
         await gitlabApi.cancelPipelineJob(
           connection,
           projectId,

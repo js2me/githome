@@ -73,6 +73,7 @@ export const MergeRequestDetail = withViewModel(
             <PipelineCard
               payload={{
                 projectId: markdownScope.projectId,
+                projectPath: markdownScope.projectPath,
                 pipelineId: detail.mergeRequest.head_pipeline.id,
                 permissions: page.project?.permissions,
               }}

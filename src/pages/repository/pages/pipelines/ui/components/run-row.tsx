@@ -6,12 +6,12 @@ import {
   CodePullRequest,
 } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
-import { PipelineStatus } from '@/entities/gitlab-pipelines';
+import { durationLabel, PipelineStatus } from '@/entities/gitlab-pipelines';
 import { t } from '@/shared/lib/i18n';
 import { getPipelineMergeRequestIid } from '../../model/pipeline-list';
 import { DateTime } from './date-time';
 import { RunAction } from './run-action';
-import { durationLabel, type RunProps } from './run-presentation';
+import type { RunProps } from './run-presentation';
 
 export const RunRow = observer(({ model, run }: RunProps) => {
   const list = model.pipelineList;

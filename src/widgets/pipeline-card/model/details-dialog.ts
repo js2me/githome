@@ -1,10 +1,20 @@
-import { computed, reaction } from 'mobx';
+import { actionBound, computed, observable, reaction } from 'mobx';
+import type { ViewModelParams } from 'mobx-view-model';
 import type { ReactNode } from 'react';
 import { createRef } from 'yummies/mobx';
-import type { GitLabJobDC, GitLabPipelineDC } from '@/shared/api/gitlab';
+import {
+  type GitLabJobDC,
+  type GitLabPipelineDC,
+  gitlabApi,
+} from '@/shared/api/gitlab';
+import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { getLocale } from '@/shared/lib/i18n';
 import { VM } from '@/shared/lib/view-models/vm';
+import type { Globals } from '@/shared/model/globals';
 
 interface PipelineDetailsDialogProps {
+  projectId: number;
+  projectPath?: string;
   pipelineId: number;
   pipeline?: GitLabPipelineDC;
   jobs: readonly GitLabJobDC[];
@@ -13,23 +23,91 @@ interface PipelineDetailsDialogProps {
   description?: ReactNode;
   actions?: ReactNode;
   renderJobActions?: (job: GitLabJobDC) => ReactNode;
-  renderJobDetails?: (job: GitLabJobDC) => ReactNode;
+  onRefresh: () => void;
+  refreshing: boolean;
   onClose: () => void;
 }
 
 export class PipelineDetailsDialogVM extends VM<PipelineDetailsDialogProps> {
   readonly dialog = createRef<HTMLDialogElement>();
   readonly closeButton = createRef<HTMLButtonElement>();
+  readonly stageOrder;
+  @observable private accessor selectedJobId: number | null = null;
+
+  constructor(
+    globals: Globals,
+    params: ViewModelParams<PipelineDetailsDialogProps>,
+  ) {
+    super(globals, params);
+    this.stageOrder = createGitlabApiQuery<
+      string[],
+      { projectPath: string; pipelineId: number }
+    >({
+      globals,
+      abortSignal: this.unmountSignal,
+      params: () => {
+        const { projectPath, pipelineId } = this.payload;
+        return projectPath ? { projectPath, pipelineId } : false;
+      },
+      queryKey: ({ connection, projectPath, pipelineId }) => [
+        'pipeline-stage-order',
+        connection.id,
+        connection.credentialsRevision,
+        projectPath,
+        pipelineId,
+      ],
+      queryFn: ({ connection, projectPath, pipelineId, signal }) =>
+        gitlabApi.getPipelineStages(
+          connection,
+          projectPath,
+          pipelineId,
+          signal,
+        ),
+      queryOptions: { staleTime: 300_000, retry: false },
+    });
+  }
+
+  @computed
+  get selectedJob() {
+    return this.payload.jobs.find(({ id }) => id === this.selectedJobId);
+  }
+
+  @actionBound
+  toggleJob(id: number) {
+    this.selectedJobId = this.selectedJobId === id ? null : id;
+  }
+
+  revealJobDetails(element: HTMLDivElement | null) {
+    element?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+
+  @actionBound
+  refresh() {
+    this.payload.onRefresh();
+    if (this.payload.projectPath) void this.stageOrder.refetch();
+  }
 
   @computed
   get stages() {
-    const stages = new Map<string, GitLabJobDC[]>();
+    const stages = new Map<string, GitLabJobDC[]>(
+      this.stageOrder.data?.map((name) => [name, []]),
+    );
     for (const job of [...this.payload.jobs].reverse()) {
       const stage = stages.get(job.stage);
       if (stage) stage.push(job);
       else stages.set(job.stage, [job]);
     }
-    return stages;
+    const collator = new Intl.Collator(getLocale(), { numeric: true });
+    return [...stages].flatMap(([stage, jobs]) =>
+      jobs.length
+        ? [
+            {
+              stage,
+              jobs: jobs.sort((a, b) => collator.compare(a.name, b.name)),
+            },
+          ]
+        : [],
+    );
   }
 
   willMount() {

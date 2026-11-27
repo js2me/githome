@@ -11,6 +11,7 @@ export const getPipelineJobTrace = async (
     connection,
     `/projects/${projectId}/jobs/${jobId}/trace`,
     signal,
+    { cache: 'no-store' },
   );
 
   return response.text();

@@ -2,14 +2,16 @@ import { ArrowUpRightFromSquare, ChevronRight } from '@gravity-ui/icons';
 import { withViewModel } from 'mobx-view-model-react';
 import {
   PipelineStatus,
+  pipelineJobAction,
   pipelineStatusLabel,
 } from '@/entities/gitlab-pipelines';
 import { t } from '@/shared/lib/i18n';
 import { PipelineCardVM } from './model';
 import { PipelineDetailsDialog } from './pipeline-details-dialog';
+import { PipelineJobAction } from './ui/pipeline-job-action';
 
 export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
-  const { pipelineId } = model.payload;
+  const { pipelineId, projectId, projectPath } = model.payload;
   const { pipeline } = model;
   const status =
     pipeline?.status ??
@@ -61,6 +63,12 @@ export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
       </div>
       {model.detailsOpen && (
         <PipelineDetailsDialog
+          projectId={projectId}
+          projectPath={projectPath}
+          onRefresh={model.refreshDetails}
+          refreshing={
+            model.jobsQuery.isFetching || model.pipelineQuery.isFetching
+          }
           pipelineId={pipelineId}
           pipeline={pipeline}
           jobs={model.jobs}
@@ -74,19 +82,16 @@ export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
             .join('\n')}
           onClose={model.closeDetails}
           renderJobActions={(job) => {
-            if (!model.canRun(job)) return null;
-            const action =
-              job.status === 'manual' ? t('pipelines.run') : t('common.retry');
+            const action = pipelineJobAction(job.status);
+            if (!model.canRunJobs || !action) return null;
             return (
-              <button
-                className="glass-control min-h-8 rounded-md px-2 font-semibold text-xs"
-                type="button"
+              <PipelineJobAction
+                action={action}
+                jobName={job.name}
+                busy={model.busyJobId === job.id}
                 disabled={model.busyJobId !== null}
-                aria-label={t('pipelines.job', { v1: action, v2: job.name })}
-                onClick={() => void model.runJob(job)}
-              >
-                {model.busyJobId === job.id ? t('pipelines.starting') : action}
-              </button>
+                onRun={() => void model.runJob(job)}
+              />
             );
           }}
         />
@@ -96,3 +101,4 @@ export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
 });
 
 export { PipelineDetailsDialog } from './pipeline-details-dialog';
+export { PipelineJobAction } from './ui/pipeline-job-action';

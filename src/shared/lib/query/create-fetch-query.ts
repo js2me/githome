@@ -3,7 +3,7 @@ import { createQuery } from 'mobx-tanstack-query/preset';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 
 type RefetchIntervalQuery = {
-  state: { data: unknown };
+  state: { data: unknown; error: unknown };
 };
 
 export type MaybeFalsy<T> = T | false | null | undefined;

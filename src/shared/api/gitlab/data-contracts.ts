@@ -97,6 +97,8 @@ export interface GitLabJobDC {
   duration?: number | null;
   web_url?: string;
   failure_reason?: string | null;
+  queued_duration?: number | null;
+  runner?: { description?: string | null; name?: string | null } | null;
 }
 
 export interface GitLabPipelineVariableDC {
