@@ -7,8 +7,24 @@ import { WorkspaceVM } from '@/features/workspace-navigation';
 import { gitlabApi } from '@/shared/api/gitlab';
 import { GitLabApiError } from '@/shared/api/gitlab/client';
 import { parsePipelineLocation } from '@/shared/lib/gitlab/links/pipeline';
+import { parseProjectLocation } from '@/shared/lib/gitlab/links/project';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
-import { resolvePipelineTarget } from './open-pipeline';
+import { resolveProjectTarget } from './open-project';
+
+const linkCopy = {
+  pipeline: {
+    title: 'navigation.openAPipeline',
+    label: 'navigation.gitlabPipelineLink',
+  },
+  project: {
+    title: 'navigation.openAProject',
+    label: 'navigation.gitlabProjectLink',
+  },
+  mr: {
+    title: 'navigation.openAMergeRequest',
+    label: 'navigation.gitlabMergeRequestLink',
+  },
+} as const;
 
 export class OpenMergeRequestVM extends WorkspaceVM {
   readonly dialog = createRef<HTMLDialogElement>();
@@ -17,8 +33,10 @@ export class OpenMergeRequestVM extends WorkspaceVM {
   @observable accessor link = '';
   @observable private accessor currentError: Error | null = null;
 
-  get isPipelineLink() {
-    return Boolean(parsePipelineLocation(this.link));
+  get copy() {
+    if (parsePipelineLocation(this.link)) return linkCopy.pipeline;
+    if (parseProjectLocation(this.link)) return linkCopy.project;
+    return linkCopy.mr;
   }
 
   get error() {
@@ -116,12 +134,13 @@ export class OpenMergeRequestVM extends WorkspaceVM {
     this.currentError = null;
 
     const pipeline = parsePipelineLocation(this.link);
+    const project = pipeline ?? parseProjectLocation(this.link);
     try {
       const { settings } = this.globals.stores;
-      if (pipeline) {
-        const target = await resolvePipelineTarget(
+      if (project) {
+        const target = await resolveProjectTarget(
           this.globals,
-          pipeline,
+          project,
           request.signal,
         );
         if (request.signal.aborted || !this.dialog.current?.open) return;
@@ -130,10 +149,14 @@ export class OpenMergeRequestVM extends WorkspaceVM {
           settings.setActiveConnection(target.connection.id);
         }
         this.globals.stores.repository.setProject(target.project);
-        await this.globals.routes.pipelines.open(
-          { projectId: String(target.project.id) },
-          { query: { pipeline: String(target.pipelineId) } },
-        );
+        const params = { projectId: String(target.project.id) };
+        if (pipeline) {
+          await this.globals.routes.pipelines.open(params, {
+            query: { pipeline: String(pipeline.id) },
+          });
+        } else {
+          await this.globals.routes.repository.open(params);
+        }
         return;
       }
       const { connection, projectPath, iid } = resolveMergeRequestLink(
@@ -168,11 +191,13 @@ export class OpenMergeRequestVM extends WorkspaceVM {
       if (request.signal.aborted) return;
       runInAction(() => {
         if (
-          pipeline &&
+          project &&
           (error instanceof GitLabApiError || error instanceof TypeError)
         ) {
           this.currentError = new LocalizedError(
-            'pipelines.couldNotLoadThePipeline',
+            pipeline
+              ? 'pipelines.couldNotLoadThePipeline'
+              : 'repository.couldNotLoadTheRepository',
           );
         } else if (error instanceof GitLabApiError) {
           this.currentError = new LocalizedError(

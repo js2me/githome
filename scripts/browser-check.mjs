@@ -180,6 +180,18 @@ const pipelineJobs = Array.from({ length: 125 }, (_, index) => ({
   web_url: `https://gitlab.mock/group/alpha/-/jobs/${700 + index}`,
 })).reverse();
 
+const deploymentJobs = [
+  { id: 1111, name: 'deploy-one', stage: 'infra-deploy-stage', status: 'manual' },
+  { id: 1112, name: 'deploy-two', stage: 'infra-deploy-stage', status: 'manual' },
+  { id: 1113, name: 'deploy-three', stage: 'infra-deploy-stage', status: 'manual' },
+  { id: 1114, name: 'verify-infra', stage: 'verify', status: 'manual' },
+  { id: 1115, name: 'deploy-active', stage: 'infra-deploy-stage', status: 'running' },
+];
+let testDeploymentActions = false;
+const playRequests = [];
+const pendingPlayRequests = [];
+const startedDeploymentJobs = new Set();
+
 let pipelineTraceRequests = 0;
 
 const tsxChange = {
@@ -281,6 +293,17 @@ const branchPipeline = {
   web_url: 'https://gitlab.mock/group/alpha/-/pipelines/4822',
 };
 let branchOnly = false;
+const metadataUsers = [user(501, 'Review Candidate'), user(502, 'Second Reviewer')];
+const metadataLabels = [
+  { id: 11, name: 'workflow::ready', color: '#1068bf', description: 'Ready to review', is_project_label: false },
+  { id: 12, name: 'archived example', color: '#666666', archived: true },
+];
+let testMrMetadata = false;
+let metadataCanUpdate = true;
+const metadataMutations = [];
+const assignedReviewers = new Set();
+const appliedLabels = new Set();
+
 const fileDiscussionPath = '/git-proxy/gitlab.mock/api/v4/projects/1/merge_requests/156/discussions';
 const isFileDiscussionPost = (req) =>
   req.method() === 'POST' && new URL(req.url()).pathname === fileDiscussionPath;
@@ -310,9 +333,26 @@ const route = (url, postData, token, method) => {
   if (p === '/api/v4/groups/oneui%2Ffrontend') return frontend;
   if (p === '/api/v4/groups/401/subgroups') return [frontend];
   if (p === '/api/v4/groups/402/projects') return [nova];
-  if (p === '/api/v4/projects/4') return nova;
+  if (p === '/api/v4/projects/4' || p === '/api/v4/projects/oneui%2Ffrontend%2Fnova') return nova;
   if (p === '/api/v4/merge_requests') {
     return searchParams.get('scope') === 'created_by_me' ? [projectMrs.find(item => item.iid === 11)] : [mrs[0], betaRequest];
+  }
+  if (testMrMetadata && p === '/api/v4/projects/1/merge_requests/156/approval_state') {
+    return { rules: [{ id: 41, name: 'Code Owners', approvals_required: 2, approved_by: [], eligible_approvers: [metadataUsers[0]] }] };
+  }
+  if (testMrMetadata && p === '/api/v4/projects/1/users') {
+    const term = searchParams.get('search')?.toLowerCase() ?? '';
+    return metadataUsers.filter(item => `${item.name} ${item.username}`.toLowerCase().includes(term));
+  }
+  if (testMrMetadata && p === '/api/v4/projects/1/labels') {
+    if (method === 'POST') {
+      const label = { id: 13, ...JSON.parse(postData) };
+      metadataLabels.push(label);
+      metadataMutations.push(['create', label.name, label.color, label.description]);
+      return label;
+    }
+    const term = searchParams.get('search')?.toLowerCase() ?? '';
+    return metadataLabels.filter(item => item.name.toLowerCase().includes(term));
   }
   if (p === '/api/v4/projects/1/pipelines') {
     if (searchParams.has('sha')) {
@@ -329,6 +369,9 @@ const route = (url, postData, token, method) => {
     return [{ id: 901, stage: 'test', name: 'branch-test', status: 'failed' }];
   }
   if (p === '/api/v4/projects/1/pipelines/4821') return pipeline;
+  if (testDeploymentActions && p === '/api/v4/projects/1') {
+    return { ...projects[0], permissions: { project_access: { access_level: 30 } } };
+  }
   if (p === '/api/v4/projects/group%2Falpha') return projects[0];
   if (p === '/api/v4/projects/1/pipelines/4819') return linkedPipeline;
   if (p === '/api/v4/projects/1/pipelines/4819/jobs') {
@@ -338,6 +381,8 @@ const route = (url, postData, token, method) => {
   }
 
   if (p === '/api/v4/projects/1/pipelines/4821/jobs') {
+    if (testDeploymentActions) return deploymentJobs.map(job =>
+      startedDeploymentJobs.has(job.id) ? { ...job, status: 'running' } : job);
     const page = Number(searchParams.get('page') ?? 1);
     const size = Number(searchParams.get('per_page') ?? 20);
     return pipelineJobs.slice((page - 1) * size, page * size);
@@ -396,7 +441,11 @@ const route = (url, postData, token, method) => {
     return { ...mr(158, unlinkedTitle, AUTHORS[0]), description: '', title_html: unlinkedTitle };
   }
   if (p.endsWith('/merge_requests/156')) {
-    const detail = branchOnly ? { ...imageMr, head_pipeline: null } : imageMr;
+    const detail = branchOnly ? { ...imageMr, head_pipeline: null } : { ...imageMr };
+    if (testMrMetadata) {
+      detail.reviewers = metadataUsers.filter(item => assignedReviewers.has(item.username));
+      detail.labels = metadataLabels.filter(item => appliedLabels.has(item.id)).map(item => item.name);
+    }
     return searchParams.get('render_html') === 'true'
       ? { ...detail, title_html: detail.title.replace(titleIssue, externalIssueHtml(titleIssue)) }
       : detail;
@@ -457,6 +506,36 @@ const route = (url, postData, token, method) => {
   if (p.includes('projects')) return projects;
   if (p === '/api/graphql') {
     const { query, variables } = JSON.parse(postData ?? '{}');
+    if (testMrMetadata && query?.includes('query MrMetadata')) {
+      return { data: { project: {
+        userPermissions: { createLabel: metadataCanUpdate },
+        mergeRequest: {
+          userPermissions: { updateMergeRequest: metadataCanUpdate },
+          labels: {
+            nodes: metadataLabels.filter(item => appliedLabels.has(item.id)).map(item => ({
+              id: `gid://gitlab/Label/${item.id}`, title: item.name, color: item.color, description: item.description,
+            })),
+          },
+        },
+      } } };
+    }
+    if (testMrMetadata && query?.includes('mutation ChangeMrReviewer')) {
+      metadataMutations.push(['reviewer', variables.username, variables.mode]);
+      if (variables.mode === 'APPEND') assignedReviewers.add(variables.username);
+      else assignedReviewers.delete(variables.username);
+      return { data: { mergeRequestSetReviewers: { errors: [] } } };
+    }
+    if (testMrMetadata && query?.includes('mutation RequestMrRereview')) {
+      metadataMutations.push(['rereview', variables.user]);
+      return { data: { mergeRequestReviewerRereview: { errors: [] } } };
+    }
+    if (testMrMetadata && query?.includes('mutation ChangeMrLabel')) {
+      const id = Number(variables.label.split('/').at(-1));
+      metadataMutations.push(['label', id, variables.mode]);
+      if (variables.mode === 'APPEND') appliedLabels.add(id);
+      else appliedLabels.delete(id);
+      return { data: { mergeRequestSetLabels: { errors: [] } } };
+    }
     if (query?.includes('PipelineStageOrder') && variables.id === 'gid://gitlab/Ci::Pipeline/4821') {
       return { data: { project: { pipeline: { stages: {
         nodes: [{ name: 'test' }, { name: 'build' }, { name: 'deploy-dev' }],
@@ -493,6 +572,7 @@ try {
     document.querySelector('main').innerText.includes('Connect to GitLab')));
   await localePage.click('button[aria-label="Settings"]');
   const picker = 'dialog[open] select';
+  await localePage.waitForSelector(picker);
   for (const [lang, title, theme, home] of [
     ['ru', 'Настройки', 'Светлая', 'Подключите GitLab'],
     ['fr', 'Paramètres', 'Clair', 'Connexion à GitLab'],
@@ -512,6 +592,7 @@ try {
   await localePage.reload();
   await localePage.waitForSelector('button[aria-label="设置"]');
   await localePage.click('button[aria-label="设置"]');
+  await localePage.waitForSelector(picker);
   check('selected locale persists after reload', await localePage.$eval(picker,
     select => select.value === 'zh-CN' && document.documentElement.lang === 'zh-CN'));
 } catch (error) {
@@ -557,6 +638,17 @@ page.on('request', (req) => {
           body: JSON.stringify(route(url, req.postData(), token, req.method())),
         });
       }).catch(() => undefined);
+      return;
+    }
+    const playedId = requestUrl.pathname.match(/\/projects\/1\/jobs\/(11\d+)\/play$/)?.[1];
+    if (testDeploymentActions && playedId && req.method() === 'POST') {
+      const id = Number(playedId);
+      const job = deploymentJobs.find(item => item.id === id);
+      playRequests.push(id);
+      pendingPlayRequests.push(() => {
+        startedDeploymentJobs.add(id);
+        return req.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...job, status: 'running' }) });
+      });
       return;
     }
     const traceJobId = requestUrl.pathname.match(/\/projects\/1\/jobs\/(\d+)\/trace$/)?.[1];
@@ -1591,6 +1683,18 @@ try {
 }
 
 try {
+  await page.click('button[aria-label="Открыть MR"]');
+  await page.waitForSelector('dialog[open][aria-labelledby="open-mr-title"]');
+  await page.keyboard.type('https://gitlab.mock/oneui/frontend/nova');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => location.pathname === '/repository/4' &&
+    [...document.querySelectorAll('main h2')].some(h => h.textContent === 'nova'), { timeout: 5000 });
+  check('a GitLab project link opens its repository overview', true);
+} catch (error) {
+  check('opening a GitLab project by URL', false, String(error));
+}
+
+try {
   const overview = 'header[aria-label="Сводка merge request"]';
   const openUnlinkedMr = () => page.goto(`${BASE}/repository/1/merge-requests/158`, { waitUntil: 'networkidle0' });
   await Promise.all([
@@ -1763,6 +1867,127 @@ try {
 }
 
 try {
+  testDeploymentActions = true;
+  await page.setViewport({ width: 1280, height: 800 });
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
+  for (const [path, trigger] of [
+    ['/repository/1/merge-requests/156', 'section[aria-label="Пайплайн MR"] button[aria-haspopup="dialog"]'],
+    ['/repository/1/pipelines', 'button[aria-label="Открыть пайплайн #4821"]'],
+  ]) {
+    playRequests.length = 0;
+    startedDeploymentJobs.clear();
+    await page.goto(BASE + path, { waitUntil: 'networkidle0' });
+    await page.waitForSelector(trigger, { timeout: 7000 });
+    await page.click(trigger);
+    const stageAction = 'dialog[open] button[aria-label="Запустить ручные задачи этапа infra-deploy-stage"]';
+    const actions = await page.waitForSelector(stageAction, { timeout: 7000 });
+    const stage = await actions.evaluateHandle(el => el.closest('.pipeline-graph-stage'));
+    const individual = name => `li:has(button[aria-label="Лог задания ${name}"]) button.pipeline-graph-action`;
+    if (path.includes('merge-requests')) {
+      await page.click(individual('deploy-one'));
+      await page.waitForSelector(`${individual('deploy-one')}[disabled][aria-busy="true"]`);
+      const animation = await page.$eval(`${individual('deploy-one')} span`, el => getComputedStyle(el).animationName);
+      check('individual deploy request animates without blocking neighboring jobs',
+        animation !== 'none' && await page.$eval(individual('deploy-two'), button => !button.disabled));
+      await page.click(individual('deploy-two'));
+      await page.waitForSelector(`${individual('deploy-two')}[disabled][aria-busy="true"]`);
+    }
+    check('stage play button is beside its name', await stage.evaluate(el =>
+      el.querySelector('.pipeline-graph-stage-header h3').textContent === 'infra-deploy-stage' &&
+      !!el.querySelector('.pipeline-graph-stage-header button:not(:disabled)')));
+    await page.click(stageAction);
+    await page.waitForSelector(`${individual('deploy-three')}[disabled][aria-busy="true"]`);
+    for (let i = 0; i < 40 && playRequests.length < 3; i++) await sleep(25);
+    check(`manual stage launch sends one request per eligible job on ${path}`,
+      [...playRequests].sort().join() === '1111,1112,1113');
+    check('other stage jobs remain clickable', await page.$eval(individual('verify-infra'), button => !button.disabled));
+    await Promise.all(pendingPlayRequests.splice(0).map(reply => reply()));
+    await page.waitForSelector(stageAction, { hidden: true, timeout: 7000 });
+    const runningAnimation = await page.$eval(
+      'li:has(button[aria-label="Лог задания deploy-one"]) [role="img"] span',
+      el => getComputedStyle(el).animationName,
+    );
+    check('running status animates once GitLab accepts the job', runningAnimation !== 'none');
+    await page.keyboard.press('Escape');
+  }
+} catch (error) {
+  check('parallel job actions and manual stage launch', false, String(error));
+} finally {
+  await Promise.allSettled(pendingPlayRequests.splice(0).map(reply => reply()));
+  testDeploymentActions = false;
+}
+
+try {
+  testMrMetadata = true;
+  await page.setViewport({ width: 1280, height: 800 });
+  const mrUrl = BASE + '/repository/1/merge-requests/156';
+  assignedReviewers.add('second.reviewer');
+  await page.goto(mrUrl, { waitUntil: 'networkidle0' });
+  const editReviewers = 'button[aria-label="Изменить ревьюверов"]';
+  const editLabels = 'button[aria-label="Изменить лейблы"]';
+  const dialog = 'dialog[open]';
+  const pick = (name, pressed) => page.waitForFunction((name, pressed) =>
+    [...document.querySelectorAll('dialog[open] button[aria-pressed]')]
+      .find(button => !button.disabled && button.textContent.includes(name) && button.getAttribute('aria-pressed') === String(pressed)) ?? false,
+  { timeout: 5000 }, name, pressed);
+  const choose = async (name, pressed) => { const button = await pick(name, pressed); await button.asElement().click(); };
+  await page.click(editReviewers);
+  const search = await page.waitForSelector(`${dialog} input[type=search]`);
+  check('MR reviewer picker focuses search', await search.evaluate(el => document.activeElement === el));
+  const filter = `${dialog} select`;
+  await page.waitForSelector(`${filter} option[value="41"]`);
+  await page.select(filter, '41');
+  await pick('Review Candidate', false);
+  check('GitLab approval rules filter eligible reviewers independently of membership',
+    !await page.$eval(dialog, el => el.textContent.includes('Second Reviewer')) &&
+    await page.$eval(dialog, el => el.textContent.includes('Одобрения: 0 из 2')));
+  await page.select(filter, '');
+  await search.type('@review.candidate');
+  await page.waitForRequest(req => new URL(req.url()).searchParams.get('search') === 'review.candidate');
+  await choose('Review Candidate', false);
+  await pick('Review Candidate', true);
+  await page.click(`${dialog} button[aria-label="Запросить повторное ревью у Review Candidate"]`);
+  await page.waitForFunction(() => document.querySelector('dialog[open]')?.textContent.includes('Повторное ревью запрошено'));
+  await choose('Review Candidate', true);
+  await pick('Review Candidate', false);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector(dialog, { hidden: true });
+  check('reviewer can be added, re-requested and removed independently', metadataMutations.some(entry => entry[0] === 'rereview' && entry[1].endsWith('/501')) && [...assignedReviewers].join() === 'second.reviewer');
+  await page.click(editLabels);
+  await choose('Ready to review', false);
+  await pick('Ready to review', true);
+  check('MR label picker excludes archived labels', !await page.$eval(dialog, el => el.textContent.includes('archived example')));
+  await choose('Ready to review', true);
+  await pick('Ready to review', false);
+  await page.type(`${dialog} input[type=search]`, 'priority::high');
+  await page.$eval(dialog, el => [...el.querySelectorAll('button')].find(button => button.textContent.includes('Новый лейбл проекта')).click());
+  await page.type(`${dialog} textarea`, 'Needs attention');
+  await page.$eval(`${dialog} input[type="color"]`, input => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '#aa3311');
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.click(`${dialog} button[type=submit]`);
+  await page.waitForSelector(`${dialog} input[type=search]`);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector(dialog, { hidden: true });
+  await page.goto(mrUrl, { waitUntil: 'networkidle0' });
+  await page.waitForSelector('main span[title="Needs attention"]');
+  check('MR labels can be added, removed, created and persisted with color',
+    metadataMutations.some(entry => entry.join() === 'label,11,APPEND') &&
+    metadataMutations.some(entry => entry.join() === 'label,11,REMOVE') &&
+    metadataMutations.some(entry => entry.join() === 'create,priority::high,#aa3311,Needs attention') &&
+    appliedLabels.has(13));
+  metadataCanUpdate = false;
+  await page.goto(mrUrl, { waitUntil: 'networkidle0' });
+  check('read-only MR shows the labels but no edit controls',
+    Boolean(await page.$('main span[title="Needs attention"]')) && !await page.$(editLabels) && !await page.$(editReviewers));
+} catch (error) {
+  check('MR metadata management', false, String(error));
+} finally {
+  testMrMetadata = false;
+}
+
+try {
   await page.setViewport({ width: 1280, height: 800 });
   await page.goto(`${BASE}/repository/4`, { waitUntil: 'domcontentloaded' });
   const repoCrumbs = 'nav[aria-label="Путь к проекту"]';
@@ -1801,7 +2026,7 @@ try {
 
 try {
   const header = 'header[aria-label="Сводка merge request"]';
-  const close = `${header} button[aria-haspopup="dialog"]`;
+  const close = `${header} ::-p-aria([name="Закрыть"][role="button"])`;
   const merge = `${header} ::-p-aria([name="Смержить в GitLab"][role="link"])`;
   const waitForState = state => page.waitForFunction((selector, expected) =>
     [...document.querySelectorAll(`${selector} span`)].some(el => el.textContent === expected),

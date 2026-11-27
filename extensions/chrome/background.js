@@ -1,12 +1,10 @@
-import { navigationRules } from './links.js';
+import { updateLinkHandlers } from './links.js';
 
 chrome.runtime.onInstalled.addListener(() => {
   void chrome.storage.local.get(['origin', 'auto'])
     .then(({ origin, auto }) => {
       if (!origin) return;
-      return chrome.declarativeNetRequest.updateDynamicRules(
-        navigationRules(origin, auto ?? true, chrome.runtime.getURL('open.html')),
-      );
+      return updateLinkHandlers(origin, auto ?? true);
     })
     .catch((error) => console.warn('Could not update the GitHome Chrome rule', error));
 });

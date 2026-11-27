@@ -1,12 +1,11 @@
 import type { Workspace } from '@/features/workspace-navigation';
 import { gitlabApi } from '@/shared/api/gitlab';
 import { resolveGitlabProjectLink } from '@/shared/lib/gitlab/connection/resolve-project-link';
-import type { parsePipelineLocation } from '@/shared/lib/gitlab/links/pipeline';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 
-export async function resolvePipelineTarget(
+export async function resolveProjectTarget(
   { stores: { settings } }: Workspace,
-  location: NonNullable<ReturnType<typeof parsePipelineLocation>>,
+  location: { origin: string; path: string },
   signal: AbortSignal,
 ) {
   const { connection, projectPath } = resolveGitlabProjectLink(
@@ -16,7 +15,7 @@ export async function resolvePipelineTarget(
   );
   const project = await gitlabApi.getProject(connection, projectPath, signal);
   if (!Number.isSafeInteger(project.id) || project.id < 1) {
-    throw new LocalizedError('pipelines.couldNotLoadThePipeline');
+    throw new LocalizedError('repository.couldNotLoadTheRepository');
   }
-  return { connection, project, pipelineId: location.id };
+  return { connection, project };
 }

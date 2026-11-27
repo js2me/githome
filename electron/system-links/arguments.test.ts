@@ -43,6 +43,21 @@ describe("githome://", () => {
     expect(readGitHomeLink(`githome://open-pipeline?raw=${url}`)).toBe("");
   });
 
+  it("opens a nested project homepage without confusing it with a merge request or pipeline", () => {
+    const project = "https://gitlab.example.com/platform/tools/example-sdk/?view=overview#readme";
+    const incoming = `githome://open-project?url=${encodeURIComponent(project)}`;
+    expect(readGitHomeLink(incoming)).toBe(project);
+    expect(readExplicitGitHomeLink([incoming])).toBe(project);
+    for (const invalid of [
+      "https://gitlab.example.com/owner",
+      "https://gitlab.example.com/owner/project/-/tree/main",
+      "https://gitlab.example.com/owner/project/merge_requests/42",
+      url,
+    ]) {
+      expect(readGitHomeLink(`githome://open-project?url=${encodeURIComponent(invalid)}`)).toBe("");
+    }
+  });
+
   it("does not accept arbitrary actions, non-MR URLs, or multiple payloads", () => {
     expect(readGitHomeLink(url)).toBeUndefined();
     for (const link of [

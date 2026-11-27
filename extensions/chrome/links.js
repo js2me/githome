@@ -53,3 +53,24 @@ export function navigationRules(origin, auto, bridge) {
     })) : [],
   };
 }
+
+// Register only on the chosen GitLab. Its project page identifies itself in the DOM.
+export async function updateLinkHandlers(origin, auto) {
+  const id = 'gitlab-project-links';
+  const [current] = await chrome.scripting.getRegisteredContentScripts({ ids: [id] });
+  if (origin && auto) {
+    const script = {
+      id,
+      matches: [permissionPattern(origin)],
+      js: ['content/project.js'],
+      runAt: 'document_end',
+    };
+    if (current) await chrome.scripting.updateContentScripts([script]);
+    else await chrome.scripting.registerContentScripts([script]);
+  } else if (current) {
+    await chrome.scripting.unregisterContentScripts({ ids: [id] });
+  }
+  await chrome.declarativeNetRequest.updateDynamicRules(
+    navigationRules(origin, auto, chrome.runtime.getURL('open.html')),
+  );
+}

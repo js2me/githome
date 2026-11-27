@@ -625,6 +625,15 @@ export class MrInfoModel {
     return this.mergeRequestDiscussionsQuery.invalidate();
   }
 
+  refreshMetadata() {
+    return Promise.all([
+      this.mergeRequestDetailQuery.invalidate(),
+      this.mergeRequestReviewersQuery.invalidate(),
+      this.mergeRequestApprovalsQuery.invalidate(),
+      this.mergeRequestDiscussionsQuery.invalidate(),
+    ]);
+  }
+
   private invalidateMergeRequestView() {
     return Promise.all([
       this.mergeRequestDetailQuery.invalidate(),

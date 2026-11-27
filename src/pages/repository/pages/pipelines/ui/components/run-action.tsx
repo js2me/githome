@@ -18,7 +18,7 @@ export const RunAction = observer(
         className={compact ? 'pipeline-icon-action' : control}
         aria-label={hint}
         title={hint}
-        disabled={list.busyJobId !== null || list.busyPipelineId !== null}
+        disabled={list.jobRunner.hasPending || list.busyPipelineId !== null}
         aria-busy={busy}
         onClick={() => void model.runPipeline(run, cancel ? 'cancel' : 'retry')}
       >

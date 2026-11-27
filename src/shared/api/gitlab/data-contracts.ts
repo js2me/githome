@@ -214,6 +214,16 @@ export interface GitLabMergeRequestDiscussionSummary {
   readonly resolved: number;
 }
 
+export interface GitLabProjectLabelDC {
+  id: number;
+  name: string;
+  color: string;
+  text_color?: string;
+  description?: string | null;
+  archived?: boolean;
+  is_project_label?: boolean;
+}
+
 export interface GitLabUserDC {
   id: number;
   name: string;

@@ -1,4 +1,32 @@
 import { normalizeGitlabBaseUrl, parseWebUrl } from './gitlab-url';
+import { parseMergeRequestLocation } from './merge-request';
+
+export function parseProjectLocation(input: string) {
+  const url = parseWebUrl(input.trim());
+  if (
+    !url ||
+    url.username ||
+    url.password ||
+    parseMergeRequestLocation(url.href)
+  )
+    return;
+
+  const path = url.pathname.replace(/\/$/, '');
+  const segments = path.slice(1).split('/');
+  if (
+    segments.length < 2 ||
+    segments.some(
+      (part) =>
+        !/^[\w.-]+$/.test(part) ||
+        part === '-' ||
+        part === '.' ||
+        part === '..',
+    )
+  )
+    return;
+
+  return { origin: url.origin, path };
+}
 
 export function matchGitlabProject(
   location: { origin: string; path: string },

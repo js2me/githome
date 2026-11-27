@@ -1,4 +1,4 @@
-import { gitlabOrigin, navigationRules, permissionPattern } from './links.js';
+import { gitlabOrigin, permissionPattern, updateLinkHandlers } from './links.js';
 
 const form = document.querySelector('form');
 const originInput = document.querySelector('#origin');
@@ -29,9 +29,7 @@ async function change(origin, auto) {
   }
 
   try {
-    await chrome.declarativeNetRequest.updateDynamicRules(
-      navigationRules(origin, auto, chrome.runtime.getURL('open.html')),
-    );
+    await updateLinkHandlers(origin, auto);
     await chrome.storage.local.set({ origin, auto });
   } catch (error) {
     if (current && current !== old) await chrome.permissions.remove({ origins: [current] }).catch(() => false);
@@ -41,7 +39,7 @@ async function change(origin, auto) {
   saved = { origin, auto };
   render();
   if (old && old !== current) await chrome.permissions.remove({ origins: [old] }).catch(() => false);
-  status.textContent = origin ? 'Готово. Откройте ссылку на MR или пайплайн.' : 'Расширение отключено.';
+  status.textContent = origin ? 'Готово. Откройте ссылку на проект, MR или пайплайн.' : 'Расширение отключено.';
 }
 
 async function update(origin, auto) {

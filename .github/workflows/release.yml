@@ -223,7 +223,7 @@ jobs:
 
       - name: Package Chrome extension
         working-directory: extensions/chrome
-        run: zip -q ../../release-artifacts/githome-chrome.zip manifest.json *.html *.css *.js
+        run: zip -q ../../release-artifacts/githome-chrome.zip manifest.json *.html *.css *.js content/*.js
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

@@ -1,8 +1,8 @@
-import { actionBound, computed, observable, runInAction } from 'mobx';
+import { actionBound, computed, observable } from 'mobx';
 import type { ViewModelParams } from 'mobx-view-model';
 import {
   isPipelineActive,
-  pipelineJobAction,
+  PipelineJobRunner,
 } from '@/entities/gitlab-pipelines';
 import type {
   GitLabJobDC,
@@ -16,7 +16,6 @@ import {
   createGitlabQuery,
 } from '@/shared/lib/gitlab/connection/create-query';
 import { type MessageKey, t } from '@/shared/lib/i18n';
-import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { Globals } from '@/shared/model/globals';
 
@@ -35,13 +34,15 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
   readonly projectQuery;
   readonly jobsQuery;
 
+  readonly jobRunner = new PipelineJobRunner();
   @observable private accessor openPipelineKey: string | null = null;
-  @observable accessor busyJobId: number | null = null;
-  @observable private accessor actionErrorValue: Error | null = null;
 
   get actionError() {
-    return this.actionErrorValue?.message ?? null;
+    return this.jobRunner.errorMessage(this.pipelineKey);
   }
+
+  pendingJobAction = (id: number) =>
+    this.jobRunner.pendingAction(this.pipelineKey, id);
 
   constructor(globals: Globals, params: ViewModelParams<PipelineCardPayload>) {
     super(globals, params);
@@ -130,7 +131,6 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
 
   @actionBound
   openDetails() {
-    this.actionErrorValue = null;
     this.openPipelineKey = this.pipelineKey;
   }
 
@@ -188,59 +188,22 @@ export class PipelineCardVM extends VM<PipelineCardPayload> {
   }
 
   @actionBound
-  async runJob(job: GitLabJobDC) {
+  async runJobs(jobs: readonly GitLabJobDC[]) {
     const connection = this.globals.stores.settings.activeConnection;
-    const action = pipelineJobAction(job.status);
-    if (!connection || !action || !this.canRunJobs || this.busyJobId !== null) {
-      return;
-    }
-
-    const pipelineKey = this.pipelineKey;
-    this.busyJobId = job.id;
-    this.actionErrorValue = null;
-
-    try {
-      if (action === 'play') {
-        await gitlabApi.playPipelineJob(
-          connection,
-          this.payload.projectId,
-          job.id,
-          this.unmountSignal,
-        );
-      } else if (action === 'cancel') {
-        await gitlabApi.cancelPipelineJob(
-          connection,
-          this.payload.projectId,
-          job.id,
-          this.unmountSignal,
-        );
-      } else {
-        await gitlabApi.retryPipelineJob(
-          connection,
-          this.payload.projectId,
-          job.id,
-          this.unmountSignal,
-        );
-      }
-
-      if (pipelineKey === this.openPipelineKey) {
+    if (!connection || !this.canRunJobs) return;
+    const scope = this.pipelineKey;
+    await this.jobRunner.run(jobs, {
+      scope,
+      connection,
+      projectId: this.payload.projectId,
+      signal: this.unmountSignal,
+      refresh: async () => {
+        if (scope !== this.pipelineKey) return;
         await Promise.all([
-          this.jobsQuery.refetch(),
           this.pipelineQuery.refetch(),
+          scope === this.openPipelineKey && this.jobsQuery.refetch(),
         ]);
-      }
-    } catch (error) {
-      runInAction(() => {
-        if (pipelineKey !== this.pipelineKey) return;
-        this.actionErrorValue =
-          error instanceof Error
-            ? error
-            : new LocalizedError('common.couldNotCompleteTheAction');
-      });
-    } finally {
-      runInAction(() => {
-        this.busyJobId = null;
-      });
-    }
+      },
+    });
   }
 }

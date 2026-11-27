@@ -48,6 +48,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
   onShowFiles,
   onShowComments,
   actions,
+  metadata,
   children,
 }: {
   mergeRequest: GitLabMergeRequestDC;
@@ -57,6 +58,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
   onShowFiles: () => void;
   onShowComments: () => void;
   actions?: ReactNode;
+  metadata?: ReactNode;
   children?: ReactNode;
 }) {
   const mr = mergeRequest;
@@ -243,14 +245,6 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
               {mergeLabel}
             </span>
           )}
-          {mr.labels?.map((label) => (
-            <span
-              key={label}
-              className="max-w-full rounded-lg bg-violet-500/10 px-2 py-0.5 font-medium text-violet-800 text-xs [overflow-wrap:anywhere] dark:text-violet-200"
-            >
-              {label}
-            </span>
-          ))}
         </div>
       </div>
 
@@ -324,6 +318,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
           </button>
         </nav>
       </div>
+      {metadata}
       {children && <div className="@md:px-5 px-3.5 pb-3">{children}</div>}
     </header>
   );

@@ -10,16 +10,19 @@ const actions = {
 
 interface PipelineJobActionProps {
   action: keyof typeof actions;
-  jobName: string;
+  target: { job: string } | { stage: string };
   busy: boolean;
-  disabled: boolean;
+  disabled?: boolean;
   onRun: () => void;
 }
 
 export const PipelineJobAction = observer(
-  ({ action, jobName, busy, disabled, onRun }: PipelineJobActionProps) => {
+  ({ action, target, busy, disabled, onRun }: PipelineJobActionProps) => {
     const { Icon, key } = actions[action];
-    const label = t('pipelines.job', { v1: t(key), v2: jobName });
+    const label =
+      'job' in target
+        ? t('pipelines.job', { v1: t(key), v2: target.job })
+        : t('pipelines.runStage', { stage: target.stage });
     return (
       <button
         className="pipeline-graph-action"
@@ -30,7 +33,19 @@ export const PipelineJobAction = observer(
         disabled={disabled}
         onClick={onRun}
       >
-        <Icon className="size-3.5" aria-hidden />
+        {busy ? (
+          <span
+            className="size-3.5 rounded-full border-2 border-current border-r-transparent motion-safe:animate-spin"
+            aria-hidden
+          />
+        ) : (
+          <Icon
+            className={
+              action === 'play' ? 'size-3.5 translate-x-px' : 'size-3.5'
+            }
+            aria-hidden
+          />
+        )}
       </button>
     );
   },

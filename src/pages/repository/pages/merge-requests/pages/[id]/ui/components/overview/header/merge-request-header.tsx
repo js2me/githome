@@ -5,6 +5,7 @@ import { PipelineCard } from '@/widgets/pipeline-card';
 import type { MergeRequestDetailVM } from '../../../../model/merge-request-detail';
 import { MrLifecycleActions } from '../lifecycle/mr-lifecycle-actions';
 import { MergeRequestOverview } from '../merge-request-overview';
+import { MergeRequestMetadata } from '../metadata/merge-request-metadata';
 import { MrReviewActions } from '../mr-review-actions';
 
 export const MergeRequestHeader = observer(
@@ -26,6 +27,7 @@ export const MergeRequestHeader = observer(
           jira={page.jiraSummary}
           projectPath={markdownScope.projectPath}
           loadedFiles={changes.length}
+          metadata={<MergeRequestMetadata model={model.metadata} />}
           actions={
             <MrLifecycleActions
               key={`lifecycle-${mergeRequest.web_url}`}

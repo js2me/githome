@@ -161,11 +161,57 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
     }
   }
 
-  @actionBound
-  async runJob(job: GitLabJobDC) {
+  private jobScope(run: GitLabPipelineDC) {
+    const connection = this.globals.stores.settings.activeConnection;
+    return `${connection?.id}/${connection?.credentialsRevision}/${run.project_id}/${run.id}`;
+  }
+
+  pendingJobAction = (id: number) => {
     const run = this.selectedPipeline;
-    await this.pipelineList.runJobAction(job);
-    if (run && run.id === this.selectedPipeline?.id) await this.jobs.refetch();
+    return run
+      ? this.pipelineList.jobRunner.pendingAction(this.jobScope(run), id)
+      : undefined;
+  };
+
+  get jobActionError() {
+    const run = this.selectedPipeline;
+    return run && this.pipelineList.jobRunner.errorMessage(this.jobScope(run));
+  }
+
+  @actionBound
+  async runJobs(jobs: readonly GitLabJobDC[]) {
+    const run = this.selectedPipeline;
+    const connection = this.globals.stores.settings.activeConnection;
+    if (
+      !run ||
+      !connection ||
+      !this.pipelineList.canManageJobs ||
+      this.pipelineList.busyPipelineId === run.id
+    )
+      return;
+
+    const scope = this.jobScope(run);
+    await this.pipelineList.jobRunner.run(jobs, {
+      scope,
+      connection,
+      projectId: run.project_id,
+      signal: this.unmountSignal,
+      refresh: async () => {
+        if (
+          this.parentViewModel.projectId !== run.project_id ||
+          scope !== this.jobScope(run)
+        )
+          return;
+        const selected = this.selectedPipeline?.id === run.id;
+        await Promise.all([
+          this.pipelineList.pipelinesQuery.refetch(),
+          selected && this.jobs.refetch(),
+          selected &&
+            this.linkedPipelineId === run.id &&
+            this.linkedPipelineQuery.refetch(),
+        ]);
+      },
+    });
   }
 
   @actionBound

@@ -195,7 +195,7 @@ if (gotSingleInstanceLock) {
         for (const { url, explicit } of links) {
           try {
             if (explicit && !url) {
-              dialog.showErrorBox("GitHome", "This link does not open a GitLab merge request or pipeline.");
+              dialog.showErrorBox("GitHome", "This link does not open a GitLab project, merge request or pipeline.");
               continue;
             }
 

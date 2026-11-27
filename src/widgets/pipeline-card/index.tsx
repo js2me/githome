@@ -2,13 +2,11 @@ import { ArrowUpRightFromSquare, ChevronRight } from '@gravity-ui/icons';
 import { withViewModel } from 'mobx-view-model-react';
 import {
   PipelineStatus,
-  pipelineJobAction,
   pipelineStatusLabel,
 } from '@/entities/gitlab-pipelines';
 import { t } from '@/shared/lib/i18n';
 import { PipelineCardVM } from './model';
 import { PipelineDetailsDialog } from './pipeline-details-dialog';
-import { PipelineJobAction } from './ui/pipeline-job-action';
 
 export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
   const { pipelineId, projectId, labelKey } = model.payload;
@@ -83,19 +81,14 @@ export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
             .filter(Boolean)
             .join('\n')}
           onClose={model.closeDetails}
-          renderJobActions={(job) => {
-            const action = pipelineJobAction(job.status);
-            if (!model.canRunJobs || !action) return null;
-            return (
-              <PipelineJobAction
-                action={action}
-                jobName={job.name}
-                busy={model.busyJobId === job.id}
-                disabled={model.busyJobId !== null}
-                onRun={() => void model.runJob(job)}
-              />
-            );
-          }}
+          jobControls={
+            model.canRunJobs
+              ? {
+                  pendingAction: model.pendingJobAction,
+                  run: model.runJobs,
+                }
+              : undefined
+          }
         />
       )}
     </section>
@@ -103,4 +96,3 @@ export const PipelineCard = withViewModel(PipelineCardVM, ({ model }) => {
 });
 
 export { PipelineDetailsDialog } from './pipeline-details-dialog';
-export { PipelineJobAction } from './ui/pipeline-job-action';

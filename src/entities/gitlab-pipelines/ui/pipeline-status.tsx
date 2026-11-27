@@ -4,10 +4,10 @@ import {
   CircleDashed,
   CircleMinus,
   CirclePause,
-  CirclePlay,
   CircleXmarkFill,
   Clock,
-  PlayFill,
+  Minus,
+  PauseFill,
   Xmark,
 } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
@@ -33,7 +33,7 @@ const statuses: Record<string, StatusAppearance> = {
   },
   running: {
     labelKey: 'pipelines.running',
-    icon: CirclePlay,
+    icon: CircleDashed,
     color: 'text-[var(--color-accent-blue)]',
   },
   canceled: {
@@ -96,23 +96,33 @@ export const PipelineStatus = observer(
       appearance ?? {};
     const label = pipelineStatusLabel(status);
 
+    const spinning = status === 'running' || status === 'canceling';
+    const spinner = (
+      <span
+        className="size-full rounded-full border-2 border-current border-r-transparent motion-safe:animate-spin"
+        aria-hidden
+      />
+    );
+
     if (iconOnly) {
       const StatusIcon =
         status === 'success'
           ? Check
           : status === 'failed'
             ? Xmark
-            : status === 'running'
-              ? PlayFill
-              : Icon;
+            : status === 'manual' || status === 'blocked'
+              ? PauseFill
+              : status === 'canceled' || status === 'skipped'
+                ? Minus
+                : Icon;
       return (
         <span
           role="img"
           aria-label={label}
           title={label}
-          className={`grid size-6 shrink-0 place-items-center rounded-full border-2 border-current bg-current/10 ${color}`}
+          className={`grid size-6 shrink-0 place-items-center rounded-full bg-current/10 ${color} ${spinning ? '' : 'border-2 border-current'}`}
         >
-          <StatusIcon className="size-3.5" aria-hidden />
+          {spinning ? spinner : <StatusIcon className="size-3.5" aria-hidden />}
         </span>
       );
     }
@@ -121,7 +131,11 @@ export const PipelineStatus = observer(
       <span
         className={`inline-flex min-w-0 items-center gap-1.5 font-semibold text-xs ${color}`}
       >
-        <Icon className="size-4 shrink-0" aria-hidden />
+        {spinning ? (
+          <span className="grid size-4 shrink-0">{spinner}</span>
+        ) : (
+          <Icon className="size-4 shrink-0" aria-hidden />
+        )}
         <span>{label}</span>
       </span>
     );

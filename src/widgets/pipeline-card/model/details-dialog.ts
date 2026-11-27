@@ -2,6 +2,7 @@ import { actionBound, computed, observable, reaction } from 'mobx';
 import type { ViewModelParams } from 'mobx-view-model';
 import type { ReactNode } from 'react';
 import { createRef } from 'yummies/mobx';
+import type { PipelineJobAction } from '@/entities/gitlab-pipelines';
 import {
   type GitLabJobDC,
   type GitLabPipelineSummaryDC,
@@ -23,7 +24,11 @@ interface PipelineDetailsDialogProps {
   error?: string | null;
   description?: ReactNode;
   actions?: ReactNode;
-  renderJobActions?: (job: GitLabJobDC) => ReactNode;
+  jobControls?: {
+    blocked?: boolean;
+    pendingAction: (jobId: number) => PipelineJobAction | undefined;
+    run: (jobs: readonly GitLabJobDC[]) => Promise<void>;
+  };
   onRefresh: () => void;
   refreshing: boolean;
   onClose: () => void;

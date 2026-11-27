@@ -7,11 +7,10 @@ import {
 } from 'mobx';
 import {
   isPipelineActive,
-  pipelineJobAction,
+  PipelineJobRunner,
 } from '@/entities/gitlab-pipelines';
 import type { Workspace } from '@/features/workspace-navigation';
 import type {
-  GitLabJobDC,
   GitLabMergeRequestDC,
   GitLabPipelineDC,
   GitLabPipelineVariableDC,
@@ -76,7 +75,7 @@ export class PipelineList {
   @observable accessor refFilter = '';
   @observableRef accessor openedRun: GitLabPipelineDC | null = null;
   @observable accessor busyPipelineId: number | null = null;
-  @observable accessor busyJobId: number | null = null;
+  readonly jobRunner = new PipelineJobRunner();
   @observable private accessor actionErrorValue: Error | null = null;
 
   get actionError() {
@@ -269,10 +268,8 @@ export class PipelineList {
     );
   }
 
-  jobAction(job: GitLabJobDC) {
-    return this.params.canManagePipelines()
-      ? pipelineJobAction(job.status)
-      : null;
+  get canManageJobs() {
+    return this.params.canManagePipelines();
   }
 
   @actionBound
@@ -337,7 +334,7 @@ export class PipelineList {
       !connection ||
       !this.params.canManagePipelines() ||
       this.busyPipelineId !== null ||
-      this.busyJobId !== null
+      this.jobRunner.hasPending
     ) {
       return;
     }
@@ -373,66 +370,6 @@ export class PipelineList {
     } finally {
       runInAction(() => {
         this.busyPipelineId = null;
-      });
-    }
-  }
-
-  @actionBound
-  async runJobAction(job: GitLabJobDC) {
-    const projectId = this.params.projectId();
-    const connection = this.params.globals.stores.settings.activeConnection;
-    if (
-      projectId === null ||
-      !connection ||
-      !this.params.canManagePipelines() ||
-      this.busyJobId !== null ||
-      this.busyPipelineId !== null
-    ) {
-      return;
-    }
-
-    this.busyJobId = job.id;
-    this.actionErrorValue = null;
-
-    try {
-      const action = this.jobAction(job);
-
-      if (action === 'play') {
-        await gitlabApi.playPipelineJob(
-          connection,
-          projectId,
-          job.id,
-          this.params.abortSignal,
-        );
-      } else if (action === 'retry') {
-        await gitlabApi.retryPipelineJob(
-          connection,
-          projectId,
-          job.id,
-          this.params.abortSignal,
-        );
-      } else if (action === 'cancel') {
-        await gitlabApi.cancelPipelineJob(
-          connection,
-          projectId,
-          job.id,
-          this.params.abortSignal,
-        );
-      } else {
-        return;
-      }
-
-      await this.pipelinesQuery.refetch();
-    } catch (error) {
-      runInAction(() => {
-        this.actionErrorValue =
-          error instanceof Error
-            ? error
-            : new LocalizedError('common.couldNotCompleteTheAction');
-      });
-    } finally {
-      runInAction(() => {
-        this.busyJobId = null;
       });
     }
   }

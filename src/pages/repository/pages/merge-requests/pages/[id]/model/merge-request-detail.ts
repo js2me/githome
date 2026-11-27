@@ -5,8 +5,10 @@ import {
   observable,
   reaction,
 } from 'mobx';
+import { queryClient } from 'mobx-tanstack-query/preset';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { createRef } from 'yummies/mobx';
+import { resolveGitlabRequestUrl } from '@/shared/api/gitlab';
 import {
   CHANGES_FILE_TREE_DEFAULT_WIDTH,
   clampChangesFileTreeWidth,
@@ -18,6 +20,7 @@ import { matchGitlabProject } from '@/shared/lib/gitlab/links/project';
 import { VM } from '@/shared/lib/view-models/vm';
 import { ActiveDiffFile } from './changes/active-diff-file';
 import type { MergeRequestPageVM } from './index';
+import { MrMetadataEditor } from './metadata/editor';
 import { MergeRequestPipelines } from './pipelines/merge-request-pipelines';
 
 export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
@@ -28,6 +31,29 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
       const projectId = this.markdownScope.projectId;
       const mr = this.parentViewModel.mrInfo.mergeRequestDetail;
       return projectId > 0 && mr ? { projectId, mr } : null;
+    },
+  });
+  readonly metadata = new MrMetadataEditor({
+    globals: this.globals,
+    abortSignal: this.unmountSignal,
+    target: () => {
+      const { projectId, projectPath } = this.markdownScope;
+      const mr = this.parentViewModel.mrInfo.mergeRequestDetail;
+      return projectId > 0 && projectPath && mr
+        ? { projectId, projectPath, mr }
+        : null;
+    },
+    refresh: async () => {
+      const page = this.parentViewModel;
+      const { projectId, connection } = this.markdownScope;
+      if (connection && projectId > 0) {
+        const path = resolveGitlabRequestUrl(
+          connection.gitlabUrl,
+          `/api/v4/projects/${projectId}/merge_requests`,
+        );
+        void queryClient.invalidateQueries({ queryKey: path.split('/') });
+      }
+      await page.mrInfo.refreshMetadata();
     },
   });
   readonly fileNavigation = new ActiveDiffFile();

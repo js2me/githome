@@ -1,9 +1,16 @@
 import { parseMergeRequestLocation } from "../../src/shared/lib/gitlab/links/merge-request";
-
 import { parsePipelineLocation } from "../../src/shared/lib/gitlab/links/pipeline";
 
+import { parseProjectLocation } from "../../src/shared/lib/gitlab/links/project";
+
+const actions = {
+  "open-mr": parseMergeRequestLocation,
+  "open-pipeline": parsePipelineLocation,
+  "open-project": parseProjectLocation,
+};
+
 export const isSupportedGitlabLink = (input: string) =>
-  Boolean(parseMergeRequestLocation(input) || parsePipelineLocation(input));
+  Object.values(actions).some((parse) => Boolean(parse(input)));
 
 const openMergeRequestFlag = "--open-mr";
 
@@ -23,10 +30,10 @@ export function readOpenMergeRequestArgument(argv: readonly string[]): string | 
 
 export function readGitHomeLink(input: string): string | undefined {
   if (!/^githome:/i.test(input)) return;
-  const raw = input.match(/^githome:\/\/(open-mr|open-pipeline)\?raw=(.*)$/s);
+  const raw = input.match(/^githome:\/\/(open-mr|open-pipeline|open-project)\?raw=(.*)$/s);
   const parse = (action: string, url: string) => {
-    const parser = action === "open-pipeline" ? parsePipelineLocation : parseMergeRequestLocation;
-    return parser(url) ? url : "";
+    if (!Object.hasOwn(actions, action)) return "";
+    return actions[action as keyof typeof actions](url) ? url : "";
   };
   if (raw) {
     // A Chrome redirect cannot percent-encode its capture. The entire suffix is the HTTPS URL.
@@ -35,7 +42,6 @@ export function readGitHomeLink(input: string): string | undefined {
   if (!URL.canParse(input)) return "";
   const link = new URL(input);
   if (
-    (link.host !== "open-mr" && link.host !== "open-pipeline") ||
     (link.pathname && link.pathname !== "/") ||
     link.username || link.password || link.hash || link.searchParams.size !== 1
   ) return "";

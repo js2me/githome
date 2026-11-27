@@ -4,7 +4,6 @@ import { t } from '@/shared/lib/i18n';
 import { PipelineDetailsDialog } from '@/widgets/pipeline-card';
 import { getPipelineMergeRequestIid } from '../../model/pipeline-list';
 import { DateTime } from './date-time';
-import { JobActions } from './job-actions';
 import { RunAction } from './run-action';
 import { control, errorText, type RunProps } from './run-presentation';
 
@@ -110,12 +109,14 @@ export const RunDetails = observer(({ model, run }: RunProps) => {
               </div>
             )}
           </dl>
-          {list.actionError && (
+          {(list.actionError || model.jobActionError) && (
             <p
               role="alert"
-              className="mt-3 text-[var(--color-danger-fg)] text-sm"
+              className="mt-3 whitespace-pre-line text-[var(--color-danger-fg)] text-sm"
             >
-              {list.actionError}
+              {[list.actionError, model.jobActionError]
+                .filter(Boolean)
+                .join('\n')}
             </p>
           )}
         </>
@@ -134,7 +135,15 @@ export const RunDetails = observer(({ model, run }: RunProps) => {
           <RunAction model={model} run={run} />
         </>
       }
-      renderJobActions={(job) => <JobActions model={model} job={job} />}
+      jobControls={
+        list.canManageJobs
+          ? {
+              blocked: list.busyPipelineId === run.id,
+              pendingAction: model.pendingJobAction,
+              run: model.runJobs,
+            }
+          : undefined
+      }
     />
   );
 });
