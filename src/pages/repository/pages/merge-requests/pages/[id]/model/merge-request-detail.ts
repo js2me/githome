@@ -13,6 +13,10 @@ import {
   estimateChangesFileTreeWidth,
 } from '@/shared/lib/file-tree/changes-file-tree-width';
 import { filterDiscussionsForActivity } from '@/shared/lib/gitlab/discussions/diff-discussions';
+import {
+  matchMergeRequestProject,
+  parseMergeRequestLocation,
+} from '@/shared/lib/gitlab/links/merge-request';
 import { VM } from '@/shared/lib/view-models/vm';
 import { ActiveDiffFile } from './changes/active-diff-file';
 import type { MergeRequestPageVM } from './index';
@@ -53,11 +57,20 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
 
   @computed
   get markdownScope() {
-    const project = this.parentViewModel.project;
+    const page = this.parentViewModel;
+    const project = page.project;
+    const connection = this.globals.stores.settings.activeConnection;
+    const mrUrl = page.mrInfo.mergeRequestDetail?.web_url;
+    const mrLocation =
+      !project && mrUrl ? parseMergeRequestLocation(mrUrl) : undefined;
+    const mrProject =
+      connection && mrLocation
+        ? matchMergeRequestProject(mrLocation, connection.gitlabUrl)
+        : undefined;
     return {
-      projectId: project?.id ?? 0,
-      projectPath: project?.path_with_namespace ?? '',
-      connection: this.globals.stores.settings.activeConnection,
+      projectId: project?.id ?? page.projectId ?? 0,
+      projectPath: project?.path_with_namespace ?? mrProject?.projectPath ?? '',
+      connection,
     };
   }
 

@@ -95,6 +95,12 @@ export class MergeRequestPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
     this.mrInfo = new MrInfoModel({
       globals,
       abortSignal: this.unmountSignal,
+      target: () => {
+        const { projectId, mergeRequestIid } = this;
+        return projectId === null || mergeRequestIid === null
+          ? false
+          : { projectId, mergeRequestIid };
+      },
       params: () => {
         const project = this.selectedProject;
         const mergeRequestIid = this.mergeRequestIid;

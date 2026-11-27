@@ -346,6 +346,7 @@ const route = (url, postData, token, method) => {
   if (p === '/api/v4/projects/1/merge_requests/157/discussions') {
     return reviewNote ? [{ id: 'review-note', individual_note: true, notes: [reviewNote] }] : [];
   }
+  if (p.endsWith('/merge_requests/169')) return mr(169, 'MR opened by link', AUTHORS[0]);
   if (p.endsWith('/merge_requests/159')) {
     return {
       ...mr(159, 'Long diff', AUTHORS[0]),
@@ -496,12 +497,28 @@ const { identifier: connectionSetup } = await page.evaluateOnNewDocument(connect
   }
 }, primaryConnection);
 
+const openByLinkDetailRequests = [];
+const openByLinkSecondary = Promise.withResolvers();
 await page.setRequestInterception(true);
 page.on('request', (req) => {
   const url = req.url();
   if (url.includes('/git-proxy/')) {
     const requestUrl = new URL(url);
     const token = req.headers()['private-token'];
+    if (requestUrl.pathname.endsWith('/merge_requests/169')) {
+      openByLinkDetailRequests.push(requestUrl.pathname);
+    }
+    if (/\/merge_requests\/169\/(approvals|discussions)$/.test(requestUrl.pathname)) {
+      void openByLinkSecondary.promise.then(() => {
+        if (req.isInterceptResolutionHandled()) return;
+        return req.respond({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(route(url, req.postData(), token, req.method())),
+        });
+      }).catch(() => undefined);
+      return;
+    }
     const traceJobId = requestUrl.pathname.match(/\/projects\/1\/jobs\/(\d+)\/trace$/)?.[1];
     if (traceJobId) {
       const body = traceJobId === '700'
@@ -1480,13 +1497,18 @@ try {
   check('open MR dialog focuses the link field', await page.$eval(
     dialog + ' input', input => input === document.activeElement,
   ));
-  await page.keyboard.type('https://gitlab.mock/group/alpha/-/merge_requests/3/diffs#note_42');
+  await page.keyboard.type('https://gitlab.mock/group/alpha/-/merge_requests/169/diffs#note_42');
   await page.keyboard.press('Enter');
-  await page.waitForFunction(() => location.pathname === '/repository/1/merge-requests/3' &&
-    [...document.querySelectorAll('main h2')].some(heading => heading.textContent === 'Mock MR #3'));
-  check('pasted GitLab link opens its MR inside GitHome', !(await page.$(dialog)));
+  await page.waitForFunction(() => location.pathname === '/repository/1/merge-requests/169' &&
+    [...document.querySelectorAll('main h2')].some(heading => heading.textContent === 'MR opened by link'),
+    { timeout: 5000 });
+  check('pasted GitLab link shows the MR before approvals and discussions finish', !(await page.$(dialog)));
+  check('open-by-link reuses the MR response without fetching it again', openByLinkDetailRequests.length === 1 &&
+    /group%2Falpha/i.test(openByLinkDetailRequests[0]), JSON.stringify(openByLinkDetailRequests));
 } catch (error) {
   check('opening a GitLab MR by URL', false, String(error));
+} finally {
+  openByLinkSecondary.resolve();
 }
 
 try {

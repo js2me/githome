@@ -1,22 +1,21 @@
 import { withViewModel } from 'mobx-view-model-react';
-import { cn } from '@/shared/lib/cn';
+import type { GitLabDiscussionDC } from '@/shared/api/gitlab';
 import { t } from '@/shared/lib/i18n';
 import { GitDiff } from '@/shared/ui/git-diff';
 import { DiffSearchProvider } from '@/shared/ui/git-diff/components/diff-search';
-import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
 import { StatusMessage } from '@/shared/ui/status-message';
-import { PipelineCard } from '@/widgets/pipeline-card';
 import { MergeRequestDetailVM } from '../../model/merge-request-detail';
 import { ChangesActiveFileLink } from './changes/changes-active-file-link';
 import { ChangesFileTree } from './changes/changes-file-tree';
 import { ChangesTreeLayout } from './changes/changes-tree-layout';
 import { DiffVersionPicker } from './changes/diff-version-picker';
 import { ReviewFileButton } from './changes/review-file-button';
+import { MergeRequestActivity } from './discussions/merge-request-activity';
 import { MergeRequestCommentForm } from './discussions/merge-request-comment-form';
-import { MergeRequestDiscussions } from './discussions/merge-request-discussions';
-import { MrLifecycleActions } from './overview/lifecycle/mr-lifecycle-actions';
-import { MergeRequestOverview } from './overview/merge-request-overview';
-import { MrReviewActions } from './overview/mr-review-actions';
+import { MergeRequestDescription } from './overview/header/merge-request-description';
+import { MergeRequestHeader } from './overview/header/merge-request-header';
+
+const emptyDiscussions: GitLabDiscussionDC[] = [];
 
 export const MergeRequestDetail = withViewModel(
   MergeRequestDetailVM,
@@ -32,139 +31,32 @@ export const MergeRequestDetail = withViewModel(
       changesError,
       diffRevision,
       diffVersions,
-      isPreparingDiffs,
+      isPreparingDiffs: isDiffLoading,
       selectedDiffVersionId,
       headRef,
       baseRef,
       discussions,
-      approvals,
     } = detail;
-    const {
-      markdownScope,
-      activityDiscussions,
-      activityExpanded,
-      descriptionExpanded,
-      activityButton,
-      changesHeading,
-    } = model;
+    const { markdownScope, changesHeading } = model;
     const { activeFile, selectActiveFile, jumpToFile } = model.fileNavigation;
-    const description = mergeRequest.description ?? '';
+    const repository = page.parentViewModel;
+    const isPreparingDiffs =
+      isDiffLoading || (!page.project && repository.isLoading);
+    const projectLoadError = !page.project && repository.errorMessage;
     const showChangesTree = changes.length > 0;
-    const overview = (
-      <div className="flex min-w-0 flex-col gap-3">
-        {info.resolveDiscussionError && (
-          <StatusMessage error>{info.resolveDiscussionError}</StatusMessage>
-        )}
-        <MergeRequestOverview
-          mergeRequest={mergeRequest}
-          jira={page.jiraSummary}
-          projectPath={markdownScope.projectPath}
-          loadedFiles={changes.length}
-          actions={
-            <MrLifecycleActions
-              key={`lifecycle-${mergeRequest.web_url}`}
-              model={model}
-            />
-          }
-          onShowFiles={model.showFiles}
-          onShowComments={model.showComments}
-        >
-          {detail.mergeRequest.head_pipeline && markdownScope.projectId > 0 ? (
-            <PipelineCard
-              payload={{
-                projectId: markdownScope.projectId,
-                projectPath: markdownScope.projectPath,
-                pipelineId: detail.mergeRequest.head_pipeline.id,
-                permissions: page.project?.permissions,
-              }}
-            />
-          ) : null}
-        </MergeRequestOverview>
-        {info.lifecycleActionError && (
-          <StatusMessage error>{info.lifecycleActionError}</StatusMessage>
-        )}
-        <MrReviewActions
-          mergeRequest={mergeRequest}
-          approvals={approvals}
-          reviewActionInProgress={info.actionInProgress}
-          reviewActionError={info.reviewActionError}
-          onApprove={info.approve}
-          onUnapprove={info.unapprove}
-          onRequestChanges={info.requestChanges}
-          onCancelRequestChanges={info.cancelRequestChanges}
-        />
-      </div>
-    );
-
     const mainContent = (
       <div className="flex min-w-0 flex-col gap-5">
-        {description.trim() && (
-          <section className="flex flex-col gap-3">
-            <button
-              type="button"
-              className="m-0 flex cursor-pointer items-center gap-2 border-none bg-transparent p-0 text-left font-semibold text-lg"
-              onClick={model.toggleDescription}
-              aria-expanded={descriptionExpanded}
-            >
-              <svg
-                className={cn(
-                  'h-4 w-4 shrink-0 transition-transform',
-                  descriptionExpanded && 'rotate-90',
-                )}
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path d="M6 4l8 6-8 6V4z" />
-              </svg>
-              {t('review.description')}
-            </button>
-            {descriptionExpanded && (
-              <div className="glass-panel rounded-2xl p-4">
-                <GitLabMarkdown {...markdownScope} text={description} />
-              </div>
-            )}
-          </section>
-        )}
-
-        <section className="flex flex-col gap-3">
-          <button
-            type="button"
-            className="m-0 flex cursor-pointer scroll-mt-16 items-center gap-2 border-none bg-transparent p-0 text-left font-semibold text-lg"
-            ref={activityButton}
-            onClick={model.toggleActivity}
-            aria-expanded={activityExpanded}
-          >
-            <svg
-              className={cn(
-                'h-4 w-4 shrink-0 transition-transform',
-                activityExpanded && 'rotate-90',
-              )}
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path d="M6 4l8 6-8 6V4z" />
-            </svg>
-            {t('review.activity')}
-            {activityDiscussions.length > 0 && (
-              <span className="rounded-full bg-slate-200 px-2 py-0.5 font-bold text-slate-600 text-xs dark:bg-slate-700 dark:text-slate-300">
-                {activityDiscussions.length}
-              </span>
-            )}
-          </button>
-          {activityExpanded && (
-            <MergeRequestDiscussions
-              markdownScope={markdownScope}
-              discussions={activityDiscussions}
-              onResolveDiscussion={info.resolveDiscussion}
-              resolvingDiscussionId={info.resolvingDiscussionId}
-              {...model.noteActions}
-            />
-          )}
-        </section>
+        <MergeRequestDescription
+          model={model}
+          description={mergeRequest.description ?? ''}
+        />
+        <MergeRequestActivity model={model} />
 
         <MergeRequestCommentForm
           projectId={markdownScope.projectId}
-          canComment={detail.mergeRequest.state === 'opened'}
+          canComment={
+            Boolean(page.project) && detail.mergeRequest.state === 'opened'
+          }
           isSubmitting={info.isSubmittingMrComment}
           submitError={info.submitMrCommentError}
           onSubmit={info.submitMrComment}
@@ -201,7 +93,11 @@ export const MergeRequestDetail = withViewModel(
               )
             )}
           </h3>
-          {changesError && <StatusMessage error>{changesError}</StatusMessage>}
+          {(changesError || projectLoadError) && (
+            <StatusMessage error>
+              {changesError || projectLoadError}
+            </StatusMessage>
+          )}
           {review.error && (
             <StatusMessage error>
               {review.error.path} {t('review.couldNotSaveViewedStatus')}{' '}
@@ -220,12 +116,12 @@ export const MergeRequestDetail = withViewModel(
               {t('review.preparingDiff')}
             </div>
           ) : (
-            (changes.length > 0 || !changesError) && (
+            (changes.length > 0 || (!changesError && !projectLoadError)) && (
               <GitDiff
                 key={diffRevision}
                 markdownScope={markdownScope}
                 changes={changes}
-                discussions={discussions}
+                discussions={discussions ?? emptyDiscussions}
                 canComment={detail.canCommentOnDiff}
                 isSubmittingComment={info.isSubmittingDiffComment}
                 submitCommentError={info.submitDiffCommentError}
@@ -270,12 +166,12 @@ export const MergeRequestDetail = withViewModel(
         <div className="flex flex-col gap-4">
           <ChangesTreeLayout
             model={model}
-            overview={overview}
+            overview={<MergeRequestHeader model={model} />}
             tree={
               showChangesTree ? (
                 <ChangesFileTree
                   changes={changes}
-                  discussions={discussions}
+                  discussions={discussions ?? emptyDiscussions}
                   activeFile={activeFile}
                   onSelectFile={jumpToFile}
                 />

@@ -7,6 +7,7 @@ import {
   runInAction,
 } from 'mobx';
 import { queryClient } from 'mobx-tanstack-query/preset';
+import { mergeRequestDetailKey } from '@/entities/gitlab-merge-requests';
 import {
   CreateMrComment,
   MergeRequestGitDiff,
@@ -21,7 +22,6 @@ import type {
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
 import { gitlabApi, resolveGitlabRequestUrl } from '@/shared/api/gitlab';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
 import { createConnectionUserIdQuery } from '@/shared/lib/gitlab/connection/connection-profile-query';
 import {
   createGitlabApiQuery,
@@ -51,22 +51,15 @@ export type MrInfoModelContext = {
   mergeRequestIid: number;
 };
 
-const mergeRequestDetailKey = ({
-  connection,
-  project,
-  mergeRequestIid,
-}: MrInfoModelContext & { connection: GitLabConnection }) =>
-  [
-    'merge-request-detail',
-    connection.id,
-    connection.gitlabUrl,
-    project.id,
-    mergeRequestIid,
-  ] as const;
+type MergeRequestTarget = {
+  projectId: number;
+  mergeRequestIid: number;
+};
 
 export interface MrInfoModelParams {
   globals: Globals;
   readonly abortSignal: AbortSignal;
+  readonly target: () => MergeRequestTarget | false;
   readonly params: () => MrInfoModelContext | false;
 }
 
@@ -150,20 +143,23 @@ export class MrInfoModel {
   constructor(private readonly options: MrInfoModelParams) {
     this.mergeRequestDetailQuery = createGitlabApiQuery<
       GitLabMergeRequestDC,
-      MrInfoModelContext
+      MergeRequestTarget
     >({
       globals: options.globals,
       abortSignal: options.abortSignal,
       queryOptions: {
         ...MR_POLL_QUERY_OPTIONS,
-        refetchOnWindowFocus: 'always',
+        // The open-by-link flow may have just fetched this exact MR.
+        staleTime: 10_000,
+        refetchOnWindowFocus: true,
       },
-      params: options.params,
-      queryKey: mergeRequestDetailKey,
-      queryFn: ({ connection, project, mergeRequestIid, signal }) =>
+      params: options.target,
+      queryKey: ({ connection, projectId, mergeRequestIid }) =>
+        mergeRequestDetailKey(connection, projectId, mergeRequestIid),
+      queryFn: ({ connection, projectId, mergeRequestIid, signal }) =>
         gitlabApi.getMergeRequestDetail(
           connection,
-          project,
+          projectId,
           mergeRequestIid,
           signal,
         ),
@@ -198,13 +194,13 @@ export class MrInfoModel {
         abortSignal: options.abortSignal,
         queryOptions: MR_POLL_QUERY_OPTIONS,
         params: () => {
-          const mr = options.params();
+          const mr = options.target();
           if (!mr) {
             return false;
           }
 
           return {
-            path: `/projects/${mr.project.id}/merge_requests/${mr.mergeRequestIid}/discussions`,
+            path: `/projects/${mr.projectId}/merge_requests/${mr.mergeRequestIid}/discussions`,
             query: {
               per_page: 100,
               sort: 'asc',
@@ -228,7 +224,7 @@ export class MrInfoModel {
 
     this.currentUserQuery = createConnectionUserIdQuery(
       () =>
-        options.params()
+        options.target()
           ? options.globals.stores.settings.activeConnection
           : null,
       options.abortSignal,
@@ -242,13 +238,13 @@ export class MrInfoModel {
         abortSignal: options.abortSignal,
         queryOptions: MR_POLL_QUERY_OPTIONS,
         params: () => {
-          const mr = options.params();
+          const mr = options.target();
           if (!mr) {
             return false;
           }
 
           return {
-            path: `/projects/${mr.project.id}/merge_requests/${mr.mergeRequestIid}/approvals`,
+            path: `/projects/${mr.projectId}/merge_requests/${mr.mergeRequestIid}/approvals`,
           };
         },
       });
@@ -260,13 +256,13 @@ export class MrInfoModel {
       abortSignal: options.abortSignal,
       queryOptions: MR_POLL_QUERY_OPTIONS,
       params: () => {
-        const mr = options.params();
+        const mr = options.target();
         if (!mr) {
           return false;
         }
 
         return {
-          path: `/projects/${mr.project.id}/merge_requests/${mr.mergeRequestIid}/reviewers`,
+          path: `/projects/${mr.projectId}/merge_requests/${mr.mergeRequestIid}/reviewers`,
         };
       },
     });
@@ -375,8 +371,9 @@ export class MrInfoModel {
 
   @computed
   get isLoading() {
-    return this.viewQueries.some(
-      (query) => !query.isFetched && query.isPending,
+    return (
+      !this.mergeRequestDetailQuery.isFetched &&
+      this.mergeRequestDetailQuery.isPending
     );
   }
 
@@ -418,22 +415,10 @@ export class MrInfoModel {
   }
 
   @computed
-  get isDetailReady() {
-    return (
-      !this.errorMessage &&
-      this.mergeRequestDetail !== null &&
-      this.mergeRequestDiscussions !== null &&
-      this.mergeRequestApprovals !== null
-    );
-  }
-
-  @computed
   get detailView() {
-    if (!this.isDetailReady) {
-      return null;
-    }
+    const mergeRequest = this.mergeRequestDetail;
+    if (!mergeRequest) return null;
 
-    const mergeRequest = this.mergeRequestDetail!;
     const version = this.gitDiff.selectedVersion;
     return {
       mergeRequest,
@@ -445,8 +430,8 @@ export class MrInfoModel {
         : mergeRequest.diff_refs?.base_sha || mergeRequest.diff_refs?.start_sha,
       changes: this.mergeRequestChanges ?? [],
       changesError: this.changesErrorMessage,
-      discussions: this.mergeRequestDiscussions!,
-      approvals: this.mergeRequestApprovals!,
+      discussions: this.mergeRequestDiscussions,
+      approvals: this.mergeRequestApprovals,
       diffVersions: this.diffVersions,
       selectedDiffVersionId: this.selectedDiffVersionId,
       selectedDiffVersion: this.gitDiff.selectedVersion,
@@ -683,7 +668,11 @@ export class MrInfoModel {
     try {
       const updated = await runner();
       if (updated) {
-        const key = mergeRequestDetailKey({ connection, ...mr });
+        const key = mergeRequestDetailKey(
+          connection,
+          mr.project.id,
+          mr.mergeRequestIid,
+        );
         queryClient.setQueryData<GitLabMergeRequestDC>(key, (current) =>
           current ? { ...current, ...updated } : updated,
         );

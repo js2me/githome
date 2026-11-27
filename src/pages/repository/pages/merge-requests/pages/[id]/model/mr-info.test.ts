@@ -1,7 +1,9 @@
 import { environmentManager, isServer } from '@tanstack/query-core';
 import { queryClient } from 'mobx-tanstack-query/preset';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mergeRequestDetailKey } from '@/entities/gitlab-merge-requests';
 import type {
+  GitLabMergeRequestDC,
   GitLabMergeRequestVersionDC,
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
@@ -39,6 +41,10 @@ describe('MR diff freshness', () => {
   let versions: Promise<Response> | undefined;
   let diffRequests: number[];
   let versionRequests: number;
+  let detailRequests: number;
+  let approvalsResponse: Promise<Response> | undefined;
+  let discussionsResponse: Promise<Response> | undefined;
+  let fullProjectAvailable: boolean;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -50,6 +56,10 @@ describe('MR diff freshness', () => {
     versions = undefined;
     diffRequests = [];
     versionRequests = 0;
+    detailRequests = 0;
+    approvalsResponse = undefined;
+    discussionsResponse = undefined;
+    fullProjectAvailable = true;
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: string | URL | Request) => {
@@ -72,6 +82,7 @@ describe('MR diff freshness', () => {
           return id ? makeDiff(Number(id)) : (latestDiff ?? makeDiff(latestId));
         }
         if (path.endsWith('/merge_requests/13')) {
+          detailRequests++;
           return Response.json({
             title,
             updated_at: `${title}-${latestId}`,
@@ -82,10 +93,16 @@ describe('MR diff freshness', () => {
             },
           });
         }
-        if (path.endsWith('/user')) return Response.json({ id: 1 });
-        if (path.endsWith('/approvals'))
-          return Response.json({ approved_by: [] });
-        if (/\/(discussions|reviewers)$/.test(path)) return Response.json([]);
+        switch (path.split('/').at(-1)) {
+          case 'user':
+            return Response.json({ id: 1 });
+          case 'approvals':
+            return approvalsResponse ?? Response.json({ approved_by: [] });
+          case 'discussions':
+            return discussionsResponse ?? Response.json([]);
+          case 'reviewers':
+            return Response.json([]);
+        }
         throw new Error(`Unexpected request to ${path}`);
       }),
     );
@@ -105,11 +122,62 @@ describe('MR diff freshness', () => {
         stores: { settings: { activeConnection: connection } },
       } as Globals,
       abortSignal: abortController.signal,
-      params: () => ({ project, mergeRequestIid: 13 }),
+      target: () => ({ projectId: project.id, mergeRequestIid: 13 }),
+      params: () => fullProjectAvailable && { project, mergeRequestIid: 13 },
     });
     await vi.advanceTimersByTimeAsync(0);
     return model;
   };
+
+  it('uses the MR already fetched by URL without waiting for project metadata, approvals or discussions', async () => {
+    const approvals = Promise.withResolvers<Response>();
+    const discussions = Promise.withResolvers<Response>();
+    approvalsResponse = approvals.promise;
+    discussionsResponse = discussions.promise;
+    fullProjectAvailable = false;
+    queryClient.setQueryData<GitLabMergeRequestDC>(
+      mergeRequestDetailKey(connection, project.id, 13),
+      { title: 'MR loaded from link' } as GitLabMergeRequestDC,
+    );
+
+    const model = await openMr();
+    expect(model.detailView).toMatchObject({
+      mergeRequest: { title: 'MR loaded from link' },
+      approvals: null,
+      discussions: null,
+    });
+    expect(model.isLoading).toBe(false);
+    expect(detailRequests).toBe(0);
+
+    approvals.resolve(Response.json({ approved_by: [] }));
+    discussions.resolve(Response.json([]));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(model.detailView).toMatchObject({
+      mergeRequest: { title: 'MR loaded from link' },
+      approvals: { approved_by: [] },
+      discussions: [],
+    });
+    expect(detailRequests).toBe(0);
+  });
+
+  it('shows an uncached MR as soon as its detail loads even if secondary requests are pending', async () => {
+    const approvals = Promise.withResolvers<Response>();
+    const discussions = Promise.withResolvers<Response>();
+    approvalsResponse = approvals.promise;
+    discussionsResponse = discussions.promise;
+
+    const model = await openMr();
+    expect(detailRequests).toBe(1);
+    expect(model.detailView).toMatchObject({
+      mergeRequest: { title: 'Old title' },
+      approvals: null,
+      discussions: null,
+    });
+
+    approvals.resolve(Response.json({ approved_by: [] }));
+    discussions.resolve(Response.json([]));
+    await vi.advanceTimersByTimeAsync(0);
+  });
 
   it('refreshes latest diff and versions after a push without reopening the MR', async () => {
     const model = await openMr();

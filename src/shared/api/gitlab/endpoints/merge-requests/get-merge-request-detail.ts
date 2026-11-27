@@ -7,13 +7,13 @@ import type {
 
 export const getMergeRequestDetail = async (
   connection: GitLabConnection,
-  project: GitLabProjectDC | string,
+  project: Pick<GitLabProjectDC, 'id'> | string | number,
   mergeRequestIid: number,
   signal?: AbortSignal,
 ): Promise<GitLabMergeRequestDC> => {
   const response = await gitlabFetch(
     connection,
-    `/projects/${typeof project === 'string' ? encodeURIComponent(project) : project.id}/merge_requests/${mergeRequestIid}?render_html=true`,
+    `/projects/${typeof project === 'object' ? project.id : encodeURIComponent(project)}/merge_requests/${mergeRequestIid}?render_html=true`,
     signal,
     { cache: 'no-store' },
   );

@@ -1,5 +1,7 @@
 import { actionBound, observable, runInAction } from 'mobx';
+import { queryClient } from 'mobx-tanstack-query/preset';
 import { createRef } from 'yummies/mobx';
+import { mergeRequestDetailKey } from '@/entities/gitlab-merge-requests';
 import { resolveMergeRequestLink } from '@/features/merge-requests';
 import { WorkspaceVM } from '@/features/workspace-navigation';
 import { gitlabApi } from '@/shared/api/gitlab';
@@ -126,6 +128,10 @@ export class OpenMergeRequestVM extends WorkspaceVM {
           'navigation.gitlabReturnedIncompleteMergeRequestData',
         );
       }
+      queryClient.setQueryData(
+        mergeRequestDetailKey(connection, mr.project_id, iid),
+        mr,
+      );
       this.dialog.current?.close();
       this.globals.navigation.mergeRequests.open(
         connection.id,
