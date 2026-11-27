@@ -7,6 +7,7 @@ import { MrLifecycleActions } from '../lifecycle/mr-lifecycle-actions';
 import { MergeRequestOverview } from '../merge-request-overview';
 import { MergeRequestMetadata } from '../metadata/merge-request-metadata';
 import { MrReviewActions } from '../mr-review-actions';
+import { MergeRequestReactions } from './merge-request-reactions';
 
 export const MergeRequestHeader = observer(
   ({ model }: { model: MergeRequestDetailVM }) => {
@@ -28,6 +29,7 @@ export const MergeRequestHeader = observer(
           projectPath={markdownScope.projectPath}
           loadedFiles={changes.length}
           metadata={<MergeRequestMetadata model={model.metadata} />}
+          reactions={<MergeRequestReactions model={info.reactions} />}
           actions={
             <MrLifecycleActions
               key={`lifecycle-${mergeRequest.web_url}`}

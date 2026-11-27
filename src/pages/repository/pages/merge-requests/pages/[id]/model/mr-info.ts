@@ -38,6 +38,7 @@ import { t } from '@/shared/lib/i18n';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type { Globals } from '@/shared/model/globals';
 import { ReviewedFiles } from './changes/reviewed-files/reviewed-files';
+import { MergeRequestReactions } from './reactions/merge-request-reactions';
 
 export type MrReviewAction =
   | 'approve'
@@ -85,6 +86,7 @@ export class MrInfoModel {
   gitDiff: MergeRequestGitDiff;
   diffComment: CreateMrComment;
   readonly reviewedFiles: ReviewedFiles;
+  readonly reactions: MergeRequestReactions;
   mergeRequestDetailQuery;
   mergeRequestDiscussionsQuery;
   currentUserQuery;
@@ -247,6 +249,12 @@ export class MrInfoModel {
       options.abortSignal,
     );
 
+    this.reactions = new MergeRequestReactions({
+      globals: options.globals,
+      abortSignal: options.abortSignal,
+      target: options.target,
+      currentUserId: () => this.currentUserId,
+    });
     this.reviewedFiles = new ReviewedFiles(this, options);
 
     this.mergeRequestApprovalsQuery =

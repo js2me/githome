@@ -29,6 +29,7 @@
  * - submit a file-level comment and render the new thread on the file
  * - restore reviewed files from one plain MR note and reset only changed diffs
  * - copy the GitLab URL from the MR header and open an MR by a pasted URL
+ * - add and remove GitLab emoji reactions from the MR header
  * - follow Jira references from the MR overview with the keyboard and copy each branch
  * - send merge actions to native GitLab and close a draft only after confirming
  * - identify and switch between two GitLab users on the same host
@@ -665,12 +666,31 @@ const { identifier: connectionSetup } = await page.evaluateOnNewDocument(connect
 
 const openByLinkDetailRequests = [];
 const openByLinkSecondary = Promise.withResolvers();
+const mrAwards = [{ id: 1, name: 'thumbsup', user: secondUser }];
+let nextAwardId = 2;
 await page.setRequestInterception(true);
 page.on('request', (req) => {
   const url = req.url();
   if (url.includes('/git-proxy/')) {
     const requestUrl = new URL(url);
     const token = req.headers()['private-token'];
+    const awardPath = requestUrl.pathname.match(/\/merge_requests\/(\d+)\/award_emoji(?:\/(\d+))?$/);
+    if (awardPath) {
+      const awards = awardPath[1] === '156' ? mrAwards : [];
+      if (req.method() === 'POST') {
+        const { name } = JSON.parse(req.postData());
+        const award = { id: nextAwardId++, name, user: accountProfiles.get(token) };
+        awards.push(award);
+        req.respond({ status: 201, contentType: 'application/json', body: JSON.stringify(award) });
+      } else if (req.method() === 'DELETE') {
+        const index = awards.findIndex(award => award.id === Number(awardPath[2]) && award.user.id === accountProfiles.get(token)?.id);
+        if (index >= 0) awards.splice(index, 1);
+        req.respond({ status: index >= 0 ? 204 : 404 });
+      } else {
+        req.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(awards) });
+      }
+      return;
+    }
     if (requestUrl.pathname.endsWith('/merge_requests/169')) {
       openByLinkDetailRequests.push(requestUrl.pathname);
     }
@@ -1605,6 +1625,31 @@ try {
   check('MR header copies the GitLab URL', await page.evaluate(() => window.copiedText) === imageMr.web_url);
 } catch (error) {
   check('copying the MR link', false, String(error));
+}
+
+try {
+  const like = 'button[title="Лайк"]';
+  const dislike = 'button[title="Дизлайк"]';
+  const waitForReaction = (selector, pressed, count) =>
+    page.waitForFunction((selector, pressed, count) => {
+      const button = document.querySelector(selector);
+      return button && !button.disabled && button.getAttribute('aria-pressed') === String(pressed) &&
+        button.lastElementChild.textContent === String(count);
+    }, { timeout: 3000 }, selector, pressed, count);
+  await waitForReaction(like, false, 1);
+  await waitForReaction(dislike, false, 0);
+  await page.click(like);
+  await waitForReaction(like, true, 2);
+  await page.click(dislike);
+  await waitForReaction(dislike, true, 1);
+  await waitForReaction(like, true, 2);
+  await page.click(like);
+  await waitForReaction(like, false, 1);
+  check('MR reactions update counts and remove only the current user’s vote',
+    mrAwards.some(award => award.name === 'thumbsdown' && award.user.id === currentUser.id) &&
+    mrAwards.filter(award => award.name === 'thumbsup').every(award => award.user.id !== currentUser.id));
+} catch (error) {
+  check('toggling MR emoji reactions', false, String(error));
 }
 
 try {

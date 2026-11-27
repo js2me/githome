@@ -98,6 +98,8 @@ describe('MR diff freshness', () => {
             return Response.json({ id: 1 });
           case 'approvals':
             return approvalsResponse ?? Response.json({ approved_by: [] });
+          case 'award_emoji':
+            return Response.json([]);
           case 'discussions':
             return discussionsResponse ?? Response.json([]);
           case 'reviewers':

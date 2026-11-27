@@ -49,6 +49,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
   onShowComments,
   actions,
   metadata,
+  reactions,
   children,
 }: {
   mergeRequest: GitLabMergeRequestDC;
@@ -59,6 +60,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
   onShowComments: () => void;
   actions?: ReactNode;
   metadata?: ReactNode;
+  reactions?: ReactNode;
   children?: ReactNode;
 }) {
   const mr = mergeRequest;
@@ -246,6 +248,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
             </span>
           )}
         </div>
+        {reactions}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-[var(--glass-border)] border-t @md:px-5 px-3.5 py-2">
