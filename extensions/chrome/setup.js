@@ -1,4 +1,4 @@
-import { gitlabOrigin, mergeRequestFilter, permissionPattern, redirectRuleId } from './links.js';
+import { gitlabOrigin, navigationRules, permissionPattern } from './links.js';
 
 const form = document.querySelector('form');
 const originInput = document.querySelector('#origin');
@@ -29,18 +29,9 @@ async function change(origin, auto) {
   }
 
   try {
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: [redirectRuleId],
-      addRules: origin ? [{
-        id: redirectRuleId,
-        priority: 1,
-        action: {
-          type: 'redirect',
-          redirect: { regexSubstitution: `${chrome.runtime.getURL('open.html')}?url=\\0` },
-        },
-        condition: { regexFilter: mergeRequestFilter(origin), resourceTypes: ['main_frame'], isUrlFilterCaseSensitive: true },
-      }] : [],
-    });
+    await chrome.declarativeNetRequest.updateDynamicRules(
+      navigationRules(origin, auto, chrome.runtime.getURL('open.html')),
+    );
     await chrome.storage.local.set({ origin, auto });
   } catch (error) {
     if (current && current !== old) await chrome.permissions.remove({ origins: [current] }).catch(() => false);

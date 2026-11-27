@@ -4,6 +4,7 @@ import {
   gitlabOrigin,
   isMergeRequest,
   mergeRequestFilter,
+  navigationRules,
   permissionPattern,
 } from '../links.js';
 
@@ -18,6 +19,15 @@ describe('GitHome Chrome links', () => {
     expect(gitlabOrigin('http://gitlab.example.com')).toBeNull();
     expect(gitlabOrigin('https://gitlab.example.com/group')).toBeNull();
     expect(gitlabOrigin('https://user@gitlab.example.com')).toBeNull();
+  });
+
+  it('uses the desktop protocol directly in automatic mode', () => {
+    const bridge = 'chrome-extension://fixture/open.html';
+    const automatic = navigationRules(origin, true, bridge).addRules[0];
+    const manual = navigationRules(origin, false, bridge).addRules[0];
+    expect(automatic?.action.redirect.regexSubstitution).toBe('githome://open-mr?raw=\\0');
+    expect(manual?.action.redirect.regexSubstitution).toBe(`${bridge}?url=\\0`);
+    expect(navigationRules(null, true, bridge).addRules).toEqual([]);
   });
 
   it('only matches MR navigations on the configured origin and preserves the link', () => {

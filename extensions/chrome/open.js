@@ -3,7 +3,7 @@ import { appLink, escapeRegex, isMergeRequest } from './links.js';
 const prefix = `${chrome.runtime.getURL('open.html')}?url=`;
 const raw = location.href.startsWith(prefix) ? location.href.slice(prefix.length) : '';
 const status = document.querySelector('#status');
-const { origin, auto } = await chrome.storage.local.get(['origin', 'auto']);
+const { origin } = await chrome.storage.local.get('origin');
 
 if (!isMergeRequest(raw, origin)) {
   status.textContent = 'Эта ссылка не ведёт на MR в настроенном GitLab.';
@@ -15,7 +15,6 @@ if (!isMergeRequest(raw, origin)) {
   app.href = link;
   document.querySelector('#target').textContent = `${target.host}${target.pathname}`;
   document.querySelector('#actions').hidden = false;
-  if (auto) status.textContent = 'Если Chrome не запустил приложение, нажмите «Открыть в GitHome».';
 
   browser.addEventListener('click', async () => {
     browser.disabled = true;
@@ -44,5 +43,4 @@ if (!isMergeRequest(raw, origin)) {
     }
   });
 
-  if (auto) location.href = link;
 }

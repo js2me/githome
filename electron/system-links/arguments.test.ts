@@ -26,6 +26,15 @@ describe("githome://", () => {
     expect(readExplicitMergeRequest(["--flag", link])).toBe(url);
   });
 
+  it("preserves the complete raw URL from a Chrome redirect", () => {
+    const mr = `${url.replace("#", "&other=%2B#")}`;
+    const link = `githome://open-mr?raw=${mr}`;
+    expect(readGitHomeLink(link)).toBe(mr);
+    expect(readExplicitMergeRequest([link])).toBe(mr);
+    expect(readGitHomeLink("githome://open-mr?raw=githome://open-mr")).toBe("");
+    expect(readGitHomeLink(`githome://open-mr?raw=${mr.replace("https:", "http:")}`)).toBe("");
+  });
+
   it("does not accept arbitrary actions, non-MR URLs, or multiple payloads", () => {
     expect(readGitHomeLink(url)).toBeUndefined();
     for (const link of [

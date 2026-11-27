@@ -18,6 +18,12 @@ export function readOpenMergeRequestArgument(argv: readonly string[]): string | 
 
 export function readGitHomeLink(input: string): string | undefined {
   if (!/^githome:/i.test(input)) return;
+  const rawPrefix = "githome://open-mr?raw=";
+  if (input.startsWith(rawPrefix)) {
+    // A Chrome redirect cannot percent-encode its capture. The entire suffix is the HTTPS URL.
+    const url = input.slice(rawPrefix.length);
+    return /^https:\/\//i.test(url) && parseMergeRequestLocation(url) ? url : "";
+  }
   if (!URL.canParse(input)) return "";
   const link = new URL(input);
   if (

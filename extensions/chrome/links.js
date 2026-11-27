@@ -33,3 +33,23 @@ export const mergeRequestFilter = (origin) =>
   `^${escapeRegex(origin)}${mrPath}(?:[?#].*)?$`;
 
 export const appLink = (url) => `githome://open-mr?url=${encodeURIComponent(url)}`;
+
+export function navigationRules(origin, auto, bridge) {
+  return {
+    removeRuleIds: [redirectRuleId],
+    addRules: origin ? [{
+      id: redirectRuleId,
+      priority: 1,
+      action: {
+        type: 'redirect',
+        // Chrome inserts the original URL verbatim, so the app reads everything after raw=.
+        redirect: { regexSubstitution: auto ? 'githome://open-mr?raw=\\0' : `${bridge}?url=\\0` },
+      },
+      condition: {
+        regexFilter: mergeRequestFilter(origin),
+        resourceTypes: ['main_frame'],
+        isUrlFilterCaseSensitive: true,
+      },
+    }] : [],
+  };
+}
