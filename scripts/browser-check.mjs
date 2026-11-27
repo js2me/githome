@@ -1263,7 +1263,8 @@ try {
         return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
       };
       const contrast = (bg, fg) => (Math.max(bg, fg) + 0.05) / (Math.min(bg, fg) + 0.05);
-      const styles = [...element.querySelectorAll('.git-diff-code .git-diff-token, .git-diff-line-num, .git-diff-prefix')]
+      const codeColors = [...element.querySelectorAll('.git-diff-code, .git-diff-code .git-diff-token')];
+      const styles = [...codeColors, ...element.querySelectorAll('.git-diff-line-num, .git-diff-prefix')]
         .filter(node => node.textContent.trim());
       const minimumContrast = Math.min(...styles.map(node => {
         const style = getComputedStyle(node);
@@ -1284,14 +1285,19 @@ try {
       const hoveredCopyButton = copyButtons.find(copyButton => copyButton.matches(':hover'));
       return {
         minimumContrast,
+        brightestCode: Math.max(...codeColors.map(node => luminance(getComputedStyle(node).color))),
         copyIconContrast: Math.min(...copyButtons.map(getCopyIconContrast)),
         hoveredCopyContrast: hoveredCopyButton ? getCopyIconContrast(hoveredCopyButton) : 0,
         buttonContrast: contrast(luminance(surface, style.backgroundColor), luminance(style.color)),
       };
     }, expandButton);
-    const { minimumContrast, buttonContrast, copyIconContrast } = await measureContrast();
+    const { minimumContrast, brightestCode, buttonContrast, copyIconContrast } = await measureContrast();
     check(`diff text, change markers and line numbers retain contrast in ${theme} mode`,
       minimumContrast >= 4.5 && Number.isFinite(minimumContrast), minimumContrast.toFixed(2));
+    if (theme === 'dark') {
+      check('diff syntax and plain text avoid near-white colors in dark mode',
+        brightestCode <= 0.60, brightestCode.toFixed(2));
+    }
     check(`expand button text is readable in ${theme} mode`,
       buttonContrast >= 4.5, buttonContrast.toFixed(2));
     await page.hover(copyContentButton);

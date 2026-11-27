@@ -268,7 +268,11 @@
   --diff-prefix-added: #9ae8b1;
   --diff-prefix-removed: #ffb1b0;
   --diff-line-num-text: #a1adbf;
-  --diff-token-lightness: max(l, 0.78);
+  --diff-token-lightness: clamp(0.70, calc(l * 0.9), 0.82);
+  /* Intra-line changes have a brighter background than the rest of the row. */
+  --diff-inline-token-lightness: 0.82;
+  --diff-token-chroma: calc(c * 0.6);
+  --diff-source-text: #c5c7d1;
   --diff-code-text: #f8f8f2;
   --diff-hunk-bg: #343746;
   --diff-hunk-text: #afbad0;

@@ -177,7 +177,7 @@
     Consolas, "Liberation Mono", "Courier New", monospace);
   font-size: var(--diff-code-font-size);
   line-height: var(--diff-code-line-height);
-  color: var(--diff-code-text);
+  color: var(--diff-source-text, var(--diff-code-text));
   background: var(--diff-canvas);
 }
 
@@ -203,9 +203,18 @@
   color: var(--diff-token);
 }
 
-@supports (color: oklch(from black max(l, 0.78) c h)) {
+@supports (color: oklch(from black l c h)) {
   .git-diff-token {
-    color: oklch(from var(--diff-token) var(--diff-token-lightness) c h);
+    color: oklch(
+      from var(--diff-token)
+      var(--diff-effective-token-lightness, var(--diff-token-lightness))
+      var(--diff-token-chroma, c)
+      h
+    );
+  }
+
+  .git-diff-token:is(.git-diff-inline-added, .git-diff-inline-removed) {
+    --diff-effective-token-lightness: var(--diff-inline-token-lightness);
   }
 }
 
