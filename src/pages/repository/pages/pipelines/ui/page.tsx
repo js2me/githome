@@ -35,17 +35,14 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
   const list = model.pipelineList;
   const { selectedPipeline, linkedPipelineQuery } = model;
   return (
-    <section
-      className="mx-auto w-full max-w-page"
-      aria-labelledby="pipelines-heading"
-    >
+    <section className="w-full min-w-0" aria-labelledby="pipelines-heading">
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2
           id="pipelines-heading"
           className="flex items-center gap-3 font-semibold text-2xl tracking-tight sm:text-[30px]"
         >
           <span
-            className="grid size-10 place-items-center rounded-xl bg-[var(--glass-selected)] text-[var(--glass-accent)]"
+            className="grid size-8 place-items-center rounded-md bg-[var(--glass-selected)] text-[var(--glass-accent)]"
             aria-hidden
           >
             <Timeline width={21} height={21} />
@@ -81,7 +78,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
 
       {list.isCreateFormOpen && (
         <form
-          className="glass-panel mb-4 grid gap-3 rounded-2xl p-4"
+          className="glass-panel mb-4 grid gap-3 rounded-lg p-4"
           aria-label={t('pipelines.runAPipeline')}
           onSubmit={(event) => {
             event.preventDefault();
@@ -137,7 +134,7 @@ export const PipelinesPage = withViewModel(PipelinesPageVM, ({ model }) => {
         </form>
       )}
 
-      <div className="glass-panel pipeline-list overflow-hidden rounded-2xl">
+      <div className="glass-panel pipeline-list overflow-hidden rounded-lg">
         <div className="pipeline-toolbar">
           <label className="grid min-w-0 gap-1.5 font-semibold text-fg-muted text-xs">
             {t('pipelines.status')}

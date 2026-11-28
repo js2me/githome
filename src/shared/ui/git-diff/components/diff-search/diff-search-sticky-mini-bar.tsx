@@ -17,7 +17,7 @@ export const DiffSearchStickyMiniBar = observer(() => {
   }
 
   return (
-    <div className="pointer-events-none fixed top-[62px] right-3 z-40 sm:right-8">
+    <div className="pointer-events-none fixed top-[calc(var(--diff-sticky-top,54px)+8px)] right-3 z-40 sm:right-8">
       <div className="glass-overlay pointer-events-auto flex w-fit max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-lg px-2 py-1.5 sm:max-w-[60vw]">
         <DiffSearchControls
           variant="mini"

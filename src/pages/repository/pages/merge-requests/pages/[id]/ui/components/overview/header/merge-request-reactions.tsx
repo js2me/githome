@@ -9,6 +9,28 @@ const reactions = [
   { name: 'thumbsdown', emoji: '👎', label: 'review.dislike' },
 ] as const;
 
+const pulseReaction = (button: HTMLButtonElement, reverse: boolean) => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const icon = button.querySelector('[data-mr-reaction-icon]');
+  if (!icon) return;
+  const id = 'mr-reaction-pop';
+  for (const animation of icon.getAnimations()) {
+    if (animation.id === id) animation.cancel();
+  }
+  icon.animate(
+    [
+      { transform: 'scale(1)' },
+      { transform: 'scale(0.84)', offset: 0.2 },
+      {
+        transform: `scale(1.24) rotate(${reverse ? 12 : -12}deg)`,
+        offset: 0.56,
+      },
+      { transform: 'scale(1) rotate(0)' },
+    ],
+    { id, duration: 280, easing: 'ease-out' },
+  );
+};
+
 export const MergeRequestReactions = observer(
   ({ model }: { model: ReactionsModel }) => (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -25,10 +47,17 @@ export const MergeRequestReactions = observer(
             title={t(label)}
             aria-pressed={selected}
             disabled={!model.canReact}
-            onClick={() => void model.toggle(name)}
+            onClick={(event) => {
+              pulseReaction(event.currentTarget, name === 'thumbsdown');
+              void model.toggle(name);
+            }}
           >
             <span className="sr-only">{t(label)} </span>
-            <span aria-hidden="true" className="text-base leading-none">
+            <span
+              aria-hidden="true"
+              className="text-base leading-none"
+              data-mr-reaction-icon
+            >
               {emoji}
             </span>
             <span className="min-w-[1ch] tabular-nums">{count ?? '—'}</span>

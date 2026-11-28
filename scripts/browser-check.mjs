@@ -6,6 +6,7 @@
  * (`pnpm build:app && pnpm preview`, set BASE=http://localhost:4173).
  * Usage:  node scripts/browser-check.mjs
  * Env:    BASE=http://localhost:1420  CHROME_PATH=/usr/bin/google-chrome
+ *         GITHOME_SCREENSHOTS=/existing/folder captures the workspace with mock data
  *
  * How it works: injects a fake connection into localStorage
  * (`githome:connections` -> gitlab.mock) and intercepts all
@@ -38,6 +39,7 @@
 import puppeteer from 'puppeteer-core';
 
 const BASE = process.env.BASE ?? 'http://localhost:1420';
+const screenshotDir = process.env.GITHOME_SCREENSHOTS;
 const CHROME = process.env.CHROME_PATH ?? '/usr/bin/google-chrome';
 
 const AUTHORS = ['Alice Smith', 'Bob Jones', 'Carol White', 'Dave Black', 'Eve Green'];
@@ -119,6 +121,7 @@ const projects = [
 ];
 const oneui = { id: 401, name: 'oneui', full_path: 'oneui' };
 const frontend = { id: 402, name: 'frontend', full_path: 'oneui/frontend' };
+const delivery = { id: 404, name: 'Delivery', full_path: 'oneui/frontend/delivery' };
 const nova = {
   ...project(4, 'nova'),
   path_with_namespace: 'oneui/frontend/nova',
@@ -189,6 +192,7 @@ const deploymentJobs = [
   { id: 1115, name: 'deploy-active', stage: 'infra-deploy-stage', status: 'running' },
 ];
 let testDeploymentActions = false;
+let previousPipelineStatus = 'failed';
 const playRequests = [];
 const pendingPlayRequests = [];
 const startedDeploymentJobs = new Set();
@@ -341,9 +345,26 @@ const route = (url, postData, token, method) => {
   if (p === '/api/v4/groups/group%2Fplatform') return { id: 403, name: 'Platform', full_path: 'group/platform' };
   if (p === '/api/v4/groups/oneui%2Ffrontend') return frontend;
   if (p === '/api/v4/groups/401/subgroups') return [frontend];
+  if (p === '/api/v4/groups/401/projects') return [];
   if (p === '/api/v4/groups/402/projects') return [nova];
+  if (p === '/api/v4/groups/402/subgroups') return [delivery];
+  if (p === '/api/v4/groups/404/projects') return [projects[2]];
   if (p === '/api/v4/projects/4' || p === '/api/v4/projects/oneui%2Ffrontend%2Fnova') return nova;
+  if (p === '/api/v4/projects/1/merge_requests/156/commits') {
+    return [{
+      id: 'a'.repeat(40), short_id: 'aaaaaaaa', title: 'Review workspace fixture',
+      author_name: 'Example developer', committed_date: '2026-11-24T12:00:00Z',
+      parent_ids: ['b'.repeat(40)],
+    }];
+  }
+  if (p.endsWith(`/repository/commits/${'a'.repeat(40)}/diff`)) return [tsxChange];
   if (p === '/api/v4/merge_requests') {
+    if (searchParams.get('state') === 'all') {
+      const term = searchParams.get('search')?.toLowerCase();
+      const iid = searchParams.get('iids[]');
+      return [...projectMrs, betaRequest].filter(item =>
+        iid ? item.iid === Number(iid) : !term || item.title.toLowerCase().includes(term));
+    }
     return searchParams.get('scope') === 'created_by_me' ? [projectMrs.find(item => item.iid === 11)] : [mrs[0], betaRequest];
   }
   if (testMrMetadata && p === '/api/v4/projects/1/merge_requests/156/approval_state') {
@@ -371,7 +392,25 @@ const route = (url, postData, token, method) => {
     }
     return [pipeline];
   }
-  if (p === '/api/v4/projects/1/merge_requests/156/pipelines') return branchOnly ? [] : [pipeline, branchPipeline];
+  const oldMrPipeline = {
+    ...pipeline, id: 4818, iid: 29, sha: 'previous-sha', status: previousPipelineStatus,
+    created_at: '2026-07-26T13:00:00Z', web_url: 'https://gitlab.mock/group/alpha/-/pipelines/4818',
+  };
+  if (p === '/api/v4/projects/1/merge_requests/156/pipelines') {
+    return branchOnly ? [] : [pipeline, branchPipeline, oldMrPipeline];
+  }
+  if (p === '/api/v4/projects/1/pipelines/4818') return oldMrPipeline;
+  if (method === 'POST' && p === '/api/v4/projects/1/pipelines/4818/retry') {
+    previousPipelineStatus = 'running';
+    return { ...oldMrPipeline, status: previousPipelineStatus };
+  }
+  if (method === 'POST' && p === '/api/v4/projects/1/pipelines/4818/cancel') {
+    previousPipelineStatus = 'canceled';
+    return { ...oldMrPipeline, status: previousPipelineStatus };
+  }
+  if (p === '/api/v4/projects/1/pipelines/4818/jobs') {
+    return [{ id: 965, stage: 'build', name: 'previous-mr-build', status: previousPipelineStatus }];
+  }
   if (/\/merge_requests\/\d+\/pipelines$/.test(p)) return [];
   if (p === '/api/v4/projects/1/pipelines/4822') return branchPipeline;
   if (p === '/api/v4/projects/1/pipelines/4822/jobs') {
@@ -652,9 +691,10 @@ const pageErrors = [];
 const consoleErrors = [];
 
 page.on('pageerror', (e) => pageErrors.push(String(e)));
-page.on('console', (msg) => {
-  const text = msg.text();
-  if (msg.type() === 'error') consoleErrors.push(text);
+page.on('console', async (msg) => {
+  if (msg.type() !== 'error') return;
+  const parts = await Promise.all(msg.args().slice(1).map(arg => arg.jsonValue().catch(() => undefined)));
+  consoleErrors.push([msg.text(), ...parts].filter(Boolean).join(' '));
 });
 
 const { identifier: connectionSetup } = await page.evaluateOnNewDocument(connection => {
@@ -812,7 +852,18 @@ console.log(`\n== githome browser check @ ${BASE} ==`);
 
 await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 await sleep(4500);
-check('home: projects rendered', (await page.evaluate(() => document.body.innerText)).includes('group/alpha'));
+const saveWorkspaceShot = async name => {
+  if (!screenshotDir) return;
+  await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+  await page.screenshot({ path: `${screenshotDir}/${name}.png` });
+};
+await page.waitForSelector('.home-request-row');
+if (screenshotDir) {
+  const viewport = page.viewport();
+  await page.setViewport({ width: 1280, height: 800 });
+  await saveWorkspaceShot('githome-home');
+  await page.setViewport(viewport);
+}
 
 try {
   const rows = '.home-request-row';
@@ -826,15 +877,30 @@ try {
   await page.waitForFunction(selector => [...document.querySelectorAll(selector)].some(row =>
     row.innerText.includes('Refine navigation') && row.innerText.includes('Не решено')), { timeout: 5000 }, rows);
   check('authored MRs on the dashboard also show review badges', true);
+  const command = '.home-command input';
+  await page.type(command, 'refine navigation');
+  check('home search filters the current MR queue', await page.$$eval(rows, items => items.length === 1 && items[0].innerText.includes('Refine navigation')));
+  await page.$eval(command, input => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
 } catch (error) {
   check('review badges in both dashboard tabs', false, String(error));
 }
 
-check('click project card', await clickByText('alpha'));
+await page.waitForSelector('.home-project-row', { visible: true });
+check('home: projects are visible without opening a menu', await page.$$eval('.home-project-row', rows =>
+  rows.some(row => row.innerText.includes('group/alpha'))));
+check('home: MR rows include branches and update times', await page.$$eval('.home-request-row', rows =>
+  rows.length > 0 && rows.every(row => row.querySelector('time[datetime]') && row.innerText.includes('→'))));
+await page.type('.home-project-search input', 'alpha');
+check('the project panel filters loaded projects', await page.$$eval('.home-project-row', rows => rows.length === 1 && rows[0].textContent.includes('group/alpha')));
+check('click project row', await clickByText('alpha'));
 await sleep(4000);
 check('repository page opened', page.url().includes('/repository/1'));
 
-check('click "Merge requests"', await clickByText('Мерж-реквесты'));
+await page.click('.workbench-sections button::-p-text(Мерж-реквесты)');
+check('click "Merge requests"', new URL(page.url()).pathname.endsWith('/merge-requests'));
 await sleep(4000);
 await checkMrList('MR list');
 
@@ -958,7 +1024,7 @@ const openMrFromProject = async (projectId, iid) => {
   if (!clicked) return false;
   const detailPath = `/repository/${projectId}/merge-requests/${iid}`;
   await page.waitForFunction((path, expectedTitle) => location.pathname === path &&
-    [...document.querySelectorAll('main h2')].some(heading => heading.textContent === expectedTitle),
+    [...document.querySelectorAll('main h1')].some(heading => heading.textContent === expectedTitle),
   { timeout: 5000 }, detailPath, title);
   await page.waitForSelector(workspaceTrigger, { timeout: 3000 });
   return page.$eval(workspaceTrigger, trigger => trigger.getAttribute('aria-expanded') === 'false');
@@ -975,6 +1041,9 @@ const mainLayout = () => page.$eval('main', main => {
 });
 const mainBeforeOpening = await mainLayout();
 await openWorkspace();
+await page.click(workspaceTrigger);
+check('clicking the open Workspace trigger leaves the panel open',
+  await page.$eval(workspaceTrigger, button => button.getAttribute('aria-expanded') === 'true'));
 const workspaceOpen = await page.$eval(workspace, (aside) => {
   const nav = aside.querySelector('nav[aria-label="Навигационное дерево"]');
   const withinColumn = (elements) => {
@@ -991,7 +1060,7 @@ const workspaceOpen = await page.$eval(workspace, (aside) => {
   const alphaRows = alpha?.querySelectorAll(':scope > ul > li') ?? [];
   return {
     expanded: trigger.getAttribute('aria-expanded') === 'true',
-    position: getComputedStyle(aside).position,
+    position: getComputedStyle(aside.closest('.workbench-tabs')).position,
     opensDown: nav.getBoundingClientRect().top >= trigger.getBoundingClientRect().bottom - 1,
     navWidth: nav.clientWidth,
     navScrollWidth: nav.scrollWidth,
@@ -1049,8 +1118,11 @@ check('Escape closes the workspace and returns focus to its trigger',
   await page.$eval(workspaceTrigger, trigger => document.activeElement === trigger),
 );
 
-await openWorkspace();
-await page.click(`${workspaceTree} button[aria-label="Закрыть Mock MR #3"]`);
+const inactiveMrTab = '.workbench-tab-target[title$="Mock MR #3"]';
+const routeBeforeClosing = page.url();
+await page.click(inactiveMrTab, { button: 'middle' });
+await page.waitForSelector(inactiveMrTab, { hidden: true });
+check('middle-click closes an inactive MR tab without changing the route', page.url() === routeBeforeClosing);
 await openWorkspace();
 
 const sidebarState = await page.evaluate(() => {
@@ -1087,14 +1159,11 @@ if (firstMrTab) {
   await sleep(1000);
   check('first MR tab becomes active', page.url().endsWith('/repository/1/merge-requests/1'));
 
-  await openWorkspace();
-  const closeFirstMrTab = await page.$('nav[aria-label="Навигационное дерево"] button[aria-label="Закрыть Mock MR #1"]');
-  check('close the active MR tab', Boolean(closeFirstMrTab));
-  if (closeFirstMrTab) {
-    await closeFirstMrTab.click();
-    await sleep(1000);
-    check('closing the active tab switches to the remaining MR', page.url().endsWith('/repository/2/merge-requests/2'));
-  }
+  const activeMrTab = '.workbench-tab-target[title$="Mock MR #1"][aria-current="page"]';
+  await page.click(activeMrTab, { button: 'middle' });
+  await page.waitForFunction(() => location.pathname === '/repository/2/merge-requests/2', { timeout: 5000 });
+  check('middle-click on the active MR tab switches to the remaining MR',
+    !await page.$('.workbench-tab-target[title$="Mock MR #1"]'));
 }
 
 const checkTsxColors = async (cardSelector, label, search = false) => {
@@ -1135,7 +1204,7 @@ const checkTsxColors = async (cardSelector, label, search = false) => {
 };
 
 try {
-  const mrPath = '/repository/1/merge-requests/157';
+  const mrPath = '/repository/1/merge-requests/157?view=changes';
   const filesPath = '/repository/1/files';
   const openFile = '.git-diff > article:first-child a[title="Открыть файл в Files"]';
   const backToMr = `main a[href="${mrPath}"]`;
@@ -1160,7 +1229,7 @@ try {
       buttons.map(button => button.textContent?.trim()).join('/')) === 'packages/feature-14');
   await page.click(backToMr);
   await page.waitForSelector(openFile, { visible: true });
-  check('Files returns to the same MR without carrying the file query', page.url() === BASE + mrPath);
+  check('Files returns to the change editor without carrying the file query', page.url() === BASE + mrPath);
 
   await page.goto(`${BASE}${filesPath}?${new URLSearchParams({ file: tsxChange.new_path })}`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector(selectedFile, { visible: true });
@@ -1201,12 +1270,12 @@ try {
   check('File name results from the loaded tree appear before the network request',
     repositorySearchRequests.length === searchCount);
 
-  await clickByText('Содержимое');
+  await page.click(searchPanel + ' button::-p-text(Содержимое)');
   await page.click(repositoryInput);
   await modifiedKey('Control', 'a');
   await page.keyboard.type('platform.set');
   await page.waitForFunction(selector => document.querySelector(selector)?.textContent.includes('platform.set(1);'), {}, searchPanel);
-  await clickByText('platform.set(1);');
+  await page.click(searchPanel + ' button::-p-text(platform.set(1);)');
   await page.waitForFunction(() => document.querySelector('main article output')?.textContent === '2/2' && window.scrollY > 0);
   check('Repository content result scrolls to the occurrence near its snippet line',
     repositorySearchRequests.filter(query => query === 'platform.set').length === 1 &&
@@ -1216,9 +1285,9 @@ try {
 }
 
 try {
-  // An MR without changed files opens a hidden find bar via the shortcut.
-  await page.goto(`${BASE}/repository/1/merge-requests/158`, { waitUntil: 'networkidle0' });
-  await page.waitForSelector('main h2');
+  // The diff find bar is hidden until requested.
+  await page.goto(`${BASE}/repository/1/merge-requests/158?view=changes`, { waitUntil: 'networkidle0' });
+  await page.waitForSelector('main h1');
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.keyboard.down('Control');
   await page.keyboard.press('f');
@@ -1232,7 +1301,7 @@ try {
   check('Ctrl+F keeps keyboard input in the main search bar when the floating input disappears',
     await page.$eval(fullSearch, input => input.value === 'focus'));
 
-  await page.goto(`${BASE}/repository/1/merge-requests/157`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/repository/1/merge-requests/157?view=changes`, { waitUntil: 'domcontentloaded' });
   const card = '.git-diff > article:first-child';
   const generatedCard = '.git-diff > article:nth-child(2)';
   const expandButton = `${generatedCard} button[aria-busy="false"]`;
@@ -1241,6 +1310,7 @@ try {
   await page.waitForSelector(expandButton);
   await page.$eval(card, element => element.scrollIntoView({ block: 'center' }));
   await checkTsxColors(card, 'TSX additions and changed words retain their syntax colors');
+  await saveWorkspaceShot('githome-code-diff');
   for (const theme of ['dark', 'light']) {
     await page.mouse.move(0, 0);
     await page.emulateMediaFeatures([
@@ -1337,7 +1407,7 @@ try {
 // run exactly as they do in the application.
 try {
   await page.setViewport({ width: 1280, height: 800 });
-  await page.goto(`${BASE}/repository/1/merge-requests/155`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/repository/1/merge-requests/155?view=changes`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.querySelectorAll('.git-diff > article').length === 255);
   const tree = '.changes-file-tree__nav';
   await page.waitForSelector(`${tree} [data-changes-file-id]`);
@@ -1359,7 +1429,7 @@ try {
   check('the workspace trigger sticks near the top while scrolling an MR',
     await page.$eval(workspace, (aside, initialTop) => {
       const { top } = aside.getBoundingClientRect();
-      const stickyTop = Number.parseFloat(getComputedStyle(aside).top);
+      const stickyTop = Number.parseFloat(getComputedStyle(aside.closest('.workbench-tabs')).top);
       return window.scrollY > 0 && top < initialTop && Math.abs(top - stickyTop) < 1;
     }, workspaceTopAtPageStart),
   );
@@ -1386,7 +1456,7 @@ try {
   const cardId = `diff-file-${encodeURIComponent(`${selectedPath}\0${selectedPath}`)}`;
   await page.waitForFunction((id, rowSelector) => {
     const card = document.getElementById(id);
-    return card && Math.abs(card.getBoundingClientRect().top - 16) < 2 &&
+    return card && Math.abs(card.getBoundingClientRect().top - parseFloat(getComputedStyle(card).scrollMarginTop)) < 2 &&
       document.querySelector(rowSelector)?.getAttribute('aria-current') === 'true';
   }, { timeout: 6000 }, cardId, row);
   await sleep(200);
@@ -1418,7 +1488,7 @@ try {
 }
 
 try {
-  await page.goto(`${BASE}/repository/1/merge-requests/159`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/repository/1/merge-requests/159?view=changes`, { waitUntil: 'domcontentloaded' });
   const viewport = '.diff-viewport';
   await page.waitForSelector(`${viewport} [data-index="0"]`);
   const target = `${viewport} [data-index="166"]`;
@@ -1448,7 +1518,7 @@ try {
 }
 
 try {
-  await page.goto(`${BASE}/repository/1/merge-requests/156`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/repository/1/merge-requests/156?view=changes`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.querySelectorAll('.git-diff > article').length === 3);
   const getImagePanels = async (index, widths) => {
     const selector = `.git-diff > article:nth-child(${index + 1})`;
@@ -1513,7 +1583,7 @@ try {
 }
 
 try {
-  const mrUrl = `${BASE}/repository/1/merge-requests/157`;
+  const mrUrl = `${BASE}/repository/1/merge-requests/157?view=changes`;
   const changes = [tsxChange, generatedChange];
   const fileKey = index => encodeURIComponent(`${changes[index - 1].old_path}\0${changes[index - 1].new_path}`);
   const card = index => `[id="diff-file-${fileKey(index)}"]`;
@@ -1578,6 +1648,7 @@ try {
   await page.$eval(summary, element => element.focus());
   await page.keyboard.press('Enter');
   await page.waitForSelector(card(2), { visible: true });
+  await page.waitForSelector(expandReviewed, { visible: true });
   await page.waitForSelector(diffBody, { hidden: true, timeout: 5000 });
   await page.click(expandReviewed);
   await page.waitForSelector(diffBody, { visible: true, timeout: 5000 });
@@ -1585,6 +1656,14 @@ try {
   await page.click(collapseReviewed);
   await page.waitForSelector(diffBody, { hidden: true, timeout: 5000 });
   check('reviewing collapses the diff and the header can reopen it without clearing the mark', true);
+  check('the reviewed gradient follows the rounded corners of a collapsed card',
+    await page.$eval(`${firstDiff} header`, header => {
+      const { borderBottomLeftRadius, borderBottomRightRadius, borderBottomWidth } = getComputedStyle(header);
+      const cardStyle = getComputedStyle(header.parentElement);
+      const innerRadius = parseFloat(cardStyle.borderBottomLeftRadius) - parseFloat(cardStyle.borderBottomWidth);
+      return innerRadius > 0 && borderBottomWidth === '0px' &&
+        parseFloat(borderBottomLeftRadius) === innerRadius && parseFloat(borderBottomRightRadius) === innerRadius;
+    }));
   check('reviewed files get a gradient and checkmark by their path',
     await hasReviewedAccent(1) && await hasReviewedAccent(2));
   await waitForSavedReview(1, true);
@@ -1606,7 +1685,8 @@ try {
   check('the stack is restored after reload and clicking the file tree reveals a reviewed file', true);
   await page.click(summary);
   await page.waitForSelector(`${stack}:not([open])`);
-  await page.click('input[placeholder="Поиск по файлам и коду..."]');
+  await page.click('.mr-editor-icon[aria-label="Поиск по коду"]');
+  await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Поиск по файлам и коду', { timeout: 5000 });
   await page.keyboard.type(tsxChange.new_path.split('/').at(-1));
   await page.waitForSelector(`${stack}[open]`);
   check('a search match on a reviewed path opens the stack', true);
@@ -1629,12 +1709,12 @@ try {
   check('manually clearing a mark updates the same note and persists after reload',
     reviewWrites.join(',') === 'POST,PUT' && !reviewNote.body.includes(generatedChange.new_path));
 } catch (error) {
-  check('reviewed file marks are synchronized with GitLab', false, String(error));
+  check('reviewed file marks are synchronized with GitLab', false, error.stack ?? String(error));
 } finally {
   reviewHead = 'head-sha';
   reviewPatch = tsxChange.diff;
   reviewNote = undefined;
-  await page.goto(`${BASE}/repository/1/merge-requests/156`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/repository/1/merge-requests/156?view=changes`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.git-diff > article:first-child');
 }
 
@@ -1669,6 +1749,9 @@ try {
 }
 
 try {
+  await page.click('.mr-editor-back');
+  await page.waitForSelector('.mr-overview-workspace');
+  await saveWorkspaceShot('githome-mr-overview');
   await page.evaluate(() => {
     Object.defineProperty(navigator.clipboard, 'writeText', {
       configurable: true,
@@ -1692,12 +1775,19 @@ try {
       return button && !button.disabled && button.getAttribute('aria-pressed') === String(pressed) &&
         button.lastElementChild.textContent === String(count);
     }, { timeout: 3000 }, selector, pressed, count);
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
+  const clickAnimatedReaction = selector => Promise.all([
+    page.waitForFunction(selector => document.querySelector(`${selector} [data-mr-reaction-icon]`)
+      ?.getAnimations().some(animation => animation.id === 'mr-reaction-pop'), { timeout: 3000 }, selector),
+    page.click(selector),
+  ]);
   await waitForReaction(like, false, 1);
   await waitForReaction(dislike, false, 0);
-  await page.click(like);
+  await clickAnimatedReaction(like);
   await waitForReaction(like, true, 2);
-  await page.click(dislike);
+  await clickAnimatedReaction(dislike);
   await waitForReaction(dislike, true, 1);
+  check('like and dislike animate when pressed', true);
   await waitForReaction(like, true, 2);
   await page.click(like);
   await waitForReaction(like, false, 1);
@@ -1711,18 +1801,18 @@ try {
 try {
   const overview = 'header[aria-label="Сводка merge request"]';
   const links = [
-    `${overview} h2 a[href="${issueUrl(titleIssue)}"]`,
+    `${overview} h1 a[href="${issueUrl(titleIssue)}"]`,
     `${overview} a[href="${issueUrl(branchIssue)}"]`,
     `${overview} a[href="${jiraProjectUrl}"]`,
   ];
   await Promise.all(links.map(selector => page.waitForSelector(selector, { visible: true, timeout: 5000 })));
   check('MR heading preserves the title and links only its Jira issue key',
     await page.$eval(links[0], (link, issue, title) =>
-      link.innerText.trim() === issue && link.closest('h2').innerText.trim() === title, titleIssue, imageMr.title));
+      link.innerText.trim() === issue && link.closest('h1').innerText.trim() === title, titleIssue, imageMr.title));
   check('branch-only Jira issue and project have separate links in the overview',
     await page.$eval(links[1], (link, issue) =>
-      link.innerText.includes(issue) && !link.closest('h2, button'), branchIssue) &&
-    await page.$eval(links[2], link => !link.closest('h2, button')));
+      link.innerText.includes(issue) && !link.closest('h1, button'), branchIssue) &&
+    await page.$eval(links[2], link => !link.closest('h1, button')));
 
   const controls = await page.$$(`${overview} :is(a[href], button:enabled)`);
   await controls[0].focus();
@@ -1771,32 +1861,64 @@ try {
 }
 
 try {
-  const navigation = await page.waitForSelector('nav[aria-label="Разделы merge request"]');
-  const files = await navigation.$('::-p-text(Файлы)');
-  await files.click();
-  check('the overview opens the changes section with keyboard focus', await page.evaluate(
-    () => document.activeElement?.matches('h3') && document.activeElement.textContent.includes('Изменения'),
-  ));
-  const comments = await navigation.$('::-p-text(Комментарии)');
-  await comments.click();
-  await page.waitForFunction(() => document.activeElement?.getAttribute('aria-expanded') === 'true' &&
-    document.activeElement.textContent.includes('Активность'), { timeout: 3000 });
-  check('the overview opens and focuses the discussion', true);
+  await page.click('.mr-overview-segments button::-p-text(Обсуждение)');
+  await page.waitForSelector('.mr-overview-content textarea');
+  check('the discussion tab exposes the general MR comment form', true);
+  await page.click('.mr-overview-segments button::-p-text(Коммиты)');
+  await page.waitForSelector('.mr-commit-row');
+  await page.click('.mr-commit-row');
+  await page.waitForSelector('.mr-commit-header');
+  await page.waitForSelector('.git-diff > article');
+  check('a real MR commit opens its own read-only diff', new URL(page.url()).searchParams.get('commit') === 'a'.repeat(40) &&
+    !await page.$('[data-diff-review-toggle]'));
+  await page.click('.mr-editor-back');
+  await page.waitForFunction(() => document.querySelectorAll('.mr-overview-changes .git-diff > article').length === 3);
+  check('all three file diffs are present directly in the overview', true);
+  const path = 'assets/new screenshot.png';
+  const changedFile = `.mr-overview-workspace .changes-file-tree__nav [title="${path}"]`;
+  await page.click(changedFile);
+  const anchor = 'diff-file-' + encodeURIComponent('assets/old screenshot.PNG\0' + path);
+  await page.waitForFunction((row, target) => {
+    const diff = document.getElementById(target)?.getBoundingClientRect();
+    return document.querySelector(row)?.getAttribute('aria-current') === 'true' &&
+      diff && diff.top >= 0 && diff.top < innerHeight;
+  }, { timeout: 5000 }, changedFile, anchor);
+  check('the overview file tree jumps in place without changing the URL', !new URL(page.url()).searchParams.has('view'));
+  const openEditor = '.mr-overview-changes-head button';
+  await page.$eval(openEditor, button => button.scrollIntoView({ block: 'center' }));
+  await page.click(openEditor);
+  await page.waitForSelector('.mr-editor');
+  check('the separate review editor can still be opened', new URL(page.url()).searchParams.get('view') === 'changes');
+  await page.waitForSelector('.git-diff > article img');
+  await saveWorkspaceShot('githome-mr-changes');
+  const overviewViewport = page.viewport();
+  await page.setViewport({ width: 390, height: 844 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  check('the mobile review editor fits the viewport without horizontal scrolling',
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await saveWorkspaceShot('githome-mobile');
+  await page.click('.mr-mobile-files');
+  await page.waitForSelector('.changes-file-tree__search input', { visible: true });
+  check('the mobile file tree opens without leaving the editor', await page.$eval('.mr-mobile-files', el => el.getAttribute('aria-expanded') === 'true'));
+  await page.setViewport(overviewViewport);
+  await page.goBack();
+  await page.waitForSelector('.mr-overview-workspace');
+  check('browser Back returns to the MR overview', !new URL(page.url()).searchParams.has('view'));
 } catch (error) {
-  check('MR overview shortcuts', false, String(error));
+  check('MR overview and review editor navigation', false, String(error));
 }
 
 try {
-  const dialog = 'dialog[open][aria-labelledby="open-mr-title"]';
-  await page.click('button[aria-label="Открыть MR"]');
+  const dialog = 'dialog[open][aria-labelledby="command-palette-title"]';
+  await page.click('.workbench-command');
   await page.waitForSelector(dialog);
-  check('open MR dialog focuses the link field', await page.$eval(
+  check('the command palette focuses the search field', await page.$eval(
     dialog + ' input', input => input === document.activeElement,
   ));
   await page.keyboard.type('https://gitlab.mock/group/alpha/-/merge_requests/169/diffs#note_42');
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => location.pathname === '/repository/1/merge-requests/169' &&
-    [...document.querySelectorAll('main h2')].some(heading => heading.textContent === 'MR opened by link'),
+    [...document.querySelectorAll('main h1')].some(heading => heading.textContent === 'MR opened by link'),
     { timeout: 5000 });
   check('pasted GitLab link shows the MR before approvals and discussions finish', !(await page.$(dialog)));
   check('open-by-link reuses the MR response without fetching it again', openByLinkDetailRequests.length === 1 &&
@@ -1808,8 +1930,8 @@ try {
 }
 
 try {
-  const dialog = 'dialog[open][aria-labelledby="open-mr-title"]';
-  await page.click('button[aria-label="Открыть MR"]');
+  const dialog = 'dialog[open][aria-labelledby="command-palette-title"]';
+  await page.click('.workbench-command');
   await page.waitForSelector(dialog);
   await page.keyboard.type(linkedPipeline.web_url + '?ref=main');
   await page.keyboard.press('Enter');
@@ -1829,8 +1951,8 @@ try {
 }
 
 try {
-  await page.click('button[aria-label="Открыть MR"]');
-  await page.waitForSelector('dialog[open][aria-labelledby="open-mr-title"]');
+  await page.click('.workbench-command');
+  await page.waitForSelector('dialog[open][aria-labelledby="command-palette-title"]');
   await page.keyboard.type('https://gitlab.mock/oneui/frontend/nova');
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => location.pathname === '/repository/4' &&
@@ -1838,6 +1960,67 @@ try {
   check('a GitLab project link opens its repository overview', true);
 } catch (error) {
   check('opening a GitLab project by URL', false, String(error));
+}
+
+const paletteViewport = page.viewport();
+try {
+  const palette = '.command-palette[open]';
+  const input = palette + ' input';
+  const pressCtrlK = async () => {
+    await page.keyboard.down('Control');
+    await page.keyboard.press('KeyK');
+    await page.keyboard.up('Control');
+    await page.waitForSelector(palette, { visible: true, timeout: 5000 });
+  };
+  const replaceQuery = async (value) => {
+    await page.focus(input);
+    await page.keyboard.down('Control');
+    await page.keyboard.press('KeyA');
+    await page.keyboard.up('Control');
+    await page.keyboard.type(value);
+  };
+
+  await pressCtrlK();
+  await page.waitForSelector(palette + ' #palette-option-pipelines', { visible: true });
+  check('Ctrl+K opens the palette with repository shortcuts and recent MRs',
+    Boolean(await page.$(palette + ' #palette-group-palette\\.recent')) &&
+    await page.$eval(input, el => el === document.activeElement));
+  const first = await page.$eval(input, el => el.getAttribute('aria-activedescendant'));
+  await page.keyboard.press('ArrowDown');
+  check('arrow keys move the focused search result', first !==
+    await page.$eval(input, el => el.getAttribute('aria-activedescendant')));
+  await replaceQuery('group/platform/beta');
+  await page.waitForSelector(palette + ' #palette-option-project-2', { visible: true });
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => location.pathname === '/repository/2' && !document.querySelector('.command-palette[open]'), { timeout: 5000 });
+  check('the command palette finds projects by path and opens them with Enter', true);
+
+  await pressCtrlK();
+  await page.type(input, 'Review the beta deployment');
+  await page.waitForSelector(palette + ' #palette-option-mr-2-1', { visible: true });
+  check('the command palette finds MRs by title', true);
+  await replaceQuery('!1');
+  await page.waitForSelector(palette + ' #palette-option-mr-2-1', { visible: true });
+  await page.waitForSelector(palette + ' #palette-option-mr-1-1', { visible: true });
+  check('MR number search distinguishes the same IID in multiple projects', true);
+
+  await page.setViewport({ width: 320, height: 680 });
+  check('the command palette fits the mobile viewport', await page.$eval(palette, dialog =>
+    dialog.getBoundingClientRect().width < innerWidth && dialog.scrollWidth <= dialog.clientWidth));
+  await page.keyboard.press('Escape');
+  await page.waitForSelector(palette, { hidden: true });
+  await page.setViewport(paletteViewport);
+
+  await pressCtrlK();
+  await page.type(input, 'group/alpha!159');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => location.pathname === '/repository/1/merge-requests/159', { timeout: 5000 });
+  check('project!IID shorthand opens the MR', true);
+} catch (error) {
+  check('workspace command palette', false, String(error));
+} finally {
+  if (await page.$('.command-palette[open]')) await page.keyboard.press('Escape');
+  await page.setViewport(paletteViewport);
 }
 
 try {
@@ -1853,7 +2036,7 @@ try {
   ]);
   check('unknown Jira host leaves the original MR title as plain text',
     await page.$eval(overview, (header, title) =>
-      header.querySelector('h2')?.innerText.trim() === title && !header.querySelector('h2 a, a[aria-label$="в Jira"]'),
+      header.querySelector('h1')?.innerText.trim() === title && !header.querySelector('h1 a, a[aria-label$="в Jira"]'),
     unlinkedTitle));
 
   const configuredUrl = 'https://alternate.example:8443/context/jira';
@@ -1863,7 +2046,7 @@ try {
     localStorage.setItem('githome:connections', JSON.stringify(connection));
   }, configuredUrl);
   await openUnlinkedMr();
-  const issueLink = `${overview} h2 a[href="${configuredUrl}/browse/${unlinkedIssue}"]`;
+  const issueLink = `${overview} h1 a[href="${configuredUrl}/browse/${unlinkedIssue}"]`;
   await page.waitForSelector(issueLink, { visible: true, timeout: 3000 });
   check('configured Jira URL supplies the issue and project links when GitLab returns none',
     await page.$eval(issueLink, (link, issue) => link.innerText.trim() === issue, unlinkedIssue) &&
@@ -1907,14 +2090,15 @@ try {
     await page.evaluate(id => JSON.parse(localStorage.getItem('githome:connections')).activeId === id, secondConnection.id));
 
   await page.setViewport({ width: 320, height: 760 });
-  await waitForIdentity(trigger, secondUser.name, 8);
-  check('name, host and avatar remain inside the 320px header',
+  await page.waitForFunction(selector => document.querySelector(selector)?.querySelector('img')?.naturalWidth === 8, {}, trigger);
+  check('account control and avatar and avatar remain inside the 320px header',
     await page.$eval(trigger, button => {
       const bounds = button.getBoundingClientRect();
       return bounds.left >= 0 && bounds.right <= innerWidth &&
         [...button.querySelectorAll('span:not(:has(span))')].every(span => span.clientWidth >= span.scrollWidth);
     }));
 
+  await page.setViewport({ width: 980, height: 760 });
   accountProfiles.set(secondConnection.gitToken, secondUser);
   await page.reload({ waitUntil: 'networkidle0' });
   check('an account without a photo displays its initial next to its name',
@@ -1964,7 +2148,7 @@ try {
       const graph = dialog.querySelector('.pipeline-graph');
       const [first, second] = graph.querySelectorAll('.pipeline-graph-stage');
       return dialog.innerText.includes('Пайплайн #4821') &&
-        dialog.querySelectorAll('li').length === 125 &&
+        graph.querySelectorAll('li').length === 125 &&
         bounds.left >= 0 && bounds.right <= innerWidth && bounds.height <= innerHeight &&
         graph.scrollHeight > graph.clientHeight &&
         first.offsetTop === second.offsetTop && second.offsetLeft > first.offsetLeft &&
@@ -1999,6 +2183,28 @@ try {
     check(`pipeline details scroll inside a dialog and return focus on ${path}`, fits &&
       await button.evaluate(el => el === document.activeElement) && before.height === after.height);
   }
+  await page.goto(BASE + '/repository/1/merge-requests/156', { waitUntil: 'domcontentloaded' });
+  const managerTrigger = 'section[aria-label="Пайплайн MR"] button[aria-haspopup="dialog"]';
+  await page.waitForSelector(managerTrigger, { visible: true, timeout: 5000 });
+  await page.click(managerTrigger);
+  const managerDialog = await page.waitForSelector('.pipeline-manager[open]', { timeout: 5000 });
+  const jobSearch = '.pipeline-manager input[aria-label="Фильтр по имени задачи или этапу"]';
+  const historyItem = (id) => `.pipeline-manager-history button[data-pipeline-id="${id}"]`;
+  await page.waitForSelector(jobSearch, { visible: true, timeout: 5000 });
+  await page.type(jobSearch, 'typecheck');
+  check('manager filters the selected run jobs by name', await page.$$eval(
+    '.pipeline-manager .pipeline-graph button[aria-label^="Лог задания"]',
+    jobs => jobs.length === 1 && jobs[0].getAttribute('aria-label').includes('typecheck')));
+  await page.click(historyItem(4818));
+  await page.waitForSelector('.pipeline-manager button[aria-label="Лог задания previous-mr-build"]', { timeout: 5000 });
+  check('an older MR run opens its own jobs without reopening the dialog',
+    await managerDialog.evaluate(dialog => dialog.open && dialog === document.querySelector('.pipeline-manager[open]')) &&
+    await page.$eval(jobSearch, input => input.value === ''));
+  await page.click(historyItem(4822));
+  await page.waitForSelector('.pipeline-manager button[aria-label="Лог задания branch-test"]', { timeout: 5000 });
+  check('the manager also switches to the related branch run', true);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.pipeline-manager[open]', { hidden: true, timeout: 3000 });
   branchOnly = true;
   await page.goto(BASE + '/repository/1/merge-requests/156', { waitUntil: 'networkidle0' });
   await page.waitForSelector('section[aria-label="Пайплайн ветки"] a[href$="/4822"]');
@@ -2056,6 +2262,21 @@ try {
     check('running status animates once GitLab accepts the job', runningAnimation !== 'none');
     await page.keyboard.press('Escape');
   }
+  await page.goto(BASE + '/repository/1/merge-requests/156', { waitUntil: 'networkidle0' });
+  await page.click('section[aria-label="Пайплайн MR"] button[aria-haspopup="dialog"]');
+  await page.waitForSelector('.pipeline-manager-history button[data-pipeline-id="4818"]');
+  await page.click('.pipeline-manager-history button[data-pipeline-id="4818"]');
+  for (const action of ['retry', 'cancel']) {
+    const label = action === 'retry' ? 'Повторить' : 'Остановить';
+    const button = `.pipeline-manager button[aria-label="${label} пайплайн #4818"]`;
+    await page.waitForSelector(button, { visible: true, timeout: 5000 });
+    const submitted = page.waitForResponse(response =>
+      new URL(response.url()).pathname.endsWith(`/pipelines/4818/${action}`) &&
+      response.request().method() === 'POST', { timeout: 5000 });
+    await page.click(button);
+    check(`manager can ${action} the selected run with write permissions`, (await submitted).ok());
+  }
+  await page.keyboard.press('Escape');
 } catch (error) {
   check('parallel job actions and manual stage launch', false, String(error));
 } finally {
@@ -2166,8 +2387,47 @@ try {
   await page.waitForSelector(`main ${nestedLink}`);
   check('oneui also opens directly from the repository breadcrumb',
     new URL(page.url()).pathname === '/group/oneui');
+  await page.goto(`${BASE}/repository/4/merge-requests/1`, { waitUntil: 'domcontentloaded' });
+  const mrCrumbs = `main header ${repoCrumbs}`;
+  for (const [link, pathname, destination] of [
+    [rootLink, '/group/oneui', `main ${nestedLink}`],
+    [nestedLink, '/group/oneui%2Ffrontend', repoLink],
+    ['a[href="/repository/4"]', '/repository/4', `${repoCrumbs} ${nestedLink}`],
+  ]) {
+    await page.waitForSelector(`${mrCrumbs} ${link}`, { visible: true, timeout: 5000 });
+    await page.click(`${mrCrumbs} ${link}`);
+    await page.waitForSelector(destination, { visible: true, timeout: 5000 });
+    check(`MR breadcrumb opens ${pathname}`, new URL(page.url()).pathname === pathname);
+    await page.goBack({ waitUntil: 'domcontentloaded' });
+  }
 } catch (error) {
   check('group breadcrumb navigation', false, String(error));
+}
+
+try {
+  await page.setViewport({ width: 1920, height: 800 });
+  await page.goto(BASE + '/group/oneui', { waitUntil: 'domcontentloaded' });
+  const workspace = '.group-workspace';
+  const expandFrontend = `${workspace} button[aria-label="Развернуть frontend"]`;
+  const expandDelivery = `${workspace} button[aria-label="Развернуть Delivery"]`;
+  const project = `${workspace} a[href="/repository/3"]`;
+  await page.waitForSelector(expandFrontend, { visible: true });
+  check('the group explorer uses the full width and starts collapsed', await page.$eval(workspace, element =>
+    element.getBoundingClientRect().width === document.documentElement.clientWidth) &&
+    !await page.$(`${workspace} a[href="/repository/4"]`));
+  await page.click(expandFrontend);
+  await page.waitForSelector(expandDelivery, { visible: true });
+  await page.focus(expandDelivery);
+  await page.keyboard.press('Enter');
+  await page.waitForSelector(project, { visible: true });
+  check('subgroups expand across multiple levels without leaving the group', new URL(page.url()).pathname === '/group/oneui');
+  await page.setViewport({ width: 320, height: 800 });
+  check('nested rows fit a narrow screen', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.click(`${workspace} .group-tree-collapse`);
+  await page.waitForSelector(project, { hidden: true });
+  check('collapse all hides the expanded branches', Boolean(await page.$(expandFrontend)));
+} catch (error) {
+  check('expandable group explorer', false, String(error));
 }
 
 try {
@@ -2257,12 +2517,12 @@ try {
 }
 
 try {
-  for (const [path, selector] of [
-    ['/', '.home-dashboard'],
-    ['/repository/1', 'main section:has(nav[aria-label="Разделы проекта"])'],
-    ['/repository/1/merge-requests', 'section[aria-labelledby="mr-list-heading"]'],
-    ['/repository/1/pipelines', 'section[aria-labelledby="pipelines-heading"]'],
-    ['/', '.home-welcome'],
+  for (const [path, selector, max, activeTab] of [
+    ['/', '.home-dashboard', null],
+    ['/repository/1', 'main section.max-w-page', 1440, 'Обзор'],
+    ['/repository/1/merge-requests', 'section[aria-labelledby="mr-list-heading"]', null, 'Мерж-реквесты'],
+    ['/repository/1/pipelines', 'section[aria-labelledby="pipelines-heading"]', null, 'Пайплайны'],
+    ['/', '.home-welcome', 672],
   ]) {
     if (selector === '.home-welcome') {
       await page.removeScriptToEvaluateOnNewDocument(connectionSetup);
@@ -2271,19 +2531,48 @@ try {
     await page.setViewport({ width: 1920, height: 800 });
     await page.goto(BASE + path, { waitUntil: 'domcontentloaded' });
     const container = await page.waitForSelector(selector, { visible: true, timeout: 5000 });
+    if (activeTab) {
+      const current = await page.$$eval('.workbench-sections button[aria-current="page"]',
+        buttons => buttons.map(button => button.textContent.trim()));
+      check(`Only the ${activeTab} tab is active`, current.length === 1 && current[0] === activeTab);
+    }
     const desktop = await container.boundingBox();
+    const fitsDesktop = max
+      ? desktop?.width === max && desktop.x === (1920 - max) / 2
+      : await container.evaluate(element => {
+        const main = element.closest('main');
+        const style = getComputedStyle(main);
+        const available = main.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        return available > 1440 && Math.abs(element.getBoundingClientRect().width - available) < 1;
+      });
     await page.setViewport({ width: 320, height: 800 });
     const mobile = await container.boundingBox();
-    check(`Page width stays centered and responsive for ${selector}`,
-      desktop?.width === 1440 && desktop.x === 240 &&
-      mobile?.width === 296 && mobile.x === 12);
+    check(`Page width stays responsive for ${selector}`, fitsDesktop &&
+      mobile?.width >= 290 && mobile.width <= 300 &&
+      Math.abs(mobile.x - (320 - mobile.width) / 2) < 1);
+    if (selector === '.home-dashboard') {
+      check('home does not overflow at 320px', await page.evaluate(() =>
+        document.documentElement.scrollWidth <= window.innerWidth));
+      await page.setViewport({ width: 1920, height: 800 });
+      const recentRequest = await page.waitForSelector('.home-recent-row', { visible: true });
+      const reference = await recentRequest.evaluate(row =>
+        row.textContent.match(/!(\d+)\s*$/)?.[1]);
+      await recentRequest.click();
+      await page.waitForFunction(iid => location.pathname.endsWith(`/merge-requests/${iid}`), {}, reference);
+      check('home opens a recently visited merge request', Boolean(reference));
+      await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('button[aria-label="Пайплайны проекта group/alpha"]', { visible: true });
+      await page.click('button[aria-label="Пайплайны проекта group/alpha"]');
+      check('home opens project pipelines directly', new URL(page.url()).pathname === '/repository/1/pipelines');
+    }
   }
+
 } catch (error) {
   check('shared maximum page width', false, String(error));
 }
 
 check('no page errors', pageErrors.length === 0, pageErrors[0]?.slice(0, 150));
-check('no console errors', consoleErrors.length === 0, consoleErrors[0]?.slice(0, 150));
+check('no console errors', consoleErrors.length === 0, consoleErrors[0]?.slice(0, 800));
 
 await browser.close();
 

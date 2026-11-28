@@ -1,19 +1,20 @@
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import { fetchGitlabJson } from '../../client';
 import type { GitLabGroupDC, GitLabProjectDC } from '../../data-contracts';
 import { fetchPaginatedItems } from '../../fetch-paginated-items';
 
-export const getGroupOverview = async (
+export interface GroupContents {
+  subgroups: GitLabGroupDC[];
+  projects: GitLabProjectDC[];
+}
+
+export const getGroupContents = async (
   connection: GitLabConnection,
-  groupPath: string,
+  groupId: number,
   signal: AbortSignal,
-) => {
-  const group = await fetchGitlabJson<GitLabGroupDC>(
-    connection,
-    `/groups/${encodeURIComponent(groupPath)}`,
-    { query: { with_projects: false }, signal },
-  );
-  const path = `/groups/${group.id}`;
+): Promise<GroupContents> => {
+  const path = `/groups/${groupId}`;
   const [subgroups, projects] = await Promise.all([
     fetchPaginatedItems<GitLabGroupDC>(
       connection,
@@ -28,5 +29,22 @@ export const getGroupOverview = async (
       signal,
     ),
   ]);
-  return { group, subgroups, projects };
+  return { subgroups, projects };
+};
+
+export const getGroupOverview = async (
+  connection: GitLabConnection,
+  groupPath: string,
+  signal: AbortSignal,
+) => {
+  const group = await fetchGitlabJson<GitLabGroupDC>(
+    connection,
+    `/groups/${encodeURIComponent(groupPath)}`,
+    { query: { with_projects: false }, signal },
+  );
+  if (!Number.isSafeInteger(group?.id) || group.id <= 0) {
+    throw new LocalizedError('gitlab.missingIdInTheGitlabResponse');
+  }
+  const contents = await getGroupContents(connection, group.id, signal);
+  return { group, ...contents };
 };

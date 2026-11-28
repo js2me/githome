@@ -216,8 +216,8 @@ export class FilesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
 
     return this.globals.routes.mergeRequest.createUrl(
       { projectId: String(projectId), mergeRequestIid },
-      null,
-      { omitQuery: true },
+      { view: 'changes' },
+      { mergeQuery: false },
     );
   }
 

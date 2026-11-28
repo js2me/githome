@@ -17,7 +17,7 @@ export const FileViewer = observer(({ model }: { model: FilesPageVM }) => {
 
   return (
     <article className="glass-panel flex min-h-[320px] min-w-0 flex-1 flex-col overflow-clip rounded-xl">
-      <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-slate-200 border-b bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+      <header className="sticky top-[var(--workbench-tabs-height)] z-10 flex flex-wrap items-center justify-between gap-2 border-slate-200 border-b bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
         <h3 className="min-w-0 truncate font-semibold text-slate-700 text-sm dark:text-slate-300">
           {model.selectedFilePath}
         </h3>

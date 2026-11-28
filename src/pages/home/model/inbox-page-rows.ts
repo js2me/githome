@@ -1,4 +1,5 @@
 import { computed } from 'mobx';
+import type { InboxRow } from '@/features/review-inbox';
 import {
   type GitLabMergeRequestReviewerDC,
   gitlabApi,
@@ -7,7 +8,6 @@ import { getMergeRequestReviewers } from '@/shared/api/gitlab/endpoints/merge-re
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
 import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
 import { VM } from '@/shared/lib/view-models/vm';
-import type { InboxRow } from './review-inbox';
 
 interface ProjectGroup {
   id: number;

@@ -9,6 +9,7 @@ import { queryClient } from 'mobx-tanstack-query/preset';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { createRef } from 'yummies/mobx';
 import { resolveGitlabRequestUrl } from '@/shared/api/gitlab';
+import { getDiffFileKey } from '@/shared/lib/diff/diff-search';
 import {
   CHANGES_FILE_TREE_DEFAULT_WIDTH,
   clampChangesFileTreeWidth,
@@ -19,6 +20,7 @@ import { parseMergeRequestLocation } from '@/shared/lib/gitlab/links/merge-reque
 import { matchGitlabProject } from '@/shared/lib/gitlab/links/project';
 import { VM } from '@/shared/lib/view-models/vm';
 import { ActiveDiffFile } from './changes/active-diff-file';
+import { MrCommits } from './changes/mr-commits';
 import type { MergeRequestPageVM } from './index';
 import { MrMerge } from './merge/mr-merge';
 import { MrMetadataEditor } from './metadata/editor';
@@ -58,14 +60,110 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
     },
   });
   readonly fileNavigation = new ActiveDiffFile();
-  readonly activityButton = createRef<HTMLButtonElement>();
-  readonly changesHeading = createRef<HTMLHeadingElement>();
+  readonly commits = new MrCommits(
+    this.parentViewModel.globals,
+    this.unmountSignal,
+    () => ({
+      projectId: this.parentViewModel.projectId,
+      iid: this.parentViewModel.mergeRequestIid,
+    }),
+  );
   readonly merge = new MrMerge(this.parentViewModel.mrInfo, this.unmountSignal);
   readonly closeMrDialog = createRef<HTMLDialogElement>();
-  @observable accessor activityExpanded = false;
-  @observable accessor descriptionExpanded = false;
+  @observable accessor overviewPanel: 'description' | 'discussion' | 'commits' =
+    'description';
   @observable accessor width = CHANGES_FILE_TREE_DEFAULT_WIDTH;
+  @observable accessor zen = false;
+  @observable accessor editorCommits = false;
+  @observable accessor mobileFilesOpen = false;
   private finishResize?: () => void;
+  private scrollFrame = 0;
+
+  @computed
+  get editorOpen() {
+    return this.parentViewModel.globals.query.data.view === 'changes';
+  }
+
+  @computed
+  get showEditorCommits() {
+    return this.editorCommits || Boolean(this.commits.selectedId);
+  }
+
+  @actionBound
+  toggleZen() {
+    this.zen = !this.zen;
+  }
+
+  @actionBound
+  toggleMobileFiles() {
+    this.mobileFilesOpen = !this.mobileFilesOpen;
+  }
+
+  @actionBound
+  selectEditorFile(fileKey: string) {
+    if (!this.mobileFilesOpen) {
+      this.fileNavigation.jumpToFile(fileKey);
+      return;
+    }
+    this.mobileFilesOpen = false;
+    this.scheduleScroll(fileKey);
+  }
+
+  @actionBound
+  selectEditorCommit(commit: string) {
+    this.mobileFilesOpen = false;
+    this.openEditor(undefined, commit);
+  }
+
+  @actionBound
+  showFilesTab() {
+    this.editorCommits = false;
+    if (this.commits.selectedId) this.openEditor();
+  }
+
+  @actionBound
+  showCommitsTab() {
+    this.editorCommits = true;
+    this.commits.load();
+  }
+
+  private scheduleScroll(fileKey?: string) {
+    cancelAnimationFrame(this.scrollFrame);
+    this.scrollFrame = requestAnimationFrame(() => {
+      if (fileKey) this.fileNavigation.jumpToFile(fileKey);
+      else window.scrollTo(0, 0);
+    });
+  }
+
+  @actionBound
+  setOverviewPanel(panel: MergeRequestDetailVM['overviewPanel']) {
+    this.overviewPanel = panel;
+    if (panel === 'commits') this.commits.load();
+  }
+
+  @actionBound
+  openEditor(file?: string, commit?: string) {
+    this.parentViewModel.globals.query.update(
+      {
+        view: 'changes',
+        file: file || null,
+        commit: commit || null,
+      },
+      false,
+    );
+  }
+
+  @actionBound
+  showOverview() {
+    this.parentViewModel.globals.query.update(
+      {
+        view: null,
+        file: null,
+        commit: null,
+      },
+      false,
+    );
+  }
 
   @computed
   get noteActions() {
@@ -113,8 +211,45 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
   willMount() {
     const info = this.parentViewModel.mrInfo;
     reaction(
-      () => [info.mergeRequestChanges, info.gitDiff.revision] as const,
-      ([changes]) => this.fileNavigation.track(changes ?? []),
+      () => {
+        const { file } = this.parentViewModel.globals.query.data;
+        const detail = info.detailView;
+        const ready = Boolean(
+          detail &&
+            !detail.isPreparingDiffs &&
+            !this.parentViewModel.parentViewModel.isLoading,
+        );
+        return [this.editorOpen, this.commits.selectedId, file, ready] as const;
+      },
+      ([editor, commit, path, ready]) => {
+        if (!editor || commit || !path) {
+          this.scheduleScroll();
+        } else if (ready) {
+          const change = info.detailView?.changes.find(
+            (item) =>
+              (item.deleted_file ? item.old_path : item.new_path) === path,
+          );
+          this.scheduleScroll(
+            change && getDiffFileKey(change.old_path, change.new_path),
+          );
+        }
+      },
+      {
+        fireImmediately: true,
+        equals: compareShallow,
+        signal: this.unmountSignal,
+      },
+    );
+    reaction(
+      () =>
+        [
+          this.editorOpen,
+          this.commits.selectedId,
+          info.mergeRequestChanges,
+          info.gitDiff.revision,
+        ] as const,
+      ([, commit, changes]) =>
+        this.fileNavigation.track(commit ? [] : (changes ?? [])),
       {
         fireImmediately: true,
         signal: this.unmountSignal,
@@ -144,6 +279,7 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
   }
 
   didUnmount() {
+    cancelAnimationFrame(this.scrollFrame);
     this.fileNavigation.dispose();
     this.finishResize?.();
   }
@@ -185,18 +321,8 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
   }
 
   @actionBound
-  private resize(width: number) {
+  resize(width: number) {
     this.width = clampChangesFileTreeWidth(width);
-  }
-
-  @actionBound
-  toggleActivity() {
-    this.activityExpanded = !this.activityExpanded;
-  }
-
-  @actionBound
-  toggleDescription() {
-    this.descriptionExpanded = !this.descriptionExpanded;
   }
 
   @actionBound
@@ -213,18 +339,5 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
   confirmCloseMr() {
     this.dismissCloseMrDialog();
     void this.parentViewModel.mrInfo.close();
-  }
-
-  @actionBound
-  showComments() {
-    this.activityExpanded = true;
-    this.activityButton.current?.focus({ preventScroll: true });
-    this.activityButton.current?.scrollIntoView({ block: 'start' });
-  }
-
-  @actionBound
-  showFiles() {
-    this.changesHeading.current?.focus({ preventScroll: true });
-    this.changesHeading.current?.scrollIntoView({ block: 'start' });
   }
 }

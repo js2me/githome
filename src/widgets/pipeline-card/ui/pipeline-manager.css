@@ -1,0 +1,126 @@
+.pipeline-manager {
+  width: min(88rem, calc(100% - 24px));
+  height: min(54rem, calc(100dvh - 48px));
+}
+
+.pipeline-manager-layout {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(12rem, 17rem) minmax(0, 1fr);
+}
+
+.pipeline-manager-history {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  border-inline-end: 1px solid var(--color-border-default);
+  background: var(--color-canvas-default);
+}
+
+.pipeline-manager-history-scroll {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 8px 8px;
+}
+
+.pipeline-manager-history h3 {
+  flex: none;
+  padding: 10px 14px;
+  color: var(--color-fg-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pipeline-manager-history p {
+  padding: 4px 6px;
+  color: var(--color-fg-muted);
+  font-size: 12px;
+}
+
+.pipeline-manager-history ul {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 6px;
+  list-style: none;
+}
+
+.pipeline-manager-history li button {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  gap: 3px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 7px 8px;
+  text-align: start;
+  font-size: 13px;
+}
+
+.pipeline-manager-history li button:hover {
+  background: var(--glass-hover);
+}
+
+.pipeline-manager-history li button[aria-current] {
+  border-color: var(--color-border-default);
+  background: var(--color-canvas-muted);
+  box-shadow: inset 2px 0 var(--color-brand);
+}
+
+.pipeline-manager-history li button:focus-visible {
+  outline-offset: -2px;
+}
+
+.pipeline-manager-run-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px 8px;
+}
+
+.pipeline-manager-run-info,
+.pipeline-manager-meta dt {
+  color: var(--color-fg-muted);
+  font-size: 11px;
+}
+
+.pipeline-manager-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.pipeline-manager-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.pipeline-manager-tools input {
+  width: min(20rem, 100%);
+}
+
+@media (max-width: 680px) {
+  .pipeline-manager {
+    width: calc(100% - 16px);
+    height: calc(100dvh - 16px);
+  }
+
+  .pipeline-manager-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+  }
+
+  .pipeline-manager-history {
+    max-height: min(24dvh, 11rem);
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--color-border-default);
+  }
+}

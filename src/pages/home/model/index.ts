@@ -1,18 +1,25 @@
-import { actionBound, computed } from 'mobx';
+import { actionBound, computed, observable } from 'mobx';
 import type { ViewModelParams } from 'mobx-view-model';
 import type { GitlabProjectInfo } from '@/entities/gitlab-projects';
-import type { Workspace } from '@/features/workspace-navigation';
-import { WorkspaceVM } from '@/features/workspace-navigation';
+import { ReviewInbox } from '@/features/review-inbox';
+import {
+  isMergeRequestNavItem,
+  type MergeRequestNavItem,
+  type Workspace,
+  WorkspaceVM,
+} from '@/features/workspace-navigation';
 import type { LayoutVM } from '@/widgets/layout';
 import {
   GitlabProjectsList,
   type ProjectListTab,
 } from './gitlab-projects-list';
-import { ReviewInbox } from './review-inbox';
+import { InboxCommandModel } from './inbox-command';
 
 export class HomePageVM extends WorkspaceVM<{}, LayoutVM> {
   readonly gitlabProjectsList: GitlabProjectsList;
   readonly reviewInbox: ReviewInbox;
+  readonly command: InboxCommandModel;
+  @observable accessor projectFilter = '';
 
   constructor(globals: Workspace, params: ViewModelParams<{}, LayoutVM>) {
     super(globals, params);
@@ -23,7 +30,49 @@ export class HomePageVM extends WorkspaceVM<{}, LayoutVM> {
     this.reviewInbox = new ReviewInbox(
       globals,
       this.unmountSignal,
-      this.gitlabProjectsList,
+      'reviewer',
+      (projectId) =>
+        this.gitlabProjectsList.projects.find(
+          ({ data }) => data.id === projectId,
+        )?.data.path_with_namespace,
+    );
+    this.command = new InboxCommandModel(
+      globals,
+      this.reviewInbox,
+      this.unmountSignal,
+    );
+  }
+
+  @computed
+  get recentMergeRequests() {
+    const connectionId = this.globals.stores.settings.activeId;
+    return this.globals.stores.navTree.items
+      .filter(isMergeRequestNavItem)
+      .filter((item) => item.payload?.connectionId === connectionId)
+      .sort(
+        (a, b) => (b.payload.lastOpenedAt ?? 0) - (a.payload.lastOpenedAt ?? 0),
+      )
+      .slice(0, 5);
+  }
+
+  @actionBound
+  openRecentRequest(item: MergeRequestNavItem) {
+    this.globals.navigation.mergeRequests.select(item);
+  }
+
+  @actionBound
+  setProjectFilter(filter: string) {
+    this.projectFilter = filter;
+  }
+
+  @computed
+  get visibleProjects() {
+    const query = this.projectFilter.trim().toLowerCase();
+    return this.gitlabProjectsList.projects.filter(
+      ({ name, data }) =>
+        !query ||
+        name.toLowerCase().includes(query) ||
+        data.path_with_namespace.toLowerCase().includes(query),
     );
   }
 
@@ -103,6 +152,14 @@ export class HomePageVM extends WorkspaceVM<{}, LayoutVM> {
   openProjectMergeRequests(project: GitlabProjectInfo) {
     this.globals.stores.repository.setProject(project.data);
     void this.globals.routes.mergeRequests.open({
+      projectId: String(project.data.id),
+    });
+  }
+
+  @actionBound
+  openProjectPipelines(project: GitlabProjectInfo) {
+    this.globals.stores.repository.setProject(project.data);
+    void this.globals.routes.pipelines.open({
       projectId: String(project.data.id),
     });
   }

@@ -10,7 +10,7 @@ type HeadPipeline = NonNullable<GitLabMergeRequestDC['head_pipeline']>;
 type Pipeline = GitLabPipelineSummaryDC | HeadPipeline;
 type Kind = 'mr' | 'branch' | 'unknown';
 
-interface SelectedPipeline {
+export interface SelectedPipeline {
   kind: Kind;
   pipeline: Pipeline;
   projectId: number;
@@ -98,4 +98,46 @@ export const selectPipelines = (
     });
   }
   return selected;
+};
+
+export const pipelineSelectionKey = ({
+  projectId,
+  pipeline,
+}: SelectedPipeline) => `${projectId}/${pipeline.id}`;
+
+export const pipelineHistory = (
+  targetProjectId: number,
+  mrRuns: readonly GitLabPipelineSummaryDC[],
+  current: readonly SelectedPipeline[],
+  branchRuns: readonly GitLabPipelineSummaryDC[],
+): SelectedPipeline[] => {
+  const history = new Map<string, SelectedPipeline>();
+  // The branch list is scoped to the head SHA. Keep its kind when GitLab also
+  // includes the same run in the merge request list.
+  const entries: SelectedPipeline[] = [
+    ...mrRuns.map(
+      (pipeline): SelectedPipeline => ({
+        projectId: pipeline.project_id ?? targetProjectId,
+        pipeline,
+        kind: 'mr',
+      }),
+    ),
+    ...branchRuns.map(
+      (pipeline): SelectedPipeline => ({
+        projectId: pipeline.project_id,
+        pipeline,
+        kind: 'branch',
+      }),
+    ),
+    ...current,
+  ];
+  for (const entry of entries) {
+    const key = pipelineSelectionKey(entry);
+    const previous = history.get(key);
+    history.set(key, {
+      ...entry,
+      pipeline: { ...previous?.pipeline, ...entry.pipeline },
+    });
+  }
+  return [...history.values()].sort((a, b) => b.pipeline.id - a.pipeline.id);
 };

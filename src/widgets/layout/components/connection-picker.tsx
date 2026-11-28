@@ -15,9 +15,11 @@ export const ConnectionPicker = observer(() => {
       <ConnectionButton
         placement="header"
         connection={settings.activeItem}
+        expanded={model.isConnectionDialogOpen}
         onClick={model.openConnectionPopup}
       />
       <GlassDialog
+        id="workbench-connections-dialog"
         ref={model.connectionDialog}
         onClose={model.onConnectionDialogClosed}
         aria-labelledby="connections-title"

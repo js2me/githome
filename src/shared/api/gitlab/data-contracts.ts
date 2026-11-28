@@ -257,6 +257,7 @@ export interface GitLabMergeRequestReviewerDC {
 }
 
 export interface GitLabCommitDC {
+  parent_ids?: string[];
   id: string;
   short_id: string;
   title: string;

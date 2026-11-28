@@ -74,7 +74,11 @@
 
 @layer base {
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
+  }
+
+  :root.dark {
+    color-scheme: dark;
   }
 
   body {
@@ -99,40 +103,20 @@
 }
 
 @layer components {
-  .glass-canvas {
-    background-color: var(--glass-canvas);
-    background-image:
-      radial-gradient(ellipse 60rem 36rem at 5% -10rem, var(--glass-glow-indigo), transparent),
-      radial-gradient(ellipse 54rem 40rem at 100% 5rem, var(--glass-glow-teal), transparent);
-    background-repeat: no-repeat;
-  }
-
   .glass-panel,
   .glass-overlay,
   .glass-control,
   .glass-input {
     border: 1px solid var(--glass-border);
-    box-shadow: inset 0 1px var(--glass-highlight);
   }
 
   .glass-panel {
     background-color: var(--glass-surface);
-    box-shadow: inset 0 1px var(--glass-highlight), var(--glass-shadow);
-  }
-
-  .glass-bar,
-  .glass-overlay {
-    backdrop-filter: blur(18px) saturate(125%);
-  }
-
-  .glass-bar {
-    background-color: var(--glass-bar);
-    border-color: var(--glass-border);
   }
 
   .glass-overlay {
     background-color: var(--glass-overlay);
-    box-shadow: inset 0 1px var(--glass-highlight), var(--glass-float-shadow);
+    box-shadow: var(--glass-float-shadow);
   }
 
   dialog.glass-overlay::backdrop {
@@ -148,14 +132,13 @@
   .glass-control,
   .glass-primary {
     cursor: pointer;
-    transition: background-color 140ms, border-color 140ms, box-shadow 140ms;
+    transition: background-color 140ms, border-color 140ms;
   }
 
   .glass-primary {
     border: 1px solid transparent;
-    background: linear-gradient(160deg, var(--glass-primary-top), var(--glass-primary-bottom));
-    color: var(--glass-primary-text);
-    box-shadow: inset 0 1px rgb(255 255 255 / 0.24), 0 2px 5px rgb(57 46 122 / 0.16);
+    background-color: var(--color-brand);
+    color: var(--color-brand-on);
   }
 
   @media (hover: hover) {
@@ -164,7 +147,7 @@
     }
 
     .glass-primary:not(:disabled):hover {
-      box-shadow: inset 0 0 0 100vmax rgb(0 0 0 / 0.07), inset 0 1px rgb(255 255 255 / 0.24);
+      background-color: var(--color-brand-hover);
     }
   }
 
@@ -181,17 +164,6 @@
   :is(.glass-control, .glass-primary, .glass-input):disabled {
     cursor: not-allowed;
     opacity: 0.5;
-  }
-
-  @media (prefers-reduced-transparency: reduce) {
-    .glass-bar,
-    .glass-overlay,
-    .glass-panel,
-    .glass-control,
-    .glass-input {
-      background-color: var(--color-canvas-overlay);
-      backdrop-filter: none;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -6,17 +6,18 @@ import {
 } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
 import type { GitLabMergeRequestDC } from '@/shared/api/gitlab';
+import { cn } from '@/shared/lib/cn';
 import type { MergeRequestApprovalView } from '@/shared/lib/gitlab/merge-request-approval-view';
 import { type MessageKey, t } from '@/shared/lib/i18n';
 import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
 import { StatusMessage } from '@/shared/ui/status-message';
 import type { MrAction, MrReviewAction } from '../../../model/mr-info';
 import './mr-review-actions.css';
+import { actionClass } from './action-classes';
 import { ApprovalSummary } from './approval-summary';
 import { Reviewer } from './reviewer';
 
-const actionButton =
-  'inline-flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[13px] leading-tight font-semibold';
+const actionButton = cn(actionClass, 'min-w-0 py-1.5 leading-tight');
 
 const actionLabels = {
   approve: {
@@ -82,13 +83,13 @@ export const MrReviewActions = observer(
 
     return (
       <section
-        className="glass-panel mr-review min-w-0 rounded-2xl"
+        className="glass-panel mr-review min-w-0 rounded-lg"
         aria-label={t('review.review')}
       >
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-5 gap-y-3 px-4 py-3.5 sm:px-5">
           <div className="flex min-w-0 items-center gap-2.5">
             <span
-              className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--glass-selected)] text-[var(--glass-accent)]"
+              className="grid size-9 shrink-0 place-items-center rounded-md bg-canvas-emphasis text-fg-muted"
               aria-hidden
             >
               <CodePullRequestCheck className="size-[19px]" />
@@ -112,7 +113,7 @@ export const MrReviewActions = observer(
             {approvals.approvals_available && (
               <button
                 type="button"
-                className={`${actionButton} ${userApproved ? 'glass-control' : 'glass-primary'}`}
+                className={actionButton}
                 disabled={isBusy}
                 onClick={userApproved ? onUnapprove : onApprove}
               >
@@ -126,7 +127,7 @@ export const MrReviewActions = observer(
             )}
             <button
               type="button"
-              className={`${actionButton} glass-control`}
+              className={actionButton}
               disabled={isBusy}
               onClick={
                 userRequestedChanges ? onCancelRequestChanges : onRequestChanges

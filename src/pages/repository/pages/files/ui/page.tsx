@@ -1,6 +1,7 @@
 import { ArrowLeft } from '@gravity-ui/icons';
 import { Link } from 'mobx-route/react';
 import { withViewModel } from 'mobx-view-model-react';
+import { cn } from '@/shared/lib/cn';
 import { t } from '@/shared/lib/i18n';
 import { StatusMessage } from '@/shared/ui/status-message';
 import { FilesPageVM } from '../model';
@@ -15,7 +16,13 @@ export const FilesPage = withViewModel(FilesPageVM, ({ model }) => {
 
   return (
     <section>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div
+        className={cn(
+          'mb-4 flex flex-wrap items-center gap-3',
+          model.searchModel.isPanelOpen &&
+            'sticky top-[var(--workbench-tabs-height)] z-30 bg-canvas-default',
+        )}
+      >
         {mergeRequestHref && (
           <Link
             className="glass-control inline-flex h-8 items-center gap-2 rounded-lg px-2.5 font-semibold text-xs"
@@ -34,7 +41,7 @@ export const FilesPage = withViewModel(FilesPageVM, ({ model }) => {
       {model.ref ? (
         <div className="flex min-w-0 flex-col gap-4 lg:flex-row">
           <div className="w-full min-w-0 shrink-0 self-start lg:w-[min(100%,320px)]">
-            <div className="lg:sticky lg:top-4">
+            <div className="lg:sticky lg:top-[calc(var(--workbench-tabs-height)+1rem)]">
               <FileTree treeModel={model.treeModel} />
             </div>
           </div>

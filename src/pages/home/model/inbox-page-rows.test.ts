@@ -1,9 +1,9 @@
 import { environmentManager, isServer } from '@tanstack/query-core';
 import { queryClient } from 'mobx-tanstack-query/preset';
 import { afterEach, expect, it, vi } from 'vitest';
+import type { InboxRow } from '@/features/review-inbox';
 import type { Workspace } from '@/features/workspace-navigation';
 import { InboxPageRowsVM } from './inbox-page-rows';
-import type { InboxRow } from './review-inbox';
 
 const connection = {
   id: 'work',

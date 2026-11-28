@@ -1,13 +1,13 @@
 :root {
   /* Brand */
-  --color-brand: #514ab5;
-  --color-brand-hover: #403995;
-  --color-brand-on: #fff;
-  --color-brand-tint: #e3e2f6;
-  --color-brand-selection: #d9d7f3;
-  --color-brand-ink: #403995;
-  --color-brand-focus-shadow: rgb(81 74 181 / 0.15);
-  --color-brand-border-accent: rgb(81 74 181 / 0.7);
+  --color-brand: #17685b;
+  --color-brand-hover: #115448;
+  --color-brand-on: #ffffff;
+  --color-brand-tint: #daefe9;
+  --color-brand-selection: #cfebe2;
+  --color-brand-ink: #195f52;
+  --color-brand-focus-shadow: rgb(23 104 91 / 0.2);
+  --color-brand-border-accent: rgb(23 104 91 / 0.7);
 
   /* Information and review context */
   --color-info-surface: #dcecea;
@@ -15,44 +15,36 @@
   --color-info-ink: #175e62;
   --color-card-hover-shadow: rgb(15 23 42 / 0.06);
 
-  /* Application chrome. Diff and syntax colors below remain opaque. */
-  --glass-canvas: #f1f3f8;
-  --glass-glow-indigo: rgb(154 162 229 / 0.27);
-  --glass-glow-teal: rgb(132 204 201 / 0.24);
-  --glass-surface: rgb(255 255 255 / 0.66);
-  --glass-overlay: rgb(250 252 255 / 0.94);
-  --glass-bar: rgb(250 252 255 / 0.76);
-  --glass-control: rgb(255 255 255 / 0.55);
-  --glass-hover: rgb(226 232 243 / 0.8);
-  --glass-border: rgb(71 89 122 / 0.19);
-  --glass-highlight: rgb(255 255 255 / 0.94);
-  --glass-shadow: 0 6px 24px -14px rgb(34 49 79 / 0.22);
-  --glass-float-shadow: 0 14px 46px -12px rgb(34 49 79 / 0.27);
-  --glass-selected: rgb(191 187 244 / 0.38);
-  --glass-accent: #514ab5;
-  --glass-primary-top: #5951bc;
-  --glass-primary-bottom: #443d9f;
-  --glass-primary-text: #fff;
+  /* Shared opaque surfaces for panels, inputs, controls and overlays. */
+  --glass-canvas: var(--color-canvas-default);
+  --glass-surface: var(--color-canvas-overlay);
+  --glass-overlay: var(--color-canvas-overlay);
+  --glass-control: var(--color-canvas-muted);
+  --glass-hover: var(--color-canvas-emphasis);
+  --glass-border: var(--color-border-default);
+  --glass-float-shadow: 0 10px 30px rgb(0 0 0 / 0.2);
+  --glass-selected: var(--color-brand-tint);
+  --glass-accent: var(--color-brand);
 
-  /* Canvas & surfaces (Tokyo Night Light) */
-  --color-canvas-default: #e6e7ed;
-  --color-canvas-subtle: #d6d8df;
-  --color-canvas-inset: #dadce3;
-  --color-canvas-muted: #e1e2e8;
-  --color-canvas-emphasis: #dadce3;
-  --color-canvas-overlay: #e6e7ed;
+  /* Workbench canvas and surfaces */
+  --color-canvas-default: #fbfaf8;
+  --color-canvas-subtle: #f2f1ee;
+  --color-canvas-inset: #eeeae4;
+  --color-canvas-muted: #eeece8;
+  --color-canvas-emphasis: #e5e2dc;
+  --color-canvas-overlay: #f7f6f3;
 
   /* Borders */
-  --color-border-default: #c1c2c7;
-  --color-border-muted: #c7c9d4;
-  --color-border-subtle: #b8bac4;
+  --color-border-default: #dcd9d3;
+  --color-border-muted: #e4e0d9;
+  --color-border-subtle: #e8e5df;
 
   /* Text */
-  --color-fg-default: #202c40;
-  --color-fg-muted: #526078;
-  --color-fg-subtle: #616f83;
+  --color-fg-default: #211f1e;
+  --color-fg-muted: #5e5a55;
+  --color-fg-subtle: #716c66;
   --color-fg-on-emphasis: #e6e7ed;
-  --color-fg-link: #2959aa;
+  --color-fg-link: #255da3;
   --color-fg-code: #343b58;
   --color-fg-line-num: #9da0ab;
   --color-fg-comment-btn: #6c6e75;
@@ -82,7 +74,7 @@
   --color-file-modified: var(--color-info-ink);
 
   /* Diff (Tokyo Night Light) */
-  --diff-border: #c7c9d4;
+  --diff-border: var(--color-border-default);
   --diff-code-font-size: 13px;
   --diff-code-line-height: 1.6;
   --diff-line-added: #e6f5e9;
@@ -96,10 +88,10 @@
   --diff-line-num-text: #535f73;
   --diff-token-lightness: min(l, 0.46);
   --diff-code-text: #343b58;
-  --diff-hunk-bg: #dcdee3;
+  --diff-hunk-bg: var(--color-canvas-muted);
   --diff-hunk-text: #525e71;
-  --diff-expand-bg: #dcdee3;
-  --diff-header-bg: #dcdee3;
+  --diff-expand-bg: var(--color-canvas-muted);
+  --diff-header-bg: var(--color-canvas-overlay);
   --diff-stats-added: #166775;
   --diff-stats-removed: #914c54;
   --diff-canvas: var(--color-canvas-default);
@@ -190,96 +182,88 @@
 
 /* Тёмная тема — только через класс .dark (ThemeManager) */
 .dark {
-  --color-brand: #b5abfa;
-  --color-brand-hover: #cec6ff;
-  --color-brand-on: #262148;
-  --color-brand-tint: #353350;
-  --color-brand-selection: #413b60;
-  --color-brand-ink: #d7d0ff;
-  --color-brand-focus-shadow: rgb(181 171 250 / 0.22);
-  --color-brand-border-accent: rgb(181 171 250 / 0.7);
+  --color-brand: #92e9d5;
+  --color-brand-hover: #b4f5e6;
+  --color-brand-on: #101c19;
+  --color-brand-tint: #20322d;
+  --color-brand-selection: #293b35;
+  --color-brand-ink: #a7ecdb;
+  --color-brand-focus-shadow: rgb(146 233 213 / 0.22);
+  --color-brand-border-accent: rgb(146 233 213 / 0.65);
 
   --color-info-surface: #243941;
   --color-info-border: #476e73;
   --color-info-ink: #a2e5de;
 
-  --glass-canvas: #151923;
-  --glass-glow-indigo: rgb(98 95 158 / 0.28);
-  --glass-glow-teal: rgb(52 120 126 / 0.21);
-  --glass-surface: rgb(36 42 57 / 0.78);
-  --glass-overlay: rgb(37 43 57 / 0.95);
-  --glass-bar: rgb(28 34 47 / 0.82);
-  --glass-control: rgb(63 72 92 / 0.45);
-  --glass-hover: rgb(79 91 119 / 0.46);
-  --glass-border: rgb(181 198 229 / 0.18);
-  --glass-highlight: rgb(255 255 255 / 0.07);
-  --glass-shadow: 0 6px 24px -14px rgb(3 6 14 / 0.45);
-  --glass-float-shadow: 0 14px 46px -12px rgb(2 5 12 / 0.64);
-  --glass-selected: rgb(171 161 255 / 0.2);
-  --glass-accent: #c2baff;
-  --glass-primary-top: #c4bcff;
-  --glass-primary-bottom: #a8a0f3;
-  --glass-primary-text: #262148;
+  --glass-canvas: var(--color-canvas-default);
+  --glass-surface: var(--color-canvas-overlay);
+  --glass-overlay: var(--color-canvas-overlay);
+  --glass-control: var(--color-canvas-muted);
+  --glass-hover: var(--color-canvas-emphasis);
+  --glass-border: var(--color-border-default);
+  --glass-float-shadow: 0 10px 30px rgb(0 0 0 / 0.2);
+  --glass-selected: var(--color-brand-tint);
+  --glass-accent: var(--color-brand);
 
-  /* Canvas & surfaces — Dracula Official (dracula-theme.theme-dracula) */
-  --color-canvas-default: #282a36;
-  --color-canvas-subtle: #21222c;
-  --color-canvas-inset: #343746;
-  --color-canvas-muted: #343746;
-  --color-canvas-emphasis: #44475a;
-  --color-canvas-overlay: #21222c;
+  /* Workbench canvas and surfaces */
+  --color-canvas-default: #111111;
+  --color-canvas-subtle: #141414;
+  --color-canvas-inset: #1b1b1b;
+  --color-canvas-muted: #1d1d1d;
+  --color-canvas-emphasis: #292929;
+  --color-canvas-overlay: #171717;
 
-  --color-border-default: #44475a;
-  --color-border-muted: #44475a;
-  --color-border-subtle: #191a21;
+  --color-border-default: #2c2c2c;
+  --color-border-muted: #303030;
+  --color-border-subtle: #222222;
 
-  --color-fg-default: #f1f3fa;
-  --color-fg-muted: #adb8ce;
-  --color-fg-subtle: #98a4bc;
-  --color-fg-on-emphasis: #282a36;
-  --color-fg-link: #8be9fd;
+  --color-fg-default: #f5f4f3;
+  --color-fg-muted: #a6a3a0;
+  --color-fg-subtle: #94918e;
+  --color-fg-on-emphasis: #181818;
+  --color-fg-link: #91bdff;
   --color-fg-code: #f8f8f2;
   --color-fg-line-num: #6272a4;
   --color-fg-comment-btn: #6272a4;
 
-  --color-accent-blue: #8be9fd;
-  --color-accent-blue-emphasis: #bd93f9;
+  --color-accent-blue: #91bdff;
+  --color-accent-blue-emphasis: #a6c8ff;
   --color-accent-blue-ring: rgb(139 233 253 / 0.3);
-  --color-accent-emphasis-hover: #343746;
+  --color-accent-emphasis-hover: #252525;
 
-  --color-success-emphasis: #50fa7b;
-  --color-success-emphasis-hover: #69ff94;
-  --color-success-fg: #50fa7b;
-  --color-stats-added: #50fa7b;
+  --color-success-emphasis: #92e9d5;
+  --color-success-emphasis-hover: #b4f5e6;
+  --color-success-fg: #92e9d5;
+  --color-stats-added: #92e9d5;
 
-  --color-danger-fg: #ff5555;
-  --color-stats-removed: #ff5555;
+  --color-danger-fg: #ff8e91;
+  --color-stats-removed: #ff8e91;
 
   --color-card-hover-shadow: rgb(0 0 0 / 0.24);
 
   /* Diff */
-  --diff-border: #44475a;
-  --diff-line-added: #16342b;
-  --diff-line-removed: #3b242e;
-  --diff-line-num-new: #1b4234;
-  --diff-line-num-old: #4d2a36;
+  --diff-border: var(--color-border-default);
+  --diff-line-added: #1a2420;
+  --diff-line-removed: #2a1c1e;
+  --diff-line-num-new: #1e2c26;
+  --diff-line-num-old: #322123;
   --diff-inline-added: #22543a;
   --diff-inline-removed: #652f40;
-  --diff-prefix-added: #9ae8b1;
-  --diff-prefix-removed: #ffb1b0;
+  --diff-prefix-added: #92e9d5;
+  --diff-prefix-removed: #ff9d9f;
   --diff-line-num-text: #a1adbf;
   --diff-token-lightness: clamp(0.70, calc(l * 0.9), 0.82);
   /* Intra-line changes have a brighter background than the rest of the row. */
   --diff-inline-token-lightness: 0.82;
   --diff-token-chroma: calc(c * 0.6);
-  --diff-source-text: #c5c7d1;
+  --diff-source-text: #cdcac7;
   --diff-code-text: #f8f8f2;
-  --diff-hunk-bg: #343746;
-  --diff-hunk-text: #afbad0;
-  --diff-expand-bg: #21222c;
-  --diff-header-bg: #343746;
-  --diff-stats-added: #50fa7b;
-  --diff-stats-removed: #ff5555;
+  --diff-hunk-bg: var(--color-canvas-muted);
+  --diff-hunk-text: #e9b98f;
+  --diff-expand-bg: var(--color-canvas-muted);
+  --diff-header-bg: var(--color-canvas-overlay);
+  --diff-stats-added: var(--color-stats-added);
+  --diff-stats-removed: var(--color-stats-removed);
   --diff-canvas: var(--color-canvas-default);
   --diff-search-active-bg: #80d9d0;
   --diff-search-active-fg: #282a36;
@@ -287,53 +271,53 @@
   --diff-search-inactive-fg: #f8f8f2;
 
   --markdown-code-bg: rgb(98 114 164 / 0.25);
-  --markdown-pre-bg: #282a36;
+  --markdown-pre-bg: #181818;
   --markdown-pre-fg: #f8f8f2;
-  --markdown-table-stripe-bg: #343746;
-  --markdown-img-bg: #282a36;
+  --markdown-table-stripe-bg: #1d1d1d;
+  --markdown-img-bg: #111111;
   --markdown-fg-link: #8be9fd;
 
   /* Tailwind palette — slate (Dracula: светлые оттенки = текст, тёмные = фон) */
-  --color-slate-50: #191a21;
+  --color-slate-50: #111111;
   --color-slate-100: #e2e2e8;
   --color-slate-200: #f8f8f2;
   --color-slate-300: #cbd5e1;
   --color-slate-400: #9399b2;
   --color-slate-500: #8189a8;
   --color-slate-600: #6272a4;
-  --color-slate-700: #44475a;
-  --color-slate-800: #343746;
-  --color-slate-900: #21222c;
-  --color-slate-950: #191a21;
+  --color-slate-700: #383838;
+  --color-slate-800: #252525;
+  --color-slate-900: #181818;
+  --color-slate-950: #111111;
 
-  --color-gray-900: #282a36;
+  --color-gray-900: #1a1a1a;
 
   --color-green-50: #2d443f;
   --color-green-100: #305544;
   --color-green-200: #356b4c;
-  --color-green-300: #50fa7b;
-  --color-green-600: #50fa7b;
-  --color-green-700: #69ff94;
+  --color-green-300: #92e9d5;
+  --color-green-600: #92e9d5;
+  --color-green-700: #b4f5e6;
   --color-green-800: #3dd665;
   --color-green-900: #2d443f;
-  --color-green-950: #21222c;
+  --color-green-950: #181818;
 
   --color-red-50: #4a313b;
   --color-red-100: #55333c;
   --color-red-200: #62363e;
   --color-red-300: #ff6e6e;
-  --color-red-600: #ff5555;
-  --color-red-700: #ff5555;
+  --color-red-600: #ff8e91;
+  --color-red-700: #ff8e91;
   --color-red-800: #ff6e6e;
   --color-red-900: #6b3740;
-  --color-red-950: #21222c;
+  --color-red-950: #181818;
 
-  --color-blue-100: #343746;
+  --color-blue-100: #252525;
   --color-blue-300: #8be9fd;
   --color-blue-700: #8be9fd;
-  --color-blue-950: #21222c;
+  --color-blue-950: #181818;
 
-  --color-white: #343746;
+  --color-white: #252525;
   --color-black: #f8f8f2;
 
   /* Syntax highlighting — Dracula Official token palette */

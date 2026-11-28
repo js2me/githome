@@ -38,7 +38,7 @@ export const PipelineStageGraph = observer(
             <section key={stage} className="pipeline-graph-stage">
               <div className="pipeline-graph-stage-header">
                 <h3>{stage}</h3>
-                {controls && manualJobs.length > 0 && (
+                {controls && !model.hasJobFilter && manualJobs.length > 0 && (
                   <PipelineJobAction
                     action="play"
                     target={{ stage }}

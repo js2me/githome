@@ -1,10 +1,4 @@
-import {
-  BookOpen,
-  ChartLine,
-  Code,
-  CodePullRequest,
-  Timeline,
-} from '@gravity-ui/icons';
+import { BookOpen } from '@gravity-ui/icons';
 import { RouteView, RouteViewGroup } from 'mobx-route/react';
 import { withViewModel } from 'mobx-view-model-react';
 import { t } from '@/shared/lib/i18n';
@@ -47,10 +41,10 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
 
         {project && (
           <>
-            <header className="glass-panel mb-5 flex flex-wrap items-center justify-between gap-5 rounded-2xl p-5 sm:p-6">
+            <header className="mb-4 flex min-w-0 items-center gap-4 border-border-default border-b px-1 pb-4">
               <div className="flex min-w-0 items-center gap-4">
                 <ProjectAvatar
-                  className="size-12 shrink-0 rounded-xl object-cover"
+                  className="size-9 shrink-0 rounded-md object-cover"
                   id={project.id}
                   avatarUrl={project.avatar_url}
                   name={project.name}
@@ -67,46 +61,6 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
                   </p>
                 </div>
               </div>
-              <nav
-                aria-label={t('repository.projectSections')}
-                className="flex flex-wrap gap-2"
-              >
-                <button
-                  type="button"
-                  onClick={model.openMergeRequests}
-                  className="glass-primary inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 font-semibold text-sm"
-                >
-                  <CodePullRequest className="size-4" aria-hidden />
-                  <span>{t('common.mergeRequests')}</span>
-                </button>
-                {[
-                  {
-                    label: t('common.files'),
-                    Icon: Code,
-                    open: model.openFiles,
-                  },
-                  {
-                    label: t('pipelines.pipelines'),
-                    Icon: Timeline,
-                    open: model.openPipelines,
-                  },
-                  {
-                    label: t('analytics.analytics'),
-                    Icon: ChartLine,
-                    open: model.openAnalytics,
-                  },
-                ].map(({ label, Icon, open }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={open}
-                    className="glass-control inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 font-semibold text-sm"
-                  >
-                    <Icon className="size-4" aria-hidden />
-                    {label}
-                  </button>
-                ))}
-              </nav>
             </header>
 
             {model.isReadmeLoading && (
@@ -122,7 +76,7 @@ export const RepositoryPage = withViewModel(RepositoryPageVM, ({ model }) => {
             )}
 
             {model.readme && (
-              <article className="glass-panel mt-2 rounded-2xl p-5 sm:p-6">
+              <article className="glass-panel mt-2 rounded-lg p-4 sm:p-5">
                 <h3 className="mb-4 flex items-center gap-2 border-[var(--glass-border)] border-b pb-3 font-medium text-fg-muted text-sm">
                   <BookOpen className="size-4" aria-hidden />
                   {model.readme.file_name}

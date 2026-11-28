@@ -3,7 +3,11 @@ import type {
   GitLabMergeRequestDC,
   GitLabPipelineSummaryDC,
 } from '@/shared/api/gitlab';
-import { selectPipelines } from './select-pipelines';
+import {
+  pipelineHistory,
+  pipelineSelectionKey,
+  selectPipelines,
+} from './select-pipelines';
 
 const mr: GitLabMergeRequestDC = {
   id: 9,
@@ -26,6 +30,28 @@ const run = (id: number, options: Partial<GitLabPipelineSummaryDC> = {}) => ({
   status: 'success',
   web_url: '',
   ...options,
+});
+
+describe('pipelineHistory', () => {
+  it('retains previous commits and deduplicates the related branch run', () => {
+    const previous = { ...mrRun, id: 8, sha: 'previous' };
+    const cards = selectPipelines(mr, 1, [mrRun], [branchRun]);
+    const history = pipelineHistory(1, [previous, mrRun, branchRun], cards, [
+      branchRun,
+    ]);
+    expect(history.map(({ kind, pipeline }) => [kind, pipeline.id])).toEqual([
+      ['branch', 11],
+      ['mr', 10],
+      ['mr', 8],
+    ]);
+    expect(history[2].pipeline.sha).toBe('previous');
+  });
+
+  it('keeps the same pipeline ID from distinct projects separate', () => {
+    const branch = { ...branchRun, id: mrRun.id, project_id: 2 };
+    const history = pipelineHistory(1, [mrRun], [], [branch]);
+    expect(history.map(pipelineSelectionKey)).toEqual(['1/10', '2/10']);
+  });
 });
 
 const mrRun = run(10, {

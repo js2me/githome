@@ -15,7 +15,8 @@ export const scrollToDiffFile = (fileKey: string) => {
   const element = revealDiffFile(fileKey);
   if (!element) return false;
 
-  const top = element.getBoundingClientRect().top + window.scrollY - 16;
+  const offset = parseFloat(getComputedStyle(element).scrollMarginTop) || 16;
+  const top = element.getBoundingClientRect().top + window.scrollY - offset;
   window.scrollTo({ top, behavior: 'instant' });
   return true;
 };

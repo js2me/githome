@@ -7,7 +7,8 @@ import { ConnectionButtonVM } from '../model/connection-button';
 export const ConnectionButton = withPropsViewModel(
   ConnectionButtonVM,
   ({ model }) => {
-    const { connection, placement, selected, onClick } = model.payload;
+    const { connection, placement, selected, expanded, onClick } =
+      model.payload;
     const { name, host, label, profile } = model;
     const inHeader = placement === 'header';
 
@@ -15,7 +16,7 @@ export const ConnectionButton = withPropsViewModel(
       <button
         className={
           inHeader
-            ? 'glass-control inline-flex h-9 min-w-0 max-w-[min(60vw,16rem)] items-center gap-2 rounded-xl px-2 text-left sm:px-2.5'
+            ? 'workbench-account'
             : 'flex w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]'
         }
         type="button"
@@ -23,6 +24,8 @@ export const ConnectionButton = withPropsViewModel(
           inHeader ? t('connection.gitlabConnections', { v1: label }) : label
         }
         aria-haspopup={inHeader ? 'dialog' : undefined}
+        aria-expanded={inHeader ? expanded : undefined}
+        aria-controls={inHeader ? 'workbench-connections-dialog' : undefined}
         aria-pressed={inHeader ? undefined : selected}
         title={label}
         onClick={onClick}
@@ -31,7 +34,7 @@ export const ConnectionButton = withPropsViewModel(
           <GitlabAvatar
             className={
               inHeader
-                ? 'size-6 shrink-0 rounded-full object-cover'
+                ? 'workbench-account-avatar'
                 : 'size-8 shrink-0 rounded-full object-cover'
             }
             connection={connection}
@@ -40,25 +43,40 @@ export const ConnectionButton = withPropsViewModel(
           />
         ) : (
           <LogoGitlab
-            className="size-5 shrink-0 text-[var(--glass-accent)]"
+            className={
+              inHeader
+                ? 'size-4 shrink-0 text-fg-muted'
+                : 'size-5 shrink-0 text-[var(--glass-accent)]'
+            }
             aria-hidden
           />
         )}
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold text-sm leading-4">
+        <span
+          className={inHeader ? 'workbench-account-label' : 'min-w-0 flex-1'}
+        >
+          <span
+            className={
+              inHeader
+                ? 'workbench-account-name'
+                : 'block truncate font-semibold text-sm leading-4'
+            }
+          >
             {name || host}
           </span>
           {name && (
-            <span className="block truncate text-[11px] text-fg-muted leading-3.5">
+            <span
+              className={
+                inHeader
+                  ? 'workbench-account-host'
+                  : 'block truncate text-[11px] text-fg-muted leading-3.5'
+              }
+            >
               {host}
             </span>
           )}
         </span>
         {inHeader && (
-          <ChevronDown
-            className="hidden size-3 shrink-0 text-fg-muted min-[480px]:block"
-            aria-hidden
-          />
+          <ChevronDown className="workbench-account-chevron" aria-hidden />
         )}
         {!inHeader && selected && (
           <Check

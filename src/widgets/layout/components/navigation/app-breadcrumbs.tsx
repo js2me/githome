@@ -27,7 +27,7 @@ export const AppBreadcrumbs = observer(() => {
       aria-label={
         project ? t('navigation.projectPath') : t('navigation.groupPath')
       }
-      className="order-last flex w-full min-w-0 items-center gap-1 py-1 font-medium text-fg-muted text-xs sm:text-sm lg:order-none lg:w-auto lg:flex-1 lg:border-[var(--glass-border)] lg:border-l lg:pl-4"
+      className="workbench-breadcrumbs"
     >
       {groups.map((name, i) => {
         const path = groups.slice(0, i + 1).join('/');
@@ -63,10 +63,10 @@ export const AppBreadcrumbs = observer(() => {
             title={project.path_with_namespace}
             aria-current={section ? undefined : 'page'}
             onClick={model.openRepository}
-            className={`flex cursor-pointer items-center gap-2 ${linkClass}`}
+            className={`flex cursor-pointer items-center gap-1.5 ${linkClass}`}
           >
             <ProjectAvatar
-              className="size-5 shrink-0 rounded-md"
+              className="size-3.5 shrink-0 rounded-sm"
               id={project.id}
               avatarUrl={project.avatar_url}
               name={project.name}

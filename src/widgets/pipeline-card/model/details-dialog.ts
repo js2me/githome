@@ -19,6 +19,7 @@ interface PipelineDetailsDialogProps {
   pipelineId: number;
   pipeline?: Partial<GitLabPipelineSummaryDC>;
   kindLabel?: string;
+  manager?: { heading: string; history: ReactNode };
   jobs: readonly GitLabJobDC[];
   loading: boolean;
   error?: string | null;
@@ -39,6 +40,49 @@ export class PipelineDetailsDialogVM extends VM<PipelineDetailsDialogProps> {
   readonly closeButton = createRef<HTMLButtonElement>();
   readonly stageOrder;
   @observable private accessor selectedJobId: number | null = null;
+  @observable accessor jobSearch = '';
+  @observable accessor jobStatus = '';
+
+  @computed
+  get jobStatuses() {
+    const statuses = new Set(this.payload.jobs.map(({ status }) => status));
+    if (this.jobStatus) statuses.add(this.jobStatus);
+    return [...statuses];
+  }
+
+  @computed
+  get hasJobFilter() {
+    return Boolean(this.jobSearch.trim() || this.jobStatus);
+  }
+
+  @computed
+  get visibleJobs() {
+    const term = this.jobSearch.trim().toLowerCase();
+    return this.payload.jobs.filter(
+      (job) =>
+        (!this.jobStatus || job.status === this.jobStatus) &&
+        (!term ||
+          job.name.toLowerCase().includes(term) ||
+          job.stage.toLowerCase().includes(term)),
+    );
+  }
+
+  @actionBound
+  setJobSearch(value: string) {
+    this.jobSearch = value;
+  }
+
+  @actionBound
+  setJobStatus(value: string) {
+    this.jobStatus = value;
+  }
+
+  @actionBound
+  private resetJobFilters() {
+    this.jobSearch = '';
+    this.jobStatus = '';
+    this.selectedJobId = null;
+  }
 
   constructor(
     globals: Globals,
@@ -75,7 +119,7 @@ export class PipelineDetailsDialogVM extends VM<PipelineDetailsDialogProps> {
 
   @computed
   get selectedJob() {
-    return this.payload.jobs.find(({ id }) => id === this.selectedJobId);
+    return this.visibleJobs.find(({ id }) => id === this.selectedJobId);
   }
 
   @actionBound
@@ -98,7 +142,7 @@ export class PipelineDetailsDialogVM extends VM<PipelineDetailsDialogProps> {
     const stages = new Map<string, GitLabJobDC[]>(
       this.stageOrder.data?.map((name) => [name, []]),
     );
-    for (const job of [...this.payload.jobs].reverse()) {
+    for (const job of [...this.visibleJobs].reverse()) {
       const stage = stages.get(job.stage);
       if (stage) stage.push(job);
       else stages.set(job.stage, [job]);
@@ -117,6 +161,11 @@ export class PipelineDetailsDialogVM extends VM<PipelineDetailsDialogProps> {
   }
 
   willMount() {
+    reaction(
+      () => `${this.payload.projectId}/${this.payload.pipelineId}`,
+      this.resetJobFilters,
+      { signal: this.unmountSignal },
+    );
     reaction(
       () => this.dialog.current,
       (dialog) => {

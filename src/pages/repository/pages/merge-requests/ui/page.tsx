@@ -15,16 +15,13 @@ export const MergeRequestsPage = withViewModel(
     if (!mrList) return null;
 
     return (
-      <section
-        className="mx-auto w-full max-w-page"
-        aria-labelledby="mr-list-heading"
-      >
+      <section className="w-full min-w-0" aria-labelledby="mr-list-heading">
         <h2
           id="mr-list-heading"
           className="mb-5 flex items-center gap-3 font-semibold text-2xl tracking-tight sm:text-[30px]"
         >
           <span
-            className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--glass-selected)] text-[var(--glass-accent)]"
+            className="grid size-8 shrink-0 place-items-center rounded-md bg-[var(--glass-selected)] text-[var(--glass-accent)]"
             aria-hidden
           >
             <CodePullRequest width={21} height={21} />
@@ -32,7 +29,7 @@ export const MergeRequestsPage = withViewModel(
           {t('common.mergeRequests')}
         </h2>
 
-        <div className="glass-panel overflow-hidden rounded-2xl">
+        <div className="glass-panel overflow-hidden rounded-lg">
           <div className="flex flex-wrap items-center justify-between gap-3 border-[var(--glass-border)] border-b p-3 sm:p-4">
             <div
               className="grid w-full grid-cols-2 gap-1 min-[440px]:flex min-[440px]:w-auto"
@@ -79,7 +76,7 @@ export const MergeRequestsPage = withViewModel(
                 aria-hidden
               />
               <input
-                className="glass-input h-10 w-full rounded-xl pr-10 pl-9 text-sm"
+                className="glass-input h-10 w-full rounded-md pr-10 pl-9 text-sm"
                 type="text"
                 inputMode="search"
                 aria-label={t('review.searchMergeRequestsByTitleOrNumber')}
@@ -112,7 +109,7 @@ export const MergeRequestsPage = withViewModel(
               className="grid justify-items-center gap-3 px-5 py-12 text-center"
             >
               <span
-                className="grid size-11 place-items-center rounded-xl bg-[var(--glass-control)] text-fg-muted"
+                className="grid size-11 place-items-center rounded-md bg-[var(--glass-control)] text-fg-muted"
                 aria-hidden
               >
                 {mrList.appliedSearch ? <Magnifier /> : <CodePullRequest />}

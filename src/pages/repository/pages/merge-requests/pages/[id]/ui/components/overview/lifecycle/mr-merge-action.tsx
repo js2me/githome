@@ -7,8 +7,8 @@ import type { MergeRequestDetailVM } from '../../../../model/merge-request-detai
 import { actionClass } from '../action-classes';
 import { MrMergeFields } from './mr-merge-fields';
 
-const primaryClass =
-  'glass-primary inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 font-semibold text-xs disabled:opacity-50';
+const confirmClass =
+  'glass-primary inline-flex min-h-8 items-center gap-1.5 rounded-md px-2.5 font-semibold text-xs';
 
 export const MrMergeAction = observer(
   ({ model }: { model: MergeRequestDetailVM }) => {
@@ -35,7 +35,7 @@ export const MrMergeAction = observer(
       <>
         <button
           type="button"
-          className={primaryClass}
+          className={actionClass}
           aria-haspopup="dialog"
           disabled={!merge.canOpen}
           onClick={merge.open}
@@ -91,7 +91,7 @@ export const MrMergeAction = observer(
             {options && (cancelling || merge.mode) && (
               <button
                 type="button"
-                className={primaryClass}
+                className={confirmClass}
                 disabled={merge.busy}
                 onClick={merge.confirm}
               >

@@ -12,6 +12,7 @@ interface ConnectionButtonPayload {
   connection: GitLabConnection | null;
   placement: 'header' | 'list';
   selected?: boolean;
+  expanded?: boolean;
   onClick: () => void;
 }
 

@@ -94,6 +94,11 @@ export class GitDiffVM extends VM<GitDiffPayload> {
         ? Math.max(0, rect.top)
         : null;
     const transferFocus = file?.contains(document.activeElement);
+    const previousStack =
+      file?.parentElement?.querySelector<HTMLDetailsElement>(
+        ':scope > [data-diff-reviewed-stack]',
+      );
+    if (previousStack?.open) previousStack.open = false;
 
     cancelAnimationFrame(this.reviewedStackFrame);
     // Wait until the stack replaces the clicked card in the DOM.
@@ -103,9 +108,8 @@ export class GitDiffVM extends VM<GitDiffPayload> {
         ':scope > [data-diff-reviewed-stack]',
       );
       const summary = stack?.querySelector('summary');
-      if (!stack || !summary) return;
-
-      stack.open = false;
+      // The user can reopen an existing stack before the next frame.
+      if (!stack || !summary || stack.open) return;
       if (top !== null) {
         window.scrollBy({
           top: summary.getBoundingClientRect().top - top,

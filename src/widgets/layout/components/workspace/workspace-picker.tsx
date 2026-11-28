@@ -23,7 +23,7 @@ export const WorkspacePicker = withViewModel(WorkspacePickerVM, ({ model }) => {
       ref={workspace}
       aria-label={t('navigation.workspace')}
       data-expanded={isExpanded}
-      className="sticky top-3 z-50 mt-3 ml-3 flex flex-col items-start self-start sm:ml-4 lg:ml-6"
+      className="workbench-picker"
       onPointerEnter={(event) => {
         if (event.pointerType === 'mouse') {
           setExpanded(true);
@@ -46,16 +46,19 @@ export const WorkspacePicker = withViewModel(WorkspacePickerVM, ({ model }) => {
       <button
         ref={trigger}
         className={cn(
-          'glass-control relative z-10 inline-flex h-9 items-center gap-2 rounded-xl px-3 font-semibold text-xs',
+          'workbench-picker-button',
           isExpanded && 'rounded-b-none border-b-transparent',
         )}
         type="button"
         aria-expanded={isExpanded}
         aria-controls={isExpanded ? navigationId : undefined}
-        onClick={() => setExpanded(!isExpanded)}
+        aria-label={t('navigation.workspace')}
+        onClick={() => setExpanded(true)}
       >
         <Layers className="size-3.5 text-fg-muted" aria-hidden="true" />
-        {t('navigation.workspace')}
+        <span className="workbench-picker-label">
+          {t('navigation.workspace')}
+        </span>
         <span
           aria-hidden
           className="rounded-md bg-[var(--glass-selected)] px-1.5 text-[11px] text-[var(--glass-accent)]"

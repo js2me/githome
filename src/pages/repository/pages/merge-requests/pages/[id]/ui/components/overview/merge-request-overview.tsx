@@ -5,8 +5,6 @@ import {
   Clock,
   CodeFork,
   CodePullRequest,
-  Comments,
-  Files,
   Persons,
   TriangleExclamation,
 } from '@gravity-ui/icons';
@@ -18,7 +16,7 @@ import { cn } from '@/shared/lib/cn';
 import { t } from '@/shared/lib/i18n';
 import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
 import type { MergeRequestPageVM } from '../../../model';
-import { actionClass, jumpClass } from './action-classes';
+import { actionClass } from './action-classes';
 import { CopyControl } from './copy-control';
 import { Timestamp } from './timestamp';
 
@@ -44,24 +42,14 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
   mergeRequest,
   jira,
   projectPath,
-  loadedFiles,
-  onShowFiles,
-  onShowComments,
   actions,
-  metadata,
   reactions,
-  children,
 }: {
   mergeRequest: GitLabMergeRequestDC;
   jira: MergeRequestPageVM['jiraSummary'];
-  projectPath: string;
-  loadedFiles: number;
-  onShowFiles: () => void;
-  onShowComments: () => void;
+  projectPath?: ReactNode;
   actions?: ReactNode;
-  metadata?: ReactNode;
   reactions?: ReactNode;
-  children?: ReactNode;
 }) {
   const mr = mergeRequest;
   const { titleParts, jiraProjects, branchIssues } = jira;
@@ -70,7 +58,6 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
     ?.map((user) => user.name)
     .filter(Boolean)
     .join(', ');
-  const fileCount = mr.changes_count || loadedFiles || undefined;
   const blocked = mr.has_conflicts || mr.merge_status === 'cannot_be_merged';
   const mergeLabel = mr.has_conflicts
     ? t('review.hasConflicts')
@@ -85,9 +72,9 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
   return (
     <header
       aria-label={t('review.mergeRequestSummary')}
-      className="@container glass-panel min-w-0 rounded-2xl"
+      className="@container min-w-0"
     >
-      <div className="flex min-w-0 flex-col gap-3 @md:px-5 px-3.5 @md:pt-4 pt-3.5 pb-3">
+      <div className="flex min-w-0 flex-col gap-3 pb-3">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <div className="flex min-w-0 max-w-full flex-auto items-center gap-1.5 text-fg-muted text-xs">
             <CodePullRequest
@@ -96,19 +83,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
               width={16}
               height={16}
             />
-            {projectPath && (
-              <>
-                <span
-                  className="@xs:inline hidden truncate"
-                  title={projectPath}
-                >
-                  {projectPath}
-                </span>
-                <span aria-hidden="true" className="@xs:inline hidden">
-                  /
-                </span>
-              </>
-            )}
+            {projectPath}
             <span className="shrink-0 font-mono font-semibold text-fg-default">
               !{mr.iid}
             </span>
@@ -124,10 +99,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
             {Array.from(jiraProjects, ([url, projectKey]) => (
               <a
                 key={url}
-                className={cn(
-                  actionClass,
-                  'max-w-full text-fg-link no-underline',
-                )}
+                className={cn(actionClass, 'max-w-full no-underline')}
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -144,10 +116,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
               </a>
             ))}
             <a
-              className={cn(
-                actionClass,
-                'text-[var(--glass-accent)] no-underline',
-              )}
+              className={cn(actionClass, 'no-underline')}
               href={mr.web_url}
               target="_blank"
               rel="noreferrer"
@@ -164,7 +133,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
           </div>
         </div>
 
-        <h2 className="m-0 font-semibold @lg:text-[26px] text-fg-default text-xl leading-tight tracking-tight [overflow-wrap:anywhere]">
+        <h1 className="m-0 font-semibold @lg:text-[26px] text-fg-default text-xl leading-tight tracking-tight [overflow-wrap:anywhere]">
           {titleParts.map(({ text, key, url, offset }) =>
             key && url ? (
               <a
@@ -181,7 +150,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
               text
             ),
           )}
-        </h2>
+        </h1>
 
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
           <div className="flex min-w-0 max-w-full items-center gap-1.5 text-fg-muted">
@@ -251,12 +220,12 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
         {reactions}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-[var(--glass-border)] border-t @md:px-5 px-3.5 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 py-1">
         <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-1.5 text-fg-muted text-xs">
           <div className="flex min-w-0 items-center gap-2">
             {author && (
               <GitlabAvatar
-                className="size-7 shrink-0 rounded-full object-cover"
+                className="size-5 shrink-0 rounded-md object-cover"
                 avatarUrl={mr.author?.avatar_url}
                 name={author}
               />
@@ -303,26 +272,7 @@ export const MergeRequestOverview = observer(function MergeRequestOverview({
             </span>
           )}
         </div>
-        <nav
-          className="-ml-2 flex max-w-full flex-wrap items-center gap-x-1"
-          aria-label={t('review.mergeRequestSections')}
-        >
-          <button type="button" className={jumpClass} onClick={onShowFiles}>
-            <Files aria-hidden="true" width={15} height={15} />{' '}
-            {t('common.files')}{' '}
-            <span className="font-mono text-fg-muted">{fileCount}</span>
-          </button>
-          <button type="button" className={jumpClass} onClick={onShowComments}>
-            <Comments aria-hidden="true" width={15} height={15} />{' '}
-            {t('review.comments')}{' '}
-            <span className="font-mono text-fg-muted">
-              {mr.user_notes_count ?? 0}
-            </span>
-          </button>
-        </nav>
       </div>
-      {metadata}
-      {children && <div className="@md:px-5 px-3.5 pb-3">{children}</div>}
     </header>
   );
 });

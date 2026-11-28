@@ -24,7 +24,7 @@ export const MrLifecycleActions = observer(
         <MrMergeAction model={model} />
         <button
           type="button"
-          className={cn(actionClass, 'text-[var(--color-danger-fg)]')}
+          className={actionClass}
           aria-haspopup="dialog"
           disabled={busy}
           onClick={model.showCloseMrDialog}

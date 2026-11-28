@@ -11,10 +11,12 @@ const editClass =
 
 export const MergeRequestMetadata = observer(
   ({ model }: { model: MrMetadataEditor }) => (
-    <div className="grid min-w-0 @md:grid-cols-2 gap-3 border-[var(--glass-border)] border-t @md:px-5 px-3.5 py-3">
+    <div className="grid min-w-0 gap-4">
       <section className="min-w-0 space-y-1.5">
         <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
-          <h3 className="font-semibold text-sm">{t('review.reviewers')}</h3>
+          <h3 className="font-semibold text-fg-muted text-sm">
+            {t('review.reviewers')}
+          </h3>
           {model.canUpdate && (
             <button
               type="button"
@@ -52,7 +54,9 @@ export const MergeRequestMetadata = observer(
       </section>
       <section className="min-w-0 space-y-1.5">
         <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
-          <h3 className="font-semibold text-sm">{t('mrMetadata.labels')}</h3>
+          <h3 className="font-semibold text-fg-muted text-sm">
+            {t('mrMetadata.labels')}
+          </h3>
           {model.canUpdate && (
             <button
               type="button"

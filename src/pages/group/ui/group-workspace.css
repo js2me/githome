@@ -1,0 +1,216 @@
+.workbench-main:has(.group-workspace) {
+  padding: 0;
+}
+
+.group-workspace {
+  --group-gutter: clamp(12px, 1.6vw, 26px);
+  --group-indent: 16px;
+  --group-columns: minmax(0, 1fr) minmax(12rem, 37%);
+  width: 100%;
+  min-width: 0;
+}
+
+.group-workspace-summary {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-border-default);
+  padding: 18px var(--group-gutter);
+}
+
+.group-workspace-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  background: var(--color-canvas-muted);
+  color: var(--color-fg-muted);
+}
+
+.group-workspace-summary h1 {
+  overflow-wrap: anywhere;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.group-workspace-path,
+.group-tree-path {
+  overflow-wrap: anywhere;
+  color: var(--color-fg-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.group-workspace-path {
+  margin-top: 4px;
+}
+
+.group-workspace-description {
+  margin-top: 9px;
+  overflow-wrap: anywhere;
+  color: var(--color-fg-muted);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.group-tree-toolbar {
+  display: flex;
+  min-height: 48px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 7px var(--group-gutter);
+}
+
+.group-tree-toolbar h2 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.group-tree-collapse {
+  display: inline-flex;
+  min-height: 29px;
+  align-items: center;
+  gap: 6px;
+  border-radius: 5px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.group-tree,
+:where(.group-tree > li) {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.group-tree-columns,
+.group-tree-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: var(--group-columns);
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-inline: var(--group-gutter);
+}
+
+.group-tree-columns {
+  min-height: 31px;
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-canvas-subtle);
+  color: var(--color-fg-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.group-tree-row {
+  min-height: 37px;
+}
+
+.group-tree-row:hover,
+.group-tree-row:focus-within {
+  background: var(--glass-hover);
+}
+
+.group-tree-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  padding-inline-start: calc(var(--group-depth) * var(--group-indent));
+}
+
+.group-tree-toggle,
+.group-tree-toggle-spacer {
+  width: 25px;
+  flex: none;
+}
+
+.group-tree-toggle {
+  display: grid;
+  height: 27px;
+  cursor: pointer;
+  place-items: center;
+  border-radius: 4px;
+  color: var(--color-fg-muted);
+}
+
+.group-tree-toggle:hover {
+  background: var(--color-canvas-emphasis);
+  color: var(--color-fg-default);
+}
+
+.group-tree-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.group-tree-link {
+  display: flex;
+  min-width: 0;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-size: 13px;
+}
+
+.group-tree-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.group-tree-group-link {
+  font-weight: 600;
+}
+
+.group-tree-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-tree-branch {
+  position: relative;
+}
+
+.group-tree-branch::before {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: calc(var(--group-gutter) + var(--group-depth) * var(--group-indent) + 12px);
+  border-inline-start: 1px solid var(--color-border-default);
+  content: "";
+  pointer-events: none;
+}
+
+.group-tree-branch-status {
+  overflow-wrap: anywhere;
+  color: var(--color-fg-muted);
+  padding: 8px var(--group-gutter) 8px calc(var(--group-gutter) + (var(--group-depth) + 1) * var(--group-indent));
+  font-size: 12px;
+}
+
+.group-tree-branch-status[role="alert"] {
+  color: var(--color-danger-fg);
+}
+
+@media (max-width: 639px) {
+  .group-workspace {
+    --group-indent: 13px;
+    --group-columns: minmax(0, 1fr);
+  }
+
+  .group-tree-columns span:last-child,
+  .group-tree-path {
+    display: none;
+  }
+}
