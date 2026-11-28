@@ -5,7 +5,7 @@ import {
   createInboxDiscussionSummariesQuery,
   createInboxReviewStatesQuery,
   type ProjectGroup,
-} from '@/shared/api/gitlab/queries/merge-requests/summaries';
+} from '@/shared/api/gitlab/queries/merge-requests/review/summaries';
 import { VM } from '@/shared/lib/view-models/vm';
 
 function groupInboxRows(rows: InboxRow[]): ProjectGroup[] {

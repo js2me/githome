@@ -5,7 +5,7 @@ import {
   createInboxRequestsQuery,
   type InboxRequest,
   type InboxScope,
-} from '@/shared/api/gitlab/queries/merge-requests/inbox';
+} from '@/shared/api/gitlab/queries/merge-requests/review/inbox';
 
 export type InboxRow = InboxRequest & { projectPath: string };
 

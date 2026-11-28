@@ -1,5 +1,5 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
-import { request } from 'node:https';
+import type { ClientRequest, IncomingMessage, ServerResponse } from 'node:http';
+import { request, type RequestOptions } from 'node:https';
 import { CLOUD_API, CLOUD_PROXY_PREFIX } from '../src/shared/api/forge/cloud-origins';
 
 const forwardedHeaders = [
@@ -18,7 +18,16 @@ export const resolveCloudProxyTarget = (url: string): URL | null => {
   return target.origin === origin && target.pathname.startsWith(prefix) ? target : null;
 };
 
-export const handleForgeProxyRequest = (
+type UpstreamRequest = (
+  target: URL,
+  options: RequestOptions,
+  onResponse: (response: IncomingMessage) => void,
+) => ClientRequest;
+
+export const createForgeProxyHandler = (
+  version: string,
+  requestUpstream: UpstreamRequest = request,
+) => (
   req: IncomingMessage,
   res: ServerResponse,
   url: string,
@@ -31,10 +40,13 @@ export const handleForgeProxyRequest = (
     return true;
   }
 
-  const headers = Object.fromEntries(
-    forwardedHeaders.flatMap((name) => req.headers[name] ? [[name, req.headers[name]]] : []),
-  );
-  const upstream = request(target, { method: req.method, headers }, (response) => {
+  const headers = {
+    ...Object.fromEntries(
+      forwardedHeaders.flatMap((name) => req.headers[name] ? [[name, req.headers[name]]] : []),
+    ),
+    'user-agent': `GitHome/${version}`,
+  };
+  const upstream = requestUpstream(target, { method: req.method, headers }, (response) => {
     const status = response.statusCode ?? 502;
     // Never serve an upstream redirect or arbitrary non-API content on the app origin.
     if (status >= 300 && status < 400) {

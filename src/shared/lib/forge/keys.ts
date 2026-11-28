@@ -26,3 +26,8 @@ export const forgeCommentsKey = (
     ref.number,
     'comments',
   );
+
+export const forgePostedCommentsKey = (
+  session: ForgeSession,
+  ref: ForgePullRequestRef,
+) => [...forgeCommentsKey(session, ref), 'posted'] as const;

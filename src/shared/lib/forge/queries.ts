@@ -1,6 +1,8 @@
-import type { QueryKey } from '@tanstack/query-core';
+import { type QueryKey, skipToken } from '@tanstack/query-core';
+import { createQuery, queryClient } from 'mobx-tanstack-query/preset';
 import type { ForgeSession } from '@/shared/api/forge/adapter';
 import type {
+  ForgeComment,
   ForgePage,
   ForgePullRequestRef,
 } from '@/shared/api/forge/contracts';
@@ -8,7 +10,7 @@ import {
   createScopedInfiniteQuery,
   createScopedQuery,
 } from '@/shared/lib/query/create-scoped-query';
-import { forgeCommentsKey, forgeKey } from './keys';
+import { forgeCommentsKey, forgeKey, forgePostedCommentsKey } from './keys';
 
 const disabledKey = ['forge', null] as const;
 type Scope<T> = { session: ForgeSession; resource: T };
@@ -108,3 +110,19 @@ export const createForgeCommentList = (
     ({ session, resource }, cursor, signal) =>
       session.adapter.listComments(resource, cursor, signal),
   );
+
+export const createForgePostedCommentsQuery = (
+  getScope: () => Scope<ForgePullRequestRef> | null,
+  abortSignal: AbortSignal,
+) =>
+  createQuery<ForgeComment[]>(queryClient, () => {
+    const scope = getScope();
+    return {
+      abortSignal,
+      queryKey: scope
+        ? forgePostedCommentsKey(scope.session, scope.resource)
+        : disabledKey,
+      // This cache entry is populated by successful POSTs, never by a fetch.
+      queryFn: skipToken,
+    };
+  });

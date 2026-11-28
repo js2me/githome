@@ -1,18 +1,13 @@
 import type { CloudRequest } from '../forge/cloud-client';
 import type {
-  ForgeAccount,
-  ForgeComment,
   ForgePullRequest,
   ForgeQueries,
   ForgeRepository,
 } from '../forge/contracts';
-import { commentsPath, pullRequestPath, repositoryPath } from './paths';
-
-interface User {
-  display_name: string;
-  nickname?: string;
-  links?: { avatar?: { href: string } };
-}
+import { mapAccount, type User } from './comment';
+import { listGeneralComments } from './comment-list';
+import { fetchBitbucketPage } from './page';
+import { pullRequestPath, repositoryPath } from './paths';
 
 interface Repository {
   name: string;
@@ -32,20 +27,6 @@ interface PullRequest {
   destination: { branch: { name: string } };
 }
 
-interface Comment {
-  id: number;
-  content?: { raw?: string };
-  deleted?: boolean;
-  user?: User;
-  created_on: string;
-}
-
-const account = (user: User): ForgeAccount => ({
-  name: user.display_name,
-  username: user.nickname,
-  avatarUrl: user.links?.avatar?.href,
-});
-
 const repository = (repo: Repository): ForgeRepository => ({
   id: repo.full_name,
   name: repo.name,
@@ -61,16 +42,9 @@ const pullRequest = (pr: PullRequest): ForgePullRequest => ({
   state:
     pr.state === 'OPEN' ? 'open' : pr.state === 'MERGED' ? 'merged' : 'closed',
   draft: pr.draft,
-  author: pr.author ? account(pr.author) : undefined,
+  author: pr.author ? mapAccount(pr.author) : undefined,
   sourceBranch: pr.source.branch.name,
   targetBranch: pr.destination.branch.name,
-});
-
-const comment = (value: Comment): ForgeComment => ({
-  id: String(value.id),
-  body: value.content?.raw ?? '',
-  author: value.user ? account(value.user) : undefined,
-  createdAt: value.created_on,
 });
 
 export const createBitbucketQueries = (
@@ -81,23 +55,14 @@ export const createBitbucketQueries = (
     path: string,
     signal: AbortSignal,
     map: (value: T) => R,
-    include?: (value: T) => boolean,
   ) => {
-    const { data } = await request<{ values: T[]; next?: string }>(
-      path,
-      signal,
-    );
-    if (!Array.isArray(data.values))
-      throw new Error('Invalid Bitbucket list response');
-    return {
-      items: (include ? data.values.filter(include) : data.values).map(map),
-      nextCursor: data.next,
-    };
+    const { values, next } = await fetchBitbucketPage<T>(request, path, signal);
+    return { items: values.map(map), nextCursor: next };
   };
 
   return {
     getAccount: async (signal) =>
-      account((await request<User>('/2.0/user', signal)).data),
+      mapAccount((await request<User>('/2.0/user', signal)).data),
     listRepositories: (cursor, signal) =>
       list(
         cursor ?? `${repositoryPath(workspace)}?pagelen=30`,
@@ -116,11 +81,6 @@ export const createBitbucketQueries = (
         (await request<PullRequest>(pullRequestPath(ref), signal)).data,
       ),
     listComments: (ref, cursor, signal) =>
-      list(
-        cursor ?? `${commentsPath(ref)}?pagelen=30`,
-        signal,
-        comment,
-        (value) => !value.deleted,
-      ),
+      listGeneralComments(request, ref, cursor, signal),
   };
 };

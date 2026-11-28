@@ -1,18 +1,17 @@
-import { actionBound, computed, observable, observableRef } from 'mobx';
+import { actionBound, computed, observable, reaction } from 'mobx';
+import { WorkspaceVM } from '@/features/workspace-navigation';
 import type { ForgeSession } from '@/shared/api/forge/adapter';
 import type { ForgeRepository } from '@/shared/api/forge/contracts';
 import { createForgeCommentMutation } from '@/shared/lib/forge/mutations';
 import {
   createForgeCommentList,
+  createForgePostedCommentsQuery,
   createForgePullRequestList,
   createForgePullRequestQuery,
   createForgeRepositoryList,
 } from '@/shared/lib/forge/queries';
-import { VM } from '@/shared/lib/view-models/vm';
 
-export class ForgeWorkspaceVM extends VM<{ session: ForgeSession }> {
-  @observableRef accessor repository: ForgeRepository | null = null;
-  @observable accessor number: number | null = null;
+export class ForgeWorkspaceVM extends WorkspaceVM<{ session: ForgeSession }> {
   @observable accessor draft = '';
 
   readonly repositories = createForgeRepositoryList(
@@ -22,7 +21,7 @@ export class ForgeWorkspaceVM extends VM<{ session: ForgeSession }> {
   readonly pullRequests = createForgePullRequestList(
     () =>
       this.repository
-        ? { session: this.payload.session, resource: this.repository.id }
+        ? { session: this.payload.session, resource: this.repository }
         : null,
     this.unmountSignal,
   );
@@ -34,34 +33,106 @@ export class ForgeWorkspaceVM extends VM<{ session: ForgeSession }> {
     () => this.scope,
     this.unmountSignal,
   );
+  readonly postedComments = createForgePostedCommentsQuery(
+    () => this.scope,
+    this.unmountSignal,
+  );
   readonly createComment = createForgeCommentMutation(this.unmountSignal);
+
+  @computed
+  get routeParams() {
+    const { forgeRepository, forgePullRequest } = this.globals.routes;
+    const params = forgePullRequest.params ?? forgeRepository.params;
+    return params?.connectionId === this.payload.session.id ? params : null;
+  }
+
+  @computed
+  get repository() {
+    const params = this.routeParams;
+    return params ? `${params.owner}/${params.repo}` : null;
+  }
+
+  @computed
+  get number() {
+    const params = this.globals.routes.forgePullRequest.params;
+    if (!this.routeParams || !params || !/^[1-9]\d*$/.test(params.number))
+      return null;
+    const number = Number(params.number);
+    return Number.isSafeInteger(number) ? number : null;
+  }
+
+  @computed
+  get visibleComments() {
+    const serverComments = this.comments.data?.pages.flatMap(
+      (page) => page.items,
+    );
+    const posted = this.postedComments.data;
+    if (!serverComments && !posted) return undefined;
+    const byId = new Map(
+      serverComments?.map((comment) => [comment.id, comment]),
+    );
+    for (const comment of posted ?? []) {
+      if (!byId.has(comment.id)) byId.set(comment.id, comment);
+    }
+    return [...byId.values()];
+  }
+
+  willMount() {
+    reaction(
+      () => this.scope,
+      () => {
+        this.setDraft('');
+        this.createComment.reset();
+      },
+      { signal: this.unmountSignal },
+    );
+  }
 
   @computed
   get scope() {
     if (!this.repository || this.number === null) return null;
     return {
       session: this.payload.session,
-      resource: { repositoryId: this.repository.id, number: this.number },
+      resource: { repositoryId: this.repository, number: this.number },
     };
   }
 
   @actionBound
   openRepository(repository: ForgeRepository) {
-    this.repository = repository;
+    const [owner, repo] = repository.id.split('/');
+    if (!owner || !repo) return;
+    void this.globals.routes.forgeRepository.open({
+      connectionId: this.payload.session.id,
+      owner,
+      repo,
+    });
   }
 
   @actionBound
   openPullRequest(number: number) {
-    this.createComment.reset();
-    this.number = number;
-    this.draft = '';
+    if (!this.routeParams) return;
+    const { connectionId, owner, repo } = this.routeParams;
+    void this.globals.routes.forgePullRequest.open({
+      connectionId,
+      owner,
+      repo,
+      number: String(number),
+    });
   }
 
   @actionBound
   goBack() {
     if (this.createComment.isPending) return;
-    if (this.number !== null) this.number = null;
-    else this.repository = null;
+    if (this.number !== null && this.routeParams) {
+      const { connectionId, owner, repo } = this.routeParams;
+      void this.globals.routes.forgeRepository.open({
+        connectionId,
+        owner,
+        repo,
+      });
+    } else {
+      void this.globals.routes.home.open();
+    }
   }
 
   @actionBound
@@ -79,7 +150,13 @@ export class ForgeWorkspaceVM extends VM<{ session: ForgeSession }> {
         ref: scope.resource,
         body: this.draft,
       });
-      if (result.isSuccess && !this.unmountSignal.aborted) this.setDraft('');
+      if (
+        result.isSuccess &&
+        !this.unmountSignal.aborted &&
+        this.scope === scope
+      ) {
+        this.setDraft('');
+      }
     } catch {
       // The mutation exposes the request error to the comment form.
     }

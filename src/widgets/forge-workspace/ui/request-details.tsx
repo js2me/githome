@@ -8,7 +8,7 @@ import { ForgeQueryStatus } from './query-status';
 export const ForgeRequestDetails = observer(
   ({ model }: { model: ForgeWorkspaceVM }) => {
     const pullRequest = model.pullRequest.data;
-    const comments = model.comments.data?.pages.flatMap((page) => page.items);
+    const comments = model.visibleComments;
     const mutation = model.createComment;
     const webUrl = pullRequest && parseWebUrl(pullRequest.webUrl);
     return (

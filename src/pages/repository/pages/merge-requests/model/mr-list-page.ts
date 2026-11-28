@@ -5,7 +5,7 @@ import type {
 import {
   createMrListApprovalSummariesQuery,
   createMrListDiscussionSummariesQuery,
-} from '@/shared/api/gitlab/queries/merge-requests/summaries';
+} from '@/shared/api/gitlab/queries/merge-requests/review/summaries';
 import { VM } from '@/shared/lib/view-models/vm';
 
 interface MrListPagePayload {

@@ -1,7 +1,7 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
-import { handleForgeProxyRequest } from "./forge-proxy";
+import { createForgeProxyHandler } from "./forge-proxy";
 import { handleGitlabProxyRequest } from "./gitlab-proxy";
 
 const MIME_TYPES: Record<string, string> = {
@@ -47,7 +47,8 @@ const resolveStaticPath = (distPath: string, requestPath: string) => {
   return existsSync(indexFallback) ? indexFallback : null;
 };
 
-export const startAppServer = async (distPath: string) => {
+export const startAppServer = async (distPath: string, version: string) => {
+  const handleForgeProxyRequest = createForgeProxyHandler(version);
   const server = createServer((req, res) => {
     const url = req.url ?? "/";
 

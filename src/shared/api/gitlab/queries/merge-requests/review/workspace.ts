@@ -6,7 +6,7 @@ import {
   gitlabApi,
 } from '@/shared/api/gitlab';
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
-import { gitlabConnectionKey } from '../core/keys';
+import { gitlabConnectionKey } from '../../core/keys';
 
 export interface WorkspaceReviewGroup {
   connection: GitLabConnection;

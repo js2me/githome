@@ -1,18 +1,11 @@
 import type { CloudRequest } from '../forge/cloud-client';
 import type {
-  ForgeAccount,
-  ForgeComment,
   ForgePullRequest,
   ForgeQueries,
   ForgeRepository,
 } from '../forge/contracts';
+import { mapAccount, mapComment, type User } from './comment';
 import { commentsPath, pullRequestPath, repositoryPath } from './paths';
-
-interface User {
-  login: string;
-  name?: string | null;
-  avatar_url?: string;
-}
 
 interface Repository {
   name: string;
@@ -34,19 +27,6 @@ interface PullRequest {
   base: { ref: string };
 }
 
-interface Comment {
-  id: number;
-  body: string;
-  user: User | null;
-  created_at: string;
-}
-
-const account = (user: User): ForgeAccount => ({
-  name: user.name || user.login,
-  username: user.login,
-  avatarUrl: user.avatar_url,
-});
-
 const repository = (repo: Repository): ForgeRepository => ({
   id: repo.full_name,
   name: repo.name,
@@ -61,16 +41,9 @@ const pullRequest = (pr: PullRequest): ForgePullRequest => ({
   webUrl: pr.html_url,
   state: pr.merged || pr.merged_at ? 'merged' : pr.state,
   draft: pr.draft,
-  author: pr.user ? account(pr.user) : undefined,
+  author: pr.user ? mapAccount(pr.user) : undefined,
   sourceBranch: pr.head.ref,
   targetBranch: pr.base.ref,
-});
-
-const comment = (value: Comment): ForgeComment => ({
-  id: String(value.id),
-  body: value.body,
-  author: value.user ? account(value.user) : undefined,
-  createdAt: value.created_at,
 });
 
 const nextLink = (headers: Headers) =>
@@ -89,7 +62,7 @@ export const createGithubQueries = (request: CloudRequest): ForgeQueries => {
 
   return {
     getAccount: async (signal) =>
-      account((await request<User>('/user', signal)).data),
+      mapAccount((await request<User>('/user', signal)).data),
     listRepositories: (cursor, signal) =>
       list(
         cursor ?? '/user/repos?per_page=30&sort=updated',
@@ -108,6 +81,6 @@ export const createGithubQueries = (request: CloudRequest): ForgeQueries => {
         (await request<PullRequest>(pullRequestPath(ref), signal)).data,
       ),
     listComments: (ref, cursor, signal) =>
-      list(cursor ?? `${commentsPath(ref)}?per_page=30`, signal, comment),
+      list(cursor ?? `${commentsPath(ref)}?per_page=30`, signal, mapComment),
   };
 };

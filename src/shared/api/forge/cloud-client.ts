@@ -1,6 +1,12 @@
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import { CLOUD_API, CLOUD_PROXY_PREFIX } from './cloud-origins';
 
+export class CloudRequestError extends LocalizedError {
+  constructor(readonly status: number) {
+    super('connection.requestFailedHttp', { v1: status });
+  }
+}
+
 export const createCloudClient = (
   provider: keyof typeof CLOUD_API,
   headers: Record<string, string>,
@@ -45,9 +51,7 @@ export const createCloudClient = (
       },
     );
     if (!response.ok) {
-      throw new LocalizedError('connection.requestFailedHttp', {
-        v1: response.status,
-      });
+      throw new CloudRequestError(response.status);
     }
     return { data: (await response.json()) as T, headers: response.headers };
   };

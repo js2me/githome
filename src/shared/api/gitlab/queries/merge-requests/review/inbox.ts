@@ -1,5 +1,5 @@
-import type { GitLabMergeRequestDC } from '../../data-contracts';
-import { defineInfiniteGitlabQuery } from '../core/define-query';
+import type { GitLabMergeRequestDC } from '../../../data-contracts';
+import { defineInfiniteGitlabQuery } from '../../core/define-query';
 
 export type InboxScope = 'reviewer' | 'author';
 

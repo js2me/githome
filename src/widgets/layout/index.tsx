@@ -39,7 +39,7 @@ export const Layout = withViewModel(
                   key={JSON.stringify([
                     cloud.id,
                     cloud.credentialsRevision,
-                    model.forgeHomeRevision,
+                    cloud.provider,
                   ])}
                   session={cloud}
                 />

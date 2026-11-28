@@ -29,7 +29,7 @@ export const ForgeWorkspace = withPropsViewModel(
           <ForgeRequestDetails model={model} />
         ) : repository ? (
           <>
-            <h1 className="break-words font-bold text-xl">{repository.path}</h1>
+            <h1 className="break-words font-bold text-xl">{repository}</h1>
             <h2 className="font-semibold">{t('forge.openPullRequests')}</h2>
             <ForgeQueryStatus query={pullRequests} />
             {pullRequests.data?.pages.every(

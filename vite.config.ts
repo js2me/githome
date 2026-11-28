@@ -7,12 +7,13 @@ import dotenv from 'dotenv';
 import { defineConfig, type Plugin } from 'vite';
 import electron from 'vite-plugin-electron/simple';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { handleForgeProxyRequest } from './electron/forge-proxy';
+import { createForgeProxyHandler } from './electron/forge-proxy';
 import { handleGitlabProxyRequest } from './electron/gitlab-proxy';
 
-const gitProxyPlugin = (): Plugin => ({
+const gitProxyPlugin = (version: string): Plugin => ({
   name: 'git-provider-proxy',
   configureServer(server) {
+    const handleForgeProxyRequest = createForgeProxyHandler(version);
     server.middlewares.use((req, res, next) => {
       const url = req.url ?? '';
       if (
@@ -41,6 +42,7 @@ export default defineConfig(({ mode, command }) => {
     (command === 'build' && process.env.WEB_ONLY !== '1');
 
   dotenv.config();
+  const appVersion = process.env.GITHOME_RELEASE_VERSION ?? version;
 
   return {
     // Electron serves the renderer from the root of its local HTTP server.
@@ -48,7 +50,7 @@ export default defineConfig(({ mode, command }) => {
     // Linked worktrees can share node_modules. Keep lazy chunks local to the running app.
     cacheDir: `.vite/${mode}/${isElectron ? 'electron' : 'web'}`,
     plugins: [
-      gitProxyPlugin(),
+      gitProxyPlugin(appVersion),
       viteStaticCopy({
         targets: [
           {
@@ -100,9 +102,7 @@ export default defineConfig(({ mode, command }) => {
     ],
     define: {
       'import.meta.env.VITE_ELECTRON': JSON.stringify(isElectron),
-      'import.meta.env.VITE_APP_VERSION': JSON.stringify(
-        process.env.GITHOME_RELEASE_VERSION ?? version,
-      ),
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
     },
     resolve: {
       alias: {

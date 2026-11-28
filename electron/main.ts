@@ -44,7 +44,7 @@ const resolvePageUrl = async (): Promise<string> => {
   }
 
   const distPath = getDistPath();
-  appServer ??= await startAppServer(distPath);
+  appServer ??= await startAppServer(distPath, app.getVersion());
 
   if (!appServer.url) {
     throw new Error(`Failed to resolve app URL (dist: ${distPath})`);

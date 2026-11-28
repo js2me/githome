@@ -70,7 +70,7 @@ export interface ForgeMutations {
     ref: ForgePullRequestRef,
     body: string,
     signal: AbortSignal,
-  ): Promise<void>;
+  ): Promise<ForgeComment>;
 }
 
 export type ForgeAdapter = ForgeQueries & ForgeMutations;

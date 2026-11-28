@@ -2,6 +2,7 @@ import type { GitLabConnectionItem } from '../../forge/connection';
 import type {
   ForgeAccount,
   ForgeAdapter,
+  ForgeComment,
   ForgePullRequest,
   ForgePullRequestRef,
 } from '../../forge/contracts';
@@ -47,6 +48,13 @@ const pullRequest = (mr: GitLabMergeRequestDC): ForgePullRequest => ({
   author: account(mr.author),
   sourceBranch: mr.source_branch,
   targetBranch: mr.target_branch,
+});
+
+const comment = (note: GitLabNoteDC): ForgeComment => ({
+  id: String(note.id),
+  body: note.body,
+  author: account(note.author),
+  createdAt: note.created_at,
 });
 
 export const createGitlabAdapter = (
@@ -122,18 +130,18 @@ export const createGitlabAdapter = (
       );
       return {
         ...page,
-        items: page.items
-          .filter((note) => !note.system)
-          .map((note) => ({
-            id: String(note.id),
-            body: note.body,
-            author: account(note.author),
-            createdAt: note.created_at,
-          })),
+        items: page.items.filter((note) => !note.system).map(comment),
       };
     },
     createComment: async (ref, body, signal) => {
-      await gitlabPost(connection, commentsPath(ref), { body }, signal);
+      return comment(
+        await gitlabPost<GitLabNoteDC>(
+          connection,
+          commentsPath(ref),
+          { body },
+          signal,
+        ),
+      );
     },
   };
 };

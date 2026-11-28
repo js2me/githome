@@ -32,7 +32,6 @@ export class LayoutVM extends WorkspaceVM {
   @observable accessor draftProvider: ForgeProvider = 'gitlab';
   @observable accessor draftBitbucketEmail = '';
   @observable accessor draftBitbucketWorkspace = '';
-  @observable accessor forgeHomeRevision = 0;
 
   @computed
   get cloudSession() {
@@ -299,10 +298,6 @@ export class LayoutVM extends WorkspaceVM {
 
   @actionBound
   openHome() {
-    if (this.cloudSession) {
-      this.forgeHomeRevision++;
-      return;
-    }
     void this.globals.routes.home.open();
   }
 

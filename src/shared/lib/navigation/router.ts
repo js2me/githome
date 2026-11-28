@@ -20,7 +20,16 @@ const defineRoutes = () => {
   const pipelines = repository.extend('/pipelines', { exact: true });
   const analytics = repository.extend('/analytics', { exact: true });
 
+  const forgeRepository = createRoute('/forge/:connectionId/:owner/:repo', {
+    exact: true,
+  });
+  const forgePullRequest = forgeRepository.extend('/pull-requests/:number', {
+    exact: true,
+  });
+
   return {
+    forgeRepository,
+    forgePullRequest,
     home: createRoute('/', { exact: true }),
     group: createRoute('/group/:groupPath', { exact: true }),
     repository,

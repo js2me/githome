@@ -40,7 +40,7 @@ it('implements the same repository, pull request and comment contract for legacy
       init.method === 'POST'
     ) {
       expect(JSON.parse(String(init.body))).toEqual({ body: 'Done' });
-      return Response.json({ id: 1, body: 'Done' });
+      return Response.json({ id: 1, body: 'Done', created_at: '2026-01-01' });
     }
     throw new Error(`Unexpected GitLab endpoint: ${pathname}`);
   });
@@ -58,6 +58,12 @@ it('implements the same repository, pull request and comment contract for legacy
     sourceBranch: 'feature',
     targetBranch: 'main',
   });
-  await adapter.createComment(ref, 'Done', signal);
+  await expect(
+    adapter.createComment(ref, 'Done', signal),
+  ).resolves.toMatchObject({
+    id: '1',
+    body: 'Done',
+    createdAt: '2026-01-01',
+  });
   expect(fetch).toHaveBeenCalledTimes(3);
 });

@@ -3,13 +3,13 @@ import {
   type GitLabMergeRequestReviewerDC,
   type GitLabProjectDC,
   gitlabApi,
-} from '../..';
-import { getMergeRequestReviewers } from '../../endpoints/merge-requests/reviewers/get-merge-request-reviewers';
+} from '../../..';
+import { getMergeRequestReviewers } from '../../../endpoints/merge-requests/reviewers/get-merge-request-reviewers';
 import {
   createGitlabApiQuery,
   type GitlabQueryContext,
-} from '../core/create-query';
-import { gitlabConnectionKey } from '../core/keys';
+} from '../../core/create-query';
+import { gitlabConnectionKey } from '../../core/keys';
 
 export interface ProjectGroup {
   id: number;

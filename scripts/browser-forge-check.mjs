@@ -10,7 +10,8 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   const errors = [];
-  const comments = { github: [], bitbucket: [] };
+  const posted = { github: [], bitbucket: [] };
+  const commentPages = { github: [], bitbucket: [] };
   page.on('pageerror', (error) => errors.push(error));
   await page.setRequestInterception(true);
 
@@ -58,6 +59,12 @@ try {
       ? '/repos/octo/demo/issues/7/comments'
       : `${pullsPath}/7/comments`;
 
+    const makeComment = (id, body, extra = {}) =>
+      github
+        ? { id, body, user, created_at: '2026-01-01', ...extra }
+        : { id, content: { raw: body }, user, created_on: '2026-01-01', ...extra };
+    const inline = makeComment(101, 'Inline root', { inline: { path: 'src/demo.js', to: 3 } });
+    const reply = makeComment(102, 'Inline reply', { parent: { id: 101 } });
     let response;
     const headers = {};
     if (path === (github ? '/user' : '/2.0/user')) response = user;
@@ -75,17 +82,31 @@ try {
       response = github ? [repo] : { values: [repo], next: second ? undefined : next };
     } else if (path === pullsPath) response = github ? [pull] : { values: [pull] };
     else if (path === `${pullsPath}/7`) response = pull;
+    else if (!github && path === `${commentsPath}/101`) response = inline;
+    else if (!github && path === `${commentsPath}/102`) response = reply;
     else if (path === commentsPath) {
       if (request.method() === 'POST') {
         const payload = JSON.parse(request.postData());
         const body = github ? payload.body : payload.content.raw;
-        const id = comments[provider].length + 1;
-        response = github
-          ? { id, body, user, created_at: '2026-01-01' }
-          : { id, content: { raw: body }, user, created_on: '2026-01-01' };
-        comments[provider].push(response);
+        response = makeComment(201 + posted[provider].length, body);
+        posted[provider].push(response);
       } else {
-        response = github ? comments[provider] : { values: comments[provider] };
+        const second = url.searchParams.get('page') === '2';
+        commentPages[provider].push(second ? 2 : 1);
+        const origin = github ? 'https://api.github.com' : 'https://api.bitbucket.org';
+        const next = `${origin}${commentsPath}?page=2`;
+        const values = second
+          ? [
+              makeComment(40, 'Second page comment'),
+              ...(github ? [] : [makeComment(103, 'Nested inline reply', { parent: { id: 102 } })]),
+              ...posted[provider],
+            ]
+          : [
+              ...Array.from({ length: github ? 30 : 28 }, (_, i) => makeComment(i + 1, `Existing comment ${i + 1}`)),
+              ...(github ? [] : [inline, reply]),
+            ];
+        if (github && !second) headers.link = `<${next}>; rel="next"`;
+        response = github ? values : { values, next: second ? undefined : next };
       }
     }
     if (response === undefined) errors.push(new Error(`Unexpected endpoint ${path}`));
@@ -127,16 +148,33 @@ try {
     await byText('//main//button', `${slug}/demo`).click();
     await byText('//main//button', '#7 Common review').click();
     await byText('//main//h1', '#7 Common review').wait();
+    assert.match(new URL(page.url()).pathname, new RegExp(`/forge/[^/]+/${slug}/demo/pull-requests/7$`));
     const message = `Comment for ${provider}`;
-    await page.waitForSelector('main textarea', { visible: true, timeout: 8_000 });
+    await byText('//main//li//p', 'Existing comment 1').wait();
     await page.type('main textarea', message);
     await byText('//main//button', 'Post comment').click();
     await byText('//main//li//p', message).wait();
-    assert.equal(comments[provider].length, 1);
-    console.log(`✓ ${provider}: connection, repository pagination, pull request and comment`);
+    assert.deepEqual(commentPages[provider], [1]);
+    assert.equal(posted[provider].length, 1);
+
+    await byText('//main//button', 'Load more').click();
+    await byText('//main//li//p', 'Second page comment').wait();
+    const bodies = await page.$$eval('main li p', (nodes) => nodes.map((node) => node.textContent));
+    assert.equal(bodies.filter((body) => body === message).length, 1);
+    assert.equal(bodies.some((body) => /inline (root|reply)/i.test(body)), false);
+
+    await page.reload();
+    await byText('//main//h1', '#7 Common review').wait();
+    await byText('//main//button', 'Back').click();
+    await byText('//main//button', '#7 Common review').wait();
+    assert.match(new URL(page.url()).pathname, new RegExp(`/forge/[^/]+/${slug}/demo$`));
+    await page.reload();
+    await byText('//main//h1', `${slug}/demo`).wait();
+    await byText('//main//button', 'Back').click();
+    await byText('//main//button', `${slug}/first`).wait();
+    assert.equal(new URL(page.url()).pathname, '/');
+    console.log(`✓ ${provider}: connection, pagination, comment deduplication and deep links`);
   }
-  await page.reload();
-  await byText('//main//button', 'team/first').wait();
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();

@@ -5,10 +5,10 @@ import type {
 import {
   createGitlabWorkspaceReviewQuery,
   type WorkspaceReviewGroup,
-} from '@/shared/api/gitlab/queries/merge-requests/workspace';
+} from '@/shared/api/gitlab/queries/merge-requests/review/workspace';
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
 
-export type { WorkspaceReview } from '@/shared/api/gitlab/queries/merge-requests/workspace';
+export type { WorkspaceReview } from '@/shared/api/gitlab/queries/merge-requests/review/workspace';
 
 function groupTabs(
   items: MergeRequestNavItem[],
