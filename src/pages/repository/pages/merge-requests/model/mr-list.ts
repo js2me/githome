@@ -4,7 +4,7 @@ import type {
   GitLabMergeRequestDC,
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
-import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { createProjectMergeRequestListQuery } from '@/shared/api/gitlab/queries/merge-requests/list';
 import { t } from '@/shared/lib/i18n';
 
 export const MR_FILTERS = [
@@ -53,7 +53,7 @@ export class MrList {
       { once: true },
     );
 
-    this.mergeRequestsQuery = createInfiniteGitlabQuery<GitLabMergeRequestDC>({
+    this.mergeRequestsQuery = createProjectMergeRequestListQuery({
       globals: params.globals,
       abortSignal: params.unmountSignal,
       params: () => {
@@ -65,23 +65,10 @@ export class MrList {
           return false;
         }
 
-        const search = this.appliedSearch;
-        const iid = search.match(/^!?(\d+)$/)?.[1];
-        const title = iid ? undefined : search || undefined;
-        const filter = this.activeFilter.id;
         return {
-          path: `/projects/${projectId}/merge_requests`,
-          query: {
-            ...(filter === 'mine'
-              ? { scope: 'created_by_me' }
-              : { state: filter }),
-            'iids[]': iid,
-            search: title,
-            in: title ? 'title' : undefined,
-            order_by: 'updated_at',
-            sort: 'desc',
-            per_page: 20,
-          },
+          projectId,
+          search: this.appliedSearch,
+          filter: this.activeFilter.id,
         };
       },
     });

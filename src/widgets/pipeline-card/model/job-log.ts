@@ -1,9 +1,8 @@
 import { actionBound, computed, observable, reaction } from 'mobx';
 import type { ViewModelParams } from 'mobx-view-model';
 import { isPipelineActive } from '@/entities/gitlab-pipelines';
-import { gitlabApi } from '@/shared/api/gitlab';
 import { GitLabApiError } from '@/shared/api/gitlab/client';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { createPipelineJobTraceQuery } from '@/shared/api/gitlab/queries/pipelines';
 import { t } from '@/shared/lib/i18n';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { Globals } from '@/shared/model/globals';
@@ -84,25 +83,13 @@ export class JobLogVM extends VM<JobLogProps> {
 
   constructor(globals: Globals, params: ViewModelParams<JobLogProps>) {
     super(globals, params);
-    this.trace = createGitlabApiQuery<
-      string,
-      { projectId: number; jobId: number }
-    >({
+    this.trace = createPipelineJobTraceQuery({
       globals,
       abortSignal: this.unmountSignal,
       params: () => ({
         projectId: this.payload.projectId,
         jobId: this.payload.jobId,
       }),
-      queryKey: ({ connection, projectId, jobId }) => [
-        'pipeline-job-trace',
-        connection.id,
-        connection.credentialsRevision,
-        projectId,
-        jobId,
-      ],
-      queryFn: ({ connection, projectId, jobId, signal }) =>
-        gitlabApi.getPipelineJobTrace(connection, projectId, jobId, signal),
       queryOptions: {
         staleTime: 0,
         gcTime: 0,

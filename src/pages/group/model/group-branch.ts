@@ -1,8 +1,7 @@
 import { actionBound, computed } from 'mobx';
 import { WorkspaceVM } from '@/features/workspace-navigation';
 import type { GitLabGroupDC } from '@/shared/api/gitlab';
-import { getGroupContents } from '@/shared/api/gitlab/endpoints/groups/get-group-overview';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { createGroupContentsQuery } from '@/shared/api/gitlab/queries/groups';
 import type { GroupPageVM } from './page-vm';
 
 type GroupBranchProps = {
@@ -12,20 +11,10 @@ type GroupBranchProps = {
 };
 
 export class GroupBranchVM extends WorkspaceVM<GroupBranchProps> {
-  readonly contents = createGitlabApiQuery({
+  readonly contents = createGroupContentsQuery({
     globals: this.globals,
     abortSignal: this.unmountSignal,
     params: () => (this.expanded ? { groupId: this.payload.group.id } : false),
-    queryKey: ({ connection, groupId }) => [
-      'group-contents',
-      connection.id,
-      connection.gitlabUrl,
-      connection.credentialsRevision,
-      groupId,
-    ],
-    queryFn: ({ connection, groupId, signal }) =>
-      getGroupContents(connection, groupId, signal),
-    queryOptions: { staleTime: 60_000, retry: false },
   });
 
   @computed

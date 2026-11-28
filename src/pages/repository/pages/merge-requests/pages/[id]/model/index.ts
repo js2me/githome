@@ -2,8 +2,7 @@ import { computed, type IReactionDisposer, reaction } from 'mobx';
 import type { ViewModelParams } from 'mobx-view-model';
 import type { Workspace } from '@/features/workspace-navigation';
 import { WorkspaceVM } from '@/features/workspace-navigation';
-import { gitlabApi } from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { createMergeRequestJiraLinksQuery } from '@/shared/api/gitlab/queries/merge-requests/detail';
 import {
   extractJiraLinks,
   findJiraKeys,
@@ -113,10 +112,7 @@ export class MergeRequestPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
       },
     });
 
-    this.jiraLinksQuery = createGitlabApiQuery<
-      Record<string, string>,
-      { projectPath: string; keys: string[] }
-    >({
+    this.jiraLinksQuery = createMergeRequestJiraLinksQuery({
       globals,
       abortSignal: this.unmountSignal,
       params: () => {
@@ -124,22 +120,6 @@ export class MergeRequestPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
         const keys = this.jiraKeys.filter((key) => !this.titleJiraLinks[key]);
         return projectPath && keys.length ? { projectPath, keys } : null;
       },
-      queryKey: ({ connection, projectPath, keys }) => [
-        'mr-jira-links',
-        connection.id,
-        connection.gitlabUrl,
-        projectPath,
-        keys,
-      ],
-      queryFn: async ({ connection, projectPath, keys, signal }) => {
-        const html = await gitlabApi.renderMarkdown(connection, {
-          text: keys.join('\n\n'),
-          projectPath,
-          signal,
-        });
-        return extractJiraLinks(html, keys);
-      },
-      queryOptions: { staleTime: 300_000, retry: false },
     });
 
     this.disposeReviewActionReaction = reaction(

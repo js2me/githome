@@ -18,9 +18,9 @@ import type {
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
 import {
-  createGitlabApiQuery,
-  createInfiniteGitlabQuery,
-} from '@/shared/lib/gitlab/connection/create-query';
+  createPipelineMergeRequestDetailsQuery,
+  createProjectPipelinesQuery,
+} from '@/shared/api/gitlab/queries/pipelines';
 import { t } from '@/shared/lib/i18n';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 
@@ -92,7 +92,7 @@ export class PipelineList {
   }
 
   constructor(private readonly params: PipelineListParams) {
-    this.pipelinesQuery = createInfiniteGitlabQuery<GitLabPipelineDC>({
+    this.pipelinesQuery = createProjectPipelinesQuery({
       globals: params.globals,
       abortSignal: params.abortSignal,
       params: () => {
@@ -102,14 +102,9 @@ export class PipelineList {
         }
 
         return {
-          path: `/projects/${projectId}/pipelines`,
-          query: {
-            order_by: 'id',
-            sort: 'desc',
-            per_page: 20,
-            status: this.statusFilter || undefined,
-            ref: this.refFilter || undefined,
-          },
+          projectId,
+          status: this.statusFilter || undefined,
+          ref: this.refFilter || undefined,
         };
       },
       queryOptions: () => {
@@ -124,10 +119,7 @@ export class PipelineList {
       },
     });
 
-    this.mergeRequestDetailsQuery = createGitlabApiQuery<
-      Record<number, GitLabMergeRequestDC | null>,
-      { projectId: number; iids: number[] }
-    >({
+    this.mergeRequestDetailsQuery = createPipelineMergeRequestDetailsQuery({
       globals: params.globals,
       abortSignal: params.abortSignal,
       params: () => {
@@ -136,33 +128,6 @@ export class PipelineList {
         return projectId === null || iids.length === 0
           ? false
           : { projectId, iids };
-      },
-      queryKey: ({ connection, projectId, iids }) =>
-        [
-          'pipeline-merge-request-details',
-          connection.id,
-          connection.gitlabUrl,
-          connection.credentialsRevision,
-          projectId,
-          iids,
-        ] as const,
-      queryFn: async ({ connection, projectId, iids, signal }) => {
-        const results = await Promise.all(
-          iids.map(async (iid) => {
-            try {
-              const mergeRequest = await gitlabApi.fetch<GitLabMergeRequestDC>(
-                connection,
-                `/projects/${projectId}/merge_requests/${iid}`,
-                { signal },
-              );
-              return [iid, mergeRequest] as const;
-            } catch {
-              return [iid, null] as const;
-            }
-          }),
-        );
-
-        return Object.fromEntries(results);
       },
     });
   }

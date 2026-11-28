@@ -1,12 +1,9 @@
 import { actionBound, computed, observable } from 'mobx';
-import type {
-  GitLabMergeRequestDC,
-  GitLabPipelineSummaryDC,
-} from '@/shared/api/gitlab';
+import type { GitLabMergeRequestDC } from '@/shared/api/gitlab';
 import {
-  createGitlabQuery,
-  createInfiniteGitlabQuery,
-} from '@/shared/lib/gitlab/connection/create-query';
+  createBranchPipelinesQuery,
+  createMergeRequestPipelinesQuery,
+} from '@/shared/api/gitlab/queries/pipelines';
 import type { Globals } from '@/shared/model/globals';
 import {
   mergeRequestHeadSha,
@@ -43,21 +40,21 @@ export class MergeRequestPipelines {
 
   constructor(private readonly options: Options) {
     const { globals, abortSignal, target } = options;
-    this.mrRuns = createInfiniteGitlabQuery<GitLabPipelineSummaryDC>({
+    this.mrRuns = createMergeRequestPipelinesQuery({
       globals,
       abortSignal,
       params: () => {
         const context = target();
         return (
           context && {
-            path: `/projects/${context.projectId}/merge_requests/${context.mr.iid}/pipelines`,
-            query: { per_page: 30 },
+            projectId: context.projectId,
+            iid: context.mr.iid,
           }
         );
       },
       queryOptions: polling,
     });
-    this.branchRuns = createGitlabQuery<GitLabPipelineSummaryDC[]>({
+    this.branchRuns = createBranchPipelinesQuery({
       globals,
       abortSignal,
       params: () => {
@@ -70,16 +67,7 @@ export class MergeRequestPipelines {
             : mr.source_project_id;
         const sha = mergeRequestHeadSha(mr);
         if (!projectId || !sha || !mr.source_branch) return false;
-        return {
-          path: `/projects/${projectId}/pipelines`,
-          query: {
-            scope: 'branches',
-            ref: mr.source_branch,
-            sha,
-            order_by: 'id',
-            sort: 'desc',
-          },
-        };
+        return { projectId, ref: mr.source_branch, sha };
       },
       queryOptions: polling,
     });

@@ -313,3 +313,11 @@ export interface GitLabMarkdownUploadDC {
   full_path: string;
   markdown: string;
 }
+
+export interface GitLabApprovalRule {
+  id: number;
+  name: string;
+  eligible_approvers?: GitLabUserDC[];
+  approved_by?: GitLabUserDC[];
+  approvals_required: number;
+}

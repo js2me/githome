@@ -1,16 +1,16 @@
 import { actionBound, observable, runInAction } from 'mobx';
-import { queryClient } from 'mobx-tanstack-query/preset';
-import { mergeRequestDetailKey } from '@/entities/gitlab-merge-requests';
-import {
-  addMergeRequestAwardEmoji,
-  deleteMergeRequestAwardEmoji,
-  getMergeRequestAwardEmoji,
-  type MergeRequestAwardEmoji,
-  type MergeRequestReactionName,
-  type MergeRequestReactionTarget,
+import type {
+  MergeRequestReactionName,
+  MergeRequestReactionTarget,
 } from '@/shared/api/gitlab/endpoints/merge-requests/reactions/award-emoji';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import {
+  invalidateMergeRequestReactions,
+  toggleMergeRequestReaction,
+} from '@/shared/api/gitlab/mutations/reactions';
+import {
+  createMergeRequestReactionsQuery,
+  reactionKey,
+} from '@/shared/api/gitlab/queries/merge-requests/reactions';
 import type { Globals } from '@/shared/model/globals';
 
 type Options = {
@@ -20,36 +20,16 @@ type Options = {
   currentUserId: () => number | null;
 };
 
-const reactionKey = (
-  connection: GitLabConnection,
-  { projectId, mergeRequestIid }: MergeRequestReactionTarget,
-) =>
-  [
-    ...mergeRequestDetailKey(connection, projectId, mergeRequestIid),
-    'reactions',
-  ] as const;
-
 export class MergeRequestReactions {
   readonly query;
   private readonly saving = observable.set<string>();
   @observable private accessor failedScope: string | null = null;
 
   constructor(private readonly options: Options) {
-    this.query = createGitlabApiQuery<
-      MergeRequestAwardEmoji[],
-      MergeRequestReactionTarget
-    >({
+    this.query = createMergeRequestReactionsQuery({
       globals: options.globals,
       abortSignal: options.abortSignal,
       params: options.target,
-      queryKey: ({ connection, ...target }) => reactionKey(connection, target),
-      queryFn: ({ connection, signal, ...target }) =>
-        getMergeRequestAwardEmoji(connection, target, signal),
-      queryOptions: {
-        refetchInterval: 20_000,
-        refetchOnWindowFocus: true,
-        retry: false,
-      },
     });
   }
 
@@ -92,7 +72,7 @@ export class MergeRequestReactions {
     if (!context || !this.canReact || userId == null || abortSignal.aborted)
       return;
 
-    const { connection, target, key, scope } = context;
+    const { connection, target, scope } = context;
     const existing = this.query.data?.find(
       (award) => award.name === name && award.user.id === userId,
     );
@@ -100,33 +80,19 @@ export class MergeRequestReactions {
     this.failedScope = null;
 
     try {
-      const created = existing
-        ? await deleteMergeRequestAwardEmoji(
-            connection,
-            target,
-            existing.id,
-            abortSignal,
-          )
-        : await addMergeRequestAwardEmoji(
-            connection,
-            target,
-            name,
-            abortSignal,
-          );
-
-      // A poll started before the write could otherwise overwrite the new state.
-      await queryClient.cancelQueries({ queryKey: key, exact: true });
-      queryClient.setQueryData<MergeRequestAwardEmoji[]>(key, (awards) =>
-        created
-          ? [...(awards ?? []).filter(({ id }) => id !== created.id), created]
-          : awards?.filter(({ id }) => id !== existing?.id),
+      await toggleMergeRequestReaction(
+        connection,
+        target,
+        name,
+        existing?.id,
+        abortSignal,
       );
     } catch {
       if (!abortSignal.aborted && this.context?.scope === scope) {
         runInAction(() => {
           this.failedScope = scope;
         });
-        await queryClient.invalidateQueries({ queryKey: key, exact: true });
+        await invalidateMergeRequestReactions(connection, target);
       }
     } finally {
       runInAction(() => {

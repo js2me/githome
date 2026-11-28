@@ -1,6 +1,7 @@
 import { type ViewModelProps, withViewModel } from 'mobx-view-model-react';
 import { type ReactNode, Suspense } from 'react';
 import { GitLabConnectionProvider } from '@/shared/lib/gitlab/connection/connection-context';
+import { ForgeWorkspace } from '@/widgets/forge-workspace';
 import { AppBreadcrumbs } from './components/navigation/app-breadcrumbs';
 import { AppNav } from './components/navigation/app-nav';
 import { RefreshNotice } from './components/refresh-notice';
@@ -17,17 +18,35 @@ export const Layout = withViewModel(
   LayoutVM,
   ({ model, children }: LayoutProps) => {
     const { stores } = model.globals;
+    const cloud = model.cloudSession;
 
     return (
       <GitLabConnectionProvider connection={stores.settings.activeConnection}>
         <div className="workbench">
           <AppNav />
-          <WorkspaceTabs />
-          <AppBreadcrumbs />
-          <ProjectSections />
+          {!cloud && (
+            <>
+              <WorkspaceTabs />
+              <AppBreadcrumbs />
+              <ProjectSections />
+            </>
+          )}
           <RefreshNotice model={model.refreshShortcut} />
           <main className="workbench-main">
-            <Suspense fallback={null}>{children}</Suspense>
+            <Suspense fallback={null}>
+              {cloud ? (
+                <ForgeWorkspace
+                  key={JSON.stringify([
+                    cloud.id,
+                    cloud.credentialsRevision,
+                    model.forgeHomeRevision,
+                  ])}
+                  session={cloud}
+                />
+              ) : (
+                children
+              )}
+            </Suspense>
           </main>
         </div>
       </GitLabConnectionProvider>

@@ -2,7 +2,7 @@
   "name": "githome",
   "private": true,
   "version": "0.1.0",
-  "description": "GitHome desktop client for GitLab",
+  "description": "GitHome desktop client for GitLab, GitHub and Bitbucket Cloud",
   "author": {
     "name": "js2me",
     "email": "js2me@users.noreply.github.com"
@@ -27,6 +27,7 @@
     "lint:fix": "biome check --write src",
     "test": "vitest run",
     "check:browser": "node scripts/browser-check.mjs",
+    "check:browser:forge": "node scripts/browser-forge-check.mjs",
     "postinstall": "node node_modules/electron/install.js",
     "link:debug:packages": "npx --yes packalink"
   },

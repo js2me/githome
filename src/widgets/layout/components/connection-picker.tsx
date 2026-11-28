@@ -1,20 +1,23 @@
 import { Plus, Xmark } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
 import { useViewModel } from 'mobx-view-model-react';
+import type { ForgeProvider } from '@/shared/api/forge/contracts';
 import { t } from '@/shared/lib/i18n';
 import { GlassDialog } from '@/shared/ui/glass-dialog';
 import type { LayoutVM } from '../model/layout-vm';
+import { BitbucketConnectionFields } from './bitbucket-connection-fields';
 import { ConnectionButton } from './connection-button';
 
 export const ConnectionPicker = observer(() => {
   const model = useViewModel<LayoutVM>();
   const settings = model.globals.stores.settings;
+  const session = settings.activeSession;
 
   return (
     <>
       <ConnectionButton
         placement="header"
-        connection={settings.activeItem}
+        session={session}
         expanded={model.isConnectionDialogOpen}
         onClick={model.openConnectionPopup}
       />
@@ -30,7 +33,7 @@ export const ConnectionPicker = observer(() => {
             id="connections-title"
             className="font-bold text-xl tracking-tight"
           >
-            {t('connection.gitlabConnections2')}
+            {t('forge.connections')}
           </h2>
           <button
             type="button"
@@ -41,28 +44,30 @@ export const ConnectionPicker = observer(() => {
             <Xmark className="size-4" aria-hidden />
           </button>
         </div>
-        {model.isConnectionDialogOpen && settings.connections.length > 0 && (
-          <div className="mb-5 flex max-h-44 flex-col gap-1 overflow-y-auto border-[var(--glass-border)] border-b pb-4">
-            {settings.connections.map((connection) => (
-              <ConnectionButton
-                key={connection.id}
-                placement="list"
-                connection={connection}
-                selected={model.draftConnectionId === connection.id}
-                onClick={() => model.selectConnection(connection.id)}
-              />
-            ))}
-            <button
-              type="button"
-              aria-pressed={!model.draftConnectionId}
-              className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 font-semibold text-[var(--glass-accent)] text-sm hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]"
-              onClick={model.selectNewConnection}
-            >
-              <Plus className="size-4" aria-hidden />{' '}
-              {t('connection.newConnection')}
-            </button>
-          </div>
-        )}
+        {model.isConnectionDialogOpen &&
+          settings.connectionOptions.length > 0 && (
+            <div className="mb-5 flex max-h-44 flex-col gap-1 overflow-y-auto border-[var(--glass-border)] border-b pb-4">
+              {settings.connectionOptions.map(({ id, label }) => (
+                <ConnectionButton
+                  key={id}
+                  placement="list"
+                  session={session?.id === id ? session : null}
+                  fallbackLabel={label}
+                  selected={model.draftConnectionId === id}
+                  onClick={() => model.selectConnection(id)}
+                />
+              ))}
+              <button
+                type="button"
+                aria-pressed={!model.draftConnectionId}
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 font-semibold text-[var(--glass-accent)] text-sm hover:bg-[var(--glass-hover)] aria-pressed:bg-[var(--glass-selected)]"
+                onClick={model.selectNewConnection}
+              >
+                <Plus className="size-4" aria-hidden />{' '}
+                {t('connection.newConnection')}
+              </button>
+            </div>
+          )}
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -70,56 +75,91 @@ export const ConnectionPicker = observer(() => {
           }}
         >
           <label className="mb-4 grid gap-1.5 font-semibold text-sm">
-            {t('connection.gitlabAddress')}
-            <input
-              ref={model.connectionUrlInput}
+            {t('forge.provider')}
+            <select
               className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
-              type="text"
-              inputMode="url"
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              placeholder="https://gitlab.com"
-              value={model.draftGitlabUrl}
-              onChange={(event) => model.setDraftGitlabUrl(event.target.value)}
-            />
+              value={model.draftProvider}
+              disabled={Boolean(model.draftConnectionId)}
+              onChange={(event) =>
+                model.setDraftProvider(event.target.value as ForgeProvider)
+              }
+            >
+              <option value="gitlab">GitLab</option>
+              <option value="github">GitHub</option>
+              <option value="bitbucket">Bitbucket Cloud</option>
+            </select>
           </label>
+          {model.draftProvider === 'bitbucket' && (
+            <BitbucketConnectionFields model={model} />
+          )}
+          {model.draftProvider === 'gitlab' && (
+            <label className="mb-4 grid gap-1.5 font-semibold text-sm">
+              {t('connection.gitlabAddress')}
+              <input
+                ref={model.connectionUrlInput}
+                className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
+                type="text"
+                inputMode="url"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="https://gitlab.com"
+                value={model.draftGitlabUrl}
+                onChange={(event) =>
+                  model.setDraftGitlabUrl(event.target.value)
+                }
+              />
+            </label>
+          )}
           <label className="grid gap-1.5 font-semibold text-sm">
-            {t('connection.accessToken')}
+            {model.draftProvider === 'bitbucket'
+              ? t('forge.apiToken')
+              : t('connection.accessToken')}
             <input
               className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
               type="password"
               autoComplete="off"
-              placeholder="glpat-…"
+              placeholder={
+                model.draftProvider === 'gitlab' ? 'glpat-…' : undefined
+              }
               value={model.draftGitToken}
               onChange={(event) => model.setDraftGitToken(event.target.value)}
             />
           </label>
-          <label className="mt-4 grid gap-1.5 font-semibold text-sm">
-            <span>
-              {t('connection.jiraAddress')}{' '}
-              <span className="font-normal text-fg-muted">
-                {t('connection.optional')}
-              </span>
-            </span>
-            <input
-              className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
-              type="url"
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              placeholder="https://company.atlassian.net"
-              value={model.draftJiraUrl}
-              aria-invalid={model.isDraftJiraUrlInvalid || undefined}
-              aria-describedby="connection-jira-hint"
-              onChange={(event) => model.setDraftJiraUrl(event.target.value)}
-            />
-          </label>
-          <p id="connection-jira-hint" className="mt-1.5 text-fg-muted text-xs">
-            {model.isDraftJiraUrlInvalid
-              ? t('connection.enterAFullHttpOrHttpsAddress')
-              : t('connection.usedForIssueAndProjectLinksWhen')}
-          </p>
+          {model.draftProvider === 'gitlab' && (
+            <>
+              <label className="mt-4 grid gap-1.5 font-semibold text-sm">
+                <span>
+                  {t('connection.jiraAddress')}{' '}
+                  <span className="font-normal text-fg-muted">
+                    {t('connection.optional')}
+                  </span>
+                </span>
+                <input
+                  className="glass-input min-w-0 rounded-xl px-3.5 py-2.5 font-normal"
+                  type="url"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder="https://company.atlassian.net"
+                  value={model.draftJiraUrl}
+                  aria-invalid={model.isDraftJiraUrlInvalid || undefined}
+                  aria-describedby="connection-jira-hint"
+                  onChange={(event) =>
+                    model.setDraftJiraUrl(event.target.value)
+                  }
+                />
+              </label>
+              <p
+                id="connection-jira-hint"
+                className="mt-1.5 text-fg-muted text-xs"
+              >
+                {model.isDraftJiraUrlInvalid
+                  ? t('connection.enterAFullHttpOrHttpsAddress')
+                  : t('connection.usedForIssueAndProjectLinksWhen')}
+              </p>
+            </>
+          )}
           <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
             {model.draftConnectionId && (
               <button

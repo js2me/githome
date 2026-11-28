@@ -1,15 +1,11 @@
 import { createStorageData } from 'mobx-web-api';
 
-export interface GitLabConnectionItem {
-  id: string;
-  gitlabUrl: string;
-  gitToken: string;
-  credentialsRevision?: string;
-  jiraUrl?: string;
-}
+import type { ForgeConnection } from '@/shared/api/forge/connection';
+
+export type { GitLabConnectionItem } from '@/shared/api/forge/connection';
 
 export interface ConnectionsStorage {
-  items: GitLabConnectionItem[];
+  items: ForgeConnection[];
   activeId: string | null;
 }
 
@@ -48,7 +44,7 @@ const migrateLegacySettings = () => {
 
     const id = crypto.randomUUID();
     connectionsKey.value = {
-      items: [{ id, gitlabUrl, gitToken }],
+      items: [{ id, provider: 'gitlab', gitlabUrl, gitToken }],
       activeId: id,
     };
 

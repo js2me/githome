@@ -6,7 +6,10 @@ import type {
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import {
+  createMergeRequestChangesQuery,
+  createMergeRequestVersionsQuery,
+} from '@/shared/api/gitlab/queries/merge-requests/diff';
 import { t } from '@/shared/lib/i18n';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type { Globals } from '@/shared/model/globals';
@@ -33,17 +36,9 @@ export class MergeRequestGitDiff {
   } | null = null;
 
   constructor(private readonly options: MergeRequestGitDiffParams) {
-    this.changesQuery = createGitlabApiQuery<
-      GitLabMergeRequestChangeDC[],
-      MergeRequestGitDiffContext & {
-        revision: string;
-        version: GitLabMergeRequestVersionDC | null;
-        detail: GitLabMergeRequestDC | null;
-      }
-    >({
+    this.changesQuery = createMergeRequestChangesQuery({
       globals: options.globals,
       abortSignal: options.abortSignal,
-      queryOptions: { retry: 1 },
       params: () => {
         const mr = options.params();
         const version = this.selectedVersion;
@@ -59,30 +54,9 @@ export class MergeRequestGitDiff {
           detail: version ? null : options.getMergeRequestDetail(),
         };
       },
-      queryKey: ({ revision }) => ['merge-request-changes', revision],
-      queryFn: ({
-        connection,
-        project,
-        mergeRequestIid,
-        version,
-        detail,
-        signal,
-      }) =>
-        gitlabApi.getMergeRequestChanges(
-          connection,
-          project,
-          mergeRequestIid,
-          version?.id ?? null,
-          version,
-          signal,
-          detail ?? undefined,
-        ),
     });
 
-    this.versionsQuery = createGitlabApiQuery<
-      GitLabMergeRequestVersionDC[],
-      MergeRequestGitDiffContext & { revision: string; scope: string }
-    >({
+    this.versionsQuery = createMergeRequestVersionsQuery({
       globals: options.globals,
       abortSignal: options.abortSignal,
       queryOptions: {
@@ -98,18 +72,6 @@ export class MergeRequestGitDiff {
         const revision = this.latestRevision;
         return mr && scope && revision ? { ...mr, revision, scope } : false;
       },
-      queryKey: ({ scope, revision }) => [
-        'merge-request-versions',
-        scope,
-        revision,
-      ],
-      queryFn: ({ connection, project, mergeRequestIid, signal }) =>
-        gitlabApi.getMergeRequestVersions(
-          connection,
-          project,
-          mergeRequestIid,
-          signal,
-        ),
     });
 
     reaction(

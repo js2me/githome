@@ -5,10 +5,9 @@ import {
   observable,
   reaction,
 } from 'mobx';
-import { queryClient } from 'mobx-tanstack-query/preset';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { createRef } from 'yummies/mobx';
-import { resolveGitlabRequestUrl } from '@/shared/api/gitlab';
+import { invalidateProjectMergeRequests } from '@/shared/api/gitlab/queries/merge-requests/cache';
 import { getDiffFileKey } from '@/shared/lib/diff/diff-search';
 import {
   CHANGES_FILE_TREE_DEFAULT_WIDTH,
@@ -50,11 +49,7 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
       const page = this.parentViewModel;
       const { projectId, connection } = this.markdownScope;
       if (connection && projectId > 0) {
-        const path = resolveGitlabRequestUrl(
-          connection.gitlabUrl,
-          `/api/v4/projects/${projectId}/merge_requests`,
-        );
-        void queryClient.invalidateQueries({ queryKey: path.split('/') });
+        void invalidateProjectMergeRequests(connection, projectId);
       }
       await page.mrInfo.refreshMetadata();
     },

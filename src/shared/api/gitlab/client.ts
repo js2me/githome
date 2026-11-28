@@ -144,6 +144,26 @@ export const fetchGitlabAssetBlob = async (
     throw new LocalizedError('gitlab.theGitlabAssetUrlIsEmpty');
   }
 
+  return requestGitlabAsset(connection, url, signal);
+};
+
+export const fetchProxiedGitlabAssetBlob = (
+  connection: GitLabConnection,
+  url: string,
+  signal?: AbortSignal,
+) => {
+  const { host } = getGitlabOrigin(connection.gitlabUrl);
+  if (!url.startsWith(`${GIT_PROXY_PREFIX}/${host}/`)) {
+    return Promise.reject(new Error('Invalid GitLab asset URL'));
+  }
+  return requestGitlabAsset(connection, url, signal);
+};
+
+const requestGitlabAsset = async (
+  connection: GitLabConnection,
+  url: string,
+  signal?: AbortSignal,
+): Promise<Blob> => {
   const response = await fetch(url, {
     headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
       'PRIVATE-TOKEN': connection.gitToken,

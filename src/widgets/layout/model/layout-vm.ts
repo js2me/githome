@@ -3,13 +3,18 @@ import type { ViewModelParams } from 'mobx-view-model';
 import { createRef } from 'yummies/mobx';
 import type { Workspace } from '@/features/workspace-navigation';
 import { WorkspaceVM } from '@/features/workspace-navigation';
+import {
+  type CloudCredentials,
+  type ForgeConnection,
+  parseCloudCredentials,
+} from '@/shared/api/forge/connection';
+import type { ForgeProvider } from '@/shared/api/forge/contracts';
 import type { GitLabProjectDC } from '@/shared/api/gitlab';
 import {
   normalizeJiraBaseUrl,
   parseConnectionDraft,
 } from '@/shared/lib/gitlab/connection/connection';
 import { t } from '@/shared/lib/i18n';
-import type { GitLabConnectionItem } from '@/shared/lib/storage';
 import { AppSettings } from './app-settings';
 import { RefreshShortcut } from './refresh-shortcut';
 
@@ -24,6 +29,33 @@ export class LayoutVM extends WorkspaceVM {
   @observable accessor draftGitlabUrl = '';
   @observable accessor draftGitToken = '';
   @observable accessor draftJiraUrl = '';
+  @observable accessor draftProvider: ForgeProvider = 'gitlab';
+  @observable accessor draftBitbucketEmail = '';
+  @observable accessor draftBitbucketWorkspace = '';
+  @observable accessor forgeHomeRevision = 0;
+
+  @computed
+  get cloudSession() {
+    const session = this.globals.stores.settings.activeSession;
+    return session?.gitlabConnection ? null : session;
+  }
+
+  @computed
+  get cloudDraft(): CloudCredentials | null {
+    switch (this.draftProvider) {
+      case 'github':
+        return { provider: 'github', gitToken: this.draftGitToken };
+      case 'bitbucket':
+        return {
+          provider: 'bitbucket',
+          gitToken: this.draftGitToken,
+          email: this.draftBitbucketEmail,
+          workspace: this.draftBitbucketWorkspace,
+        };
+      default:
+        return null;
+    }
+  }
 
   constructor(globals: Workspace, params: ViewModelParams) {
     super(globals, params);
@@ -39,6 +71,7 @@ export class LayoutVM extends WorkspaceVM {
 
   @computed
   get canSubmitConnection() {
+    if (this.cloudDraft) return Boolean(parseCloudCredentials(this.cloudDraft));
     return Boolean(
       parseConnectionDraft(
         this.draftGitlabUrl,
@@ -171,11 +204,28 @@ export class LayoutVM extends WorkspaceVM {
     this.draftJiraUrl = value;
   }
 
+  @action
+  setDraftProvider(provider: ForgeProvider) {
+    if (this.draftConnectionId || this.draftProvider === provider) return;
+    this.draftProvider = provider;
+    this.draftGitToken = '';
+  }
+
+  @action
+  setDraftBitbucketEmail(email: string) {
+    this.draftBitbucketEmail = email;
+  }
+
+  @action
+  setDraftBitbucketWorkspace(workspace: string) {
+    this.draftBitbucketWorkspace = workspace;
+  }
+
   @actionBound
   openConnectionPopup() {
     const dialog = this.connectionDialog.current;
     if (!dialog) return;
-    this.setConnectionDraft(this.globals.stores.settings.activeItem);
+    this.setConnectionDraft(this.globals.stores.settings.activeForgeItem);
     dialog.showModal();
     this.isConnectionDialogOpen = true;
     if (!this.draftConnectionId) this.connectionUrlInput.current?.focus();
@@ -195,7 +245,7 @@ export class LayoutVM extends WorkspaceVM {
   selectConnection(id: string) {
     const settings = this.globals.stores.settings;
     settings.setActiveConnection(id);
-    this.setConnectionDraft(settings.activeItem);
+    this.setConnectionDraft(settings.activeForgeItem);
   }
 
   @actionBound
@@ -208,18 +258,23 @@ export class LayoutVM extends WorkspaceVM {
   saveConnection() {
     if (!this.canSubmitConnection) return;
     const settings = this.globals.stores.settings;
-    const saved = this.draftConnectionId
-      ? settings.updateConnection(
-          this.draftConnectionId,
-          this.draftGitlabUrl,
-          this.draftGitToken,
-          this.draftJiraUrl,
+    const saved = this.cloudDraft
+      ? settings.saveCloudConnection(
+          this.cloudDraft,
+          this.draftConnectionId ?? undefined,
         )
-      : settings.addConnection(
-          this.draftGitlabUrl,
-          this.draftGitToken,
-          this.draftJiraUrl,
-        );
+      : this.draftConnectionId
+        ? settings.updateConnection(
+            this.draftConnectionId,
+            this.draftGitlabUrl,
+            this.draftGitToken,
+            this.draftJiraUrl,
+          )
+        : settings.addConnection(
+            this.draftGitlabUrl,
+            this.draftGitToken,
+            this.draftJiraUrl,
+          );
     if (saved) this.closeConnectionPopup();
   }
 
@@ -228,19 +283,26 @@ export class LayoutVM extends WorkspaceVM {
     if (!this.draftConnectionId) return;
     const settings = this.globals.stores.settings;
     settings.removeConnection(this.draftConnectionId);
-    this.setConnectionDraft(settings.activeItem);
+    this.setConnectionDraft(settings.activeForgeItem);
   }
 
   @action
-  private setConnectionDraft(item: GitLabConnectionItem | null) {
+  private setConnectionDraft(item: ForgeConnection | null) {
     this.draftConnectionId = item?.id ?? null;
+    this.draftProvider = item?.provider ?? 'gitlab';
     this.draftGitlabUrl = item?.gitlabUrl ?? '';
     this.draftGitToken = item?.gitToken ?? '';
     this.draftJiraUrl = item?.jiraUrl ?? '';
+    this.draftBitbucketEmail = item?.email ?? '';
+    this.draftBitbucketWorkspace = item?.workspace ?? '';
   }
 
   @actionBound
   openHome() {
+    if (this.cloudSession) {
+      this.forgeHomeRevision++;
+      return;
+    }
     void this.globals.routes.home.open();
   }
 

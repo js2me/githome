@@ -1,15 +1,12 @@
 import { computed } from 'mobx';
-import { createQuery, queryClient } from 'mobx-tanstack-query/preset';
-import {
-  type GitLabConnection,
-  getConnectionLabel,
-} from '@/shared/lib/gitlab/connection/connection';
-import { connectionProfileOptions } from '@/shared/lib/gitlab/connection/connection-profile-query';
+import type { ForgeSession } from '@/shared/api/forge/adapter';
+import { createForgeAccountQuery } from '@/shared/lib/forge/queries';
 import { t } from '@/shared/lib/i18n';
 import { VM } from '@/shared/lib/view-models/vm';
 
 interface ConnectionButtonPayload {
-  connection: GitLabConnection | null;
+  session: ForgeSession | null;
+  fallbackLabel?: string;
   placement: 'header' | 'list';
   selected?: boolean;
   expanded?: boolean;
@@ -17,10 +14,14 @@ interface ConnectionButtonPayload {
 }
 
 export class ConnectionButtonVM extends VM<ConnectionButtonPayload> {
-  private readonly profileQuery = createQuery(queryClient, () => ({
-    ...connectionProfileOptions(this.payload.connection),
-    abortSignal: this.unmountSignal,
-  }));
+  private readonly profileQuery = createForgeAccountQuery(
+    () => this.payload.session,
+    this.unmountSignal,
+  );
+
+  @computed get gitlabConnection() {
+    return this.payload.session?.gitlabConnection;
+  }
 
   @computed get profile() {
     return this.profileQuery.isError ? undefined : this.profileQuery.data;
@@ -31,9 +32,11 @@ export class ConnectionButtonVM extends VM<ConnectionButtonPayload> {
   }
 
   @computed get host() {
-    return this.payload.connection
-      ? getConnectionLabel(this.payload.connection)
-      : t('common.connectToGitlab2');
+    return (
+      this.payload.session?.host ??
+      this.payload.fallbackLabel ??
+      t('forge.connect')
+    );
   }
 
   @computed get label() {

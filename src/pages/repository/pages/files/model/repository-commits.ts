@@ -1,11 +1,9 @@
 import { actionBound, computed, observable, reaction } from 'mobx';
 import { createRef } from 'yummies/mobx';
 import type { GitLabCommitDC } from '@/shared/api/gitlab';
-import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { createRepositoryCommitsQuery } from '@/shared/api/gitlab/queries/repository';
 import { t } from '@/shared/lib/i18n';
 import type { Globals } from '@/shared/model/globals';
-
-const COMMITS_PER_PAGE = 30;
 
 export interface RepositoryCommitsParams {
   globals: Globals;
@@ -22,7 +20,7 @@ export class RepositoryCommitsModel {
   @observable accessor selectedCommitSha: string | null = null;
 
   constructor(private readonly params: RepositoryCommitsParams) {
-    this.commitsQuery = createInfiniteGitlabQuery<GitLabCommitDC>({
+    this.commitsQuery = createRepositoryCommitsQuery({
       globals: params.globals,
       abortSignal: params.abortSignal,
       params: () => {
@@ -33,13 +31,7 @@ export class RepositoryCommitsModel {
           return false;
         }
 
-        return {
-          path: `/projects/${projectId}/repository/commits`,
-          query: {
-            ref_name: refName,
-            per_page: COMMITS_PER_PAGE,
-          },
-        };
+        return { projectId, refName };
       },
     });
     reaction(

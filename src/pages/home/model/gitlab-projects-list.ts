@@ -1,15 +1,13 @@
 import { actionBound, computed, observable } from 'mobx';
 import { GitlabProjectInfo } from '@/entities/gitlab-projects';
-import type { GitLabProjectDC } from '@/shared/api/gitlab';
-import { createConnectionUserIdQuery } from '@/shared/lib/gitlab/connection/connection-profile-query';
+import { createConnectionUserIdQuery } from '@/shared/api/gitlab/queries/connection-profile-query';
 import {
-  createGitlabListQuery,
-  createInfiniteGitlabQuery,
-} from '@/shared/lib/gitlab/connection/create-query';
+  createAccountProjectCountQuery,
+  createAccountProjectsQuery,
+} from '@/shared/api/gitlab/queries/projects';
 import { t } from '@/shared/lib/i18n';
 import type { Globals } from '@/shared/model/globals';
 import {
-  buildProjectListParams,
   PROJECT_LIST_TABS,
   PROJECTS_PER_PAGE,
   type ProjectListTab,
@@ -31,7 +29,7 @@ export class GitlabProjectsList {
   readonly projectsQuery;
   private readonly countQueries: Record<
     ProjectListTab,
-    ReturnType<typeof createGitlabListQuery<GitLabProjectDC>>
+    ReturnType<typeof createAccountProjectCountQuery>
   >;
 
   constructor(params: GitlabProjectsListParams) {
@@ -43,29 +41,27 @@ export class GitlabProjectsList {
     this.countQueries = Object.fromEntries(
       PROJECT_LIST_TABS.map(({ id }) => [
         id,
-        createGitlabListQuery<GitLabProjectDC>({
+        createAccountProjectCountQuery({
           globals: params.globals,
           abortSignal: params.abortSignal,
-          params: () =>
-            buildProjectListParams({
-              tab: id,
-              perPage: 1,
-              userId: this.currentUserQuery.data,
-            }),
+          params: () => ({
+            tab: id,
+            perPage: 1,
+            userId: this.currentUserQuery.data,
+          }),
           queryOptions: PROJECT_LIST_QUERY_OPTIONS,
         }),
       ]),
     ) as GitlabProjectsList['countQueries'];
 
-    this.projectsQuery = createInfiniteGitlabQuery<GitLabProjectDC>({
+    this.projectsQuery = createAccountProjectsQuery({
       globals: params.globals,
       abortSignal: params.abortSignal,
-      params: () =>
-        buildProjectListParams({
-          tab: this.activeTab,
-          perPage: PROJECTS_PER_PAGE,
-          userId: this.currentUserQuery.data,
-        }),
+      params: () => ({
+        tab: this.activeTab,
+        perPage: PROJECTS_PER_PAGE,
+        userId: this.currentUserQuery.data,
+      }),
       queryOptions: PROJECT_LIST_QUERY_OPTIONS,
     });
   }

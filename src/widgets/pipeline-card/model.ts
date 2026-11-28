@@ -13,9 +13,10 @@ import type {
 } from '@/shared/api/gitlab';
 import { gitlabApi } from '@/shared/api/gitlab';
 import {
-  createGitlabApiQuery,
-  createGitlabQuery,
-} from '@/shared/lib/gitlab/connection/create-query';
+  createPipelineJobsQuery,
+  createPipelineQuery,
+} from '@/shared/api/gitlab/queries/pipelines';
+import { createProjectQuery } from '@/shared/api/gitlab/queries/projects';
 import { type MessageKey, t } from '@/shared/lib/i18n';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { Globals } from '@/shared/model/globals';
@@ -66,21 +67,22 @@ export class PipelineRunVM extends VM<PipelineRunPayload> {
   constructor(globals: Globals, params: ViewModelParams<PipelineRunPayload>) {
     super(globals, params);
 
-    this.projectQuery = createGitlabQuery<GitLabProjectDC>({
+    this.projectQuery = createProjectQuery({
       globals,
       abortSignal: this.unmountSignal,
       params: () =>
         this.payload.lookupProject && {
-          path: `/projects/${this.payload.projectId}`,
+          projectId: this.payload.projectId,
         },
       queryOptions: { staleTime: 60_000 },
     });
 
-    this.pipelineQuery = createGitlabQuery<GitLabPipelineDC>({
+    this.pipelineQuery = createPipelineQuery({
       globals: this.globals,
       abortSignal: this.unmountSignal,
       params: () => ({
-        path: `/projects/${this.payload.projectId}/pipelines/${this.payload.pipelineId}`,
+        projectId: this.payload.projectId,
+        pipelineId: this.payload.pipelineId,
       }),
       queryOptions: () => ({
         refetchInterval: (query) => {
@@ -90,25 +92,13 @@ export class PipelineRunVM extends VM<PipelineRunPayload> {
       }),
     });
 
-    this.jobsQuery = createGitlabApiQuery<
-      GitLabJobDC[],
-      { projectId: number; pipelineId: number }
-    >({
+    this.jobsQuery = createPipelineJobsQuery({
       globals: this.globals,
       abortSignal: this.unmountSignal,
       params: () => ({
         projectId: this.payload.projectId,
         pipelineId: this.payload.pipelineId,
       }),
-      queryKey: ({ connection, projectId, pipelineId }) => [
-        'pipeline-jobs',
-        connection.id,
-        connection.credentialsRevision,
-        projectId,
-        pipelineId,
-      ],
-      queryFn: ({ connection, projectId, pipelineId, signal }) =>
-        gitlabApi.getPipelineJobs(connection, projectId, pipelineId, signal),
       queryOptions: {
         refetchInterval: ({ state }) => {
           const jobs = state.data as GitLabJobDC[] | undefined;
@@ -139,7 +129,7 @@ export class PipelineRunVM extends VM<PipelineRunPayload> {
   }
 
   private get pipelineKey() {
-    return `${this.globals.stores.settings.activeId}/${this.globals.stores.settings.activeItem?.credentialsRevision}/${this.payload.projectId}/${this.payload.pipelineId}`;
+    return `${this.globals.stores.settings.activeId}/${this.globals.stores.settings.activeConnection?.credentialsRevision}/${this.payload.projectId}/${this.payload.pipelineId}`;
   }
 
   @computed

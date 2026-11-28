@@ -1,12 +1,12 @@
 import { environmentManager, isServer } from '@tanstack/query-core';
 import { queryClient } from 'mobx-tanstack-query/preset';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mergeRequestDetailKey } from '@/entities/gitlab-merge-requests';
 import type {
   GitLabMergeRequestDC,
   GitLabMergeRequestVersionDC,
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
+import { mergeRequestDetailKey } from '@/shared/api/gitlab/queries/merge-requests/detail-key';
 import type { Globals } from '@/shared/model/globals';
 import { MrInfoModel } from './mr-info';
 

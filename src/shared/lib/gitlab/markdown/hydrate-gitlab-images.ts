@@ -1,5 +1,5 @@
 import {
-  buildGitlabRequestHeaders,
+  fetchProxiedGitlabAssetBlob,
   isGitlabProxiedAssetUrl,
 } from '@/shared/api/gitlab';
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
@@ -20,19 +20,7 @@ export const hydrateProxiedGitlabImages = (
     const controller = new AbortController();
     controllers.push(controller);
 
-    void fetch(src, {
-      headers: buildGitlabRequestHeaders(connection.gitlabUrl, {
-        'PRIVATE-TOKEN': connection.gitToken,
-      }),
-      signal: controller.signal,
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(String(response.status));
-        }
-
-        return response.blob();
-      })
+    void fetchProxiedGitlabAssetBlob(connection, src, controller.signal)
       .then((blob) => {
         if (controller.signal.aborted) return;
         const objectUrl = URL.createObjectURL(blob);

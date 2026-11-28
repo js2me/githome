@@ -4,13 +4,14 @@ import {
   decodeProjectReadmeContent,
   README_FALLBACK_PATHS,
 } from '@/shared/api/gitlab/endpoints/repository/get-project-readme';
-import { createGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
+import {
+  createProjectRawReadmeQuery,
+  createProjectReadmeQuery,
+} from '@/shared/api/gitlab/queries/projects';
 import { t } from '@/shared/lib/i18n';
 import type { Globals } from '@/shared/model/globals';
 
-type ReadmeQuery = ReturnType<
-  typeof createGitlabQuery<GitLabProjectReadmeDC | null>
->;
+type ReadmeQuery = ReturnType<typeof createProjectReadmeQuery>;
 
 export interface ProjectReadmeParams {
   globals: Globals;
@@ -24,7 +25,7 @@ export class ProjectReadmeModel {
   private fallbackQueries: ReadmeQuery[] = [];
 
   constructor(params: ProjectReadmeParams) {
-    this.endpointQuery = createGitlabQuery<GitLabProjectReadmeDC | null>({
+    this.endpointQuery = createProjectReadmeQuery({
       globals: params.globals,
       abortSignal: params.abortSignal,
       params: () => {
@@ -34,11 +35,7 @@ export class ProjectReadmeModel {
           return false;
         }
 
-        return {
-          path: `/projects/${projectId}/repository/readme`,
-          query: { ref },
-          notFoundAsNull: true,
-        };
+        return { projectId, ref };
       },
       queryOptions: {
         select: (data) =>
@@ -64,7 +61,7 @@ export class ProjectReadmeModel {
         const queryIndex = group.offset + fileIndex;
 
         this.fallbackQueries.push(
-          createGitlabQuery<GitLabProjectReadmeDC | null>({
+          createProjectRawReadmeQuery({
             globals: params.globals,
             abortSignal: params.abortSignal,
             params: () => {
@@ -78,12 +75,7 @@ export class ProjectReadmeModel {
                 return false;
               }
 
-              return {
-                path: `/projects/${projectId}/repository/files/${encodeURIComponent(filePath)}/raw`,
-                query: { ref },
-                responseType: 'text',
-                notFoundAsNull: true,
-              };
+              return { projectId, ref, filePath };
             },
             queryOptions: {
               select: (text) => {

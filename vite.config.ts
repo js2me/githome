@@ -7,14 +7,16 @@ import dotenv from 'dotenv';
 import { defineConfig, type Plugin } from 'vite';
 import electron from 'vite-plugin-electron/simple';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import { handleForgeProxyRequest } from './electron/forge-proxy';
 import { handleGitlabProxyRequest } from './electron/gitlab-proxy';
 
-const gitlabProxyPlugin = (): Plugin => ({
-  name: 'gitlab-proxy',
+const gitProxyPlugin = (): Plugin => ({
+  name: 'git-provider-proxy',
   configureServer(server) {
     server.middlewares.use((req, res, next) => {
       const url = req.url ?? '';
       if (
+        handleForgeProxyRequest(req, res, url) ||
         handleGitlabProxyRequest(
           req as IncomingMessage,
           res as ServerResponse,
@@ -46,7 +48,7 @@ export default defineConfig(({ mode, command }) => {
     // Linked worktrees can share node_modules. Keep lazy chunks local to the running app.
     cacheDir: `.vite/${mode}/${isElectron ? 'electron' : 'web'}`,
     plugins: [
-      gitlabProxyPlugin(),
+      gitProxyPlugin(),
       viteStaticCopy({
         targets: [
           {

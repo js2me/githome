@@ -1,25 +1,17 @@
 import { actionBound, computed, observable, reaction, runInAction } from 'mobx';
-import { createQuery, queryClient } from 'mobx-tanstack-query/preset';
 import type {
   GitLabMergeRequestDC,
   GitLabProjectLabelDC,
   GitLabUserDC,
 } from '@/shared/api/gitlab';
-import { getMergeRequestMetadata } from '@/shared/api/gitlab/endpoints/merge-requests/metadata/get-metadata';
+import { gitlabApi } from '@/shared/api/gitlab';
+import { createConnectionProfileQuery } from '@/shared/api/gitlab/queries/connection-profile-query';
 import {
-  changeMergeRequestLabel,
-  createProjectLabel,
-} from '@/shared/api/gitlab/endpoints/merge-requests/metadata/labels';
-import {
-  changeMergeRequestReviewer,
-  requestMergeRequestRereview,
-} from '@/shared/api/gitlab/endpoints/merge-requests/metadata/reviewers';
-import { connectionProfileOptions } from '@/shared/lib/gitlab/connection/connection-profile-query';
-import {
-  createGitlabApiQuery,
-  createGitlabQuery,
-  createInfiniteGitlabQuery,
-} from '@/shared/lib/gitlab/connection/create-query';
+  createLabelCandidatesQuery,
+  createMergeRequestApprovalStateQuery,
+  createMergeRequestMetadataQuery,
+  createReviewerCandidatesQuery,
+} from '@/shared/api/gitlab/queries/merge-requests/metadata';
 import { t } from '@/shared/lib/i18n';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import type { Globals } from '@/shared/model/globals';
@@ -36,14 +28,6 @@ export const asLabelOption = (label: GitLabProjectLabelDC): LabelOption => ({
   ...label,
   id: `gid://gitlab/Label/${label.id}`,
 });
-
-interface ApprovalRule {
-  id: number;
-  name: string;
-  eligible_approvers?: GitLabUserDC[];
-  approved_by?: GitLabUserDC[];
-  approvals_required: number;
-}
 
 type Field = 'reviewers' | 'labels';
 
@@ -80,10 +64,7 @@ export class MrMetadataEditor {
 
   constructor(private readonly options: EditorOptions) {
     const { globals, abortSignal, target } = options;
-    this.metadata = createGitlabApiQuery<
-      Awaited<ReturnType<typeof getMergeRequestMetadata>>,
-      { projectPath: string; iid: number }
-    >({
+    this.metadata = createMergeRequestMetadataQuery({
       globals,
       abortSignal,
       params: () => {
@@ -92,33 +73,19 @@ export class MrMetadataEditor {
           current && { projectPath: current.projectPath, iid: current.mr.iid }
         );
       },
-      queryKey: ({ connection, projectPath, iid }) => [
-        'merge-request-metadata',
-        connection.id,
-        connection.credentialsRevision,
-        projectPath,
-        iid,
-      ],
-      queryFn: ({ connection, projectPath, iid, signal }) =>
-        getMergeRequestMetadata(connection, projectPath, iid, signal),
-      queryOptions: {
-        staleTime: 20_000,
-        retry: false,
-        refetchInterval: 30_000,
-      },
     });
 
-    const pickerParams = (field: Field, endpoint: string) => {
+    const pickerParams = (field: Field) => {
       const current = target();
       return (
         this.field === field &&
         current && {
-          path: `/projects/${current.projectId}/${endpoint}`,
-          query: { search: this.remoteSearch || undefined, per_page: 30 },
+          projectId: current.projectId,
+          search: this.remoteSearch || undefined,
         }
       );
     };
-    this.approvalState = createGitlabQuery<{ rules: ApprovalRule[] } | null>({
+    this.approvalState = createMergeRequestApprovalStateQuery({
       globals,
       abortSignal,
       params: () => {
@@ -126,44 +93,32 @@ export class MrMetadataEditor {
         return (
           this.field === 'reviewers' &&
           current && {
-            path: `/projects/${current.projectId}/merge_requests/${current.mr.iid}/approval_state`,
-            notFoundAsNull: true,
+            projectId: current.projectId,
+            iid: current.mr.iid,
           }
         );
       },
       queryOptions: { retry: false, staleTime: 15_000 },
     });
-    this.reviewerCandidates = createInfiniteGitlabQuery<GitLabUserDC>({
+    this.reviewerCandidates = createReviewerCandidatesQuery({
       globals,
       abortSignal,
       queryOptions: { retry: false },
-      params: () => !this.selectedRule && pickerParams('reviewers', 'users'),
+      params: () => !this.selectedRule && pickerParams('reviewers'),
     });
-    this.labelCandidates = createInfiniteGitlabQuery<GitLabProjectLabelDC>({
+    this.labelCandidates = createLabelCandidatesQuery({
       globals,
       abortSignal,
       queryOptions: { retry: false },
-      params: () => {
-        const params = pickerParams('labels', 'labels');
-        return (
-          params && {
-            ...params,
-            query: {
-              ...params.query,
-              include_ancestor_groups: true,
-              archived: false,
-            },
-          }
-        );
-      },
+      params: () => pickerParams('labels'),
     });
-    this.profile = createQuery<GitLabUserDC>(queryClient, () => ({
-      ...connectionProfileOptions(globals.stores.settings.activeConnection),
-      enabled:
-        this.field === 'reviewers' &&
-        Boolean(globals.stores.settings.activeConnection),
+    this.profile = createConnectionProfileQuery(
+      () =>
+        this.field === 'reviewers'
+          ? globals.stores.settings.activeConnection
+          : null,
       abortSignal,
-    }));
+    );
     reaction(() => this.scope, this.close, { signal: abortSignal });
     abortSignal.addEventListener(
       'abort',
@@ -416,7 +371,7 @@ export class MrMetadataEditor {
   toggleReviewer(user: GitLabUserDC) {
     const selected = !this.hasReviewer(user.id);
     return this.mutate((connection, target, signal) =>
-      changeMergeRequestReviewer(
+      gitlabApi.changeMergeRequestReviewer(
         connection,
         target,
         user.username,
@@ -430,7 +385,12 @@ export class MrMetadataEditor {
   async rereview(user: GitLabUserDC) {
     if (!this.hasReviewer(user.id)) return;
     const saved = await this.mutate((connection, target, signal) =>
-      requestMergeRequestRereview(connection, target, user.id, signal),
+      gitlabApi.requestMergeRequestRereview(
+        connection,
+        target,
+        user.id,
+        signal,
+      ),
     );
     if (saved && this.field === 'reviewers')
       runInAction(() => {
@@ -442,7 +402,13 @@ export class MrMetadataEditor {
   toggleLabel(label: LabelOption) {
     const selected = !this.hasLabel(label.name);
     return this.mutate((connection, target, signal) =>
-      changeMergeRequestLabel(connection, target, label, selected, signal),
+      gitlabApi.changeMergeRequestLabel(
+        connection,
+        target,
+        label,
+        selected,
+        signal,
+      ),
     );
   }
 
@@ -462,14 +428,14 @@ export class MrMetadataEditor {
     };
     const scope = this.scope;
     const saved = await this.mutate(async (connection, target, signal) => {
-      const created = await createProjectLabel(
+      const created = await gitlabApi.createProjectLabel(
         connection,
         target.projectId,
         label,
         signal,
       );
       try {
-        await changeMergeRequestLabel(
+        await gitlabApi.changeMergeRequestLabel(
           connection,
           target,
           asLabelOption(created),

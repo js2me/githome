@@ -78,7 +78,9 @@ export class HomePageVM extends WorkspaceVM<{}, LayoutVM> {
 
   @computed
   get connectionLabel() {
-    return this.globals.stores.settings.activeItem?.gitlabUrl.trim() ?? '';
+    return (
+      this.globals.stores.settings.activeConnection?.gitlabUrl.trim() ?? ''
+    );
   }
 
   @computed
