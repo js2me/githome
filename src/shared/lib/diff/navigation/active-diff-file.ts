@@ -4,7 +4,7 @@ import {
   getDiffFileElementId,
   getDiffFileKey,
 } from '@/shared/lib/diff/diff-search';
-import { scrollToDiffFile } from '@/shared/lib/diff/scroll-to-diff-file';
+import { scrollToDiffFile } from '@/shared/lib/diff/navigation/scroll-to-diff-file';
 
 const ACTIVE_FILE_MARKER_PX = 128;
 const SCROLLED_TO_BOTTOM_THRESHOLD_PX = 48;

@@ -158,7 +158,10 @@ export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
             )}
           </div>
 
-          {(thread.resolved || (thread.resolvable && onResolveThread)) && (
+          {(thread.resolved ||
+            (thread.resolvable &&
+              thread.canToggleResolution !== false &&
+              onResolveThread)) && (
             <div className="flex justify-end gap-2 border-slate-200 border-t px-3.5 py-2.5 dark:border-slate-700">
               {thread.resolved && (
                 <button
@@ -169,24 +172,26 @@ export const DiffThreadRow = withPropsViewModel(DiffThreadVM, ({ model }) => {
                   {t('diff.collapseThread')}
                 </button>
               )}
-              {thread.resolvable && onResolveThread && (
-                <button
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-semibold text-slate-700 text-xs transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
-                  type="button"
-                  disabled={resolvingDiscussionId === thread.discussionId}
-                  onClick={() =>
-                    onResolveThread(thread.discussionId, !thread.resolved)
-                  }
-                >
-                  {resolvingDiscussionId === thread.discussionId
-                    ? thread.resolved
-                      ? t('review.reopening')
-                      : t('review.resolving')
-                    : thread.resolved
-                      ? t('review.reopenThread')
-                      : t('review.resolveThread')}
-                </button>
-              )}
+              {thread.resolvable &&
+                thread.canToggleResolution !== false &&
+                onResolveThread && (
+                  <button
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-semibold text-slate-700 text-xs transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50 dark:border-slate-600 dark:bg-canvas-default dark:text-slate-300 dark:hover:bg-slate-800"
+                    type="button"
+                    disabled={resolvingDiscussionId === thread.discussionId}
+                    onClick={() =>
+                      onResolveThread(thread.discussionId, !thread.resolved)
+                    }
+                  >
+                    {resolvingDiscussionId === thread.discussionId
+                      ? thread.resolved
+                        ? t('review.reopening')
+                        : t('review.resolving')
+                      : thread.resolved
+                        ? t('review.reopenThread')
+                        : t('review.resolveThread')}
+                  </button>
+                )}
             </div>
           )}
         </div>

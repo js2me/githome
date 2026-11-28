@@ -8,6 +8,7 @@ import {
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { createRef } from 'yummies/mobx';
 import { invalidateProjectMergeRequests } from '@/shared/api/gitlab/queries/merge-requests/cache';
+import { ActiveDiffFile } from '@/shared/lib/diff/navigation/active-diff-file';
 import { getDiffFileKey } from '@/shared/lib/diff/diff-search';
 import {
   CHANGES_FILE_TREE_DEFAULT_WIDTH,
@@ -18,7 +19,6 @@ import { filterDiscussionsForActivity } from '@/shared/lib/gitlab/discussions/di
 import { parseMergeRequestLocation } from '@/shared/lib/gitlab/links/merge-request';
 import { matchGitlabProject } from '@/shared/lib/gitlab/links/project';
 import { VM } from '@/shared/lib/view-models/vm';
-import { ActiveDiffFile } from './changes/active-diff-file';
 import { MrCommits } from './changes/mr-commits';
 import type { MergeRequestPageVM } from './index';
 import { MrMerge } from './merge/mr-merge';

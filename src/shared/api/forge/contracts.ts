@@ -14,6 +14,8 @@ export interface ForgeRepository {
   webUrl: string;
 }
 
+export type ForgePullRequestFilter = 'opened' | 'mine' | 'merged' | 'closed';
+
 export interface ForgePullRequest {
   number: number;
   title: string;
@@ -21,6 +23,10 @@ export interface ForgePullRequest {
   webUrl: string;
   state: 'open' | 'merged' | 'closed';
   draft?: boolean;
+  updatedAt?: string;
+  revision?: { head: string; base: string; headRepository?: string };
+  changedFiles?: number;
+  nodeId?: string;
   author?: ForgeAccount;
   sourceBranch: string;
   targetBranch: string;

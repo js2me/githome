@@ -1,24 +1,12 @@
-import { ChevronRight, CodeFork, Comment } from '@gravity-ui/icons';
+import { Comment } from '@gravity-ui/icons';
 import { withPropsViewModel } from 'mobx-view-model-react';
-import { MrStateBadge, ReviewStatuses } from '@/entities/gitlab-merge-requests';
-import { cn } from '@/shared/lib/cn';
-import { getLocale, t } from '@/shared/lib/i18n';
-import { GitlabAvatar } from '@/shared/ui/gitlab-avatar';
+import {
+  MrStateBadge,
+  RequestRow,
+  ReviewStatuses,
+} from '@/entities/gitlab-merge-requests';
+import { t } from '@/shared/lib/i18n';
 import { MrListPageVM } from '../../model/mr-list-page';
-
-const dateFormatterOptions: Intl.DateTimeFormatOptions = {
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-};
-
-const formatUpdatedAt = (value: string) => {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleString(getLocale(), dateFormatterOptions);
-};
 
 export const MergeRequestListRows = withPropsViewModel(
   MrListPageVM,
@@ -30,93 +18,45 @@ export const MergeRequestListRows = withPropsViewModel(
       : model.discussions.data;
     return (
       <>
-        {mergeRequests.map((mr) => {
-          const authorName =
-            mr.author?.name ?? mr.author?.username ?? t('review.unknownAuthor');
-          const statusId = `mr-list-status-${mr.id}`;
-          return (
-            <li key={mr.id}>
-              <button
-                className={cn(
-                  'group flex w-full cursor-pointer flex-wrap items-center gap-2.5 px-3.5 py-3.5 text-left transition-colors hover:bg-[var(--glass-hover)] focus-visible:-outline-offset-2 sm:flex-nowrap sm:gap-4 sm:px-5',
-                  selectedMergeRequestIid === mr.iid &&
-                    'bg-[var(--glass-selected)]',
-                )}
-                type="button"
-                aria-label={t('review.open3', { v1: mr.iid, v2: mr.title })}
-                aria-describedby={statusId}
-                onClick={() => onSelect(mr)}
-              >
-                <div className="min-w-0 basis-full sm:flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="shrink-0 font-medium font-mono text-fg-muted text-xs">
-                      !{mr.iid}
-                    </span>
-                    <span className="min-w-0 font-semibold text-[15px] leading-snug [overflow-wrap:anywhere]">
-                      {mr.title}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-fg-muted text-xs">
-                    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
-                      <GitlabAvatar
-                        className="size-5 shrink-0 rounded-full object-cover text-[10px]"
-                        avatarUrl={mr.author?.avatar_url}
-                        name={authorName}
-                      />
-                      <span className="truncate">{authorName}</span>
-                    </span>
-                    <time
-                      dateTime={mr.updated_at}
-                      title={t('review.lastUpdated')}
-                    >
-                      {formatUpdatedAt(mr.updated_at)}
-                    </time>
-                    <span
-                      className="inline-flex min-w-0 max-w-full items-center gap-1.5"
-                      title={`${mr.source_branch} → ${mr.target_branch}`}
-                    >
-                      <CodeFork
-                        width={13}
-                        height={13}
-                        className="shrink-0"
-                        aria-hidden
-                      />
-                      <span className="truncate font-mono text-[11px]">
-                        {mr.source_branch} → {mr.target_branch}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-                <div
-                  id={statusId}
-                  className="flex max-w-full flex-wrap items-center gap-x-2 gap-y-1.5 sm:max-w-[50%] sm:justify-end"
-                >
-                  <MrStateBadge mergeRequest={mr} />
-                  <ReviewStatuses
-                    approval={approvals?.[mr.iid]}
-                    discussions={discussions?.[mr.iid]}
-                  />
-                  {mr.user_notes_count != null && mr.user_notes_count > 0 && (
-                    <span
-                      className="inline-flex items-center gap-1 text-fg-muted text-xs tabular-nums"
-                      title={t('review.comments2', { v1: mr.user_notes_count })}
-                    >
-                      <Comment width={14} height={14} aria-hidden />
-                      <span className="sr-only">{t('review.comments3')} </span>
-                      {mr.user_notes_count}
-                    </span>
-                  )}
-                </div>
-                <ChevronRight
-                  width={16}
-                  height={16}
-                  className="hidden shrink-0 text-fg-muted group-hover:text-[var(--glass-accent)] sm:block"
-                  aria-hidden
+        {mergeRequests.map((mr) => (
+          <RequestRow
+            key={mr.id}
+            statusId={`mr-list-status-${mr.id}`}
+            label={t('review.open3', { v1: mr.iid, v2: mr.title })}
+            number={`!${mr.iid}`}
+            title={mr.title}
+            authorName={
+              mr.author?.name ??
+              mr.author?.username ??
+              t('review.unknownAuthor')
+            }
+            avatarUrl={mr.author?.avatar_url}
+            updatedAt={mr.updated_at}
+            sourceBranch={mr.source_branch}
+            targetBranch={mr.target_branch}
+            selected={selectedMergeRequestIid === mr.iid}
+            onSelect={() => onSelect(mr)}
+            status={
+              <>
+                <MrStateBadge mergeRequest={mr} />
+                <ReviewStatuses
+                  approval={approvals?.[mr.iid]}
+                  discussions={discussions?.[mr.iid]}
                 />
-              </button>
-            </li>
-          );
-        })}
+                {mr.user_notes_count != null && mr.user_notes_count > 0 && (
+                  <span
+                    className="inline-flex items-center gap-1 text-fg-muted text-xs tabular-nums"
+                    title={t('review.comments2', { v1: mr.user_notes_count })}
+                  >
+                    <Comment width={14} height={14} aria-hidden />
+                    <span className="sr-only">{t('review.comments3')} </span>
+                    {mr.user_notes_count}
+                  </span>
+                )}
+              </>
+            }
+          />
+        ))}
       </>
     );
   },

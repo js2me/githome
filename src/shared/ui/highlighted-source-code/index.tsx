@@ -4,7 +4,7 @@ import {
   codeFontSizeKey,
   wrapSourceCodeKey,
 } from '@/shared/lib/code-view-preferences';
-import { HighlightedSourceCodeVM } from './highlighted-source-code/model';
+import { HighlightedSourceCodeVM } from './model';
 
 export const HighlightedSourceCode = withPropsViewModel(
   HighlightedSourceCodeVM,

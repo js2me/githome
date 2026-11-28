@@ -4,7 +4,9 @@ import { t } from '@/shared/lib/i18n';
 export const ForgeLoadMore = observer(
   ({
     query,
+    label = t('forge.loadMore'),
   }: {
+    label?: string;
     query: {
       hasNextPage: boolean;
       isFetching: boolean;
@@ -18,7 +20,7 @@ export const ForgeLoadMore = observer(
         disabled={query.isFetching}
         onClick={() => void query.fetchNextPage()}
       >
-        {t('forge.loadMore')}
+        {label}
       </button>
     ),
 );

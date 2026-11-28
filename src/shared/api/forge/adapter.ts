@@ -4,7 +4,7 @@ import {
   normalizeJiraBaseUrl,
 } from '@/shared/lib/gitlab/connection/connection';
 import { createBitbucketAdapter } from '../bitbucket';
-import { createGithubAdapter } from '../github';
+import { createGithubAdapter, type GithubAdapter } from '../github';
 import { createGitlabAdapter } from '../gitlab/adapters/forge';
 import { gitlabProfileKey } from '../gitlab/queries/connection-profile-query';
 import type { ForgeConnection, GitLabConnectionItem } from './connection';
@@ -15,6 +15,7 @@ export interface ForgeSession {
   provider: ForgeProvider;
   credentialsRevision?: string;
   adapter: ForgeAdapter;
+  github?: GithubAdapter;
   profileKey: QueryKey;
   gitlabConnection: GitLabConnectionItem | null;
   host: string;
@@ -62,8 +63,10 @@ export const bindForgeAccount = (
         profileKey: gitlabProfileKey(gitlabConnection),
       };
     }
-    case 'github':
-      return cloudSession('github', 'GitHub', createGithubAdapter(connection));
+    case 'github': {
+      const github = createGithubAdapter(connection);
+      return { ...cloudSession('github', 'GitHub', github), github };
+    }
     case 'bitbucket':
       return cloudSession(
         'bitbucket',

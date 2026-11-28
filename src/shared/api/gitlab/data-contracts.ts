@@ -201,6 +201,7 @@ export interface GitLabNoteDC {
   updated_at: string;
   system?: boolean;
   resolvable?: boolean;
+  can_toggle_resolution?: boolean;
   resolved?: boolean;
   can_update?: boolean;
   position?: GitLabNotePositionDC | null;

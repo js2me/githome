@@ -5,7 +5,7 @@
 <h1 align="center">GitHome</h1>
 
 <p align="center">
-  Клиент для ревью в GitLab, GitHub и Bitbucket Cloud. Полный интерфейс ревью и CI/CD доступен для GitLab.
+  Клиент для ревью в GitLab и GitHub с базовой поддержкой Bitbucket Cloud.
 </p>
 
 <p align="center">
@@ -46,9 +46,9 @@
 
 ### GitHub и Bitbucket Cloud
 
-Выберите провайдера в окне **Подключения**. Для GitHub.com нужен персональный токен с доступом к нужным репозиториям и правом записи комментариев, если вы хотите их отправлять. Для Bitbucket Cloud укажите почту аккаунта Atlassian, идентификатор workspace из URL Bitbucket и API-токен с правами `read:user:bitbucket`, `read:repository:bitbucket`, `read:pullrequest:bitbucket` и `write:pullrequest:bitbucket` для отправки комментариев.
+Выберите провайдера в окне **Подключения**. Для GitHub.com нужен персональный токен с доступом к нужным репозиториям. У fine-grained токена для просмотра файлов должно быть право **Contents: Read**, а для отправки ревью — **Pull requests: Read and write**. Для Bitbucket Cloud укажите почту аккаунта Atlassian, идентификатор workspace из URL Bitbucket и API-токен с правами `read:user:bitbucket`, `read:repository:bitbucket`, `read:pullrequest:bitbucket` и `write:pullrequest:bitbucket` для отправки комментариев.
 
-Для этих провайдеров доступны репозитории, список открытых pull request, детали и обычные комментарии. Diff, построчное ревью и CI/CD пока доступны только для GitLab.
+В GitHub доступны список PR с фильтрами, просмотр файлов по веткам, редактор дифов, комментарии к строкам и файлам, отправка ревью и отметки просмотренных файлов. Bitbucket Cloud поддерживает репозитории, открытые PR и обычные комментарии. Управление CI/CD доступно для GitLab.
 
 ## Открытие ссылок из других приложений
 

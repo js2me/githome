@@ -46,7 +46,12 @@ export const getMrStateBadgeState = (state: string): MrStateBadgeState => {
   return 'draft';
 };
 
-const isDraft = (mergeRequest: GitLabMergeRequestDC) =>
+type RequestState = Pick<
+  GitLabMergeRequestDC,
+  'state' | 'draft' | 'work_in_progress'
+>;
+
+const isDraft = (mergeRequest: RequestState) =>
   mergeRequest.draft ?? mergeRequest.work_in_progress ?? false;
 
 const stateLabels: Record<string, MessageKey> = {
@@ -63,7 +68,7 @@ export const MrStateBadge = observer(
     mergeRequest,
     size = 'sm',
   }: {
-    mergeRequest: GitLabMergeRequestDC;
+    mergeRequest: RequestState;
     size?: NonNullable<VariantProps<typeof mrStateBadgeVariants>['size']>;
   }) => {
     const stateKey =

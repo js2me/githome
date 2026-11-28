@@ -12,6 +12,9 @@ try {
   const errors = [];
   const posted = { github: [], bitbucket: [] };
   const commentPages = { github: [], bitbucket: [] };
+  const githubWrites = [];
+  let viewed = false;
+  let resolved = false;
   page.on('pageerror', (error) => errors.push(error));
   await page.setRequestInterception(true);
 
@@ -41,10 +44,13 @@ try {
     const user = github
       ? { login: slug, name: 'GitHub Test' }
       : { nickname: slug, display_name: 'Bitbucket Test' };
+    const author = { login: 'other', name: 'Other Author' };
     const pull = github
       ? {
           number: 7, title: 'Common review', html_url: link, body: 'Description',
-          state: 'open', user, head: { ref: 'feature' }, base: { ref: 'main' },
+          state: 'open', user: author, node_id: 'github-pr-node', changed_files: 1, updated_at: '2026-02-20T00:00:00Z',
+          head: { ref: 'feature', sha: 'headsha', repo: { full_name: 'octo/demo' } },
+          base: { ref: 'main', sha: 'basesha' },
         }
       : {
           id: 7, title: 'Common review', links: { html: { href: link } },
@@ -68,6 +74,35 @@ try {
     let response;
     const headers = {};
     if (path === (github ? '/user' : '/2.0/user')) response = user;
+    else if (github && path === '/graphql') {
+      const { query, variables } = JSON.parse(request.postData());
+      const pageInfo = { endCursor: null, hasNextPage: false };
+      const status = () => ({ isResolved: resolved, viewerCanResolve: !resolved, viewerCanUnresolve: resolved });
+      if (query.includes('query ViewedFiles')) {
+        assert.equal(variables.id, 'github-pr-node');
+        response = { data: { node: { files: { pageInfo, nodes: [
+          { path: 'src/demo.js', viewerViewedState: viewed ? 'VIEWED' : 'UNVIEWED' },
+        ] } } } };
+      } else if (query.includes('query SearchPullRequests')) {
+        assert.match(variables.search, /repo:octo\/demo is:pr is:open .*in:title "Common review"/);
+        response = { data: { search: { pageInfo, nodes: [{
+          id: 'github-pr-node', number: 7, title: 'Common review', body: 'Description', url: link, state: 'OPEN',
+          author, headRefName: 'feature', baseRefName: 'main', updatedAt: '2026-02-20T00:00:00Z',
+        }] } } };
+      } else if (query.includes('query ReviewThreads')) {
+        response = { data: { node: { reviewThreads: { pageInfo, nodes: [
+          { id: 'thread-300', ...status(), comments: { nodes: [{ databaseId: 300 }] } },
+        ] } } } };
+      } else if (query.includes('mutation FileViewed')) {
+        assert.deepEqual(variables, { id: 'github-pr-node', path: 'src/demo.js' });
+        viewed = !query.includes('unmarkFileAsViewed');
+        response = { data: { [viewed ? 'markFileAsViewed' : 'unmarkFileAsViewed']: { clientMutationId: null } } };
+      } else if (query.includes('mutation ThreadResolved')) {
+        assert.equal(variables.id, 'thread-300');
+        resolved = !query.includes('unresolveReviewThread');
+        response = { data: { [resolved ? 'resolveReviewThread' : 'unresolveReviewThread']: { thread: status() } } };
+      }
+    }
     else if (path === reposPath) {
       const next = github
         ? 'https://api.github.com/user/repos?page=2'
@@ -80,6 +115,46 @@ try {
       };
       if (github && !second) headers.link = `<${next}>; rel="next"`;
       response = github ? [repo] : { values: [repo], next: second ? undefined : next };
+    } else if (github && path === '/repos/octo/demo') response = { default_branch: 'main' };
+    else if (github && path === '/repos/octo/demo/branches') {
+      const second = url.searchParams.get('page') === '2';
+      if (!second) headers.link = '<https://api.github.com/repos/octo/demo/branches?page=2>; rel="next"';
+      response = second ? [{ name: 'feature/preview', commit: { sha: 'headsha' } }] : [{ name: 'main', commit: { sha: 'basesha' } }];
+    } else if (github && path.startsWith('/repos/octo/demo/branches/')) {
+      const branch = decodeURIComponent(path.split('/branches/')[1]);
+      response = { name: branch, commit: { sha: branch === 'main' ? 'basesha' : 'headsha' } };
+    } else if (github && path.startsWith('/repos/octo/demo/git/commits/')) {
+      response = { tree: { sha: path.endsWith('basesha') ? 'base-tree' : 'head-tree' } };
+    } else if (github && path.startsWith('/repos/octo/demo/git/trees/')) {
+      response = { tree: path.endsWith('src-tree') ? [
+        { path: 'demo.js', sha: 'text-blob', type: 'blob', mode: '100644', size: 23 },
+      ] : path.endsWith('base-tree') ? [
+        { path: 'src', sha: 'src-tree', type: 'tree', mode: '040000' },
+      ] : [
+        { path: 'feature.js', sha: 'feature-blob', type: 'blob', mode: '100644', size: 25 },
+      ] };
+    } else if (github && path.startsWith('/repos/octo/demo/git/blobs/')) {
+      const content = path.endsWith('text-blob') ? 'export const value = 1;' : 'export const feature = 2;';
+      response = { encoding: 'base64', size: content.length, content: Buffer.from(content).toString('base64') };
+    } else if (github && path === `${pullsPath}/7/files`) {
+      response = [{ filename: 'src/demo.js', status: 'modified', additions: 1, deletions: 1,
+        patch: '@@ -1 +1 @@\n-export const value = 1;\n+export const value = 2;' }];
+    } else if (github && path === `${pullsPath}/7/comments`) {
+      if (request.method() === 'POST') {
+        const payload = JSON.parse(request.postData());
+        githubWrites.push(payload);
+        response = makeComment(301, payload.body, { path: payload.path, side: payload.side, line: payload.line });
+      } else response = [makeComment(300, 'Existing inline review', { path: 'src/demo.js', side: 'RIGHT', line: 1 })];
+    } else if (github && path === `${pullsPath}/7/comments/300/replies`) {
+      const payload = JSON.parse(request.postData());
+      githubWrites.push(payload);
+      response = makeComment(302, payload.body, { in_reply_to_id: 300, path: 'src/demo.js' });
+    } else if (github && path === `${pullsPath}/7/reviews`) {
+      if (request.method() === 'POST') {
+        const payload = JSON.parse(request.postData());
+        githubWrites.push(payload);
+        response = { id: 401, user, state: 'APPROVED', body: payload.body };
+      } else response = [];
     } else if (path === pullsPath) response = github ? [pull] : { values: [pull] };
     else if (path === `${pullsPath}/7`) response = pull;
     else if (!github && path === `${commentsPath}/101`) response = inline;
@@ -146,12 +221,35 @@ try {
     );
     await byText('//main//button', 'Load more').click();
     await byText('//main//button', `${slug}/demo`).click();
-    await byText('//main//button', '#7 Common review').click();
+    if (provider === 'github') {
+      await byText('//main//button', 'Files').click();
+      await byText('//main//button', 'src').click();
+      await byText('//main//button', 'demo.js').click();
+      await byText('//main//pre', 'export const value = 1;').wait();
+      await byText('//main//button', 'Load more branches').click();
+      await page.waitForSelector('main option[value="feature/preview"]');
+      await page.select('main select', 'feature/preview');
+      await byText('//main//button', 'feature.js').click();
+      await byText('//main//pre', 'export const feature = 2;').wait();
+      await page.reload();
+      await byText('//main//pre', 'export const feature = 2;').wait();
+      await byText('//main//button', 'Pull requests').click();
+      const search = page.locator('main input[name="q"]');
+      await search.fill('Common review');
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => new URLSearchParams(location.search).get('q') === 'Common review');
+      await page.locator('main button[aria-label="#7 Common review"]').wait();
+      await page.locator('main button[aria-label="Clear search"]').click();
+    }
+    const row = provider === 'github'
+      ? page.locator('main button[aria-label="#7 Common review"]')
+      : byText('//main//button', '#7 Common review');
+    await row.click();
     await byText('//main//h1', '#7 Common review').wait();
     assert.match(new URL(page.url()).pathname, new RegExp(`/forge/[^/]+/${slug}/demo/pull-requests/7$`));
     const message = `Comment for ${provider}`;
     await byText('//main//li//p', 'Existing comment 1').wait();
-    await page.type('main textarea', message);
+    await page.locator('::-p-xpath(//main//form[.//button[normalize-space(.)="Post comment"]]//textarea)').fill(message);
     await byText('//main//button', 'Post comment').click();
     await byText('//main//li//p', message).wait();
     assert.deepEqual(commentPages[provider], [1]);
@@ -163,17 +261,48 @@ try {
     assert.equal(bodies.filter((body) => body === message).length, 1);
     assert.equal(bodies.some((body) => /inline (root|reply)/i.test(body)), false);
 
+    if (provider === 'github') {
+      await byText('//main//button', 'Changes').click();
+      await page.waitForSelector('main .git-diff');
+      await byText('//main//div[contains(@class,"whitespace-pre-wrap")]', 'Existing inline review').wait();
+      await page.hover("main .git-diff-code--added");
+      await page.locator('main [data-diff-row-id]:has(.git-diff-code--added) button[title="Add a comment"]').click();
+      await page.locator('main textarea[placeholder="Write a comment…"]').fill('New inline review');
+      await byText('//main//button', 'Comment').click();
+      await byText('//main//div[contains(@class,"whitespace-pre-wrap")]', 'New inline review').wait();
+      await byText('//main//button', 'Reply').click();
+      await page.locator('main textarea[placeholder="Write a reply…"]').fill('Thread response');
+      await page.locator('::-p-xpath(//textarea[@placeholder="Write a reply…"]/ancestor::div[.//button[normalize-space(.)="Reply"]][1]//button[normalize-space(.)="Reply"])').click();
+      await byText('//main//div[contains(@class,"whitespace-pre-wrap")]', 'Thread response').wait();
+      await byText('//main//button', 'Resolve thread').click();
+      await page.waitForFunction(() => document.querySelector('.git-diff-line-thread-avatars button'));
+      assert.equal(resolved, true);
+      await page.locator('main button[aria-label="Mark as viewed"]').click();
+      await page.waitForSelector('main [data-diff-reviewed]');
+      assert.equal(viewed, true);
+      await byText('//main//button', 'Approve').click();
+      await byText('//main//span', '· Approved').wait();
+      assert.deepEqual(githubWrites, [
+        { body: 'New inline review', path: 'src/demo.js', commit_id: 'headsha', side: 'RIGHT', line: 1 },
+        { body: 'Thread response' },
+        { event: 'APPROVE', commit_id: 'headsha' },
+      ]);
+    }
     await page.reload();
     await byText('//main//h1', '#7 Common review').wait();
+    if (provider === 'github') {
+      await page.waitForSelector('main [data-diff-reviewed]');
+      assert.match(page.url(), /[?&]view=changes/);
+    }
     await byText('//main//button', 'Back').click();
-    await byText('//main//button', '#7 Common review').wait();
+    await row.wait();
     assert.match(new URL(page.url()).pathname, new RegExp(`/forge/[^/]+/${slug}/demo$`));
     await page.reload();
     await byText('//main//h1', `${slug}/demo`).wait();
     await byText('//main//button', 'Back').click();
     await byText('//main//button', `${slug}/first`).wait();
     assert.equal(new URL(page.url()).pathname, '/');
-    console.log(`✓ ${provider}: connection, pagination, comment deduplication and deep links`);
+    console.log(`✓ ${provider}: connection, pagination, comment deduplication and deep links${provider === 'github' ? ', branches, source, changes and review' : ''}`);
   }
   assert.deepEqual(errors, []);
 } finally {

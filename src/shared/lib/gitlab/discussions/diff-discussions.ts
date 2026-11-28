@@ -11,6 +11,7 @@ export interface InlineDiffThread {
   discussionId: string;
   notes: GitLabNoteDC[];
   resolvable: boolean;
+  canToggleResolution?: boolean;
   resolved: boolean;
 }
 
@@ -251,6 +252,11 @@ const buildInlineThread = (
     discussionId: discussion.id,
     notes: getUserDiscussionNotes(discussion),
     resolvable: isDiscussionResolvable(discussion),
+    canToggleResolution: discussion.notes.some(
+      (note) => note.can_toggle_resolution === false,
+    )
+      ? false
+      : undefined,
     resolved: isDiscussionResolved(discussion),
   };
 

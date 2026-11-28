@@ -1,10 +1,10 @@
 import { observer } from 'mobx-react-lite';
 import { t } from '@/shared/lib/i18n';
 import { GitLabMarkdown } from '@/shared/ui/gitlab-markdown/gitlab-markdown';
+import { HighlightedSourceCode } from '@/shared/ui/highlighted-source-code';
 import { StatusMessage } from '@/shared/ui/status-message';
 import type { FilesPageVM } from '../../model';
 import { FileFind } from './file-find/file-find';
-import { HighlightedSourceCode } from './highlighted-source-code';
 
 export const FileViewer = observer(({ model }: { model: FilesPageVM }) => {
   if (!model.selectedFilePath) {

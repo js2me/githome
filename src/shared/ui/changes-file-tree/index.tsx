@@ -3,9 +3,9 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { withPropsViewModel } from 'mobx-view-model-react';
 import type { CSSProperties } from 'react';
 import { t } from '@/shared/lib/i18n';
-import { ChangesFileTreeVM } from '../../../model/changes/changes-file-tree';
-import './changes-file-tree.css';
-import { TreeNodeView } from './file-tree/tree-node-view';
+import { ChangesFileTreeVM } from './model';
+import './styles.css';
+import { TreeNodeView } from './nodes/tree-node-view';
 
 const FILE_ROW_HEIGHT = 32;
 

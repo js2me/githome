@@ -15,17 +15,17 @@ import { forgeCommentsKey, forgeKey, forgePostedCommentsKey } from './keys';
 const disabledKey = ['forge', null] as const;
 type Scope<T> = { session: ForgeSession; resource: T };
 
-const createForgeList = <T, R>(
+export const createForgeList = <T, S extends { session: ForgeSession }>(
   abortSignal: AbortSignal,
-  getScope: () => Scope<R> | null,
-  key: (scope: Scope<R>) => QueryKey,
+  getScope: () => S | null,
+  key: (scope: S) => QueryKey,
   load: (
-    scope: Scope<R>,
+    scope: S,
     cursor: string | undefined,
     signal: AbortSignal,
   ) => Promise<ForgePage<T>>,
 ) =>
-  createScopedInfiniteQuery<ForgePage<T>, Scope<R>, string | undefined>({
+  createScopedInfiniteQuery<ForgePage<T>, S, string | undefined>({
     abortSignal,
     scope: getScope,
     disabledKey,

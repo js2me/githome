@@ -5,10 +5,10 @@ import {
   getMaxChangesFileTreeWidthForViewport,
 } from '@/shared/lib/file-tree/changes-file-tree-width';
 import { t } from '@/shared/lib/i18n';
+import { ChangesFileTree } from '@/shared/ui/changes-file-tree';
 import type { MergeRequestDetailVM } from '../../../../model/merge-request-detail';
 import { MrCommitList } from '../../overview/workspace/mr-commit-list';
 import { AutoReviewToggle } from '../auto-review-toggle';
-import { ChangesFileTree } from '../changes-file-tree';
 
 export const MrEditorSidebar = observer(
   ({

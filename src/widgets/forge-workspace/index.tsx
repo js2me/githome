@@ -1,6 +1,7 @@
 import { withPropsViewModel } from 'mobx-view-model-react';
 import { t } from '@/shared/lib/i18n';
 import { ForgeWorkspaceVM } from './model/workspace';
+import { GithubRepository } from './ui/github/repository';
 import { ForgeLoadMore } from './ui/load-more';
 import { ForgeQueryStatus } from './ui/query-status';
 import { ForgeRequestDetails } from './ui/request-details';
@@ -13,8 +14,11 @@ export const ForgeWorkspace = withPropsViewModel(
   ({ model }) => {
     const { repository, number, repositories, pullRequests } = model;
     const hasDetails = number !== null;
+    const github = Boolean(model.payload.session.github);
     return (
-      <section className="mx-auto grid w-full max-w-4xl gap-4 p-4 sm:p-6">
+      <section
+        className={`mx-auto grid w-full min-w-0 gap-4 p-4 sm:p-6 ${github && repository ? 'max-w-page' : 'max-w-4xl'}`}
+      >
         {repository && (
           <button
             className="glass-control w-fit rounded-lg px-3 py-2 text-sm"
@@ -27,6 +31,8 @@ export const ForgeWorkspace = withPropsViewModel(
         )}
         {hasDetails ? (
           <ForgeRequestDetails model={model} />
+        ) : repository && github ? (
+          <GithubRepository model={model.githubRepository} />
         ) : repository ? (
           <>
             <h1 className="break-words font-bold text-xl">{repository}</h1>

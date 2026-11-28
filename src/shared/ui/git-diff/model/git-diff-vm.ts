@@ -37,6 +37,7 @@ export interface GitDiffProps {
   submitCommentError: string | null;
   onAddComment: (input: CreateDiffCommentInput) => Promise<boolean>;
   onClearSubmitError: () => void;
+  isFileReviewed?: (change: GitLabMergeRequestChangeDC) => boolean;
   renderFileAction?: (
     change: GitLabMergeRequestChangeDC,
     onReviewedChange: OnReviewedChange,

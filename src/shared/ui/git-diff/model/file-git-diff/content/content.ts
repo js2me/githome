@@ -29,6 +29,15 @@ export class FileGitDiffContent extends DisposableModel {
     super();
     this.isFileExpanded = shouldStartExpanded(this.file);
     if (!this.file.meta.isImage) this.setupReactions();
+    this.disposers.push(
+      reaction(
+        () => this.file.parent.payload.isFileReviewed?.(this.file.meta.change),
+        (reviewed) => {
+          if (reviewed !== undefined) this.setReviewed(reviewed);
+        },
+        { fireImmediately: true },
+      ),
+    );
   }
 
   @actionBound

@@ -10,6 +10,8 @@ import {
   createForgePullRequestQuery,
   createForgeRepositoryList,
 } from '@/shared/lib/forge/queries';
+import { GithubRepositoryModel } from './github/repository';
+import { GithubReviewModel } from './github/review';
 
 export class ForgeWorkspaceVM extends WorkspaceVM<{ session: ForgeSession }> {
   @observable accessor draft = '';
@@ -20,7 +22,7 @@ export class ForgeWorkspaceVM extends WorkspaceVM<{ session: ForgeSession }> {
   );
   readonly pullRequests = createForgePullRequestList(
     () =>
-      this.repository
+      this.repository && !this.payload.session.github && this.number === null
         ? { session: this.payload.session, resource: this.repository }
         : null,
     this.unmountSignal,
@@ -38,6 +40,8 @@ export class ForgeWorkspaceVM extends WorkspaceVM<{ session: ForgeSession }> {
     this.unmountSignal,
   );
   readonly createComment = createForgeCommentMutation(this.unmountSignal);
+  readonly githubRepository = new GithubRepositoryModel(this);
+  readonly githubReview = new GithubReviewModel(this);
 
   @computed
   get routeParams() {
@@ -78,14 +82,25 @@ export class ForgeWorkspaceVM extends WorkspaceVM<{ session: ForgeSession }> {
   }
 
   willMount() {
+    const { githubReview } = this;
+    reaction(
+      () => [githubReview.files, githubReview.showChanges] as const,
+      ([files]) => githubReview.fileNavigation.track(files),
+      { signal: this.unmountSignal },
+    );
     reaction(
       () => this.scope,
       () => {
         this.setDraft('');
         this.createComment.reset();
+        this.githubReview.reset();
       },
       { signal: this.unmountSignal },
     );
+  }
+
+  willUnmount() {
+    this.githubReview.fileNavigation.dispose();
   }
 
   @computed
