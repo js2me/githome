@@ -1,10 +1,7 @@
 import { actionBound, computed, observable } from 'mobx';
 import type { Workspace } from '@/features/workspace-navigation';
-import type {
-  GitLabCommitDC,
-  GitLabMergeRequestChangeDC,
-} from '@/shared/api/gitlab';
-import { createInfiniteGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { createMergeRequestCommitsQuery } from '@/shared/api/gitlab/queries/merge-requests/diff';
+import { createCommitDiffQuery } from '@/shared/api/gitlab/queries/repository';
 
 export class MrCommits {
   @observable accessor enabled = false;
@@ -16,29 +13,29 @@ export class MrCommits {
     abortSignal: AbortSignal,
     target: () => { projectId: number | null; iid: number | null },
   ) {
-    this.query = createInfiniteGitlabQuery<GitLabCommitDC>({
+    this.query = createMergeRequestCommitsQuery({
       globals,
       abortSignal,
       params: () => {
         const { projectId, iid } = target();
         return (this.enabled || this.selectedId) && projectId && iid
           ? {
-              path: `/projects/${projectId}/merge_requests/${iid}/commits`,
-              query: { per_page: 50 },
+              projectId,
+              iid,
             }
           : null;
       },
       queryOptions: { staleTime: 30_000 },
     });
-    this.diffQuery = createInfiniteGitlabQuery<GitLabMergeRequestChangeDC>({
+    this.diffQuery = createCommitDiffQuery({
       globals,
       abortSignal,
       params: () => {
         const { projectId } = target();
         return projectId && this.selected
           ? {
-              path: `/projects/${projectId}/repository/commits/${this.selected.id}/diff`,
-              query: { per_page: 100 },
+              projectId,
+              commitId: this.selected.id,
             }
           : null;
       },

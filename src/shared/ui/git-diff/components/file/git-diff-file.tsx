@@ -1,13 +1,8 @@
 import { Check } from '@gravity-ui/icons';
 import { observer } from 'mobx-react-lite';
 import { Link } from 'mobx-route/react';
-import type { CSSProperties } from 'react';
 import { cva } from 'yummies/css';
 import { cn } from '@/shared/lib/cn';
-import {
-  codeFontSizeKey,
-  wrapSourceCodeKey,
-} from '@/shared/lib/code-view-preferences';
 import {
   getDiffFileElementId,
   getDiffFileHeaderRowId,
@@ -16,13 +11,10 @@ import { t } from '@/shared/lib/i18n';
 import type { FileGitDiff } from '../../model/file-git-diff';
 import { DiffThreadRow } from '../diff-rows';
 import { SearchHighlightedText, useRowSearchHighlight } from '../diff-search';
-import { DiffSyntaxHighlightProvider } from '../diff-syntax-highlight';
 import { CopyContentIcon } from '../icons/copy-content-icon';
 import { CopyNameIcon } from '../icons/copy-name-icon';
 import { CopyPathIcon } from '../icons/copy-path-icon';
-import { DiffImages } from '../images/diff-images';
-import { DiffBody } from '../virtual-diff-body';
-import { DiffFileCollapseBanner } from './diff-file-collapse-banner';
+import { DiffFileContent } from './diff-file-content';
 import { DiffFileCopyButton } from './diff-file-copy-button';
 import { FileCommentForm } from './file-comment-form';
 
@@ -75,7 +67,6 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
   const {
     meta,
     content,
-    rows,
     comments,
     navigation,
     parent: { payload },
@@ -86,30 +77,17 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     fileKey,
     badge,
     filePath,
-    isDiffContentHidden,
     fileThreads,
     searchFilePath,
     isActive,
     additions,
     deletions,
-    isLazyCollapsed,
-    reservedBodyMinHeight,
   } = meta;
 
-  const {
-    isFileExpanded,
-    isReviewed,
-    isContentCollapsed,
-    collapsedExpandError,
-    isLoadingCollapsedExpand,
-    isResolvingDiff,
-    parsed,
-    showTooLargeBanner,
-  } = content;
+  const { isFileExpanded, isReviewed, isContentCollapsed } = content;
   const isExpanded = isFileExpanded && !isContentCollapsed;
   const toggleLabel = t(isExpanded ? 'diff.collapseFile' : 'diff.expandFile');
 
-  const { virtualRows } = rows;
   const { isFileCommentOpen } = comments;
 
   const {
@@ -150,68 +128,6 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
 
   const headerRowId = getDiffFileHeaderRowId(fileKey);
   const headerSearchHighlight = useRowSearchHighlight(headerRowId);
-
-  const renderDiffContent = () => {
-    if (showTooLargeBanner) {
-      return (
-        <DiffFileCollapseBanner
-          change={change}
-          isLoading={false}
-          onExpand={() => undefined}
-        />
-      );
-    }
-
-    if (isDiffContentHidden) {
-      return (
-        <DiffFileCollapseBanner
-          change={change}
-          isLoading={isLoadingCollapsedExpand}
-          onExpand={() => {
-            void content.expandCollapsedFile();
-          }}
-        />
-      );
-    }
-
-    if (parsed && virtualRows.length > 0) {
-      return (
-        <DiffSyntaxHighlightProvider highlighting={model.highlighting}>
-          <DiffBody fileGitDiff={model} />
-        </DiffSyntaxHighlightProvider>
-      );
-    }
-
-    if (isLazyCollapsed && !parsed) {
-      return (
-        <div className="flex items-center gap-3 p-3.5 text-[13px] text-slate-500">
-          <span>
-            {collapsedExpandError
-              ? t('diff.couldNotLoadDiff', { v1: collapsedExpandError })
-              : t('diff.loadingDiff')}
-          </span>
-          {collapsedExpandError && (
-            <button
-              type="button"
-              className="cursor-pointer rounded border border-slate-300 px-2 py-1 font-medium text-slate-700 text-xs hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-              disabled={isLoadingCollapsedExpand}
-              onClick={() => void content.expandCollapsedFile()}
-            >
-              {t('common.retry')}
-            </button>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <div className="p-3.5 text-[13px] text-slate-500">
-        {isResolvingDiff || isLoadingCollapsedExpand
-          ? t('diff.loadingDiff')
-          : t('diff.noDiffForThisFile')}
-      </div>
-    );
-  };
 
   return (
     <article
@@ -384,33 +300,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
         </div>
       )}
 
-      {isContentCollapsed ? null : model.images ? (
-        <DiffImages images={model.images} />
-      ) : (
-        <div
-          className="git-diff-body-scroll"
-          data-wrap-code={wrapSourceCodeKey.value ? '' : undefined}
-          style={
-            {
-              '--diff-code-font-size': `${codeFontSizeKey.value}px`,
-            } as CSSProperties
-          }
-        >
-          <div
-            className="git-diff-body-inner"
-            data-diff-notice={
-              showTooLargeBanner || isDiffContentHidden ? '' : undefined
-            }
-            style={
-              reservedBodyMinHeight
-                ? { minHeight: reservedBodyMinHeight }
-                : undefined
-            }
-          >
-            {renderDiffContent()}
-          </div>
-        </div>
-      )}
+      <DiffFileContent model={model} />
     </article>
   );
 });

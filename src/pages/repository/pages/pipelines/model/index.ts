@@ -3,15 +3,11 @@ import type { ViewModelParams } from 'mobx-view-model';
 import { isPipelineActive } from '@/entities/gitlab-pipelines';
 import type { Workspace } from '@/features/workspace-navigation';
 import { WorkspaceVM } from '@/features/workspace-navigation';
+import type { GitLabJobDC, GitLabPipelineDC } from '@/shared/api/gitlab';
 import {
-  type GitLabJobDC,
-  type GitLabPipelineDC,
-  gitlabApi,
-} from '@/shared/api/gitlab';
-import {
-  createGitlabApiQuery,
-  createGitlabQuery,
-} from '@/shared/lib/gitlab/connection/create-query';
+  createPipelineJobsQuery,
+  createPipelineQuery,
+} from '@/shared/api/gitlab/queries/pipelines';
 import type { RepositoryPageVM } from '../../../model/page-vm';
 import { PipelineList } from './pipeline-list';
 
@@ -43,7 +39,7 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
       },
     });
 
-    this.linkedPipelineQuery = createGitlabQuery<GitLabPipelineDC>({
+    this.linkedPipelineQuery = createPipelineQuery({
       globals,
       abortSignal: this.unmountSignal,
       params: () => {
@@ -52,7 +48,8 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
         return (
           projectId !== null &&
           pipelineId !== null && {
-            path: `/projects/${projectId}/pipelines/${pipelineId}`,
+            projectId: projectId,
+            pipelineId: pipelineId,
           }
         );
       },
@@ -64,10 +61,7 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
       },
     });
 
-    this.jobs = createGitlabApiQuery<
-      GitLabJobDC[],
-      { projectId: number; pipelineId: number }
-    >({
+    this.jobs = createPipelineJobsQuery({
       globals,
       abortSignal: this.unmountSignal,
       params: () => {
@@ -78,15 +72,6 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
           pipelineId !== undefined && { projectId, pipelineId }
         );
       },
-      queryKey: ({ connection, projectId, pipelineId }) => [
-        'pipeline-jobs',
-        connection.id,
-        connection.credentialsRevision,
-        projectId,
-        pipelineId,
-      ],
-      queryFn: ({ connection, projectId, pipelineId, signal }) =>
-        gitlabApi.getPipelineJobs(connection, projectId, pipelineId, signal),
       queryOptions: {
         refetchInterval: ({ state }) => {
           const run = this.selectedPipeline;
@@ -103,7 +88,7 @@ export class PipelinesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
       () => [
         this.parentViewModel.projectId,
         globals.stores.settings.activeId,
-        globals.stores.settings.activeItem?.credentialsRevision,
+        globals.stores.settings.activeConnection?.credentialsRevision,
       ],
       () => this.pipelineList.selectPipeline(null),
       { signal: this.unmountSignal },

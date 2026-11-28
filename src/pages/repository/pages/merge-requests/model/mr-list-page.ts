@@ -1,10 +1,11 @@
-import {
-  type GitLabMergeRequestDC,
-  type GitLabProjectDC,
-  gitlabApi,
+import type {
+  GitLabMergeRequestDC,
+  GitLabProjectDC,
 } from '@/shared/api/gitlab';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import {
+  createMrListApprovalSummariesQuery,
+  createMrListDiscussionSummariesQuery,
+} from '@/shared/api/gitlab/queries/merge-requests/review/summaries';
 import { VM } from '@/shared/lib/view-models/vm';
 
 interface MrListPagePayload {
@@ -15,43 +16,21 @@ interface MrListPagePayload {
 }
 
 export class MrListPageVM extends VM<MrListPagePayload> {
-  readonly approvals = this.summariesQuery(
-    'approvals',
-    gitlabApi.getMergeRequestApprovalSummaries,
+  readonly approvals = createMrListApprovalSummariesQuery(
+    this.globals,
+    this.unmountSignal,
+    () => this.summaryTarget,
   );
-  readonly discussions = this.summariesQuery(
-    'discussions',
-    gitlabApi.getMergeRequestDiscussionSummaries,
+  readonly discussions = createMrListDiscussionSummariesQuery(
+    this.globals,
+    this.unmountSignal,
+    () => this.summaryTarget,
   );
 
-  private summariesQuery<T>(
-    kind: 'approvals' | 'discussions',
-    fetchSummaries: (
-      connection: GitLabConnection,
-      project: GitLabProjectDC,
-      iids: number[],
-      signal: AbortSignal,
-    ) => Promise<Partial<Record<number, T>>>,
-  ) {
-    return createGitlabApiQuery({
-      globals: this.globals,
-      abortSignal: this.unmountSignal,
-      params: () => {
-        const { project, mergeRequests } = this.payload;
-        if (!project || !mergeRequests.length) return null;
-        return { project, iids: mergeRequests.map((mr) => mr.iid) };
-      },
-      queryKey: ({ connection, project, iids }) => [
-        'merge-request-list',
-        kind,
-        connection.id,
-        connection.gitlabUrl,
-        project.id,
-        iids,
-      ],
-      queryFn: ({ connection, project, iids, signal }) =>
-        fetchSummaries(connection, project, iids, signal),
-      queryOptions: { retry: false },
-    });
+  private get summaryTarget() {
+    const { project, mergeRequests } = this.payload;
+    return project && mergeRequests.length
+      ? { project, iids: mergeRequests.map((mr) => mr.iid) }
+      : null;
   }
 }

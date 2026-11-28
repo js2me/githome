@@ -1,60 +1,12 @@
 import { computed } from 'mobx';
 import type { InboxRow } from '@/features/review-inbox';
 import {
-  type GitLabMergeRequestReviewerDC,
-  gitlabApi,
-} from '@/shared/api/gitlab';
-import { getMergeRequestReviewers } from '@/shared/api/gitlab/endpoints/merge-requests/reviewers/get-merge-request-reviewers';
-import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+  createInboxApprovalSummariesQuery,
+  createInboxDiscussionSummariesQuery,
+  createInboxReviewStatesQuery,
+  type ProjectGroup,
+} from '@/shared/api/gitlab/queries/merge-requests/review/summaries';
 import { VM } from '@/shared/lib/view-models/vm';
-
-interface ProjectGroup {
-  id: number;
-  path_with_namespace?: string;
-  iids: number[];
-}
-
-type ReviewState = 'requested' | 'waiting';
-
-function getInboxReviewState(
-  reviewers: GitLabMergeRequestReviewerDC[],
-): ReviewState | undefined {
-  if (reviewers.some(({ state }) => state === 'requested_changes'))
-    return 'requested';
-  if (
-    reviewers.some(
-      ({ state }) => state === 'unreviewed' || state === 'review_requested',
-    )
-  )
-    return 'waiting';
-}
-
-async function loadReviewStates(
-  connection: GitLabConnection,
-  project: ProjectGroup,
-  iids: number[],
-  signal: AbortSignal,
-) {
-  const byIid: Partial<Record<number, ReviewState>> = {};
-  await Promise.all(
-    iids.map(async (iid) => {
-      try {
-        const reviewers = await getMergeRequestReviewers(
-          connection,
-          project,
-          iid,
-          signal,
-        );
-        const state = getInboxReviewState(reviewers);
-        if (state) byIid[iid] = state;
-      } catch {
-        signal.throwIfAborted();
-      }
-    }),
-  );
-  return byIid;
-}
 
 function groupInboxRows(rows: InboxRow[]): ProjectGroup[] {
   const projects = new Map<number, ProjectGroup>();
@@ -91,67 +43,21 @@ export class InboxPageRowsVM extends VM<{
     );
   }
 
-  private readonly approvals = this.query(
-    'approvals',
+  private readonly approvals = createInboxApprovalSummariesQuery(
+    this.globals,
+    this.unmountSignal,
     () => this.groups,
-    gitlabApi.getMergeRequestApprovalSummaries,
   );
-  private readonly discussions = this.query(
-    'discussions',
+  private readonly discussions = createInboxDiscussionSummariesQuery(
+    this.globals,
+    this.unmountSignal,
     () => this.groups,
-    gitlabApi.getMergeRequestDiscussionSummaries,
   );
-  private readonly reviews = this.query(
-    'reviewers',
+  private readonly reviews = createInboxReviewStatesQuery(
+    this.globals,
+    this.unmountSignal,
     () => this.reviewerGroups,
-    loadReviewStates,
   );
-
-  private query<T>(
-    kind: string,
-    getGroups: () => ProjectGroup[],
-    fetchGroup: (
-      connection: GitLabConnection,
-      project: ProjectGroup,
-      iids: number[],
-      signal: AbortSignal,
-    ) => Promise<Partial<Record<number, T>>>,
-  ) {
-    return createGitlabApiQuery({
-      globals: this.globals,
-      abortSignal: this.unmountSignal,
-      params: () => {
-        const groups = getGroups();
-        return groups.length ? { groups } : null;
-      },
-      queryKey: ({ connection, groups }) => [
-        'inbox-statuses',
-        kind,
-        connection.id,
-        connection.credentialsRevision,
-        groups,
-      ],
-      queryFn: async ({ connection, groups, signal }) => {
-        const results: Partial<Record<number, Partial<Record<number, T>>>> = {};
-        await Promise.all(
-          groups.map(async (project) => {
-            try {
-              results[project.id] = await fetchGroup(
-                connection,
-                project,
-                project.iids,
-                signal,
-              );
-            } catch {
-              signal.throwIfAborted();
-            }
-          }),
-        );
-        return results;
-      },
-      queryOptions: { retry: false, staleTime: 30_000 },
-    });
-  }
 
   statusesFor(row: InboxRow) {
     return {

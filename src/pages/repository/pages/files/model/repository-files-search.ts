@@ -3,8 +3,10 @@ import type {
   GitLabRepositoryTreeItemDC,
   GitLabSearchBlobDC,
 } from '@/shared/api/gitlab';
-import { gitlabApi } from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import {
+  createProjectBlobSearchQuery,
+  createProjectFileSearchQuery,
+} from '@/shared/api/gitlab/queries/repository';
 import { t } from '@/shared/lib/i18n';
 import type { Globals } from '@/shared/model/globals';
 import type { FileSearchTarget } from '../lib/file-find';
@@ -42,10 +44,7 @@ export class RepositoryFilesSearchModel {
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly params: RepositoryFilesSearchParams) {
-    this.filesSearchQuery = createGitlabApiQuery<
-      GitLabSearchBlobDC[],
-      { projectId: number; ref: string; search: string }
-    >({
+    this.filesSearchQuery = createProjectFileSearchQuery({
       globals: params.globals,
       abortSignal: params.abortSignal,
       queryOptions,
@@ -69,29 +68,9 @@ export class RepositoryFilesSearchModel {
           search: `filename:*${search}*`,
         };
       },
-      queryKey: ({ connection, projectId, ref, search }) =>
-        [
-          'project-file-search',
-          connection.gitlabUrl,
-          connection.id,
-          projectId,
-          ref,
-          search,
-        ] as const,
-      queryFn: ({ connection, projectId, ref, search, signal }) =>
-        gitlabApi.searchProjectBlobs(
-          connection,
-          projectId,
-          search,
-          ref,
-          signal,
-        ),
     });
 
-    this.contentSearchQuery = createGitlabApiQuery<
-      GitLabSearchBlobDC[],
-      { projectId: number; ref: string; search: string }
-    >({
+    this.contentSearchQuery = createProjectBlobSearchQuery({
       globals: params.globals,
       abortSignal: params.abortSignal,
       queryOptions,
@@ -111,23 +90,6 @@ export class RepositoryFilesSearchModel {
 
         return { projectId, ref, search };
       },
-      queryKey: ({ connection, projectId, ref, search }) =>
-        [
-          'project-blob-search',
-          connection.gitlabUrl,
-          connection.id,
-          projectId,
-          ref,
-          search,
-        ] as const,
-      queryFn: ({ connection, projectId, ref, search, signal }) =>
-        gitlabApi.searchProjectBlobs(
-          connection,
-          projectId,
-          search,
-          ref,
-          signal,
-        ),
     });
 
     reaction(

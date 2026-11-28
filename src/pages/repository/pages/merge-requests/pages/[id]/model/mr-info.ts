@@ -6,29 +6,27 @@ import {
   reaction,
   runInAction,
 } from 'mobx';
-import { queryClient } from 'mobx-tanstack-query/preset';
-import { mergeRequestDetailKey } from '@/entities/gitlab-merge-requests';
 import {
   CreateMrComment,
   MergeRequestGitDiff,
 } from '@/features/merge-requests';
 import type {
   GitLabDiscussionDC,
-  GitLabMergeRequestApprovalsDC,
   GitLabMergeRequestChangeDC,
   GitLabMergeRequestDC,
-  GitLabMergeRequestReviewerDC,
   GitLabMergeRequestVersionDC,
   GitLabProjectDC,
 } from '@/shared/api/gitlab';
-import { gitlabApi, resolveGitlabRequestUrl } from '@/shared/api/gitlab';
+import { gitlabApi } from '@/shared/api/gitlab';
 import type { GitLabMergeInput } from '@/shared/api/gitlab/endpoints/merge-requests/lifecycle/merge-merge-request';
-import { createConnectionUserIdQuery } from '@/shared/lib/gitlab/connection/connection-profile-query';
+import { createConnectionUserIdQuery } from '@/shared/api/gitlab/queries/connection-profile-query';
+import { updateMergeRequestDetailCache } from '@/shared/api/gitlab/queries/merge-requests/cache';
 import {
-  createGitlabApiQuery,
-  createGitlabQuery,
-  createInfiniteGitlabQuery,
-} from '@/shared/lib/gitlab/connection/create-query';
+  createMergeRequestApprovalsQuery,
+  createMergeRequestDetailQuery,
+  createMergeRequestDiscussionsQuery,
+  createMergeRequestReviewersQuery,
+} from '@/shared/api/gitlab/queries/merge-requests/detail';
 import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/discussions/diff-comment';
 import {
   buildMergeRequestApprovalView,
@@ -160,10 +158,7 @@ export class MrInfoModel {
   @observable accessor locallyCreatedDiscussions: GitLabDiscussionDC[] = [];
 
   constructor(private readonly options: MrInfoModelParams) {
-    this.mergeRequestDetailQuery = createGitlabApiQuery<
-      GitLabMergeRequestDC,
-      MergeRequestTarget
-    >({
+    this.mergeRequestDetailQuery = createMergeRequestDetailQuery({
       globals: options.globals,
       abortSignal: options.abortSignal,
       queryOptions: {
@@ -173,15 +168,6 @@ export class MrInfoModel {
         refetchOnWindowFocus: true,
       },
       params: options.target,
-      queryKey: ({ connection, projectId, mergeRequestIid }) =>
-        mergeRequestDetailKey(connection, projectId, mergeRequestIid),
-      queryFn: ({ connection, projectId, mergeRequestIid, signal }) =>
-        gitlabApi.getMergeRequestDetail(
-          connection,
-          projectId,
-          mergeRequestIid,
-          signal,
-        ),
     });
 
     this.gitDiff = new MergeRequestGitDiff({
@@ -207,26 +193,19 @@ export class MrInfoModel {
       onDiscussionCreated: (discussion) => this.addLocalDiscussion(discussion),
     });
 
-    this.mergeRequestDiscussionsQuery =
-      createInfiniteGitlabQuery<GitLabDiscussionDC>({
-        globals: options.globals,
-        abortSignal: options.abortSignal,
-        queryOptions: MR_POLL_QUERY_OPTIONS,
-        params: () => {
-          const mr = options.target();
-          if (!mr) {
-            return false;
-          }
+    this.mergeRequestDiscussionsQuery = createMergeRequestDiscussionsQuery({
+      globals: options.globals,
+      abortSignal: options.abortSignal,
+      queryOptions: MR_POLL_QUERY_OPTIONS,
+      params: () => {
+        const mr = options.target();
+        if (!mr) {
+          return false;
+        }
 
-          return {
-            path: `/projects/${mr.projectId}/merge_requests/${mr.mergeRequestIid}/discussions`,
-            query: {
-              per_page: 100,
-              sort: 'asc',
-            },
-          };
-        },
-      });
+        return mr;
+      },
+    });
 
     reaction(
       () => ({
@@ -257,26 +236,7 @@ export class MrInfoModel {
     });
     this.reviewedFiles = new ReviewedFiles(this, options);
 
-    this.mergeRequestApprovalsQuery =
-      createGitlabQuery<GitLabMergeRequestApprovalsDC>({
-        globals: options.globals,
-        abortSignal: options.abortSignal,
-        queryOptions: MR_POLL_QUERY_OPTIONS,
-        params: () => {
-          const mr = options.target();
-          if (!mr) {
-            return false;
-          }
-
-          return {
-            path: `/projects/${mr.projectId}/merge_requests/${mr.mergeRequestIid}/approvals`,
-          };
-        },
-      });
-
-    this.mergeRequestReviewersQuery = createGitlabQuery<
-      GitLabMergeRequestReviewerDC[]
-    >({
+    this.mergeRequestApprovalsQuery = createMergeRequestApprovalsQuery({
       globals: options.globals,
       abortSignal: options.abortSignal,
       queryOptions: MR_POLL_QUERY_OPTIONS,
@@ -286,9 +246,21 @@ export class MrInfoModel {
           return false;
         }
 
-        return {
-          path: `/projects/${mr.projectId}/merge_requests/${mr.mergeRequestIid}/reviewers`,
-        };
+        return mr;
+      },
+    });
+
+    this.mergeRequestReviewersQuery = createMergeRequestReviewersQuery({
+      globals: options.globals,
+      abortSignal: options.abortSignal,
+      queryOptions: MR_POLL_QUERY_OPTIONS,
+      params: () => {
+        const mr = options.target();
+        if (!mr) {
+          return false;
+        }
+
+        return mr;
       },
     });
   }
@@ -703,22 +675,13 @@ export class MrInfoModel {
     try {
       const updated = await runner();
       if (updated) {
-        const key = mergeRequestDetailKey(
+        updateMergeRequestDetailCache(
           connection,
           mr.project.id,
           mr.mergeRequestIid,
+          updated,
+          !isCurrent(),
         );
-        queryClient.setQueryData<GitLabMergeRequestDC>(key, (current) =>
-          current ? { ...current, ...updated } : undefined,
-        );
-        const listPath = resolveGitlabRequestUrl(
-          connection.gitlabUrl,
-          `/api/v4/projects/${mr.project.id}/merge_requests`,
-        );
-        void queryClient.invalidateQueries({ queryKey: listPath.split('/') });
-        if (!isCurrent()) {
-          void queryClient.invalidateQueries({ queryKey: key, exact: true });
-        }
       }
 
       if (!isCurrent()) {

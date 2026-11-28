@@ -14,6 +14,14 @@ export const getCurrentUser = async (
   return { id, name, username, avatar_url };
 };
 
+export const getGitlabForgeAccount = async (
+  connection: GitLabConnection,
+  signal?: AbortSignal,
+) => {
+  const user = await getCurrentUser(connection, signal);
+  return { ...user, avatarUrl: user.avatar_url };
+};
+
 export const getCurrentUserId = async (
   connection: GitLabConnection,
   signal?: AbortSignal,

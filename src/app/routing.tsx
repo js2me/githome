@@ -12,6 +12,8 @@ export const Routing = observer(({ globals }: { globals: Workspace }) => {
     <RouteViewGroup layout={Layout}>
       <Suspense fallback={null}>
         <RouteView route={globals.routes.home} view={HomePage} />
+        <RouteView route={globals.routes.forgeRepository} view={HomePage} />
+        <RouteView route={globals.routes.forgePullRequest} view={HomePage} />
         <RouteView route={globals.routes.group} view={GroupPage} />
         <RouteView route={globals.routes.repository} view={RepositoryPage} />
       </Suspense>

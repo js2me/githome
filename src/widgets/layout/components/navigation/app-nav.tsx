@@ -21,7 +21,7 @@ export const AppNav = observer(() => {
           <img src={logo} alt="" className="size-6" />
           <span className="font-semibold tracking-tight">GitHome</span>
         </button>
-        <CommandPalette />
+        {!model.cloudSession && <CommandPalette />}
         <div className="workbench-tools">
           <ConnectionPicker />
           <SettingsDialog />

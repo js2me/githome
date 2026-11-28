@@ -7,9 +7,8 @@ import { ConnectionButtonVM } from '../model/connection-button';
 export const ConnectionButton = withPropsViewModel(
   ConnectionButtonVM,
   ({ model }) => {
-    const { connection, placement, selected, expanded, onClick } =
-      model.payload;
-    const { name, host, label, profile } = model;
+    const { placement, selected, expanded, onClick } = model.payload;
+    const { name, host, label, profile, gitlabConnection } = model;
     const inHeader = placement === 'header';
 
     return (
@@ -21,7 +20,7 @@ export const ConnectionButton = withPropsViewModel(
         }
         type="button"
         aria-label={
-          inHeader ? t('connection.gitlabConnections', { v1: label }) : label
+          inHeader ? t('forge.connectionLabel', { name: label }) : label
         }
         aria-haspopup={inHeader ? 'dialog' : undefined}
         aria-expanded={inHeader ? expanded : undefined}
@@ -30,18 +29,18 @@ export const ConnectionButton = withPropsViewModel(
         title={label}
         onClick={onClick}
       >
-        {connection && profile && (name || profile.avatar_url) ? (
+        {gitlabConnection && profile && (name || profile.avatarUrl) ? (
           <GitlabAvatar
             className={
               inHeader
                 ? 'workbench-account-avatar'
                 : 'size-8 shrink-0 rounded-full object-cover'
             }
-            connection={connection}
-            avatarUrl={profile.avatar_url}
+            connection={gitlabConnection}
+            avatarUrl={profile.avatarUrl}
             name={name || host}
           />
-        ) : (
+        ) : gitlabConnection ? (
           <LogoGitlab
             className={
               inHeader
@@ -50,7 +49,7 @@ export const ConnectionButton = withPropsViewModel(
             }
             aria-hidden
           />
-        )}
+        ) : null}
         <span
           className={inHeader ? 'workbench-account-label' : 'min-w-0 flex-1'}
         >

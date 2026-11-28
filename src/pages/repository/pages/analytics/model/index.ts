@@ -4,8 +4,7 @@ import type {
   GitLabMergeRequestDC,
   GitLabProjectAnalyticsDC,
 } from '@/shared/api/gitlab';
-import { gitlabApi } from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { createProjectAnalyticsQuery } from '@/shared/api/gitlab/queries/analytics';
 import { getLocale, t } from '@/shared/lib/i18n';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { Globals } from '@/shared/model/globals';
@@ -46,15 +45,7 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
   constructor(globals: Globals, params: ViewModelParams<{}, RepositoryPageVM>) {
     super(globals, params);
 
-    this.analyticsQuery = createGitlabApiQuery<
-      GitLabProjectAnalyticsDC,
-      {
-        projectId: number;
-        defaultBranch: string | null;
-        since: string;
-        until: string;
-      }
-    >({
+    this.analyticsQuery = createProjectAnalyticsQuery({
       globals,
       abortSignal: this.unmountSignal,
       params: () => {
@@ -71,40 +62,10 @@ export class AnalyticsPageVM extends VM<{}, RepositoryPageVM> {
           until: this.range.until,
         };
       },
-      queryKey: ({ connection, projectId, defaultBranch, since, until }) =>
-        [
-          'repository-analytics',
-          connection.gitlabUrl,
-          projectId,
-          defaultBranch,
-          since,
-          until,
-        ] as const,
-      queryFn: async ({
-        connection,
-        projectId,
-        defaultBranch,
-        since,
-        until,
-        signal,
-      }) => {
-        const progressKey = JSON.stringify([
-          connection.gitlabUrl,
-          projectId,
-          defaultBranch,
-          since,
-          until,
-        ]);
+      onProgress: (progressKey) => {
         const requestId = this.beginAnalyticsProgress(progressKey);
-        return gitlabApi.getProjectAnalytics(
-          connection,
-          projectId,
-          defaultBranch,
-          since,
-          until,
-          signal,
-          (analytics) => this.updateAnalyticsProgress(requestId, analytics),
-        );
+        return (analytics) =>
+          this.updateAnalyticsProgress(requestId, analytics);
       },
     });
   }

@@ -1,9 +1,8 @@
-import { queryClient } from 'mobx-tanstack-query/preset';
-import { mergeRequestDetailKey } from '@/entities/gitlab-merge-requests';
 import { resolveMergeRequestLink } from '@/features/merge-requests';
 import type { Workspace } from '@/features/workspace-navigation';
 import { gitlabApi } from '@/shared/api/gitlab';
 import { GitLabApiError } from '@/shared/api/gitlab/client';
+import { seedMergeRequestDetail } from '@/shared/api/gitlab/queries/merge-requests/cache';
 import { parsePipelineLocation } from '@/shared/lib/gitlab/links/pipeline';
 import { parseProjectLocation } from '@/shared/lib/gitlab/links/project';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
@@ -55,10 +54,7 @@ export async function openGitLabLink(
         'navigation.gitlabReturnedIncompleteMergeRequestData',
       );
     }
-    queryClient.setQueryData(
-      mergeRequestDetailKey(connection, mr.project_id, iid),
-      mr,
-    );
+    seedMergeRequestDetail(connection, mr.project_id, mr);
     beforeNavigate?.();
     workspace.navigation.mergeRequests.open(
       connection.id,

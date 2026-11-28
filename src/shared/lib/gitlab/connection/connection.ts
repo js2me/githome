@@ -3,13 +3,11 @@ import type { GitLabConnectionItem } from '@/shared/lib/storage';
 
 export type GitLabConnection = GitLabConnectionItem;
 
-export const getConnectionLabel = (
-  connection: GitLabConnectionItem,
-): string => {
+export const getConnectionLabel = (gitlabUrl: string): string => {
   try {
-    return new URL(normalizeGitlabBaseUrl(connection.gitlabUrl)).host;
+    return new URL(normalizeGitlabBaseUrl(gitlabUrl)).host;
   } catch {
-    return connection.gitlabUrl || 'GitLab';
+    return gitlabUrl || 'GitLab';
   }
 };
 
@@ -37,5 +35,10 @@ export const parseConnectionDraft = (
   const jiraBaseUrl = normalizeJiraBaseUrl(jiraUrl);
   if (!url || !token || (jiraUrl?.trim() && !jiraBaseUrl)) return null;
 
-  return { gitlabUrl: url, gitToken: token, jiraUrl: jiraBaseUrl };
+  return {
+    provider: 'gitlab',
+    gitlabUrl: url,
+    gitToken: token,
+    jiraUrl: jiraBaseUrl,
+  };
 };

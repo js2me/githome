@@ -50,7 +50,7 @@ const getPerPage = (query: FetchQueryParams['query']) => {
   return Number.isNaN(parsed) ? undefined : parsed;
 };
 
-const parseFetchPageResult = async <TItem>(
+export const parseFetchPageResult = async <TItem>(
   response: Response,
   pageParam: number,
   perPage: number | undefined,
@@ -69,8 +69,8 @@ const parseFetchPageResult = async <TItem>(
 
   let hasNextPage = false;
 
-  if (nextPageHeader) {
-    hasNextPage = true;
+  if (nextPageHeader !== null) {
+    hasNextPage = nextPageHeader !== '';
   } else if (totalPages != null) {
     hasNextPage = page < totalPages;
   } else if (perPage != null) {

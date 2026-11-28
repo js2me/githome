@@ -6,8 +6,7 @@ import {
   reaction,
 } from 'mobx';
 import { WorkspaceVM } from '@/features/workspace-navigation';
-import { getGroupOverview } from '@/shared/api/gitlab/endpoints/groups/get-group-overview';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { createGroupOverviewQuery } from '@/shared/api/gitlab/queries/groups';
 
 export class GroupPageVM extends WorkspaceVM {
   readonly expanded = observable.set<number>();
@@ -43,22 +42,13 @@ export class GroupPageVM extends WorkspaceVM {
   }
 
   private createOverviewQuery() {
-    return createGitlabApiQuery({
+    return createGroupOverviewQuery({
       globals: this.globals,
       abortSignal: this.unmountSignal,
       params: () => {
         const groupPath = this.globals.routes.group.params?.groupPath;
         return groupPath ? { groupPath } : false;
       },
-      queryKey: ({ connection, groupPath }) => [
-        'group-overview',
-        connection.id,
-        connection.gitlabUrl,
-        connection.credentialsRevision,
-        groupPath,
-      ],
-      queryFn: ({ connection, groupPath, signal }) =>
-        getGroupOverview(connection, groupPath, signal),
     });
   }
 }

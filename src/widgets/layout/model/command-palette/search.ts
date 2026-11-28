@@ -1,14 +1,10 @@
 import { actionBound, computed, observable } from 'mobx';
 import type { Workspace } from '@/features/workspace-navigation';
-import type {
-  GitLabMergeRequestDC,
-  GitLabProjectDC,
-} from '@/shared/api/gitlab';
-import { createGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
+import type { GitLabProjectDC } from '@/shared/api/gitlab';
+import { createMergeRequestPaletteQuery } from '@/shared/api/gitlab/queries/merge-requests/list';
+import { createProjectPaletteQuery } from '@/shared/api/gitlab/queries/projects';
 import { parseMergeRequestLocation } from '@/shared/lib/gitlab/links/merge-request';
 import { matchGitlabProject } from '@/shared/lib/gitlab/links/project';
-
-type SearchRequest = GitLabMergeRequestDC & { references?: { full?: string } };
 
 export const parsePaletteIid = (term: string) =>
   /^!?([1-9]\d*)$/.exec(term)?.[1];
@@ -33,43 +29,24 @@ export class CommandPaletteSearch {
     signal: AbortSignal,
     private readonly readTerm: () => string | null,
   ) {
-    this.projectQuery = createGitlabQuery<GitLabProjectDC[]>({
+    this.projectQuery = createProjectPaletteQuery({
       globals: workspace,
       abortSignal: signal,
       params: () => {
         const term = this.term;
         if (term == null || parsePaletteIid(term)) return null;
-        return {
-          path: '/projects',
-          query: {
-            per_page: 8,
-            simple: true,
-            order_by: 'last_activity_at',
-            ...(term
-              ? { search: term.split('/').filter(Boolean).at(-1) }
-              : { starred: true }),
-          },
-        };
+        return { term };
       },
       queryOptions: { retry: false, staleTime: 60_000 },
     });
-    this.requestQuery = createGitlabQuery<SearchRequest[]>({
+    this.requestQuery = createMergeRequestPaletteQuery({
       globals: workspace,
       abortSignal: signal,
       params: () => {
         const term = this.term;
         if (!term) return null;
         const iid = parsePaletteIid(term);
-        return {
-          path: '/merge_requests',
-          query: {
-            scope: 'all',
-            state: 'all',
-            per_page: 8,
-            order_by: 'updated_at',
-            ...(iid ? { 'iids[]': iid } : { search: term, in: 'title' }),
-          },
-        };
+        return { term, iid };
       },
       queryOptions: { retry: false, staleTime: 30_000 },
     });

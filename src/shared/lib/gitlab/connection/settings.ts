@@ -1,7 +1,13 @@
 import { action, computed, computedStruct } from 'mobx';
+import { bindForgeAccount } from '@/shared/api/forge/adapter';
+import {
+  type CloudCredentials,
+  type ForgeConnection,
+  parseCloudCredentials,
+} from '@/shared/api/forge/connection';
 import {
   type GitLabConnection,
-  normalizeJiraBaseUrl,
+  getConnectionLabel,
   parseConnectionDraft,
 } from '@/shared/lib/gitlab/connection/connection';
 import {
@@ -9,37 +15,6 @@ import {
   connectionsKey,
   type GitLabConnectionItem,
 } from '@/shared/lib/storage';
-
-const toActiveConnection = (
-  snapshot: ConnectionsStorage,
-): GitLabConnection | null => {
-  if (!snapshot.activeId) {
-    return null;
-  }
-
-  const item = snapshot.items.find(
-    (connection) => connection.id === snapshot.activeId,
-  );
-
-  if (!item) {
-    return null;
-  }
-
-  const gitlabUrl = item.gitlabUrl.trim();
-  const gitToken = item.gitToken.trim();
-
-  if (!gitlabUrl || !gitToken) {
-    return null;
-  }
-
-  return {
-    id: item.id,
-    gitlabUrl,
-    gitToken,
-    credentialsRevision: item.credentialsRevision,
-    jiraUrl: normalizeJiraBaseUrl(item.jiraUrl),
-  };
-};
 
 export class SettingsStore {
   @computedStruct
@@ -49,29 +24,67 @@ export class SettingsStore {
 
   @computed
   get connections(): GitLabConnectionItem[] {
-    return this.snapshot.items;
-  }
-
-  @computed
-  get activeId(): string | null {
-    return this.snapshot.activeId;
-  }
-
-  @computed
-  get activeItem(): GitLabConnectionItem | null {
-    if (!this.activeId) {
-      return null;
-    }
-
-    return (
-      this.connections.find((connection) => connection.id === this.activeId) ??
-      null
+    return this.snapshot.items.filter(
+      (item): item is GitLabConnectionItem => item.gitlabUrl !== undefined,
     );
   }
 
+  // Existing GitLab routes, tabs and cached projects must never use a cloud account ID.
   @computed
+  get activeId(): string | null {
+    return this.activeConnection?.id ?? null;
+  }
+
+  @computed
+  get allConnections(): ForgeConnection[] {
+    return this.snapshot.items;
+  }
+
+  @computedStruct
+  get activeForgeItem(): ForgeConnection | null {
+    const { activeId, items } = this.snapshot;
+    return items.find((connection) => connection.id === activeId) ?? null;
+  }
+
+  private readonly selectedSession = computed(
+    () => {
+      const item = this.activeForgeItem;
+      return item ? bindForgeAccount(item) : null;
+    },
+    { keepAlive: true },
+  );
+
+  get activeSession() {
+    return this.selectedSession.get();
+  }
+
   get activeConnection(): GitLabConnection | null {
-    return toActiveConnection(this.snapshot);
+    return this.activeSession?.gitlabConnection ?? null;
+  }
+
+  @computed
+  get connectionOptions() {
+    const labels = this.allConnections.map((item) => ({
+      id: item.id,
+      host:
+        item.gitlabUrl !== undefined
+          ? getConnectionLabel(item.gitlabUrl)
+          : item.workspace
+            ? `Bitbucket · ${item.workspace}`
+            : 'GitHub',
+    }));
+    const totals = new Map<string, number>();
+    const sequence = new Map<string, number>();
+    for (const { host } of labels)
+      totals.set(host, (totals.get(host) ?? 0) + 1);
+    return labels.map(({ id, host }) => {
+      const number = (sequence.get(host) ?? 0) + 1;
+      sequence.set(host, number);
+      return {
+        id,
+        label: (totals.get(host) ?? 0) > 1 ? `${host} · ${number}` : host,
+      };
+    });
   }
 
   @computed
@@ -99,7 +112,7 @@ export class SettingsStore {
     const item = { id: crypto.randomUUID(), ...draft };
     connectionsKey.value = {
       activeId: item.id,
-      items: [...this.connections, item],
+      items: [...this.allConnections, item],
     };
 
     return item.id;
@@ -127,8 +140,9 @@ export class SettingsStore {
     const credentialsRevision = credentialsChanged
       ? crypto.randomUUID()
       : connection.credentialsRevision;
-    const items = this.connections.map((item) =>
-      item.id === id ? { ...item, ...draft, credentialsRevision } : item,
+    const updated = { ...connection, ...draft, credentialsRevision };
+    const items = this.allConnections.map((item) =>
+      item.id === id ? updated : item,
     );
 
     connectionsKey.value = {
@@ -140,10 +154,49 @@ export class SettingsStore {
   }
 
   @action
+  saveCloudConnection(input: CloudCredentials, id?: string): boolean {
+    const draft = parseCloudCredentials(input);
+    if (!draft) return false;
+    if (!id) {
+      const item = { ...draft, id: crypto.randomUUID() };
+      connectionsKey.value = {
+        activeId: item.id,
+        items: [...this.allConnections, item],
+      };
+      return true;
+    }
+
+    const current = this.allConnections.find((item) => item.id === id);
+    if (!current || current.provider !== draft.provider) return false;
+    const changed =
+      current.gitToken !== draft.gitToken ||
+      current.email !== draft.email ||
+      current.workspace !== draft.workspace;
+
+    connectionsKey.value = {
+      ...this.snapshot,
+      items: this.allConnections.map((item) =>
+        item.id === id
+          ? {
+              ...draft,
+              id,
+              credentialsRevision: changed
+                ? crypto.randomUUID()
+                : current.credentialsRevision,
+            }
+          : item,
+      ),
+    };
+    return true;
+  }
+
+  @action
   removeConnection(id: string) {
-    const items = this.connections.filter((connection) => connection.id !== id);
-    const activeId =
-      this.activeId === id ? (items[0]?.id ?? null) : this.activeId;
+    const items = this.allConnections.filter(
+      (connection) => connection.id !== id,
+    );
+    const current = this.snapshot.activeId;
+    const activeId = current === id ? (items[0]?.id ?? null) : current;
 
     connectionsKey.value = {
       items,

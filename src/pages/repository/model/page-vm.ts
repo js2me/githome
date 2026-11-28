@@ -5,18 +5,18 @@ import type {
   GitLabProjectDC,
   GitLabProjectReadmeDC,
 } from '@/shared/api/gitlab';
-import { createGitlabQuery } from '@/shared/lib/gitlab/connection/create-query';
+import { createProjectQuery } from '@/shared/api/gitlab/queries/projects';
 import { t } from '@/shared/lib/i18n';
 import { ProjectReadmeModel } from './project-readme';
 
 export class RepositoryPageVM extends WorkspaceVM {
-  private projectQuery!: ReturnType<typeof createGitlabQuery<GitLabProjectDC>>;
+  private projectQuery!: ReturnType<typeof createProjectQuery>;
   private readmeModel!: ProjectReadmeModel;
 
   protected willMount() {
     const { globals } = this;
 
-    this.projectQuery = createGitlabQuery<GitLabProjectDC>({
+    this.projectQuery = createProjectQuery({
       globals,
       abortSignal: this.unmountSignal,
       params: () => {
@@ -26,7 +26,7 @@ export class RepositoryPageVM extends WorkspaceVM {
         }
 
         return {
-          path: `/projects/${projectId}`,
+          projectId: projectId,
         };
       },
     });

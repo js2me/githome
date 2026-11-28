@@ -3,12 +3,8 @@ import type { ViewModelParams } from 'mobx-view-model';
 import type { ReactNode } from 'react';
 import { createRef } from 'yummies/mobx';
 import type { PipelineJobAction } from '@/entities/gitlab-pipelines';
-import {
-  type GitLabJobDC,
-  type GitLabPipelineSummaryDC,
-  gitlabApi,
-} from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import type { GitLabJobDC, GitLabPipelineSummaryDC } from '@/shared/api/gitlab';
+import { createPipelineStageOrderQuery } from '@/shared/api/gitlab/queries/pipelines';
 import { getLocale } from '@/shared/lib/i18n';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { Globals } from '@/shared/model/globals';
@@ -89,31 +85,13 @@ export class PipelineDetailsDialogVM extends VM<PipelineDetailsDialogProps> {
     params: ViewModelParams<PipelineDetailsDialogProps>,
   ) {
     super(globals, params);
-    this.stageOrder = createGitlabApiQuery<
-      string[],
-      { projectPath: string; pipelineId: number }
-    >({
+    this.stageOrder = createPipelineStageOrderQuery({
       globals,
       abortSignal: this.unmountSignal,
       params: () => {
         const { projectPath, pipelineId } = this.payload;
         return projectPath ? { projectPath, pipelineId } : false;
       },
-      queryKey: ({ connection, projectPath, pipelineId }) => [
-        'pipeline-stage-order',
-        connection.id,
-        connection.credentialsRevision,
-        projectPath,
-        pipelineId,
-      ],
-      queryFn: ({ connection, projectPath, pipelineId, signal }) =>
-        gitlabApi.getPipelineStages(
-          connection,
-          projectPath,
-          pipelineId,
-          signal,
-        ),
-      queryOptions: { staleTime: 300_000, retry: false },
     });
   }
 

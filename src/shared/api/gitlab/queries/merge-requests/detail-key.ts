@@ -1,4 +1,5 @@
 import type { GitLabConnection } from '@/shared/lib/gitlab/connection/connection';
+import { gitlabConnectionKey } from '../core/keys';
 
 export const mergeRequestDetailKey = (
   connection: Pick<
@@ -10,9 +11,7 @@ export const mergeRequestDetailKey = (
 ) =>
   [
     'merge-request-detail',
-    connection.id,
-    connection.gitlabUrl,
-    connection.credentialsRevision ?? null,
+    ...gitlabConnectionKey(connection),
     projectId,
     iid,
   ] as const;

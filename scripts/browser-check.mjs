@@ -134,6 +134,7 @@ const secondUser = user(2, 'Mira Rivera');
 const primaryConnection = { id: 'test-conn', gitlabUrl: 'https://gitlab.mock', gitToken: 'fake-token' };
 const secondConnection = { ...primaryConnection, id: 'second-conn', gitToken: 'fake-second-token' };
 const profile = user => ({ ...user, avatar_url: `https://gitlab.mock/uploads/avatars/${user.id}.png` });
+const accountProfileRequests = [];
 const accountProfiles = new Map([
   [primaryConnection.gitToken, profile(currentUser)],
   [secondConnection.gitToken, profile(secondUser)],
@@ -331,7 +332,10 @@ const closeWrites = [];
 const route = (url, postData, token, method) => {
   const { pathname, searchParams } = new URL(url);
   const p = pathname.replace('/git-proxy/gitlab.mock', '');
-  if (p === '/api/v4/user') return accountProfiles.get(token) ?? {};
+  if (p === '/api/v4/user') {
+    accountProfileRequests.push(token);
+    return accountProfiles.get(token) ?? {};
+  }
   const closePath = p.match(/^\/api\/v4\/projects\/1\/merge_requests\/(\d+)$/);
   if (method === 'PUT' && closePath) {
     const iid = Number(closePath[1]);
@@ -2056,7 +2060,7 @@ try {
 }
 
 try {
-  const trigger = 'header button[aria-haspopup="dialog"][aria-label^="Подключения GitLab"]';
+  const trigger = 'header button[aria-haspopup="dialog"][aria-label^="Подключения ·"]';
   const dialog = 'dialog[open][aria-labelledby="connections-title"]';
   const row = user => `${dialog} button[aria-label="${user.name} · gitlab.mock"]`;
   const waitForIdentity = (selector, name, avatarWidth) => page.waitForFunction((selector, name, avatarWidth) => {
@@ -2074,15 +2078,15 @@ try {
   await waitForIdentity(trigger, currentUser.name, 4);
   check('account button shows the active GitLab name, host and private avatar', true);
 
+  const inactiveRow = (number) => `${dialog} button[aria-label="gitlab.mock · ${number}"]`;
+  const beforeOpen = accountProfileRequests.length;
   await page.click(trigger);
-  await Promise.all([
-    waitForIdentity(row(currentUser), currentUser.name, 4),
-    waitForIdentity(row(secondUser), secondUser.name, 8),
-  ]);
-  check('account picker distinguishes both tokens on the same host',
+  await waitForIdentity(row(currentUser), currentUser.name, 4);
+  check('account picker distinguishes same-host connections without requesting inactive profiles',
     await page.$eval(row(currentUser), button => button.getAttribute('aria-pressed') === 'true') &&
-    await page.$eval(row(secondUser), button => button.getAttribute('aria-pressed') === 'false'));
-  await page.click(row(secondUser));
+    await page.$eval(inactiveRow(2), button => button.getAttribute('aria-pressed') === 'false') &&
+    !accountProfileRequests.slice(beforeOpen).includes(secondConnection.gitToken));
+  await page.click(inactiveRow(2));
   await waitForIdentity(trigger, secondUser.name, 8);
   await page.keyboard.press('Escape');
   await page.waitForSelector(dialog, { hidden: true });
@@ -2111,8 +2115,7 @@ try {
     await page.$eval(trigger, button => button.innerText.trim().endsWith('gitlab.mock') && !button.disabled &&
       !button.innerText.includes('Mira Rivera')));
   await page.click(trigger);
-  await waitForIdentity(row(currentUser), currentUser.name, 4);
-  await page.click(row(currentUser));
+  await page.click(inactiveRow(1));
   await waitForIdentity(trigger, currentUser.name, 4);
   check('another account remains selectable when profile details are missing', true);
 } catch (error) {

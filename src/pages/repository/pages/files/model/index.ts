@@ -3,9 +3,10 @@ import type { ViewModelParams } from 'mobx-view-model';
 import { createRef } from 'yummies/mobx';
 import type { Workspace } from '@/features/workspace-navigation';
 import { WorkspaceVM } from '@/features/workspace-navigation';
-import type { GitLabBranchDC } from '@/shared/api/gitlab';
-import { gitlabApi } from '@/shared/api/gitlab';
-import { createGitlabApiQuery } from '@/shared/lib/gitlab/connection/create-query';
+import {
+  createProjectBranchesQuery,
+  createRepositoryFileContentQuery,
+} from '@/shared/api/gitlab/queries/repository';
 import { t } from '@/shared/lib/i18n';
 import { isImagePath } from '@/shared/lib/image-path';
 import type { RepositoryPageVM } from '../../../model/page-vm';
@@ -66,10 +67,7 @@ export class FilesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
       onSelectFile: this.treeModel.selectFile,
     });
 
-    this.branchesQuery = createGitlabApiQuery<
-      GitLabBranchDC[],
-      { projectId: number }
-    >({
+    this.branchesQuery = createProjectBranchesQuery({
       globals,
       abortSignal: this.unmountSignal,
       params: () => {
@@ -80,16 +78,9 @@ export class FilesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
 
         return { projectId };
       },
-      queryKey: ({ connection, projectId }) =>
-        ['project-branches', connection.gitlabUrl, projectId] as const,
-      queryFn: ({ connection, projectId, signal }) =>
-        gitlabApi.getProjectBranches(connection, projectId, signal),
     });
 
-    this.fileContentQuery = createGitlabApiQuery<
-      string | Awaited<ReturnType<typeof gitlabApi.getRepositoryFileBlob>>,
-      { projectId: number; ref: string; filePath: string }
-    >({
+    this.fileContentQuery = createRepositoryFileContentQuery({
       globals,
       abortSignal: this.unmountSignal,
       params: () => {
@@ -103,30 +94,6 @@ export class FilesPageVM extends WorkspaceVM<{}, RepositoryPageVM> {
 
         return { projectId, ref, filePath };
       },
-      queryKey: ({ connection, projectId, ref, filePath }) =>
-        [
-          'repository-file-content',
-          connection.gitlabUrl,
-          projectId,
-          ref,
-          filePath,
-        ] as const,
-      queryFn: ({ connection, projectId, ref, filePath, signal }) =>
-        isImagePath(filePath)
-          ? gitlabApi.getRepositoryFileBlob(
-              connection,
-              projectId,
-              filePath,
-              ref,
-              signal,
-            )
-          : gitlabApi.getRepositoryFileContent(
-              connection,
-              projectId,
-              filePath,
-              ref,
-              signal,
-            ),
     });
 
     this.querySync = new FilesPageQuerySync(
