@@ -27,6 +27,25 @@ export class FileGitDiffMeta {
   }
 
   @computed
+  get isAutoReviewable() {
+    const { content, images, parent } = this.file;
+    if (
+      !parent.payload.onAutoReviewFile ||
+      content.isReviewed ||
+      !content.isFileExpanded ||
+      content.isContentCollapsed ||
+      this.isDiffContentHidden
+    ) {
+      return false;
+    }
+    return images
+      ? [images.before, images.after].every(
+          ({ status }) => status === 'ready' || status === 'missing',
+        )
+      : Boolean(content.parsed && !content.showTooLargeBanner);
+  }
+
+  @computed
   get isImage() {
     return isImageChange(this.change);
   }

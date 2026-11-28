@@ -71,6 +71,7 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
   @observable accessor zen = false;
   @observable accessor editorCommits = false;
   @observable accessor mobileFilesOpen = false;
+  @observable accessor autoReviewFiles = false;
   private finishResize?: () => void;
   private scrollFrame = 0;
 
@@ -87,6 +88,11 @@ export class MergeRequestDetailVM extends VM<EmptyObject, MergeRequestPageVM> {
   @actionBound
   toggleZen() {
     this.zen = !this.zen;
+  }
+
+  @actionBound
+  toggleAutoReviewFiles() {
+    this.autoReviewFiles = !this.autoReviewFiles;
   }
 
   @actionBound

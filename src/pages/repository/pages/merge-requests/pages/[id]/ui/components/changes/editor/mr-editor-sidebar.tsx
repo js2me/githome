@@ -7,6 +7,7 @@ import {
 import { t } from '@/shared/lib/i18n';
 import type { MergeRequestDetailVM } from '../../../../model/merge-request-detail';
 import { MrCommitList } from '../../overview/workspace/mr-commit-list';
+import { AutoReviewToggle } from '../auto-review-toggle';
 import { ChangesFileTree } from '../changes-file-tree';
 
 export const MrEditorSidebar = observer(
@@ -26,6 +27,12 @@ export const MrEditorSidebar = observer(
     const detail = parentViewModel.mrInfo.detailView;
     if (!detail) return null;
     const commitsVisible = !overview && showCommits;
+    const autoReviewToggle = detail.changes.length > 0 && !commitsVisible && (
+      <AutoReviewToggle
+        checked={model.autoReviewFiles}
+        onToggle={model.toggleAutoReviewFiles}
+      />
+    );
 
     const count =
       commitLog.query.data?.pages[0]?.total ?? commitLog.items.length;
@@ -47,29 +54,32 @@ export const MrEditorSidebar = observer(
           data-overview={overview}
         >
           {!overview && (
-            <div
-              className="mr-editor-segments mr-segments"
-              role="group"
-              aria-label={t('review.mergeRequestSections')}
-            >
-              <button
-                type="button"
-                aria-pressed={!commitsVisible}
-                onClick={model.showFilesTab}
+            <div className="mr-editor-sidebar-controls">
+              <div
+                className="mr-editor-segments mr-segments"
+                role="group"
+                aria-label={t('review.mergeRequestSections')}
               >
-                <Files className="size-4 shrink-0" aria-hidden />
-                {t('common.files')}{' '}
-                <span className="text-fg-muted">{detail.changes.length}</span>
-              </button>
-              <button
-                type="button"
-                aria-pressed={commitsVisible}
-                onClick={model.showCommitsTab}
-              >
-                <CodeCommits className="size-4 shrink-0" aria-hidden />
-                {t('workbench.commits')}{' '}
-                {count > 0 && <span className="text-fg-muted">{count}</span>}
-              </button>
+                <button
+                  type="button"
+                  aria-pressed={!commitsVisible}
+                  onClick={model.showFilesTab}
+                >
+                  <Files className="size-4 shrink-0" aria-hidden />
+                  {t('common.files')}{' '}
+                  <span className="text-fg-muted">{detail.changes.length}</span>
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={commitsVisible}
+                  onClick={model.showCommitsTab}
+                >
+                  <CodeCommits className="size-4 shrink-0" aria-hidden />
+                  {t('workbench.commits')}{' '}
+                  {count > 0 && <span className="text-fg-muted">{count}</span>}
+                </button>
+              </div>
+              {autoReviewToggle}
             </div>
           )}
           {commitsVisible ? (
@@ -83,6 +93,7 @@ export const MrEditorSidebar = observer(
               discussions={detail.discussions ?? []}
               activeFile={model.fileNavigation.activeFile}
               onSelectFile={model.selectEditorFile}
+              headerAction={overview ? autoReviewToggle : undefined}
             />
           )}
         </div>

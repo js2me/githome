@@ -61,8 +61,7 @@
 }
 
 .mr-editor-segments {
-  width: 100%;
-  margin: 8px 0;
+  flex: 1;
 }
 
 .mr-editor-segments button {
@@ -294,8 +293,12 @@
   padding: 4px 9px 9px;
 }
 
-.mr-editor-sidebar-inner > .mr-segments {
+.mr-editor-sidebar-controls {
+  display: flex;
   flex: none;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
 }
 
 .mr-editor-sidebar-inner .changes-file-tree {

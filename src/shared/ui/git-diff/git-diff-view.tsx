@@ -13,6 +13,7 @@ export const GitDiffView = withPropsViewModel(
       payload: { changes },
       filesGitDiffs,
       reviewedStackAnchor,
+      listRef,
     },
   }) => {
     if (changes.length === 0) {
@@ -41,7 +42,10 @@ export const GitDiffView = withPropsViewModel(
       );
 
     return (
-      <div className="git-diff flex flex-col gap-4 [overflow-anchor:none]">
+      <div
+        ref={listRef}
+        className="git-diff flex flex-col gap-4 [overflow-anchor:none]"
+      >
         {/* Keep the same React parent when a file moves into the stack. */}
         {files}
       </div>

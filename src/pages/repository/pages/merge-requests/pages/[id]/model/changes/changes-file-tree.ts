@@ -6,6 +6,7 @@ import {
   observable,
   reaction,
 } from 'mobx';
+import type { ReactNode } from 'react';
 import { createRef } from 'yummies/mobx';
 import type {
   GitLabDiscussionDC,
@@ -123,6 +124,7 @@ export class ChangesFileTreeVM extends VM<{
   discussions: GitLabDiscussionDC[];
   activeFile: IObservableValue<string | null>;
   onSelectFile: (fileKey: string) => void;
+  headerAction?: ReactNode;
 }> {
   readonly nav = createRef<HTMLElement>();
   private readonly navRefs = new WeakMap<

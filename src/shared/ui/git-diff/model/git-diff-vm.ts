@@ -3,8 +3,10 @@ import {
   type IObservableValue,
   observableRef,
   reaction,
+  runInAction,
 } from 'mobx';
 import type { ReactNode } from 'react';
+import { createRef } from 'yummies/mobx';
 import type {
   GitLabDiscussionDC,
   GitLabMergeRequestChangeDC,
@@ -17,6 +19,7 @@ import type { CreateDiffCommentInput } from '@/shared/lib/gitlab/discussions/dif
 import type { DiffFileContentLoader } from '@/shared/lib/syntax-highlight/types';
 import { VM } from '@/shared/lib/view-models/vm';
 import type { GitlabMarkdownScope } from '@/shared/ui/gitlab-markdown/model';
+import { trackAutoReviewScroll } from './auto-review-scroll';
 import type { DiffSearchVM } from './diff-search';
 import { FileGitDiff } from './file-git-diff';
 import type { FileGitDiffContent } from './file-git-diff/content/content';
@@ -38,6 +41,10 @@ export interface GitDiffProps {
     change: GitLabMergeRequestChangeDC,
     onReviewedChange: OnReviewedChange,
   ) => ReactNode;
+  onAutoReviewFile?: (
+    change: GitLabMergeRequestChangeDC,
+    article: HTMLElement,
+  ) => boolean;
   mergeRequestIid?: number;
   headBranch?: string | null;
   headRef?: string | null;
@@ -84,10 +91,43 @@ export class GitDiffVM extends VM<GitDiffPayload> {
 
   @observableRef accessor reviewedStackAnchor: string | null = null;
   private reviewedStackFrame = 0;
+  private stopAutoReview?: () => void;
+  readonly listRef = createRef<HTMLDivElement>({
+    onChange: (list) => this.syncAutoReview(list),
+  });
 
-  placeReviewedStack(fileKey: string) {
+  private syncAutoReview(list: HTMLDivElement | null) {
+    this.stopAutoReview?.();
+    this.stopAutoReview =
+      list && this.payload.onAutoReviewFile
+        ? trackAutoReviewScroll(list, this.autoReviewFile)
+        : undefined;
+  }
+
+  autoReviewFile = (article: HTMLElement) =>
+    runInAction(() => {
+      const file = this.filesGitDiffs.find(
+        ({ fileKey }) => getDiffFileElementId(fileKey) === article.id,
+      );
+      if (
+        !file ||
+        file.content.isReviewed ||
+        !this.payload.onAutoReviewFile?.(file.meta.change, article)
+      ) {
+        return false;
+      }
+      file.content.setReviewed(true, 'auto');
+      return true;
+    });
+
+  placeReviewedStack(fileKey: string, preserveNextFile = false) {
     this.reviewedStackAnchor = fileKey;
     const file = document.getElementById(getDiffFileElementId(fileKey));
+    let next = preserveNextFile ? file?.nextElementSibling : null;
+    while (next && !next.matches('article:not([data-diff-reviewed])')) {
+      next = next.nextElementSibling;
+    }
+    const nextTop = next?.getBoundingClientRect().top;
     const rect = file?.querySelector('header')?.getBoundingClientRect();
     const top =
       rect && rect.bottom > 0 && rect.top < window.innerHeight
@@ -110,9 +150,15 @@ export class GitDiffVM extends VM<GitDiffPayload> {
       const summary = stack?.querySelector('summary');
       // The user can reopen an existing stack before the next frame.
       if (!stack || !summary || stack.open) return;
-      if (top !== null) {
+      const offset =
+        next?.isConnected && nextTop !== undefined
+          ? next.getBoundingClientRect().top - nextTop
+          : top === null
+            ? 0
+            : summary.getBoundingClientRect().top - top;
+      if (offset) {
         window.scrollBy({
-          top: summary.getBoundingClientRect().top - top,
+          top: offset,
           behavior: 'instant',
         });
       }
@@ -160,6 +206,11 @@ export class GitDiffVM extends VM<GitDiffPayload> {
 
   willMount() {
     reaction(
+      () => Boolean(this.payload.onAutoReviewFile),
+      () => this.syncAutoReview(this.listRef.current),
+      { signal: this.unmountSignal },
+    );
+    reaction(
       () => this.payload.changes.slice(),
       (changes) => this.syncFiles(changes),
       {
@@ -199,6 +250,7 @@ export class GitDiffVM extends VM<GitDiffPayload> {
   }
 
   willUnmount() {
+    this.stopAutoReview?.();
     cancelAnimationFrame(this.reviewedStackFrame);
     for (const model of this.fileModelCache.values()) {
       model.dispose();

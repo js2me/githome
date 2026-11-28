@@ -414,6 +414,7 @@
   "review.approving": "正在批准…",
   "review.assignee": "受指派人",
   "review.assignees": "受指派人",
+  "review.autoMarkAsViewed": "自动将文件标记为已查看",
   "review.awaitingReview": "等待审查",
   "review.cannotPostACommentWithoutDiffRefs": "缺少差异引用，无法发表评论",
   "review.changes": "改动",

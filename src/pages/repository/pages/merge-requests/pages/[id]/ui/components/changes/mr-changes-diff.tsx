@@ -79,6 +79,28 @@ export const MrChangesDiff = observer(
                   base={baseRef ?? null}
                 />
               )}
+              onAutoReviewFile={
+                model.autoReviewFiles
+                  ? (change, article) => {
+                      if (
+                        !headRef ||
+                        !review.isReady ||
+                        !article.querySelector(
+                          '[data-diff-review-toggle][aria-pressed="false"]:enabled:not([aria-busy])',
+                        )
+                      ) {
+                        return false;
+                      }
+                      review.setReviewed(
+                        change,
+                        headRef,
+                        baseRef ?? null,
+                        true,
+                      );
+                      return true;
+                    }
+                  : undefined
+              }
               mergeRequestIid={mergeRequest.iid}
               headBranch={mergeRequest.source_branch ?? null}
               headRef={headRef ?? null}

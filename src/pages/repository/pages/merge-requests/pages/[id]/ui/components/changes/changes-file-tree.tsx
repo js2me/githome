@@ -21,7 +21,7 @@ export const ChangesFileTree = withPropsViewModel(
       fileKeysWithDiscussions,
       getItemKey,
     } = model;
-    const { changes, onSelectFile } = model.payload;
+    const { changes, onSelectFile, headerAction } = model.payload;
     const virtualizer = useVirtualizer<HTMLElement, HTMLDivElement>({
       count: rows.length,
       getScrollElement: () => nav.current,
@@ -44,6 +44,7 @@ export const ChangesFileTree = withPropsViewModel(
         <div className="changes-file-tree__header">
           <span>{t('common.files')}</span>
           <span className="changes-file-tree__count">{changes.length}</span>
+          {headerAction}
         </div>
 
         <label className="changes-file-tree__search">

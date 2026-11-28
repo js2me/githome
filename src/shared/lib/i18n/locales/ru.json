@@ -423,6 +423,7 @@
   "review.approving": "Одобряем…",
   "review.assignee": "Ответственный",
   "review.assignees": "Ответственные",
+  "review.autoMarkAsViewed": "Автоотметка просмотренных файлов",
   "review.awaitingReview": "Ожидает ревью",
   "review.cannotPostACommentWithoutDiffRefs": "Нельзя оставить комментарий: нет diff refs",
   "review.changes": "Изменения",

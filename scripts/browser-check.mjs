@@ -317,6 +317,7 @@ const isFileDiscussionPost = (req) =>
 const reviewNotesPath = '/api/v4/projects/1/merge_requests/157/notes';
 let reviewHead = 'head-sha';
 let reviewPatch = tsxChange.diff;
+let reviewCommentsEnabled = false;
 let reviewNote;
 const reviewWrites = [];
 const mergeRuns = new Map([
@@ -470,7 +471,14 @@ const route = (url, postData, token, method) => {
   }
   if (p.endsWith('/merge_requests/155')) return mr(155, 'Large MR', AUTHORS[0]);
   if (p.endsWith('/merge_requests/157')) {
-    return { ...mr(157, 'TSX MR', AUTHORS[0]), diff_refs: { base_sha: 'base-sha', head_sha: reviewHead } };
+    return {
+      ...mr(157, 'TSX MR', AUTHORS[0]),
+      diff_refs: {
+        base_sha: 'base-sha',
+        head_sha: reviewHead,
+        ...(reviewCommentsEnabled ? { start_sha: 'start-sha' } : {}),
+      },
+    };
   }
   if (p === reviewNotesPath && method === 'POST' || p === reviewNotesPath + '/901' && method === 'PUT') {
     const { body } = JSON.parse(postData);
@@ -1718,6 +1726,123 @@ try {
   reviewHead = 'head-sha';
   reviewPatch = tsxChange.diff;
   reviewNote = undefined;
+  await page.goto(`${BASE}/repository/1/merge-requests/156?view=changes`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.git-diff > article:first-child');
+}
+
+// Advance only the 20-second auto-review timers. Keep browser rendering and network on real time.
+const { identifier: autoReviewClock } = await page.evaluateOnNewDocument(() => {
+  const { setTimeout, clearTimeout } = window;
+  const pending = new Map();
+  let now = 0;
+  let id = 1_000_000_000;
+  window.setTimeout = (callback, delay, ...args) => {
+    if (delay !== 20_000) return setTimeout(callback, delay, ...args);
+    pending.set(++id, { callback, args, due: now + delay });
+    return id;
+  };
+  window.clearTimeout = timer => {
+    if (!pending.delete(timer)) clearTimeout(timer);
+  };
+  window.advanceAutoReviewTime = elapsed => {
+    now += elapsed;
+    for (const [timer, { callback, args, due }] of pending) {
+      if (due > now) continue;
+      pending.delete(timer);
+      callback(...args);
+    }
+  };
+});
+
+try {
+  const mrUrl = `${BASE}/repository/1/merge-requests/157`;
+  const first = `[id="diff-file-${encodeURIComponent(`${tsxChange.old_path}\0${tsxChange.new_path}`)}"]`;
+  const second = `[id="diff-file-${encodeURIComponent(`${generatedChange.old_path}\0${generatedChange.new_path}`)}"]`;
+  const toggle = '[role="switch"][aria-label="Автоотметка просмотренных файлов"]';
+  const viewed = '[data-diff-review-toggle][aria-pressed="true"]';
+  const advanceAutoReviewTime = async ms => {
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.evaluate(elapsed => window.advanceAutoReviewTime(elapsed), ms);
+  };
+  const isUnread = async () => !(await page.$(`${first} ${viewed}`));
+  const goNearEnd = () => page.$eval(first, card => {
+    window.scrollBy({ top: card.getBoundingClientRect().bottom - innerHeight + 20, behavior: 'instant' });
+  });
+
+  const scrollThroughDiff = async () => {
+    const endIsBelowViewport = () => page.$eval(first, card => card.getBoundingClientRect().bottom > innerHeight - 10);
+    const step = await page.evaluate(() => Math.floor(innerHeight / 2));
+    for (let i = 0; i < 24 && await endIsBelowViewport(); i++) {
+      const previous = await page.evaluate(() => scrollY);
+      await page.mouse.wheel({ deltaY: step });
+      await page.waitForFunction(y => window.scrollY > y, { timeout: 3000 }, previous);
+    }
+  };
+  const goToStart = () => page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+
+  reviewPatch = longDiffChange.diff;
+  reviewCommentsEnabled = true;
+  await page.goto(mrUrl, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector(`.changes-file-tree__header ${toggle}[aria-checked="false"]`, { visible: true });
+  await page.click(toggle);
+  await page.waitForSelector(`${toggle}[aria-checked="true"]`);
+  check('auto-review switch is at the right of the Files header', await page.$eval(toggle, button => {
+    const header = button.parentElement;
+    return button.getBoundingClientRect().left > header.getBoundingClientRect().left + header.offsetWidth / 2;
+  }));
+
+  await page.goto(`${mrUrl}?view=changes`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector(`${toggle}[aria-checked="false"]`, { visible: true });
+  await page.waitForSelector(`${first} [data-diff-review-toggle]:enabled`);
+  await page.mouse.move(700, 400);
+  await scrollThroughDiff();
+  await advanceAutoReviewTime(20_000);
+  check('scrolling with auto-review disabled leaves the file unread', await isUnread());
+  await goToStart();
+  await page.click(toggle);
+  await page.waitForSelector(`${first}[data-diff-auto-reviewable="true"]`);
+  await page.mouse.move(700, 400);
+  await goNearEnd();
+  await advanceAutoReviewTime(20_000);
+  await page.mouse.wheel({ deltaY: 32 });
+  await advanceAutoReviewTime(20_000);
+  check('jumping to the end does not auto-review unseen lines', await isUnread());
+
+  await goToStart();
+  await page.waitForFunction(() => window.scrollY === 0);
+  await scrollThroughDiff();
+
+  await advanceAutoReviewTime(12_000);
+  check('a completed diff stays unread during the auto-review delay', await isUnread());
+  await goToStart();
+  await advanceAutoReviewTime(8_000);
+  check('going back to the file restarts the auto-review delay', await isUnread());
+
+  const comment = `${first} textarea[placeholder="Оставьте комментарий к файлу"]`;
+  await page.click(`${first} header ::-p-xpath(.//button[normalize-space(.)="Комментарий к файлу"])`);
+  await page.waitForSelector(comment, { visible: true });
+  await page.type(comment, 'Still reviewing');
+  await advanceAutoReviewTime(20_000);
+  check('an open comment prevents auto-review from collapsing the diff', await isUnread());
+
+  await page.click(`${first} header ::-p-xpath(.//button[normalize-space(.)="Скрыть комментарий"])`);
+  await page.waitForSelector(comment, { hidden: true });
+  await advanceAutoReviewTime(19_999);
+  check('closing a comment starts a fresh 20-second delay', await isUnread());
+  await advanceAutoReviewTime(1);
+  await page.waitForSelector(`${first}[data-diff-reviewed] ${viewed}:not([aria-busy])`, { timeout: 6000 });
+  await page.waitForSelector('[data-diff-reviewed-stack]:not([open]) > summary', { visible: true });
+  check('scrolling through the diff auto-marks, saves and collapses only the viewed file',
+    reviewNote?.body.includes(tsxChange.new_path) &&
+    !(await page.$(`${first} .git-diff-body-scroll`)) &&
+    !!(await page.$(`${second} [data-diff-review-toggle][aria-pressed="false"]`)));
+} catch (error) {
+  check('automatic diff review', false, error.stack ?? String(error));
+} finally {
+  reviewPatch = tsxChange.diff;
+  reviewNote = undefined;
+  reviewCommentsEnabled = false;
+  await page.removeScriptToEvaluateOnNewDocument(autoReviewClock);
   await page.goto(`${BASE}/repository/1/merge-requests/156?view=changes`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.git-diff > article:first-child');
 }

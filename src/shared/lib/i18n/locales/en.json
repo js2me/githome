@@ -417,6 +417,7 @@
   "review.approving": "Approving…",
   "review.assignee": "Assignee",
   "review.assignees": "Assignees",
+  "review.autoMarkAsViewed": "Automatically mark files as viewed",
   "review.awaitingReview": "Awaiting review",
   "review.cannotPostACommentWithoutDiffRefs": "Cannot post a comment without diff refs",
   "review.changes": "Changes",

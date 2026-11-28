@@ -417,6 +417,7 @@
   "review.approving": "Approbation…",
   "review.assignee": "Responsable",
   "review.assignees": "Responsables",
+  "review.autoMarkAsViewed": "Marquer automatiquement les fichiers comme consultés",
   "review.awaitingReview": "En attente de revue",
   "review.cannotPostACommentWithoutDiffRefs": "Impossible de commenter sans les références du diff",
   "review.changes": "Modifications",

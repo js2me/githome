@@ -1,10 +1,14 @@
-import { actionBound, observable } from 'mobx';
+import { actionBound, computed, observable } from 'mobx';
 import type { FileGitDiff } from '..';
 
 export class FileGitDiffComments {
   @observable accessor isFileCommentOpen = false;
 
   @observable accessor fileCommentBody = '';
+
+  @computed get isEditingComment() {
+    return this.isFileCommentOpen || Boolean(this.file.selection.formKey);
+  }
 
   @actionBound setFileCommentBody(body: string) {
     this.fileCommentBody = body;

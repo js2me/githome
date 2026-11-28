@@ -20,29 +20,23 @@ import { FileCommentForm } from './file-comment-form';
 
 const getFileNameFromPath = (path: string) => path.split('/').pop() ?? path;
 
-const buildFilesHref = ({
-  projectId,
-  commit,
-  branch,
-  filePath,
-  mergeRequestIid,
-}: {
-  projectId: number;
-  commit: string;
-  branch?: string | null;
-  filePath: string;
-  mergeRequestIid?: number;
-}) => {
+const canActivateDiffFile = (target: HTMLElement) =>
+  !target.closest('button, a, input, textarea, select, label, dialog');
+
+const getOpenInFilesHref = ({ meta, parent: { payload } }: FileGitDiff) => {
+  const { markdownScope, headBranch, mergeRequestIid } = payload;
+  if (!markdownScope?.projectId || !meta.fileRef || !meta.filePath) return null;
+
   const query = new URLSearchParams();
-  if (branch) {
-    query.set('branch', branch);
+  if (headBranch) {
+    query.set('branch', headBranch);
   }
-  query.set('commit', commit);
-  query.set('file', filePath);
+  query.set('commit', meta.fileRef);
+  query.set('file', meta.filePath);
   if (mergeRequestIid !== undefined) {
     query.set('fromMr', String(mergeRequestIid));
   }
-  return `/repository/${projectId}/files?${query.toString()}`;
+  return `/repository/${markdownScope.projectId}/files?${query.toString()}`;
 };
 
 const diffFileBadgeVariants = cva(
@@ -109,23 +103,11 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     deleteNoteError,
     onClearUpdateNoteError,
     onClearDeleteNoteError,
-    markdownScope,
-    headBranch,
     isSubmittingComment,
     submitCommentError,
   } = payload;
 
-  const openInFilesHref =
-    markdownScope?.projectId && meta.fileRef && meta.filePath
-      ? buildFilesHref({
-          projectId: markdownScope.projectId,
-          commit: meta.fileRef,
-          branch: headBranch ?? null,
-          filePath: meta.filePath,
-          mergeRequestIid: payload.mergeRequestIid,
-        })
-      : null;
-
+  const openInFilesHref = getOpenInFilesHref(model);
   const headerRowId = getDiffFileHeaderRowId(fileKey);
   const headerSearchHighlight = useRowSearchHighlight(headerRowId);
 
@@ -133,6 +115,8 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
     <article
       id={getDiffFileElementId(fileKey)}
       data-diff-reviewed={isReviewed ? '' : undefined}
+      data-diff-auto-reviewable={meta.isAutoReviewable}
+      data-diff-comment-editing={comments.isEditingComment}
       className={cn(
         'w-full min-w-0 rounded-lg border bg-white dark:bg-gray-900',
         isActive
@@ -141,13 +125,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
       )}
       onClickCapture={(event) => {
         const target = event.target as HTMLElement;
-        if (
-          target.closest('button, a, input, textarea, select, label, dialog')
-        ) {
-          return;
-        }
-
-        navigation.setActive();
+        if (canActivateDiffFile(target)) navigation.setActive();
       }}
     >
       <header className="git-diff-file-header sticky top-0 z-20 flex flex-wrap items-center gap-2.5 rounded-t-lg border-[var(--diff-border)] border-b bg-[var(--diff-header-bg)] px-3.5 py-2.5 sm:flex-nowrap">
@@ -208,7 +186,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
           </div>
         </div>
 
-        {additions > 0 || deletions > 0 ? (
+        {Math.max(additions, deletions) > 0 ? (
           <span className="flex shrink-0 items-center gap-2 font-bold font-mono text-xs">
             {additions > 0 && (
               <span className="text-[var(--diff-stats-added)]">
@@ -294,7 +272,7 @@ export const GitDiffFile = observer(({ model }: { model: FileGitDiff }) => {
               deleteNoteError={deleteNoteError}
               onClearUpdateNoteError={onClearUpdateNoteError}
               onClearDeleteNoteError={onClearDeleteNoteError}
-              markdownScope={markdownScope}
+              markdownScope={payload.markdownScope}
             />
           ))}
         </div>
