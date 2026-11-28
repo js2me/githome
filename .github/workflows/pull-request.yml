@@ -18,6 +18,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec tsc && pnpm exec tsc -p tsconfig.node.json
+      - run: pnpm lint:check
       - run: pnpm test
       - name: Browser checks
         shell: bash

@@ -3,8 +3,8 @@ import type { GitLabNoteDC } from '@/shared/api/gitlab';
 import { LocalizedError } from '@/shared/lib/i18n/localized-error';
 import {
   formatReviewedFiles,
-  readReviewedFiles,
   type ReviewedFile,
+  readReviewedFiles,
 } from './reviewed-files-note';
 
 const BATCH_WINDOW_MS = 300;
@@ -27,8 +27,7 @@ export class ReviewSaveBatch {
     deep: false,
   });
   @observableRef accessor note: GitLabNoteDC | undefined = undefined;
-  @observableRef accessor failure: { path: string; error: Error } | null =
-    null;
+  @observableRef accessor failure: { path: string; error: Error } | null = null;
 
   private queued = new Map<string, ReviewChange>();
   private context?: SaveContext;
